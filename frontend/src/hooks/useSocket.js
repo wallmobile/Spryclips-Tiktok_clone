@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { refreshSession } from '../config/axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://spryclips.com';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export const useSocket = () => {
   const { user } = useAuth();

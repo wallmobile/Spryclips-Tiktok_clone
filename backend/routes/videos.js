@@ -228,7 +228,7 @@ router.get('/:id/embed', asyncHandler(async (req, res) => {
     throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://spryclips.com:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const embedUrl = `${frontendUrl}/embed/${video._id}`;
   const embedCode = `<iframe src="${embedUrl}" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 

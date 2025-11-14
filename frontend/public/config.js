@@ -10,9 +10,9 @@
 //    Example: 'https://api.yoursite.com' ya 'https://backend.yoursite.com'
 //
 // 3. Agar backend localhost par test kar rahe hain:
-//    API_URL: 'https://spryclips.com'
+//    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'https://spryclips.com' // Yahan apni backend URL dalen (empty = same domain)
+  API_URL: 'http://localhost:5000' // Yahan apni backend URL dalen (empty = same domain)
 };
 

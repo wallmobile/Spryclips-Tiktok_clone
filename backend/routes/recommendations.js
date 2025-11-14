@@ -280,7 +280,7 @@ router.get('/trending', async (req, res) => {
         return trimmed;
       }
       // Make relative URL absolute
-      const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `https://spryclips.com:${process.env.PORT || 5000}`;
+      const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
       const normalizedBase = baseUrl.replace(/\/+$/, '');
       const normalizedPath = trimmed.replace(/^\/+/, '');
       return `${normalizedBase}/${normalizedPath}`;

@@ -103,7 +103,7 @@ const getAllowedOrigins = () => {
 
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? productionOrigins
-    : ['https://spryclips.com:3000', 'https://spryclips.com:3001'];
+    : ['http://localhost:3000', 'http://localhost:3001'];
 
   if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
     console.error('No allowed origins configured for production. Set ALLOWED_ORIGINS or FRONTEND_URL.');
@@ -123,7 +123,7 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('https://spryclips.com');
+    connectSrc.add('http://localhost:5000');
     connectSrc.add('ws://localhost:5000');
     connectSrc.add('ws://localhost:3000');
   }
@@ -421,8 +421,8 @@ if (!isTestEnv) {
     server = app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 API: https://spryclips.com:${PORT}/api`);
-      console.log(`📚 Docs: https://spryclips.com:${PORT}/api-docs`);
+      console.log(`🌐 API: http://localhost:${PORT}/api`);
+      console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
     });
 
     server.on('error', (error) => {

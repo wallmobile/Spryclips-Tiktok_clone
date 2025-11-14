@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = 'https://spryclips.com/api/auth';
+const API_URL = 'http://localhost:5000/api/auth';
 
 // Test data
 const timestamp = Date.now();
