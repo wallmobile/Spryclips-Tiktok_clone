@@ -1,0 +1,1106 @@
+﻿/* Balance Overlay - Full Screen Like GetApp */
+.balance-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #F9FAFB !important; /* Light background like GetApp */
+  z-index: 100000 !important; /* Same as GetApp */
+  animation: fadeIn 0.3s ease;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100vw;
+  cursor: default;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.balance-modal {
+  background: #F9FAFB !important; /* Light background like GetApp */
+  border-radius: 0 !important; /* No border radius for full screen */
+  width: 100%;
+  max-width: 100vw;
+  max-height: none !important;
+  min-height: 100vh !important;
+  height: auto !important;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none !important; /* No shadow for full screen */
+  border: none !important; /* No border for full screen */
+  cursor: default;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header - Same style as GetApp */
+.balance-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2563EB;
+  background: #60A5FA !important; /* Blue background like GetApp */
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+  min-height: 64px;
+}
+
+.balance-header h2 {
+  margin: 0;
+  color: #fff !important; /* White text for blue background */
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.balance-close-btn {
+  background: transparent;
+  border: none;
+  color: #fff !important; /* White icon for blue background */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.2s;
+  padding: 8px;
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+}
+
+.balance-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.balance-header-placeholder {
+  width: 40px;
+  flex-shrink: 0;
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+}
+
+/* Content */
+.balance-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem; /* 24px */
+  background: #F9FAFB !important; /* Light background like GetApp */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem; /* 24px - spacing between cards */
+  align-content: start;
+}
+
+/* Balance Cards */
+.balance-card {
+  background: #fff;
+  border-radius: 1rem; /* 16px */
+  padding: 1.5rem; /* 24px */
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08); /* 0 2px 8px */
+  border: 0.0625rem solid #E5E7EB; /* 1px */
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.balance-card:hover {
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.12); /* 0 4px 16px */
+  transform: translateY(-0.125rem); /* -2px */
+}
+
+.balance-card.full-width {
+  grid-column: 1 / -1; /* Span full width in grid */
+  width: 100%;
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  margin-bottom: 1.25rem; /* 20px */
+}
+
+.card-icon {
+  width: 2.5rem; /* 40px */
+  height: 2.5rem; /* 40px */
+  border-radius: 0.5rem; /* 8px */
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.25rem; /* 20px */
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #1F2937;
+  font-size: 1.125rem; /* 18px */
+  font-weight: 700;
+}
+
+/* Card Body */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* 16px */
+}
+
+/* Balance Amount */
+.balance-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* 4px */
+}
+
+.amount-number {
+  font-size: 2rem; /* 32px */
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1.2;
+}
+
+.amount-label {
+  font-size: 0.875rem; /* 14px */
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* Buttons - Light Blue (Same as GetApp) */
+.recharge-btn,
+.withdraw-btn {
+  background: #60A5FA !important; /* Light blue - same as GetApp button */
+  color: #fff !important;
+  border: none;
+  border-radius: 0.5rem; /* 8px */
+  padding: 0.75rem 1.5rem; /* 12px 24px */
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* 8px */
+  transition: all 0.3s ease;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+.recharge-btn:hover,
+.withdraw-btn:hover {
+  background: #3B82F6 !important; /* Darker blue on hover - same as GetApp */
+  transform: translateY(-0.0625rem); /* -1px */
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+}
+
+.recharge-btn:active,
+.withdraw-btn:active {
+  transform: translateY(0);
+}
+
+.withdraw-btn:disabled {
+  background: #CBD5E1;
+  color: #94A3B8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.withdraw-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Gift History Tabs */
+.gift-history-tabs {
+  display: flex;
+  gap: 0.75rem; /* 12px */
+  margin-bottom: 1.25rem; /* 20px */
+}
+
+.gift-tab {
+  flex: 1;
+  background: #60A5FA !important; /* Light blue - same as GetApp button */
+  color: #fff !important;
+  border: none;
+  border-radius: 0.5rem; /* 8px */
+  padding: 0.75rem 1rem; /* 12px 16px */
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* 8px */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+.gift-tab:not(.active) {
+  background: #60A5FA !important; /* Same light blue for all buttons */
+  color: #fff !important; /* White text */
+}
+
+.gift-tab:hover {
+  background: #3B82F6 !important; /* Darker blue on hover - same as GetApp */
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+}
+
+.gift-tab.active {
+  background: #60A5FA !important; /* Light blue - same as GetApp button */
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+/* Gift History List */
+.gift-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* 12px */
+}
+
+.empty-gift-history {
+  text-align: center;
+  padding: 3rem 1.5rem; /* 48px 24px */
+  color: #9CA3AF;
+}
+
+.empty-gift-history i {
+  font-size: 3rem; /* 48px */
+  margin-bottom: 1rem; /* 16px */
+  opacity: 0.5;
+}
+
+.empty-gift-history p {
+  margin: 0;
+  font-size: 1rem; /* 16px */
+}
+
+/* Gift Item */
+.gift-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
+  padding: 1rem; /* 16px */
+  background: #F9FAFB;
+  border-radius: 0.75rem; /* 12px */
+  border: 0.0625rem solid #E5E7EB; /* 1px */
+  transition: all 0.3s ease;
+}
+
+.gift-item:hover {
+  background: #F3F4F6;
+  border-color: #38BDF8;
+  box-shadow: 0 0.125rem 0.5rem rgba(56, 189, 248, 0.1); /* 0 2px 8px */
+}
+
+.gift-emoji {
+  font-size: 2rem; /* 32px */
+  width: 3rem; /* 48px */
+  height: 3rem; /* 48px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E0F2FE;
+  border-radius: 0.5rem; /* 8px */
+  flex-shrink: 0;
+}
+
+.gift-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* 4px */
+}
+
+.gift-name {
+  font-size: 1rem; /* 16px */
+  font-weight: 600;
+  color: #1F2937; /* Dark text for visibility */
+  margin: 0;
+}
+
+.gift-from {
+  font-size: 0.875rem; /* 14px */
+  color: #6B7280;
+  margin: 0;
+}
+
+.gift-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem; /* 4px */
+}
+
+.gift-coins {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #10B981; /* Green for received */
+}
+
+.gift-coins.sent {
+  color: #EF4444; /* Red for sent */
+}
+
+.gift-date {
+  font-size: 0.75rem; /* 12px */
+  color: #9CA3AF;
+}
+
+/* Recharge Modal */
+.recharge-modal-overlay,
+.withdraw-modal-overlay,
+.balance-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(0.25rem); /* 4px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10030;
+  padding: 1.5rem; /* 24px */
+}
+
+.recharge-modal-content,
+.withdraw-modal-content,
+.balance-modal-content {
+  background: #fff;
+  border-radius: 1rem; /* 16px */
+  width: 100%;
+  max-width: 31.25rem; /* 500px */
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1.25rem 3.75rem rgba(0, 0, 0, 0.2); /* 0 20px 60px */
+}
+
+/* Smaller withdraw modal */
+.withdraw-modal-content {
+  max-width: 25rem; /* 400px - smaller width */
+}
+
+.recharge-modal-header,
+.withdraw-modal-header,
+.balance-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem; /* 20px 24px */
+  border-bottom: 0.0625rem solid rgba(96, 165, 250, 0.2); /* 1px */
+  background: #60A5FA !important; /* Light blue - same as GetApp */
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.2);
+}
+
+.recharge-modal-header h3,
+.withdraw-modal-header h3,
+.balance-modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+}
+
+/* Smaller withdraw modal header */
+.withdraw-modal-header {
+  padding: 1rem 1.25rem; /* 16px 20px - smaller padding */
+}
+
+.withdraw-modal-header h3 {
+  font-size: 1.125rem; /* 18px - smaller font */
+}
+
+.recharge-modal-close,
+.withdraw-modal-close,
+.balance-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 2rem; /* 32px */
+  height: 2rem; /* 32px */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem; /* 16px */
+  transition: all 0.3s ease;
+}
+
+.recharge-modal-close:hover,
+.withdraw-modal-close:hover,
+.balance-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.recharge-modal-body,
+.withdraw-modal-body,
+.balance-modal-body {
+  padding: 1.5rem; /* 24px */
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Smaller withdraw modal body */
+.withdraw-modal-body {
+  padding: 1.25rem; /* 20px - smaller padding */
+}
+
+/* Recharge Packages */
+.recharge-packages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); /* 112px - smaller boxes */
+  gap: 0.75rem; /* 12px - smaller gap */
+  max-width: 100%;
+  padding: 0.5rem 0; /* Add some vertical padding */
+}
+
+.recharge-package {
+  background: #60A5FA !important; /* Light blue - same as GetApp */
+  border: 0.125rem solid #60A5FA; /* 2px */
+  border-radius: 0.75rem; /* 12px */
+  padding: 1rem 0.75rem; /* 16px 12px - smaller padding */
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 7rem; /* 112px - fixed height for consistency */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); /* Nice shadow */
+}
+
+.recharge-package:hover {
+  background: #3B82F6 !important; /* Darker blue on hover - same as GetApp */
+  border-color: #3B82F6;
+  transform: translateY(-0.125rem) scale(1.02); /* -2px and slight scale */
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4); /* Enhanced shadow on hover */
+}
+
+.package-coins {
+  font-size: 1.25rem; /* 20px - smaller font */
+  font-weight: 700;
+  color: #fff; /* White text on sky blue background */
+  margin-bottom: 0.375rem; /* 6px - smaller margin */
+  line-height: 1.2;
+}
+
+.package-coins .bonus {
+  font-size: 0.75rem; /* 12px - smaller font */
+  color: #FEF3C7 !important; /* Light yellow for bonus - better visibility */
+  font-weight: 600;
+  display: block;
+  margin-top: 0.25rem; /* 4px */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* Text shadow for better readability */
+}
+
+.package-price {
+  font-size: 0.9375rem; /* 15px - smaller font */
+  font-weight: 600;
+  color: #fff; /* White text on sky blue background */
+  margin-top: auto;
+}
+
+.package-badge {
+  position: absolute;
+  top: -0.5rem; /* -8px */
+  right: -0.5rem; /* -8px */
+  background: #10B981 !important; /* Green */
+  color: #fff;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  padding: 0.25rem 0.5rem; /* 4px 8px */
+  border-radius: 0.5rem; /* 8px */
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4); /* Shadow for badge */
+  z-index: 10;
+}
+
+/* Withdraw Methods */
+.withdraw-info {
+  background: #F9FAFB;
+  border-radius: 0.75rem; /* 12px */
+  padding: 1.25rem; /* 20px */
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+.withdraw-info p {
+  margin: 0.5rem 0; /* 8px 0 */
+  color: #6B7280;
+  font-size: 0.9375rem; /* 15px */
+}
+
+.withdraw-info strong {
+  color: #1F2937;
+  font-weight: 700;
+}
+
+/* Smaller withdraw info */
+.withdraw-modal-body .withdraw-info {
+  padding: 1rem; /* 16px - smaller padding */
+  margin-bottom: 1.25rem; /* 20px - smaller margin */
+}
+
+.withdraw-modal-body .withdraw-info p {
+  font-size: 0.875rem; /* 14px - smaller font */
+  margin: 0.375rem 0; /* 6px 0 - smaller margin */
+}
+
+.withdraw-methods {
+  display: flex;
+  gap: 1rem; /* 16px */
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+/* Smaller withdraw methods */
+.withdraw-modal-body .withdraw-methods {
+  gap: 0.75rem; /* 12px - smaller gap */
+  margin-bottom: 1.25rem; /* 20px - smaller margin */
+}
+
+.withdraw-method {
+  flex: 1;
+  background: #60A5FA !important; /* Light blue - same as GetApp */
+  border: 0.125rem solid #60A5FA; /* 2px */
+  border-radius: 0.75rem; /* 12px */
+  padding: 1.25rem; /* 20px */
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem; /* 8px */
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); /* Nice shadow */
+}
+
+/* Smaller withdraw method */
+.withdraw-modal-body .withdraw-method {
+  padding: 1rem 0.75rem; /* 16px 12px - smaller padding */
+  border-radius: 0.625rem; /* 10px - smaller radius */
+}
+
+.withdraw-method:hover {
+  border-color: #3B82F6 !important; /* Darker blue on hover - same as GetApp */
+  background: #3B82F6 !important; /* Darker blue */
+  transform: translateY(-0.125rem) scale(1.02); /* -2px and slight scale */
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4); /* Enhanced shadow */
+}
+
+.withdraw-method.selected {
+  background: #3B82F6 !important; /* Darker blue when selected */
+  border-color: #3B82F6 !important;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.5); /* Stronger shadow when selected */
+}
+
+.withdraw-method i {
+  font-size: 2rem; /* 32px */
+  color: #fff; /* White icon on blue background */
+}
+
+/* Smaller withdraw method icon */
+.withdraw-modal-body .withdraw-method i {
+  font-size: 1.5rem; /* 24px - smaller icon */
+}
+
+.withdraw-method span {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #fff; /* White text on blue background */
+}
+
+/* Smaller withdraw method text */
+.withdraw-modal-body .withdraw-method span {
+  font-size: 0.875rem; /* 14px - smaller font */
+}
+
+.confirm-withdraw-btn {
+  width: 100%;
+  background: #60A5FA !important; /* Light blue - same as GetApp */
+  color: #fff !important;
+  border: none;
+  border-radius: 0.5rem; /* 8px */
+  padding: 0.875rem 1.5rem; /* 14px 24px */
+  font-size: 1rem; /* 16px */
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); /* Nice shadow */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* 8px */
+  cursor: pointer;
+}
+
+/* Smaller confirm withdraw button */
+.withdraw-modal-body .confirm-withdraw-btn {
+  padding: 0.75rem 1.25rem; /* 12px 20px - smaller padding */
+  font-size: 0.9375rem; /* 15px - smaller font */
+}
+
+.confirm-withdraw-btn:hover {
+  background: #3B82F6 !important; /* Darker blue on hover - same as GetApp */
+  transform: translateY(-0.125rem); /* -2px */
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4); /* Enhanced shadow */
+}
+
+.confirm-withdraw-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(96, 165, 250, 0.3);
+}
+
+/* Transaction List */
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* 12px */
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
+  padding: 1rem; /* 16px */
+  background: #F9FAFB;
+  border-radius: 0.75rem; /* 12px */
+  border: 0.0625rem solid #E5E7EB; /* 1px */
+}
+
+.transaction-icon {
+  width: 2.5rem; /* 40px */
+  height: 2.5rem; /* 40px */
+  border-radius: 50%;
+  background: #E0F2FE; /* Light sky blue */
+  color: #38BDF8; /* Sky blue */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem; /* 18px */
+  flex-shrink: 0;
+}
+
+.transaction-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* 4px */
+}
+
+.transaction-type {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.transaction-date {
+  font-size: 0.75rem; /* 12px */
+  color: #9CA3AF;
+}
+
+.transaction-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem; /* 4px */
+}
+
+.transaction-amount .positive {
+  color: #10B981; /* Green */
+  font-weight: 700;
+  font-size: 1rem; /* 16px */
+}
+
+.transaction-amount .negative {
+  color: #EF4444; /* Red */
+  font-weight: 700;
+  font-size: 1rem; /* 16px */
+}
+
+.transaction-coins {
+  font-size: 0.75rem; /* 12px */
+  color: #6B7280;
+}
+
+.transaction-status {
+  padding: 0.25rem 0.75rem; /* 4px 12px */
+  border-radius: 0.5rem; /* 8px */
+  font-size: 0.75rem; /* 12px */
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.transaction-status.completed {
+  background: #D1FAE5; /* Light green */
+  color: #10B981; /* Green */
+}
+
+.transaction-status.pending {
+  background: #FEF3C7; /* Light yellow */
+  color: #F59E0B; /* Yellow */
+}
+
+/* Earnings Details */
+.earnings-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* 24px */
+}
+
+.total-earnings {
+  text-align: center;
+  padding: 1.5rem; /* 24px */
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  border-radius: 0.75rem; /* 12px */
+  color: #fff;
+}
+
+.total-earnings h4 {
+  margin: 0 0 0.5rem 0; /* 0 0 8px 0 */
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.total-amount {
+  font-size: 2.5rem; /* 40px */
+  font-weight: 700;
+  margin: 0;
+}
+
+.earnings-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* 16px */
+}
+
+.earnings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem; /* 16px */
+  background: #F9FAFB;
+  border-radius: 0.75rem; /* 12px */
+  border: 0.0625rem solid #E5E7EB; /* 1px */
+}
+
+.earnings-source {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+}
+
+.earnings-source i {
+  font-size: 1.25rem; /* 20px */
+  color: #38BDF8; /* Sky blue */
+}
+
+.earnings-source span {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.earnings-amount {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 700;
+  color: #10B981; /* Green */
+}
+
+.earnings-info {
+  margin-top: 1rem; /* 16px */
+  padding: 1rem; /* 16px */
+  background: #E0F2FE; /* Light sky blue */
+  border-radius: 0.75rem; /* 12px */
+  font-size: 0.875rem; /* 14px */
+  color: #0EA5E9; /* Dark sky blue */
+  text-align: center;
+}
+
+/* Payment Methods */
+.payment-methods {
+  margin-top: 1.5rem; /* 24px */
+}
+
+.purchase-summary {
+  background: #F9FAFB;
+  border-radius: 0.75rem; /* 12px */
+  padding: 1.25rem; /* 20px */
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+.package-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem; /* 12px */
+}
+
+.package-details span {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.payment-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* 12px */
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
+  padding: 1rem; /* 16px */
+  background: #F9FAFB;
+  border: 0.125rem solid #E5E7EB; /* 2px */
+  border-radius: 0.75rem; /* 12px */
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.payment-method:hover {
+  border-color: #38BDF8; /* Sky blue */
+  background: #E0F2FE; /* Light sky blue */
+}
+
+.payment-method.selected {
+  border-color: #38BDF8; /* Sky blue */
+  background: #E0F2FE; /* Light sky blue */
+}
+
+.payment-method i {
+  font-size: 1.5rem; /* 24px */
+  color: #38BDF8; /* Sky blue */
+}
+
+.payment-method span {
+  flex: 1;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.payment-method-check {
+  width: 1.5rem; /* 24px */
+  height: 1.5rem; /* 24px */
+  border-radius: 50%;
+  background: #38BDF8; /* Sky blue */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem; /* 14px */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.payment-method.selected .payment-method-check {
+  opacity: 1;
+}
+
+.confirm-payment-btn {
+  width: 100%;
+  background: #38BDF8; /* Sky blue */
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem; /* 8px */
+  padding: 0.875rem 1.5rem; /* 14px 24px */
+  font-size: 1rem; /* 16px */
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* 8px */
+  transition: all 0.3s ease;
+}
+
+.confirm-payment-btn:hover {
+  background: #0EA5E9; /* Darker sky blue */
+  transform: translateY(-0.0625rem); /* -1px */
+  box-shadow: 0 0.25rem 0.75rem rgba(56, 189, 248, 0.3); /* 0 4px 12px */
+}
+
+.balance-loading,
+.balance-error {
+  text-align: center;
+  padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1F2937;
+  grid-column: 1 / -1;
+}
+
+.balance-loading i,
+.balance-error i {
+  font-size: 1.75rem;
+  color: #2563EB;
+}
+
+.balance-error i {
+  color: #DC2626;
+}
+
+/* Full Screen Balance when opened from Account Settings */
+/* Desktop/Laptop: Full page Balance modal when Account Settings is open */
+@media (min-width: 64.0625rem) {
+  /* When Balance is opened from Account Settings context */
+  .account-settings-overlay .balance-overlay,
+  .account-settings-modal .balance-overlay,
+  body:has(.account-settings-overlay) .balance-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .balance-modal,
+  .account-settings-modal .balance-modal,
+  body:has(.account-settings-overlay) .balance-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .balance-header,
+  .account-settings-modal .balance-header,
+  body:has(.account-settings-overlay) .balance-header {
+    padding: 1.5rem 2rem !important;
+    min-height: 4rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay .balance-header h2,
+  .account-settings-modal .balance-header h2,
+  body:has(.account-settings-overlay) .balance-header h2 {
+    font-size: 1.75rem !important;
+  }
+
+  .account-settings-overlay .balance-content,
+  .account-settings-modal .balance-content,
+  body:has(.account-settings-overlay) .balance-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.5rem 2rem !important;
+  }
+}
+
+/* Tablet: Also full page */
+@media (min-width: 48.0625rem) and (max-width: 64rem) {
+  .account-settings-overlay .balance-overlay,
+  .account-settings-modal .balance-overlay,
+  body:has(.account-settings-overlay) .balance-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .balance-modal,
+  .account-settings-modal .balance-modal,
+  body:has(.account-settings-overlay) .balance-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .balance-header,
+  .account-settings-modal .balance-header,
+  body:has(.account-settings-overlay) .balance-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay .balance-content,
+  .account-settings-modal .balance-content,
+  body:has(.account-settings-overlay) .balance-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}

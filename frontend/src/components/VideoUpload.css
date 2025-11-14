@@ -1,0 +1,257 @@
+﻿.upload-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 40px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: #2563EB #F9FAFB;
+}
+
+.upload-overlay::-webkit-scrollbar {
+  width: 8px;
+}
+
+.upload-overlay::-webkit-scrollbar-track {
+  background: #F9FAFB;
+}
+
+.upload-overlay::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 10px;
+}
+
+.upload-overlay::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+.upload-modal {
+  background: #F9FAFB;
+  border-radius: 20px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  margin: auto;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.upload-header {
+  text-align: center;
+  padding: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.upload-header h2 {
+  color: white;
+  font-size: 24px;
+  margin: 0;
+}
+
+.upload-form {
+  padding: 30px;
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  color: #f87171;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+.file-upload-area {
+  margin-bottom: 20px;
+}
+
+.file-label {
+  display: block;
+  cursor: pointer;
+}
+
+.file-placeholder {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
+  padding: 40px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.file-placeholder:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.file-placeholder i {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 15px;
+}
+
+.file-placeholder p {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.file-placeholder span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+.preview-video {
+  width: 100%;
+  border-radius: 15px;
+  max-height: 400px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.submit-btn i {
+  font-size: 18px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

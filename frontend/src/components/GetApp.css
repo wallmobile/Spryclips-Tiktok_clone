@@ -1,0 +1,909 @@
+.get-app-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #F9FAFB; /* Website light background */
+  z-index: 100000;
+  animation: fadeIn 0.3s ease;
+  overflow-y: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.get-app-page {
+  background: #F9FAFB; /* Website light background */
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.get-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2563EB;
+  position: sticky;
+  top: 0;
+  background: #60A5FA; /* Blue background */
+  z-index: 10;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.get-app-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff; /* White text for blue background */
+  flex: 1;
+  text-align: center;
+}
+
+.get-app-header-placeholder {
+  width: 40px;
+}
+
+.get-app-close-btn {
+  background: transparent;
+  border: none;
+  color: #fff; /* White icon for blue background */
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  width: 40px;
+  height: 40px;
+}
+
+.get-app-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.get-app-content {
+  padding: 0;
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.get-app-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 60px;
+  padding: 40px 24px 60px 24px;
+  min-height: calc(100vh - 80px);
+}
+
+.get-app-left {
+  flex: 1;
+  max-width: 600px;
+}
+
+.get-app-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  padding-top: 20px;
+}
+
+.get-app-hero {
+  text-align: left;
+  padding: 0;
+  background: transparent;
+  color: #0F172A;
+  border-bottom: none;
+}
+
+.platform-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.platform-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #E0F2FE; /* Website light blue background */
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0F172A; /* Dark text like website */
+}
+
+.platform-tab:hover {
+  background: #BFDBFE;
+  border-color: #93C5FD;
+}
+
+.platform-tab.active {
+  background: #60A5FA; /* Blue when active like website */
+  border-color: #60A5FA;
+  color: #fff;
+}
+
+.platform-tab i {
+  font-size: 18px;
+}
+
+.platform-heading {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 400;
+  color: #64748B; /* Gray text like website */
+}
+
+.get-app-title {
+  margin: 0;
+  font-size: 48px;
+  font-weight: 700;
+  color: #0F172A; /* Dark text like website */
+  letter-spacing: -1px;
+}
+
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 60px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.platform-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 32px;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: center;
+  min-height: 200px;
+  justify-content: center;
+}
+
+.platform-card:hover {
+  background: #FAFAFA;
+  border-color: var(--platform-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.platform-card.selected {
+  background: #FAFAFA;
+  border-color: var(--platform-color);
+  border-width: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.platform-icon {
+  font-size: 72px;
+  color: var(--platform-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.platform-info {
+  flex: 1;
+  text-align: center;
+  width: 100%;
+}
+
+.platform-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.5px;
+}
+
+.platform-info p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748B;
+  line-height: 1.6;
+}
+
+.platform-arrow {
+  display: none;
+}
+
+.download-section {
+  padding: 0;
+  margin: 32px 0;
+  text-align: left;
+}
+
+.download-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.download-icon {
+  font-size: 56px;
+  color: var(--platform-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.download-details {
+  text-align: center;
+}
+
+.download-details h3 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.download-details p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748B;
+}
+
+.download-btn {
+  width: 100%;
+  max-width: 400px;
+  background: #60A5FA;
+  border: none;
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+.download-btn:hover {
+  background: #3B82F6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+}
+
+.download-btn i {
+  font-size: 20px;
+}
+
+.install-message {
+  margin: 16px 0 0 0;
+  padding: 12px;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 8px;
+  color: #2563EB;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.download-btn:active {
+  transform: translateY(0);
+}
+
+.qr-codes-section {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.qr-code-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.qr-code {
+  display: flex;
+  justify-content: center;
+}
+
+.qr-placeholder {
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, #E0F2FE 0%, #DBEAFE 100%);
+  border: 2px solid #60A5FA;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.qr-placeholder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(96, 165, 250, 0.1) 10px,
+    rgba(96, 165, 250, 0.1) 20px
+  );
+  opacity: 0.3;
+}
+
+.qr-placeholder i {
+  font-size: 80px;
+  color: #60A5FA;
+  position: relative;
+  z-index: 1;
+}
+
+.qr-label {
+  margin: 0;
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 400;
+}
+
+/* Phone Mockup */
+.phone-mockup {
+  position: relative;
+  width: 240px;
+  height: 480px;
+  perspective: 1000px;
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  transform: rotateY(-5deg) rotateX(2deg);
+  border: 8px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 50%, #dbeafe 100%);
+  backdrop-filter: blur(20px);
+  border-radius: 40px 40px 0 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 2px solid #93c5fd;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.18);
+}
+
+.phone-logo {
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.phone-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+.phone-login-btn {
+  background: #60A5FA;
+  border: none;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+}
+
+.phone-menu-btn {
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.phone-video {
+  width: 100%;
+  flex: 1;
+  background: linear-gradient(135deg, #1a0033 0%, #000033 50%, #330033 100%);
+  border-radius: 0 0 32px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.video-people {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  z-index: 2;
+}
+
+.person {
+  width: 60px;
+  height: 75px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+  position: relative;
+}
+
+.person-2 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.person::before {
+  content: '😊';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+}
+
+.video-lights {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.light {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.light-blue {
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, #00f2fe 0%, transparent 70%);
+  top: 20%;
+  left: 10%;
+}
+
+.light-purple {
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, #b83dff 0%, transparent 70%);
+  top: 50%;
+  right: 15%;
+}
+
+.light-pink {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, #ff0050 0%, transparent 70%);
+  bottom: 20%;
+  left: 20%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.phone-qr-box {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, #00f2fe 0%, #00d4ff 100%);
+  padding: 10px 12px;
+  border-radius: 10px;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
+  max-width: 110px;
+}
+
+.qr-box-text {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+
+.qr-box-code {
+  width: 100%;
+  height: 80px;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-box-code i {
+  font-size: 45px;
+  color: #000;
+}
+
+.tiktok-logo-3d {
+  position: absolute;
+  top: -15px;
+  left: -25px;
+  width: 90px;
+  height: 90px;
+  background: linear-gradient(135deg, #00f2fe 0%, #ff0050 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 242, 254, 0.4);
+  z-index: 20;
+  transform: rotate(-15deg);
+  opacity: 0.9;
+}
+
+.tiktok-logo-3d i {
+  font-size: 45px;
+  color: #fff;
+}
+
+/* Dark Mode */
+body.dark-mode .get-app-overlay {
+  background: #0F172A !important;
+}
+
+body.dark-mode .get-app-page {
+  background: #0F172A !important;
+}
+
+body.dark-mode .get-app-header {
+  background: #2563EB !important; /* Blue background in dark mode too */
+  border-bottom-color: #1D4ED8 !important;
+}
+
+body.dark-mode .platform-tab {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .platform-tab:hover {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .platform-tab.active {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+}
+
+body.dark-mode .platform-heading {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .get-app-title {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .get-app-header h2 {
+  color: #fff !important; /* White text in dark mode too */
+}
+
+body.dark-mode .get-app-close-btn {
+  color: #fff !important; /* White icon in dark mode too */
+}
+
+body.dark-mode .get-app-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .platform-card {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .platform-card:hover {
+  background: #0F172A !important;
+}
+
+body.dark-mode .platform-card.selected {
+  background: #0F172A !important;
+  border-left-color: var(--platform-color) !important;
+}
+
+body.dark-mode .platform-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .platform-info p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .platform-arrow {
+  color: #475569 !important;
+}
+
+body.dark-mode .download-section {
+  background: #0F172A !important;
+  border-top-color: #334155 !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .download-details h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .download-details p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .download-btn {
+  background: #2563EB !important;
+}
+
+body.dark-mode .download-btn:hover {
+  background: #1D4ED8 !important;
+}
+
+body.dark-mode .qr-section {
+  background: #0F172A !important;
+}
+
+body.dark-mode .qr-placeholder {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .qr-placeholder i {
+  color: #475569 !important;
+}
+
+body.dark-mode .qr-placeholder p {
+  color: #64748B !important;
+}
+
+body.dark-mode .qr-info h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qr-info p {
+  color: #CBD5E1 !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .get-app-page {
+    width: 100%;
+  }
+
+  .get-app-main {
+    flex-direction: column;
+    padding: 40px 16px;
+    gap: 40px;
+  }
+
+  .get-app-left {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .get-app-hero {
+    text-align: center;
+  }
+
+  .platform-tabs {
+    gap: 8px;
+    margin-bottom: 24px;
+    justify-content: center;
+  }
+
+  .platform-tab {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  .platform-heading {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .get-app-title {
+    font-size: 32px;
+  }
+
+  .phone-mockup {
+    width: 200px;
+    height: 400px;
+  }
+
+  .tiktok-logo-3d {
+    width: 80px;
+    height: 80px;
+    top: -12px;
+    left: -20px;
+  }
+
+  .tiktok-logo-3d i {
+    font-size: 40px;
+  }
+
+  .get-app-header {
+    padding: 16px 20px;
+  }
+
+  .get-app-header h2 {
+    font-size: 20px;
+  }
+
+  .get-app-hero {
+    padding: 24px 20px;
+  }
+
+  .get-app-logo h1 {
+    font-size: 40px;
+  }
+
+  .get-app-subtitle {
+    font-size: 14px;
+  }
+
+  .platforms-grid {
+    padding: 4px;
+  }
+
+  .platform-card {
+    padding: 14px 16px;
+  }
+
+  .platform-icon {
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .platform-info h3 {
+    font-size: 15px;
+  }
+
+  .platform-info p {
+    font-size: 12px;
+  }
+
+  .download-section {
+    padding: 16px 20px;
+  }
+
+  .download-icon {
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .download-btn {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
+  .qr-section {
+    padding: 20px;
+  }
+
+  .qr-placeholder {
+    width: 140px;
+    height: 140px;
+  }
+
+  .qr-placeholder i {
+    font-size: 56px;
+  }
+}

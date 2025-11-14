@@ -1,0 +1,50 @@
+/* TopNavBar completely removed - all CSS disabled */
+.top-navbar,
+.top-navbar-left,
+.top-navbar-logo,
+.top-navbar-center,
+.top-navbar-search,
+.top-navbar-search i,
+.top-navbar-search span {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* TopNavBar completely removed - all variants disabled */
+body.dark-mode .top-navbar,
+body.dark-mode .top-navbar-search,
+body.dark-mode .top-navbar-search:hover,
+body.dark-mode .top-navbar-search i,
+body.dark-mode .top-navbar-search span {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+@media (max-width: 768px) {
+  .top-navbar,
+  .top-navbar-logo,
+  .top-navbar-search,
+  .top-navbar-search span {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+}
+
