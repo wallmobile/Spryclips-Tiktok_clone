@@ -21,54 +21,27 @@ type ApiErrorListener = (event: ApiErrorEvent) => void;
 const listeners = new Set<ApiErrorListener>();
 
 const DEFAULT_MESSAGES: Record<string, string> = {
-  NETWORK_ERROR: 'We couldn’t reach the server. Please check your connection and try again.',
-  HTTP_400: 'We could not process your request. Please review the information and try again.',
-  HTTP_401: 'Your session has ended. Please sign in again.',
-  HTTP_403: 'You do not have permission to complete this action.',
-  HTTP_404: 'We could not find what you were looking for.',
-  HTTP_408: 'The request took too long. Please try again.',
-  HTTP_409: 'This action could not be completed because of a conflict.',
-  HTTP_422: 'Some of the information provided is invalid. Please review and try again.',
-  HTTP_429: 'Too many requests. Please wait a moment and try again.',
-  HTTP_500: 'Something went wrong on our side. Please try again in a moment.',
-  HTTP_503: 'The service is temporarily unavailable. Please try again later.'
+  NETWORK_ERROR: 'We couldn’t reach the server. Please check your connection.',
+  HTTP_400: 'Invalid request.',
+  HTTP_401: 'Your session has ended. Please log in.',
+  HTTP_403: 'You do not have permission.',
+  HTTP_404: 'Item not found.',
+  HTTP_408: 'Request timed out.',
+  HTTP_409: 'Conflict error.',
+  HTTP_422: 'Validation failed.',
+  HTTP_429: 'Too many requests. Try again later.',
+  HTTP_500: 'Server error. Try again.',
+  HTTP_503: 'Service unavailable. Try later.'
 };
 
-const httpStatusToCode = (status?: number): string => {
-  if (!status) return 'NETWORK_ERROR';
-  return `HTTP_${status}`;
-};
+const statusToCode = (status?: number): string =>
+  status ? `HTTP_${status}` : 'NETWORK_ERROR';
 
-const getDefaultMessage = (status?: number, fallback?: string): string => {
-  const code = httpStatusToCode(status);
-  if (fallback) return fallback;
-  if (DEFAULT_MESSAGES[code]) return DEFAULT_MESSAGES[code];
-  if (status && status >= 500) return DEFAULT_MESSAGES.HTTP_500;
-  if (status && status >= 400) return DEFAULT_MESSAGES.HTTP_400;
-  return 'We ran into an unexpected issue. Please try again.';
-};
+const safeString = (v: unknown): string | undefined =>
+  typeof v === 'string' ? v : undefined;
 
-const toBoolean = (value: unknown): boolean =>
-  typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true';
-
-const safeString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined;
-
-const getHeader = (error: AxiosError, name: string): string | undefined => {
-  const headers = error.response?.headers;
-  if (!headers) return undefined;
-  return headers[name] ?? headers[name.toLowerCase()];
-};
-
-const generateEventId = (): string =>
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+const toRecord = (v: unknown): Record<string, unknown> =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
 const extractBackendCode = (data: Record<string, unknown>): string | undefined =>
   safeString(data.errorCode) ||
@@ -76,53 +49,44 @@ const extractBackendCode = (data: Record<string, unknown>): string | undefined =
   safeString(data.error) ||
   safeString(data.type);
 
-const extractDetails = (data: Record<string, unknown>): unknown =>
-  data.details ?? data.errors ?? data.validationErrors ?? undefined;
-
-const computeUserMessage = (
-  axiosError: AxiosError,
+const computeMessage = (
+  error: AxiosError,
   status?: number,
   data?: Record<string, unknown>
 ): string => {
-  const userMessage = safeString(data?.userMessage);
-  if (userMessage) return userMessage;
+  const msg = safeString(data?.userMessage) || safeString(data?.message);
+  if (msg && status && status < 500) return msg;
 
-  const backendMessage = safeString(data?.message);
-  if (backendMessage && status && status < 500) return backendMessage;
+  if (!error.response) return DEFAULT_MESSAGES.NETWORK_ERROR;
 
-  if (!axiosError.response) return DEFAULT_MESSAGES.NETWORK_ERROR;
-
-  return getDefaultMessage(status, backendMessage);
+  const code = statusToCode(status);
+  return DEFAULT_MESSAGES[code] || DEFAULT_MESSAGES.HTTP_400;
 };
 
 export const normalizeAxiosError = (error: AxiosError): NormalizedApiError => {
-  const status = error.response?.status ?? (error.code === 'ECONNABORTED' ? 408 : undefined);
-  const data = asRecord(error.response?.data);
-  const isNetworkError = !error.response;
+  const status =
+    error.response?.status ?? (error.code === 'ECONNABORTED' ? 408 : undefined);
 
-  const backendCode = extractBackendCode(data);
-  const errorCode = backendCode || httpStatusToCode(status);
-  const userMessage = computeUserMessage(error, status, data);
+  const data = toRecord(error.response?.data);
+  const isNetwork = !error.response;
+
+  const errorCode = extractBackendCode(data) || statusToCode(status);
+  const userMessage = computeMessage(error, status, data);
 
   const requestId =
     safeString(data.requestId) ||
-    getHeader(error, 'x-request-id') ||
-    getHeader(error, 'x-requestid');
+    error.response?.headers?.['x-request-id'] ||
+    error.response?.headers?.['x-requestid'];
 
-  const details = extractDetails(data);
-  const retryable = isNetworkError || (status ? status >= 500 || status === 408 : false);
-
-  const normalized: NormalizedApiError = {
+  return {
     status,
     errorCode,
     userMessage,
     requestId,
-    details,
-    isNetworkError,
-    retryable
+    details: data.details,
+    isNetworkError: isNetwork,
+    retryable: isNetwork || (status ? status >= 500 || status === 408 : false)
   };
-
-  return normalized;
 };
 
 export const subscribeToApiErrors = (listener: ApiErrorListener): (() => void) => {
@@ -140,35 +104,29 @@ export const emitApiError = (event: ApiErrorEvent): void => {
   });
 };
 
-/* -------------------------------------------------------
-   ADDED MISSING FUNCTION (Fix build error in axios.ts)
-------------------------------------------------------- */
-export const hasBeenBroadcast = (error: AxiosError): boolean => {
-  return Boolean((error as AxiosError & { __broadcasted?: boolean }).__broadcasted);
-};
+export const hasBeenBroadcast = (error: AxiosError): boolean =>
+  Boolean((error as any).__broadcasted);
 
-export const isAxiosError = (error: unknown): error is AxiosError => {
-  return typeof error === 'object' && error !== null && 'isAxiosError' in (error as any);
-};
+export const isAxiosError = (error: unknown): error is AxiosError =>
+  typeof error === 'object' &&
+  error !== null &&
+  'isAxiosError' in (error as any);
 
-/* -------------------------------------------------------
-   MAIN FUNCTION (single definition only)
-------------------------------------------------------- */
-export const broadcastAxiosError = (error: AxiosError): NormalizedApiError => {
+export const broadcastAxiosError = (error: AxiosError) => {
+  (error as any).__broadcasted = true;
+
   const normalized = normalizeAxiosError(error);
   const event: ApiErrorEvent = {
-    id: generateEventId(),
+    id: crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
     timestamp: Date.now(),
     rawError: error,
     ...normalized
   };
 
-  (error as AxiosError & { __broadcasted?: boolean }).__broadcasted = true;
-
   emitApiError(event);
   return normalized;
 };
 
-export const clearApiErrorListeners = (): void => {
+export const clearApiErrorListeners = () => {
   listeners.clear();
 };
