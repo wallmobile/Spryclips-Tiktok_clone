@@ -13,6 +13,6 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'http://localhost:5000' // Yahan apni backend URL dalen (empty = same domain)
+  API_URL: '' // Empty for production (same domain) or set to backend URL
 };
 
