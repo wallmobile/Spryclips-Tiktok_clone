@@ -35,90 +35,49 @@ const DEFAULT_MESSAGES: Record<string, string> = {
 };
 
 const httpStatusToCode = (status?: number): string => {
-  if (!status) {
-    return 'NETWORK_ERROR';
-  }
+  if (!status) return 'NETWORK_ERROR';
   return `HTTP_${status}`;
 };
 
 const getDefaultMessage = (status?: number, fallback?: string): string => {
   const code = httpStatusToCode(status);
-  if (fallback && fallback.trim().length > 0) {
-    return fallback;
-  }
-  if (DEFAULT_MESSAGES[code]) {
-    return DEFAULT_MESSAGES[code];
-  }
-  if (status && status >= 500) {
-    return DEFAULT_MESSAGES.HTTP_500;
-  }
-  if (status && status >= 400) {
-    return DEFAULT_MESSAGES.HTTP_400;
-  }
+  if (fallback) return fallback;
+  if (DEFAULT_MESSAGES[code]) return DEFAULT_MESSAGES[code];
+  if (status && status >= 500) return DEFAULT_MESSAGES.HTTP_500;
+  if (status && status >= 400) return DEFAULT_MESSAGES.HTTP_400;
   return 'We ran into an unexpected issue. Please try again.';
 };
 
-const toBoolean = (value: unknown): boolean => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true';
-  }
-  return Boolean(value);
-};
+const toBoolean = (value: unknown): boolean =>
+  typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true';
 
-const safeString = (value: unknown): string | undefined => {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return undefined;
-};
+const safeString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
 
 const getHeader = (error: AxiosError, name: string): string | undefined => {
   const headers = error.response?.headers;
-  if (!headers) {
-    return undefined;
-  }
-  const value = headers[name] ?? headers[name.toLowerCase()];
-  return typeof value === 'string' ? value : undefined;
+  if (!headers) return undefined;
+  return headers[name] ?? headers[name.toLowerCase()];
 };
 
-const generateEventId = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-};
+const generateEventId = (): string =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return {};
-};
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 
-const extractBackendCode = (data: Record<string, unknown>): string | undefined => {
-  return (
-    safeString(data.errorCode) ||
-    safeString(data.code) ||
-    safeString(data.error) ||
-    safeString(data.type)
-  );
-};
+const extractBackendCode = (data: Record<string, unknown>): string | undefined =>
+  safeString(data.errorCode) ||
+  safeString(data.code) ||
+  safeString(data.error) ||
+  safeString(data.type);
 
-const extractDetails = (data: Record<string, unknown>): unknown => {
-  if (data.details !== undefined) {
-    return data.details;
-  }
-  if (data.errors !== undefined) {
-    return data.errors;
-  }
-  if (data.validationErrors !== undefined) {
-    return data.validationErrors;
-  }
-  return undefined;
-};
+const extractDetails = (data: Record<string, unknown>): unknown =>
+  data.details ?? data.errors ?? data.validationErrors ?? undefined;
 
 const computeUserMessage = (
   axiosError: AxiosError,
@@ -126,18 +85,12 @@ const computeUserMessage = (
   data?: Record<string, unknown>
 ): string => {
   const userMessage = safeString(data?.userMessage);
-  if (userMessage && userMessage.trim().length > 0) {
-    return userMessage;
-  }
+  if (userMessage) return userMessage;
 
   const backendMessage = safeString(data?.message);
-  if (backendMessage && backendMessage.trim().length > 0 && status && status < 500) {
-    return backendMessage;
-  }
+  if (backendMessage && status && status < 500) return backendMessage;
 
-  if (!axiosError.response) {
-    return DEFAULT_MESSAGES.NETWORK_ERROR;
-  }
+  if (!axiosError.response) return DEFAULT_MESSAGES.NETWORK_ERROR;
 
   return getDefaultMessage(status, backendMessage);
 };
@@ -169,97 +122,38 @@ export const normalizeAxiosError = (error: AxiosError): NormalizedApiError => {
     retryable
   };
 
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).userMessage = userMessage;
-
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).errorCode = errorCode;
-
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).requestId = requestId;
-
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).details = details;
-
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).retryable = retryable;
-
-  (error as AxiosError & {
-    userMessage?: string;
-    errorCode?: string;
-    requestId?: string;
-    details?: unknown;
-    retryable?: boolean;
-    isNetworkError?: boolean;
-  }).isNetworkError = isNetworkError;
-
-  if (error.response) {
-    error.response.data = {
-      ...data,
-      message: userMessage,
-      userMessage,
-      code: errorCode,
-      errorCode,
-      requestId,
-      details
-    };
-  }
-
-  if (data.retryable !== undefined) {
-    normalized.retryable = toBoolean(data.retryable);
-  }
-
   return normalized;
 };
 
 export const subscribeToApiErrors = (listener: ApiErrorListener): (() => void) => {
   listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return () => listeners.delete(listener);
 };
 
 export const emitApiError = (event: ApiErrorEvent): void => {
   listeners.forEach((listener) => {
     try {
       listener(event);
-    } catch (listenerError) {
-      // eslint-disable-next-line no-console
-      console.error('Error in API error listener', listenerError);
+    } catch (err) {
+      console.error('Error in API error listener', err);
     }
   });
 };
 
+/* -------------------------------------------------------
+   ADDED MISSING FUNCTION (Fix build error in axios.ts)
+------------------------------------------------------- */
+export const hasBeenBroadcast = (error: AxiosError): boolean => {
+  return Boolean((error as AxiosError & { __broadcasted?: boolean }).__broadcasted);
+};
+
+export const isAxiosError = (error: unknown): error is AxiosError => {
+  return typeof error === 'object' && error !== null && 'isAxiosError' in (error as any);
+};
+
+/* -------------------------------------------------------
+   MAIN FUNCTION (single definition only)
+------------------------------------------------------- */
 export const broadcastAxiosError = (error: AxiosError): NormalizedApiError => {
   const normalized = normalizeAxiosError(error);
   const event: ApiErrorEvent = {
@@ -268,7 +162,9 @@ export const broadcastAxiosError = (error: AxiosError): NormalizedApiError => {
     rawError: error,
     ...normalized
   };
+
   (error as AxiosError & { __broadcasted?: boolean }).__broadcasted = true;
+
   emitApiError(event);
   return normalized;
 };
@@ -276,5 +172,3 @@ export const broadcastAxiosError = (error: AxiosError): NormalizedApiError => {
 export const clearApiErrorListeners = (): void => {
   listeners.clear();
 };
-
-
