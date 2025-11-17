@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
-import { refreshSession } from '../config/axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { refreshSession, API_URL } from '../config/axios';
 
 export const useSocket = () => {
   const { user } = useAuth();
