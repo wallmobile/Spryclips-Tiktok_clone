@@ -28,7 +28,7 @@ const getAPIURL = (): string => {
     return origin;
   }
 
-  return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com/' : 'http://localhost:5000';
 };
 
 const API_URL = getAPIURL();
