@@ -23,12 +23,12 @@ const getAPIURL = (): string => {
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'http://localhost:5000';
+      return 'https://spryclips.com/';
     }
     return origin;
   }
 
-  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com/' : 'http://localhost:5000';
+  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com/' : 'https://spryclips.com/';
 };
 
 const API_URL = getAPIURL();
