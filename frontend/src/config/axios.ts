@@ -23,12 +23,12 @@ const getAPIURL = (): string => {
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'https://spryclips.com:7522/';
+      return 'https://spryclips.com/';
     }
     return origin;
   }
 
-  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com:7522/' : 'https://spryclips.com:7522/';
+  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com/' : 'https://spryclips.com/';
 };
 
 const API_URL = getAPIURL();
@@ -92,7 +92,7 @@ api.interceptors.response.use(
 
     // Suppress 401 errors for auth endpoints when user is not authenticated (expected behavior)
     const shouldSuppress401 = status === 401 && (
-      isAuthVerify || 
+      isAuthVerify ||
       isAuthRefresh ||
       (isAuthLogin && !originalRequest._retry) ||
       (isAuthRegister && !originalRequest._retry)
