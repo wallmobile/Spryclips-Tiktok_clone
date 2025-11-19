@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Test</title>
+    <script src="/config.js"></script>
+</head>
+<body>
+    <h1>Config Test</h1>
+    <pre id="output"></pre>
+    <script>
+        const output = document.getElementById('output');
+        const info = {
+            'window.APP_CONFIG': window.APP_CONFIG,
+            'window.location.origin': window.location.origin,
+            'Test': window.APP_CONFIG && 'API_URL' in window.APP_CONFIG ? 'PASS - config.js loaded' : 'FAIL - config.js not loaded or API_URL not set'
+        };
+        output.textContent = JSON.stringify(info, null, 2);
+    </script>
+</body>
+</html>

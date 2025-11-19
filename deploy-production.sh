@@ -92,10 +92,19 @@ sudo chmod -R 755 "$WEB_ROOT" || print_warn "Failed to set permissions (continui
 # Verify config.js was updated
 print_step "Verifying frontend config..."
 if [ -f "$WEB_ROOT/config.js" ]; then
-    echo "Config.js contents:"
+    echo "✓ Config.js found in web root"
+    echo "Contents:"
     cat "$WEB_ROOT/config.js"
+    echo ""
+    echo "Checking API_URL value:"
+    grep "API_URL" "$WEB_ROOT/config.js" || print_warn "API_URL not found in config.js"
 else
     print_warn "config.js not found in web root"
+fi
+
+# Verify test-config.html was copied
+if [ -f "$WEB_ROOT/test-config.html" ]; then
+    echo "✓ test-config.html found (accessible at /test-config.html)"
 fi
 
 # Configure nginx

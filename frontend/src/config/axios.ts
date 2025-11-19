@@ -12,24 +12,41 @@ declare global {
 const isBrowser = typeof window !== 'undefined';
 
 const getAPIURL = (): string => {
-  if (isBrowser && window.APP_CONFIG?.API_URL) {
-    return window.APP_CONFIG.API_URL;
+  console.log('[Axios] Determining API URL...');
+  console.log('[Axios] window.APP_CONFIG:', isBrowser ? window.APP_CONFIG : 'N/A (not in browser)');
+  console.log('[Axios] process.env.REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+  console.log('[Axios] window.location.origin:', isBrowser ? window.location?.origin : 'N/A (not in browser)');
+  
+  // Priority 1: Runtime config from window.APP_CONFIG (set in public/config.js)
+  // This should ALWAYS win if set, even if it's an empty string
+  if (isBrowser && window.APP_CONFIG && 'API_URL' in window.APP_CONFIG) {
+    const url = window.APP_CONFIG.API_URL || '';
+    console.log('[Axios] ✓ Using window.APP_CONFIG.API_URL:', url === '' ? '(empty string - same origin)' : url);
+    return url;
   }
 
+  // Priority 2: Build-time env variable
   if (process.env.REACT_APP_API_URL) {
+    console.log('[Axios] ✓ Using REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
 
+  // Priority 3: Auto-detect based on current location
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
+    // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
+      console.log('[Axios] ✓ Development mode detected, using localhost:5000');
       return 'http://localhost:5000';
     }
-    // In production, use empty string for same-origin requests (nginx will proxy /api)
+    // Production mode: use empty string (same origin, nginx proxies /api)
+    console.log('[Axios] ✓ Production mode detected, using same-origin (empty string)');
     return '';
   }
 
-  return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+  // Fallback
+  console.log('[Axios] ✓ Using fallback API URL (empty string)');
+  return '';
 };
 
 const API_URL = getAPIURL();
