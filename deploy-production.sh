@@ -112,10 +112,24 @@ print_step "Cleaning web root..."
 sudo rm -rf "$WEB_ROOT"
 sudo mkdir -p "$WEB_ROOT" || print_error "Failed to create web root"
 
+# Also clean /var/www/html if it exists (old/default location)
+if [ -d "/var/www/html" ]; then
+    print_warn "Found /var/www/html (old deployment location) - cleaning it too"
+    sudo rm -rf /var/www/html/*
+fi
+
 print_step "Deploying frontend to web root..."
 sudo cp -r build/* "$WEB_ROOT/" || print_error "Failed to copy build files"
 sudo chown -R www-data:www-data "$WEB_ROOT" || print_warn "Failed to set ownership (continuing anyway)"
 sudo chmod -R 755 "$WEB_ROOT" || print_warn "Failed to set permissions (continuing anyway)"
+
+# Also deploy to /var/www/html to ensure consistency
+if [ -d "/var/www/html" ]; then
+    print_step "Also deploying to /var/www/html for consistency..."
+    sudo cp -r build/* /var/www/html/
+    sudo chown -R www-data:www-data /var/www/html || true
+    sudo chmod -R 755 /var/www/html || true
+fi
 
 # Verify config.js was deployed correctly
 print_step "Verifying deployed config.js..."
@@ -225,6 +239,8 @@ NGINX_EOF
 
 print_step "Verifying nginx config was written..."
 echo "Config file size: $(sudo wc -l $NGINX_CONFIG | awk '{print $1}') lines"
+echo "Checking web root directive:"
+sudo grep "root /var/www" $NGINX_CONFIG || print_warn "Web root directive not found!"
 echo "Checking for API location block:"
 sudo grep -A 2 "location /api/" $NGINX_CONFIG || print_warn "API location block not found!"
 
@@ -254,6 +270,9 @@ curl -I http://localhost/api/health 2>/dev/null | head -n 5
 echo ""
 echo "Testing frontend:"
 curl -I http://localhost/ 2>/dev/null | head -n 5
+echo ""
+echo "Testing config.js via nginx:"
+curl -s http://localhost/config.js 2>/dev/null | grep "API_URL"
 
 print_step "✓ Deployment complete!"
 echo ""
