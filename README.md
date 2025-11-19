@@ -364,7 +364,7 @@ MONGODB_URI=mongodb://localhost:27017/tiktok-clone
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
 # Frontend URL
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://spryclips.com:3000
 
 # API URL
 REACT_APP_API_URL=https://spryclips.com
@@ -373,7 +373,7 @@ REACT_APP_API_URL=https://spryclips.com
 OIDC_ISSUER=https://your-oidc-provider.com
 OIDC_CLIENT_ID=your-client-id
 OIDC_CLIENT_SECRET=your-client-secret
-OIDC_REDIRECT_URI=http://localhost:3000/auth/callback
+OIDC_REDIRECT_URI=https://spryclips.com:3000/auth/callback
 
 # File Upload Configuration
 MAX_FILE_SIZE=104857600
@@ -424,7 +424,7 @@ npm run dev
 
 This will start both the backend server (port 5000) and frontend development server (port 3000) simultaneously.
 
-The frontend will be available at `http://localhost:3000`
+The frontend will be available at `https://spryclips.com:3000`
 The backend API will be available at `https://spryclips.com`
 
 ## ✅ Frontend Quality Checklist
@@ -857,7 +857,7 @@ npm run install:all
 npm run dev
 
 # 6. Open browser
-# Frontend: http://localhost:3000
+# Frontend: https://spryclips.com:3000
 # Backend API: https://spryclips.com
 ```
 

@@ -280,7 +280,7 @@ router.post('/register',
     });
     await refreshToken.save();
 
-    const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${emailVerificationToken}`;
+    const verificationLink = `${process.env.FRONTEND_URL || 'https://spryclips.com:3000'}/verify-email?token=${emailVerificationToken}`;
     const emailTemplate = emailTemplates.welcome(username, verificationLink);
     await sendEmail(email, emailTemplate.subject, emailTemplate.html);
 
@@ -595,7 +595,7 @@ router.post('/forgot-password', passwordResetLimiter, asyncHandler(async (req, r
 
   await passwordReset.save();
 
-  const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+  const resetLink = `${process.env.FRONTEND_URL || 'https://spryclips.com:3000'}/reset-password?token=${token}`;
   const emailTemplate = emailTemplates.passwordReset(user.username, resetLink);
   await sendEmail(email, emailTemplate.subject, emailTemplate.html);
 
@@ -777,7 +777,7 @@ router.post('/resend-verification', authMiddleware, asyncHandler(async (req, res
   user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
   await user.save();
 
-  const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${emailVerificationToken}`;
+  const verificationLink = `${process.env.FRONTEND_URL || 'https://spryclips.com:3000'}/verify-email?token=${emailVerificationToken}`;
   const emailTemplate = emailTemplates.emailVerification(user.username, verificationLink);
   await sendEmail(user.email, emailTemplate.subject, emailTemplate.html);
 

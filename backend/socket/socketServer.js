@@ -7,7 +7,7 @@ let io;
 const initializeSocket = (server) => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-    : [process.env.FRONTEND_URL || 'http://localhost:3000'];
+    : [process.env.FRONTEND_URL || 'https://spryclips.com:3000'];
 
   io = socketIO(server, {
     cors: {
