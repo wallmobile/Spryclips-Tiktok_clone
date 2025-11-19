@@ -33,6 +33,10 @@ print_step "Starting production deployment..."
 # Navigate to project root
 cd ~/Tiktok_clone || print_error "Project directory not found"
 
+# Configure git credentials (using credential helper to avoid repeated prompts)
+print_step "Configuring git credentials..."
+git config --global credential.helper store 2>/dev/null || true
+
 # Pull latest code from intial-code branch
 print_step "Pulling latest code from git..."
 git fetch origin || print_warn "Git fetch failed"
