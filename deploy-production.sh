@@ -100,7 +100,14 @@ fi
 
 # Configure nginx
 print_step "Configuring nginx..."
-sudo bash -c "cat > $NGINX_CONFIG" << 'NGINX_EOF'
+
+# Backup existing config
+print_step "Backing up current nginx config..."
+sudo cp $NGINX_CONFIG ${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S) || true
+
+# Write new config
+print_step "Writing new nginx configuration..."
+sudo tee $NGINX_CONFIG > /dev/null << 'NGINX_EOF'
 server {
     listen 80;
     listen [::]:80;
@@ -168,9 +175,19 @@ server {
 }
 NGINX_EOF
 
-print_step "Testing and restarting nginx..."
+print_step "Verifying nginx config was written..."
+echo "Config file size: $(sudo wc -l $NGINX_CONFIG | awk '{print $1}') lines"
+echo "Checking for API location block:"
+sudo grep -A 2 "location /api/" $NGINX_CONFIG || print_warn "API location block not found!"
+
+print_step "Testing nginx configuration..."
 sudo nginx -t || print_error "Nginx config test failed"
+
+print_step "Restarting nginx..."
 sudo systemctl restart nginx || print_error "Nginx restart failed"
+
+print_step "Waiting for nginx to start..."
+sleep 2
 
 # Check status
 print_step "Checking service status..."
