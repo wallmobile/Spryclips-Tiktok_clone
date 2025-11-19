@@ -296,7 +296,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
                              'Failed to update like. Please try again.';
           
           onError && onError(errorMessage);
-          console.error('Like error:', error);
           
           // Show toast if available (check with type guard)
           if (typeof (window as any).showToast === 'function') {
@@ -332,7 +331,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
           await removeWatchLaterApi(videoId);
         }
       } catch (error) {
-        console.error('Failed to sync Watch Later', error);
         onError?.(
           shouldSave
             ? 'Failed to save video to Watch Later. Please try again.'
@@ -509,7 +507,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
             pending: { ...prev.pending, share: false },
           }));
           onError && onError('Failed to update share count. Please try again.');
-          console.error('Share error:', error);
         })
         .finally(() => {
           shareInFlightRef.current = false;
@@ -603,8 +600,8 @@ const ActionBar: React.FC<ActionBarProps> = ({
     const videoElement = document.querySelector('video');
     if (videoElement) {
       if (!document.fullscreenElement) {
-        videoElement.requestFullscreen().catch(err => {
-          console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        videoElement.requestFullscreen().catch(() => {
+          // Silently handle fullscreen error
         });
       } else {
         document.exitFullscreen();
@@ -619,14 +616,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
     // Store quality preference in localStorage
     localStorage.setItem('videoQuality', quality);
     
-    // Try to apply quality to video element if possible
-    const videoElement = document.querySelector('video') as HTMLVideoElement;
-    if (videoElement) {
-      // Note: Actual quality change requires different video sources/transcoding
-      // For now, we just store the preference
-      // In a full implementation, you'd switch video sources based on quality
-      console.log(`Quality preference set to: ${quality}`);
-    }
+    // Note: Actual quality change requires different video sources/transcoding
+    // For now, we just store the preference
+    // In a full implementation, you'd switch video sources based on quality
   };
 
   const handleSpeedSelect = (speed: number) => {
@@ -703,15 +695,15 @@ const ActionBar: React.FC<ActionBarProps> = ({
           if (videoEl && 'pictureInPictureEnabled' in document) {
             if (newFloatingState) {
               // Enter Picture-in-Picture
-              videoEl.requestPictureInPicture().catch((err) => {
-                console.error('Picture-in-Picture failed:', err);
+              videoEl.requestPictureInPicture().catch(() => {
+                // Silently handle PiP failure
                 setFloatingPlayer(false);
               });
             } else {
               // Exit Picture-in-Picture
               if (document.pictureInPictureElement) {
-                document.exitPictureInPicture().catch((err) => {
-                  console.error('Exit Picture-in-Picture failed:', err);
+                document.exitPictureInPicture().catch(() => {
+                  // Silently handle exit PiP failure
                 });
               }
             }
@@ -783,8 +775,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
       });
       onError && onError('Report submitted. Thank you for keeping TikTok safe!');
     } catch (error) {
-      console.error('Report error:', error);
-      // Fallback to alert if API fails
+      // Silently fallback to alert if API fails
       alert('Report submitted. Thank you for keeping TikTok safe!');
     }
   };

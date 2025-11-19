@@ -120,7 +120,7 @@ const loadInteractionCache = () => {
       ...parsed
     };
   } catch (error) {
-    console.warn('Failed to read interaction cache, resetting.', error);
+    // Silently reset cache on error
     return defaultInteractionCache();
   }
 };
@@ -132,7 +132,7 @@ const saveInteractionCache = (cache) => {
   try {
     window.localStorage.setItem(INTERACTIONS_KEY, JSON.stringify(cache));
   } catch (error) {
-    console.warn('Failed to persist interaction cache.', error);
+    // Silently fail to persist cache
   }
 };
 
@@ -336,17 +336,13 @@ export const getAllVideos = async () => {
     if (list.length > 0) {
       return normalizeVideos(list, 'api');
     }
-    if (!hasWarnedFeed) {
-      console.warn('Video feed returned no items. Falling back to sample catalogue.');
-      hasWarnedFeed = true;
-    }
+    // Silently fall back to sample catalogue
+    hasWarnedFeed = true;
     skipVideoRequests = true;
     return getSampleVideos();
   } catch (error) {
-    if (!hasWarnedFeed) {
-      console.warn('Unable to load videos from API. Using sample data instead.', error?.message ?? error);
-      hasWarnedFeed = true;
-    }
+    // Silently fall back to sample data
+    hasWarnedFeed = true;
     skipVideoRequests = true;
     return getSampleVideos();
   }
@@ -362,7 +358,7 @@ export const getVideoById = async (id) => {
   } catch (error) {
     const sample = findSampleVideo(id);
     if (sample) {
-      console.warn(`Using local sample video for ${id} due to API error.`, error?.message ?? error);
+      // Silently fall back to sample video
       return transformVideoForClient(sample, 'sample');
     }
     throw error;
@@ -390,7 +386,7 @@ export const toggleLike = async (id, idempotencyKey) => {
       likes: toFiniteNumber(payload?.likes)
     };
   } catch (error) {
-    console.warn('toggleLike fell back to local cache.', error?.message ?? error);
+    // Silently fall back to local cache
     skipVideoRequests = true;
     return fallbackLikeToggle(id);
   }
@@ -416,7 +412,7 @@ export const shareVideo = async (id, idempotencyKey) => {
       shares: toFiniteNumber(payload?.shares)
     };
   } catch (error) {
-    console.warn('shareVideo fell back to local cache.', error?.message ?? error);
+    // Silently fall back to local cache
     skipVideoRequests = true;
     return fallbackShareIncrement(id);
   }
@@ -428,7 +424,7 @@ export const getVideoComments = async (id) => {
     const response = await api.get(`/api/videos/${id}/comments`);
     return unwrapSuccessData(response.data);
   } catch (error) {
-    console.warn('Unable to fetch comments. Returning empty list.', error?.message ?? error);
+    // Silently return empty comments list
     return [];
   }
 };
@@ -441,7 +437,7 @@ export const getUserProfile = async (id) => {
   } catch (error) {
     const sampleUser = buildSampleUser(id);
     if (sampleUser) {
-      console.warn(`Using sample profile for ${id}.`, error?.message ?? error);
+      // Silently fall back to sample profile
       return sampleUser;
     }
     return {
@@ -469,7 +465,7 @@ export const toggleFollow = async (id) => {
       ...data
     };
   } catch (error) {
-    console.warn('toggleFollow fell back to local cache.', error?.message ?? error);
+    // Silently fall back to local cache
     skipVideoRequests = true;
     return fallbackFollowToggle(id);
   }
@@ -502,7 +498,7 @@ export const getUserVideos = async (id) => {
       );
     });
     if (filtered.length > 0) {
-      console.warn(`Using sample videos for user ${id}.`, error?.message ?? error);
+      // Silently fall back to sample videos
       return normalizeVideos(filtered, 'sample');
     }
     throw error;
@@ -545,7 +541,7 @@ export const downloadVideo = async (id) => {
 
     return { success: true };
   } catch (error) {
-    console.error('Download error:', error);
+    // Silently propagate download error to caller
     throw error;
   }
 };

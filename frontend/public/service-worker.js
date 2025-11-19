@@ -41,6 +41,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip chrome-extension and other unsupported schemes
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   const requestUrl = new URL(event.request.url);
 
   // Let API requests hit the network
