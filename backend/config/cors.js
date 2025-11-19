@@ -4,8 +4,8 @@ module.exports = (app) => {
   const allowedOrigins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://spryclips.com",
-    "https://www.spryclips.com",
+    "https://spryclips.com:7522",
+    "https://www.spryclips.com:7522",
   ];
 
   app.use(
