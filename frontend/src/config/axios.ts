@@ -25,7 +25,8 @@ const getAPIURL = (): string => {
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
       return 'http://localhost:5000';
     }
-    return origin;
+    // In production, use empty string for same-origin requests (nginx will proxy /api)
+    return '';
   }
 
   return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';

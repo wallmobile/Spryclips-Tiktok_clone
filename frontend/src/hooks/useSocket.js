@@ -3,7 +3,22 @@ import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { refreshSession } from '../config/axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Use relative path in production (nginx proxies), localhost in dev
+const getSocketURL = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const origin = window.location.origin;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
+      return 'http://localhost:5000';
+    }
+    return origin; // same origin in production
+  }
+  return 'http://localhost:5000';
+};
+
+const API_URL = getSocketURL();
 
 export const useSocket = () => {
   const { user } = useAuth();
