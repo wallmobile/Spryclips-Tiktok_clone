@@ -13,6 +13,6 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'https://spryclips.com/' // Yahan apni backend URL dalen (empty = same domain)
+  API_URL: 'https://spryclips.com/' // Arun Yahan apni backend URL dalen (empty = same domain)
 };
 
