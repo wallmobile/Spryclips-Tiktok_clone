@@ -144,9 +144,19 @@ const WatchLater = () => {
     if (/^(data:|blob:)/i.test(trimmed)) {
       return trimmed;
     }
-    const base =
-      process.env.REACT_APP_API_URL ||
-      (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
+    
+    // Priority 1: Runtime config from window.APP_CONFIG
+    let base = '';
+    if (typeof window !== 'undefined' && window.APP_CONFIG && 'API_URL' in window.APP_CONFIG) {
+      base = window.APP_CONFIG.API_URL || '';
+    } else if (process.env.REACT_APP_API_URL) {
+      // Priority 2: Build-time env
+      base = process.env.REACT_APP_API_URL;
+    } else if (typeof window !== 'undefined' && window.location?.origin) {
+      // Priority 3: Current origin
+      base = window.location.origin;
+    }
+    
     const normalizedBase = base.replace(/\/+$/, '');
     const normalizedPath = trimmed.replace(/^\/+/, '');
     return `${normalizedBase}/${normalizedPath}`;

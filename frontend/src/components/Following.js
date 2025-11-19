@@ -11,13 +11,19 @@ const getMediaBase = () => {
   if (typeof window === 'undefined') {
     return '';
   }
-  const configBase = window.APP_CONFIG?.API_URL;
-  if (configBase) {
-    return configBase;
+  
+  // Priority 1: Runtime config from window.APP_CONFIG (set in public/config.js)
+  // Check if key exists, not if value is truthy (empty string is valid!)
+  if (window.APP_CONFIG && 'API_URL' in window.APP_CONFIG) {
+    return window.APP_CONFIG.API_URL || '';
   }
+  
+  // Priority 2: Build-time env variable
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
+  
+  // Priority 3: Current origin
   return window.location?.origin || '';
 };
 
