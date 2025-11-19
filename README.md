@@ -367,7 +367,7 @@ JWT_SECRET=your-super-secret-jwt-key-change-in-production
 FRONTEND_URL=http://localhost:3000
 
 # API URL
-REACT_APP_API_URL=http://localhost:5000
+REACT_APP_API_URL=https://spryclips.com
 
 # OIDC Configuration (Hub App)
 OIDC_ISSUER=https://your-oidc-provider.com
@@ -425,7 +425,7 @@ npm run dev
 This will start both the backend server (port 5000) and frontend development server (port 3000) simultaneously.
 
 The frontend will be available at `http://localhost:3000`
-The backend API will be available at `http://localhost:5000`
+The backend API will be available at `https://spryclips.com`
 
 ## ✅ Frontend Quality Checklist
 - **Dark Mode Ready** – Creator analytics, academy, and tools dashboards now respect `ThemeContext`, delivering balanced light/dark palettes and gradients.
@@ -858,7 +858,7 @@ npm run dev
 
 # 6. Open browser
 # Frontend: http://localhost:3000
-# Backend API: http://localhost:5000
+# Backend API: https://spryclips.com
 ```
 
 ---
