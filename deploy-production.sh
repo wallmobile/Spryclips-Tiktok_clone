@@ -92,11 +92,12 @@ if [ -f "public/config.js" ]; then
     echo "Source config.js contents:"
     cat public/config.js
     echo ""
-    # Check if config.js contains localhost (which would be wrong for production)
-    if grep -q "localhost" public/config.js; then
-        print_error "config.js contains 'localhost'! Update it to use empty string for production."
+    # Check if the actual API_URL value (not comments) contains localhost
+    API_URL_LINE=$(grep "API_URL:" public/config.js | grep -v "^[[:space:]]*//")
+    if echo "$API_URL_LINE" | grep -q "localhost"; then
+        print_error "config.js API_URL value contains 'localhost'! Update it to use empty string for production."
     fi
-    echo "✓ config.js validated (no localhost references)"
+    echo "✓ config.js validated (API_URL not set to localhost)"
 else
     print_error "config.js not found in public/ directory"
 fi
@@ -124,9 +125,10 @@ if [ -f "$WEB_ROOT/config.js" ]; then
     cat "$WEB_ROOT/config.js"
     echo ""
     
-    # Critical check: ensure config.js doesn't contain localhost
-    if sudo grep -q "localhost" "$WEB_ROOT/config.js"; then
-        print_error "DEPLOYMENT FAILED: config.js in web root contains 'localhost'! This will cause network errors."
+    # Critical check: ensure the actual API_URL value (not comments) doesn't contain localhost
+    API_URL_LINE=$(sudo grep "API_URL:" "$WEB_ROOT/config.js" | grep -v "^[[:space:]]*//")
+    if echo "$API_URL_LINE" | grep -q "localhost"; then
+        print_error "DEPLOYMENT FAILED: config.js API_URL value contains 'localhost'! This will cause network errors."
     fi
     
     # Verify it has empty string
