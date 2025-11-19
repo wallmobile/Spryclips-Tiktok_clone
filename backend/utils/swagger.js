@@ -15,7 +15,7 @@ const options = {
     },
     servers: [
       {
-        url: "https://spryclips.com/",
+        url: "https://spryclips.com",
         //process.env.API_URL || 'http://localhost:5000',
         description: 'Development server'
       }

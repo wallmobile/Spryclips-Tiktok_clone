@@ -124,7 +124,7 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('https://spryclips.com/');
+    connectSrc.add('https://spryclips.com');
     // connectSrc.add('http://localhost:5000');
     // connectSrc.add('ws://localhost:5000');
     // connectSrc.add('ws://localhost:3000');
