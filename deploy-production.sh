@@ -41,7 +41,20 @@ git config --global credential.helper store 2>/dev/null || true
 print_step "Pulling latest code from git..."
 git fetch origin || print_warn "Git fetch failed"
 git checkout intial-code || print_warn "Failed to checkout intial-code branch"
+
+# Reset any local changes to ensure clean state
+print_step "Resetting local changes..."
+git reset --hard origin/intial-code || print_warn "Git reset failed"
+
 git pull origin intial-code || print_warn "Git pull failed"
+
+# Verify critical files after pull
+print_step "Verifying critical files were updated..."
+echo "Last commit:"
+git log -1 --oneline
+echo ""
+echo "frontend/public/config.js last modified:"
+git log -1 --oneline -- frontend/public/config.js
 
 # Clean and redeploy backend
 print_step "Cleaning backend..."
@@ -74,6 +87,20 @@ print_step "Removing old build and node_modules..."
 rm -rf build node_modules package-lock.json
 npm cache clean --force 2>/dev/null || true
 
+print_step "Verifying config.js before build..."
+if [ -f "public/config.js" ]; then
+    echo "Source config.js contents:"
+    cat public/config.js
+    echo ""
+    # Check if config.js contains localhost (which would be wrong for production)
+    if grep -q "localhost" public/config.js; then
+        print_error "config.js contains 'localhost'! Update it to use empty string for production."
+    fi
+    echo "✓ config.js validated (no localhost references)"
+else
+    print_error "config.js not found in public/ directory"
+fi
+
 print_step "Installing frontend dependencies..."
 npm install || print_error "Frontend npm install failed"
 
@@ -89,17 +116,27 @@ sudo cp -r build/* "$WEB_ROOT/" || print_error "Failed to copy build files"
 sudo chown -R www-data:www-data "$WEB_ROOT" || print_warn "Failed to set ownership (continuing anyway)"
 sudo chmod -R 755 "$WEB_ROOT" || print_warn "Failed to set permissions (continuing anyway)"
 
-# Verify config.js was updated
-print_step "Verifying frontend config..."
+# Verify config.js was deployed correctly
+print_step "Verifying deployed config.js..."
 if [ -f "$WEB_ROOT/config.js" ]; then
     echo "✓ Config.js found in web root"
     echo "Contents:"
     cat "$WEB_ROOT/config.js"
     echo ""
-    echo "Checking API_URL value:"
-    grep "API_URL" "$WEB_ROOT/config.js" || print_warn "API_URL not found in config.js"
+    
+    # Critical check: ensure config.js doesn't contain localhost
+    if sudo grep -q "localhost" "$WEB_ROOT/config.js"; then
+        print_error "DEPLOYMENT FAILED: config.js in web root contains 'localhost'! This will cause network errors."
+    fi
+    
+    # Verify it has empty string
+    if sudo grep -q "API_URL: ''" "$WEB_ROOT/config.js"; then
+        echo "✓ API_URL is correctly set to empty string"
+    else
+        print_warn "API_URL might not be set to empty string. Check the file above."
+    fi
 else
-    print_warn "config.js not found in web root"
+    print_error "config.js not found in web root!"
 fi
 
 # Verify test-config.html was copied
