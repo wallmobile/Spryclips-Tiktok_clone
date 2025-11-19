@@ -78,7 +78,8 @@ const validateEnvironment = () => {
     if (isProduction) {
       missingVars.push('MONGODB_URI');
     } else {
-      const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
+      const defaultUri = 'mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority';
+      //const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
       process.env.MONGODB_URI = defaultUri;
       console.warn(`MONGODB_URI not configured. Using default local instance at ${defaultUri}.`);
     }
@@ -123,9 +124,10 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('http://localhost:5000');
-    connectSrc.add('ws://localhost:5000');
-    connectSrc.add('ws://localhost:3000');
+    connectSrc.add('https://spryclips.com:7522/');
+   // connectSrc.add('http://localhost:5000');
+    // connectSrc.add('ws://localhost:5000');
+    // connectSrc.add('ws://localhost:3000');
   }
 
   allowedOrigins.forEach(origin => {
