@@ -32,9 +32,11 @@ print_step "Starting production deployment..."
 # Navigate to project root
 cd ~/Tiktok_clone || print_error "Project directory not found"
 
-# Pull latest code (optional - comment out if you don't want auto-pull)
-# print_step "Pulling latest code from git..."
-# git pull origin main || print_warn "Git pull failed or not a git repo"
+# Pull latest code from intial-code branch
+print_step "Pulling latest code from git..."
+git fetch origin || print_warn "Git fetch failed"
+git checkout intial-code || print_warn "Failed to checkout intial-code branch"
+git pull origin intial-code || print_warn "Git pull failed"
 
 # Backend deployment
 print_step "Deploying backend..."
@@ -63,16 +65,37 @@ sudo rsync -av --delete build/ "$WEB_ROOT/" || print_error "Failed to copy build
 sudo chown -R www-data:www-data "$WEB_ROOT" || print_warn "Failed to set ownership (continuing anyway)"
 sudo chmod -R 755 "$WEB_ROOT" || print_warn "Failed to set permissions (continuing anyway)"
 
+# Verify config.js was updated
+print_step "Verifying frontend config..."
+if [ -f "$WEB_ROOT/config.js" ]; then
+    echo "Config.js contents:"
+    cat "$WEB_ROOT/config.js"
+else
+    print_warn "config.js not found in web root"
+fi
+
 # Reload nginx
 print_step "Reloading nginx..."
 sudo nginx -t || print_error "Nginx config test failed"
-sudo systemctl reload nginx || print_error "Nginx reload failed"
+sudo systemctl restart nginx || print_error "Nginx restart failed"
 
 # Check status
 print_step "Checking service status..."
 pm2 status
 echo ""
 sudo systemctl status nginx --no-pager -l | head -n 10
+
+# Test endpoints
+print_step "Testing endpoints..."
+echo ""
+echo "Testing backend directly:"
+curl -I http://127.0.0.1:5000/api/health 2>/dev/null | head -n 5
+echo ""
+echo "Testing backend via nginx:"
+curl -I http://localhost/api/health 2>/dev/null | head -n 5
+echo ""
+echo "Testing frontend:"
+curl -I http://localhost/ 2>/dev/null | head -n 5
 
 print_step "✓ Deployment complete!"
 echo ""
@@ -81,4 +104,5 @@ echo "Backend API: https://www.spryclips.com/api/health"
 echo ""
 echo "Check logs:"
 echo "  Backend: pm2 logs $PM2_APP_NAME"
-echo "  Nginx: sudo tail -f /var/log/nginx/spryclips.error.log"
+echo "  Nginx Error: sudo tail -f /var/log/nginx/spryclips.error.log"
+echo "  Nginx Access: sudo tail -f /var/log/nginx/spryclips.access.log"
