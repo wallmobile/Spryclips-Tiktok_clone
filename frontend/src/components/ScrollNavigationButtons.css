@@ -1,0 +1,101 @@
+.scroll-navigation-buttons {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.scroll-nav-btn {
+  background: #2a2a2a; /* Dark gray background like image */
+  border: none;
+  border-radius: 50%;
+  color: #fff; /* White chevron */
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.scroll-nav-btn:hover:not(:disabled) {
+  background: #3a3a3a; /* Slightly lighter on hover */
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.scroll-nav-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.scroll-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #1a1a1a;
+}
+
+.scroll-nav-btn i {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+/* Dark Mode - Keep same dark gray style */
+body.dark-mode .scroll-nav-btn {
+  background: #2a2a2a !important;
+  border: none !important;
+}
+
+body.dark-mode .scroll-nav-btn:hover:not(:disabled) {
+  background: #3a3a3a !important;
+}
+
+/* Tablet: ALL Devices - 768px - 1024px (48rem - 64rem)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Hide scroll navigation buttons - same as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .scroll-navigation-buttons {
+    display: none !important; /* Hide on tablet - not needed */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .scroll-nav-btn,
+  .scroll-nav-btn * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-navigation-buttons {
+    right: 16px;
+    gap: 8px;
+  }
+
+  .scroll-nav-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .scroll-nav-btn i {
+    font-size: 16px;
+  }
+}
+

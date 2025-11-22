@@ -1,0 +1,116 @@
+.bottom-navigation-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.bottom-nav-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  padding: 12px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.bottom-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.bottom-nav-btn i {
+  font-size: 16px;
+}
+
+.get-coins-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+}
+
+.get-coins-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #e53935);
+}
+
+.get-app-btn {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.login-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .bottom-navigation-buttons {
+    bottom: 16px;
+    right: 16px;
+    gap: 8px;
+  }
+
+  .bottom-nav-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .bottom-nav-btn span {
+    display: none;
+  }
+
+  .bottom-nav-btn i {
+    font-size: 18px;
+  }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .bottom-nav-btn {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .bottom-nav-btn:hover {
+  background: rgba(51, 65, 85, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.dark-mode .get-coins-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
+}
+
+body.dark-mode .get-coins-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #e53935) !important;
+}
+
+body.dark-mode .get-app-btn {
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .login-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .login-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+

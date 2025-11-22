@@ -1,0 +1,1457 @@
+﻿/* Notification Settings Overlay */
+.notification-settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10020; /* Higher z-index to ensure it's on top */
+  padding: 0; /* Changed to 0 for mobile */
+  cursor: pointer;
+  box-sizing: border-box;
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100vw;
+}
+
+.notification-settings-modal {
+  background: #F5F7FA;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow - no purple */
+  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border - no purple */
+  cursor: default;
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
+  .account-settings-overlay .notification-settings-overlay,
+  .account-settings-modal .notification-settings-overlay,
+  body:has(.account-settings-overlay) .notification-settings-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-modal,
+  .account-settings-modal .notification-settings-modal,
+  body:has(.account-settings-overlay) .notification-settings-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .notification-settings-header,
+  .account-settings-modal .notification-settings-header,
+  body:has(.account-settings-overlay) .notification-settings-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
+  }
+
+  .account-settings-overlay .notification-settings-content,
+  .account-settings-modal .notification-settings-content,
+  body:has(.account-settings-overlay) .notification-settings-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}
+
+/* Full Screen Notification Settings when opened from Account Settings */
+/* Desktop/Laptop: Full page Notification Settings modal when Account Settings is open */
+@media (min-width: 64.0625rem) {
+  /* When Notification Settings is opened from Account Settings context */
+  .account-settings-overlay .notification-settings-overlay,
+  .account-settings-modal .notification-settings-overlay,
+  body:has(.account-settings-overlay) .notification-settings-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-modal,
+  .account-settings-modal .notification-settings-modal,
+  body:has(.account-settings-overlay) .notification-settings-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .notification-settings-header,
+  .account-settings-modal .notification-settings-header,
+  body:has(.account-settings-overlay) .notification-settings-header {
+    padding: 1.5rem 2rem !important;
+    min-height: 4rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-header h2,
+  .account-settings-modal .notification-settings-header h2,
+  body:has(.account-settings-overlay) .notification-settings-header h2 {
+    font-size: 1.75rem !important;
+  }
+
+  .account-settings-overlay .notification-settings-content,
+  .account-settings-modal .notification-settings-content,
+  body:has(.account-settings-overlay) .notification-settings-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.5rem 2rem !important;
+  }
+}
+
+/* Tablet: Also full page */
+@media (min-width: 48.0625rem) and (max-width: 64rem) {
+  .account-settings-overlay .notification-settings-overlay,
+  .account-settings-modal .notification-settings-overlay,
+  body:has(.account-settings-overlay) .notification-settings-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-modal,
+  .account-settings-modal .notification-settings-modal,
+  body:has(.account-settings-overlay) .notification-settings-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .notification-settings-header,
+  .account-settings-modal .notification-settings-header,
+  body:has(.account-settings-overlay) .notification-settings-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-content,
+  .account-settings-modal .notification-settings-content,
+  body:has(.account-settings-overlay) .notification-settings-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}
+
+/* Header */
+.notification-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+}
+
+.notification-settings-header h2 {
+  margin: 0;
+  color: #fff !important; /* White text on blue background */
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.notification-settings-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #0F172A;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notification-settings-close-btn i {
+  color: #fff !important; /* White back arrow icon */
+}
+
+.notification-settings-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.notification-settings-header-placeholder {
+  width: 40px;
+}
+
+/* Content */
+.notification-settings-content {
+  padding: 24px;
+  padding-bottom: 2.5rem; /* 40px */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  max-height: 100%;
+}
+
+.notification-settings-content h3 {
+  margin: 0 0 20px 0;
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Master Controls */
+.master-controls-section {
+  padding: 0;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.master-controls-section h3 {
+  margin: 0 0 16px 0;
+  color: #0F172A;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.master-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.master-control-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.master-control-item:hover {
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+  background: #E0F2FE !important; /* Website light blue - no black */
+}
+
+.master-control-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.master-control-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0F172A;
+  font-size: 18px;
+}
+
+.master-control-content h4 {
+  margin: 0 0 4px 0;
+  color: #0F172A;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.master-control-content p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 12px;
+}
+
+.master-control-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.master-toggle-btn {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  color: #0F172A;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.master-toggle-btn:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */ /* Website secondary blue - no red */
+  transform: translateY(-1px);
+}
+
+.master-toggle-btn.secondary {
+  background: transparent;
+  border: 1px solid #E0F2FE;
+  color: #A8A8A8;
+}
+
+.master-toggle-btn.secondary:hover {
+  background: #E0F2FE;
+  border-color: #2563EB;
+  color: #0F172A;
+}
+
+/* Notification Categories */
+.notification-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.notification-category-card {
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.notification-category-card:hover {
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+  background: #E0F2FE !important; /* Website light blue - no black */
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.category-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: transparent; /* Original icon - no background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0F172A;
+  font-size: 20px;
+}
+
+.category-info h4 {
+  margin: 0 0 4px 0;
+  color: #0F172A;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.category-info p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 13px;
+}
+
+.category-toggles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.notification-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.notification-toggle-item:hover {
+  background: rgba(37, 99, 235, 0.1) !important; /* Website blue - no purple */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+}
+
+.toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-info i {
+  color: #A8A8A8;
+  font-size: 14px;
+}
+
+.toggle-info span {
+  color: #0F172A;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Toggle Switch */
+.notification-toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: #E0F2FE;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notification-toggle-switch.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+}
+
+.notification-toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #F9FAFB;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.notification-toggle-switch.active .notification-toggle-slider {
+  transform: translateX(20px);
+}
+
+/* Notification Frequency */
+.notification-frequency-section {
+  margin-bottom: 32px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.frequency-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.frequency-option {
+  position: relative;
+}
+
+.frequency-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.frequency-option label {
+  display: block;
+  padding: 16px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.frequency-option input[type="radio"]:checked + label {
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+  background: rgba(37, 99, 235, 0.1) !important; /* Website blue - no purple */
+}
+
+.frequency-option label:hover {
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+  background: #E0F2FE !important; /* Website light blue - no black */
+}
+
+.frequency-content h5 {
+  margin: 0 0 4px 0;
+  color: #0F172A;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.frequency-content p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 12px;
+}
+
+/* Quiet Hours */
+.quiet-hours-section {
+  margin-bottom: 32px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.quiet-hours-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.quiet-hours-card:hover {
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
+  background: #E0F2FE !important; /* Website light blue - no black */
+}
+
+.quiet-hours-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.quiet-hours-info i {
+  font-size: 24px;
+  color: #25F4EE; /* TikTok cyan */
+}
+
+.quiet-hours-content h4 {
+  margin: 0 0 4px 0;
+  color: #0F172A;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.quiet-hours-content p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 13px;
+}
+
+.quiet-hours-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-input-group label {
+  color: #A8A8A8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.time-input-group input[type="time"] {
+  padding: 8px 12px;
+  background: #E0F2FE;
+  border: 1px solid #444444;
+  border-radius: 6px;
+  color: #0F172A;
+  font-size: 14px;
+}
+
+.time-input-group input[type="time"]:focus {
+  outline: none;
+  border-color: #2563EB;
+}
+
+.quiet-hours-toggle {
+  margin-left: 8px;
+}
+
+/* Scrollbar */
+.notification-settings-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notification-settings-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.notification-settings-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.notification-settings-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%); /* TikTok gradient reversed */
+}
+
+/* Small Phones (≤ 375px) - iPhone SE, small Android */
+@media (max-width: 23.4375rem) {
+  .notification-settings-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important;
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  .notification-settings-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  .notification-settings-header {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-height: 3.5rem;
+  }
+
+  .notification-settings-header h2 {
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .notification-settings-close-btn {
+    width: 2rem !important; /* 32px */
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .notification-settings-close-btn i {
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .notification-settings-content {
+    padding: 0.75rem !important; /* 12px */
+    padding-bottom: 1.5rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: calc(100vh - 3.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .master-controls-section {
+    padding: 0 !important;
+    padding-bottom: 1rem !important; /* 16px */
+    margin-bottom: 1rem !important; /* 16px */
+  }
+
+  .master-controls-section h3 {
+    font-size: 0.875rem !important; /* 14px */
+    margin-bottom: 0.75rem !important; /* 12px */
+  }
+
+  .master-controls-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .master-control-item {
+    padding: 0.75rem !important; /* 12px */
+    flex-direction: column !important;
+    gap: 0.75rem !important; /* 12px */
+    text-align: center !important;
+  }
+
+  .master-control-icon {
+    width: 2.5rem !important; /* 40px */
+    height: 2.5rem !important;
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .master-control-content h4 {
+    font-size: 0.875rem !important; /* 14px */
+    margin-bottom: 0.25rem !important; /* 4px */
+  }
+
+  .master-control-content p {
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .master-control-actions {
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 0.5rem !important; /* 8px */
+  }
+
+  .master-toggle-btn {
+    padding: 0.625rem 1rem !important; /* 10px 16px */
+    font-size: 0.8125rem !important; /* 13px */
+    flex: 1 !important;
+  }
+
+  .notification-settings-content h3 {
+    font-size: 0.875rem !important; /* 14px */
+    margin-bottom: 0.75rem !important; /* 12px */
+  }
+
+  .notification-category-card {
+    padding: 1rem !important; /* 16px */
+  }
+
+  .category-header {
+    gap: 0.75rem !important; /* 12px */
+    margin-bottom: 0.75rem !important; /* 12px */
+  }
+
+  .category-icon {
+    width: 2.5rem !important; /* 40px */
+    height: 2.5rem !important;
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .category-info h4 {
+    font-size: 0.875rem !important; /* 14px */
+    margin-bottom: 0.25rem !important; /* 4px */
+  }
+
+  .category-info p {
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .category-toggles {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .notification-toggle-item {
+    padding: 0.75rem !important; /* 12px */
+  }
+
+  .notification-toggle-switch {
+    width: 2.75rem !important; /* 44px */
+    height: 1.625rem !important; /* 26px */
+  }
+
+  .notification-toggle-slider {
+    width: 1.25rem !important; /* 20px */
+    height: 1.25rem !important;
+    top: 0.1875rem !important; /* 3px */
+    left: 0.1875rem !important; /* 3px */
+  }
+
+  .notification-toggle-switch.active .notification-toggle-slider {
+    transform: translateX(1.25rem) !important; /* 20px */
+  }
+
+  .frequency-options {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .frequency-option label {
+    padding: 0.75rem !important; /* 12px */
+  }
+
+  .quiet-hours-card {
+    flex-direction: column !important;
+    gap: 0.75rem !important; /* 12px */
+    text-align: center !important;
+    padding: 1rem !important; /* 16px */
+  }
+
+  .quiet-hours-controls {
+    flex-direction: column !important;
+    gap: 0.75rem !important; /* 12px */
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .time-input-group {
+    width: 100% !important;
+  }
+
+  .time-input-group input[type="time"] {
+    padding: 0.625rem 0.75rem !important; /* 10px 12px */
+    font-size: 0.8125rem !important; /* 13px */
+  }
+}
+
+/* Regular Phones (376px–480px) */
+@media (min-width: 23.5rem) and (max-width: 30rem) {
+  .notification-settings-overlay {
+    padding: 0.5rem !important; /* 8px */
+  }
+
+  .notification-settings-modal {
+    width: 98% !important;
+    max-width: 98% !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
+    border-radius: 0.75rem !important; /* 12px */
+  }
+
+  .notification-settings-header {
+    padding: 1rem 1.25rem !important; /* 16px 20px */
+    min-height: 3.5rem;
+  }
+
+  .notification-settings-header h2 {
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .notification-settings-close-btn {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .notification-settings-content {
+    padding: 1rem !important; /* 16px */
+    padding-bottom: 1.5rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: calc(98vh - 3.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .master-controls-section {
+    padding: 0 !important;
+    padding-bottom: 1rem !important; /* 16px */
+    margin-bottom: 1rem !important; /* 16px */
+  }
+
+  .master-controls-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .category-toggles {
+    grid-template-columns: 1fr !important;
+  }
+
+  .frequency-options {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quiet-hours-card {
+    flex-direction: column !important;
+    gap: 1rem !important; /* 16px */
+    text-align: center !important;
+  }
+
+  .quiet-hours-controls {
+    justify-content: center !important;
+  }
+}
+
+/* Large Phones / Phablets (481px–600px) */
+@media (min-width: 30.0625rem) and (max-width: 37.5rem) {
+  .notification-settings-modal {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+
+  .notification-settings-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .master-controls-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .category-toggles {
+    grid-template-columns: 1fr !important;
+  }
+
+  .frequency-options {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablets (601px–900px) */
+@media (min-width: 37.5625rem) and (max-width: 56.25rem) {
+  .notification-settings-modal {
+    width: 92% !important;
+    max-width: 37.5rem !important; /* 600px */
+  }
+
+  .notification-settings-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .master-controls-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .category-toggles {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .frequency-options {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* General Mobile (≤ 768px) */
+@media (max-width: 48rem) {
+  .notification-settings-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important; /* Mobile: align from top */
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  .notification-settings-modal {
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .notification-settings-header {
+    padding: 1rem 1.25rem !important; /* 16px 20px */
+    min-height: 3.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .notification-settings-header h2 {
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .notification-settings-close-btn {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .notification-settings-content {
+    padding: 1rem !important; /* 16px */
+    padding-bottom: 1.5rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: calc(100vh - 3.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .master-controls-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .category-toggles {
+    grid-template-columns: 1fr !important;
+  }
+
+  .frequency-options {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quiet-hours-card {
+    flex-direction: column !important;
+    gap: 1rem !important; /* 16px */
+    text-align: center !important;
+  }
+
+  .quiet-hours-controls {
+    justify-content: center !important;
+  }
+
+  /* Mobile Scrollbar - More Visible */
+  .notification-settings-content::-webkit-scrollbar {
+    width: 10px !important;
+  }
+
+  .notification-settings-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-radius: 5px !important;
+  }
+
+  .notification-settings-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+    border-radius: 5px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .notification-settings-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+  }
+}
+
+/* Dark Mode Styles */
+body.dark-mode .notification-settings-modal {
+  background: #1E293B !important;
+}
+
+body.dark-mode .notification-settings-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .master-control-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .master-control-item:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .notification-category-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .notification-category-card:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .notification-toggle-item {
+  background: transparent !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .notification-toggle-item:hover {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .category-title,
+body.dark-mode .toggle-label {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .frequency-option label {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .frequency-option label:hover {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .quiet-hours-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .quiet-hours-card:hover {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Additional Dark Mode Styles for Text and Icons */
+body.dark-mode .notification-settings-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .notification-settings-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .notification-settings-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .notification-settings-header h2 {
+  color: #fff !important;
+}
+
+body.dark-mode .notification-settings-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .notification-settings-close-btn i {
+  color: #fff !important;
+}
+
+body.dark-mode .notification-settings-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .notification-settings-content h3 {
+  color: #F9FAFB !important;
+}
+
+/* Master Controls Dark Mode */
+body.dark-mode .master-controls-section {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .master-controls-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .master-control-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .master-control-item:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .master-control-icon {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .master-control-icon i {
+  color: #fff !important;
+}
+
+body.dark-mode .master-control-content h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .master-control-content p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .master-toggle-btn {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .master-toggle-btn:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+}
+
+body.dark-mode .master-toggle-btn.secondary {
+  background: transparent !important;
+  border-color: #475569 !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .master-toggle-btn.secondary:hover {
+  background: #334155 !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  color: #F9FAFB !important;
+}
+
+/* Notification Categories Dark Mode */
+body.dark-mode .notification-categories {
+  /* Already handled above */
+}
+
+body.dark-mode .notification-category-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .notification-category-card:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .category-icon {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .category-icon i {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .category-info h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .category-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .notification-toggle-item {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .notification-toggle-item:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .toggle-info i {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .toggle-info span {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .notification-toggle-switch {
+  background: #475569 !important;
+}
+
+body.dark-mode .notification-toggle-switch.active {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+}
+
+body.dark-mode .notification-toggle-slider {
+  background: #F9FAFB !important;
+}
+
+/* Notification Frequency Dark Mode */
+body.dark-mode .notification-frequency-section {
+  /* Section already handled */
+}
+
+body.dark-mode .notification-frequency-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .frequency-option label {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .frequency-option input[type="radio"]:checked + label {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .frequency-option label:hover {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(37, 99, 235, 0.15) !important;
+}
+
+body.dark-mode .frequency-content h5 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .frequency-content p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .frequency-option input[type="radio"] {
+  accent-color: #FF0050 !important; /* TikTok pink */
+}
+
+/* Quiet Hours Dark Mode */
+body.dark-mode .quiet-hours-section {
+  /* Section already handled */
+}
+
+body.dark-mode .quiet-hours-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .quiet-hours-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .quiet-hours-card:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .quiet-hours-info i {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .quiet-hours-content h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .quiet-hours-content p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .time-input-group label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .time-input-group input[type="time"] {
+  background: #475569 !important;
+  border-color: #64748B !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .time-input-group input[type="time"]:focus {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: #64748B !important;
+}
+
+body.dark-mode .quiet-hours-toggle {
+  /* Already handled by toggle switch styles */
+}
+
+/* Scrollbar Dark Mode */
+body.dark-mode .notification-settings-content::-webkit-scrollbar-track {
+  background: #334155 !important;
+}
+
+body.dark-mode .notification-settings-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .notification-settings-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1967 @@
+﻿/* Message Center Overlay */
+.message-center-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10020; /* Higher z-index to ensure it's on top */
+  padding: 20px;
+  cursor: pointer;
+}
+
+.message-center-modal {
+  background: #F5F7FA;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1200px;
+  height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  cursor: default;
+}
+
+/* Header - Blue Background */
+.message-center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+}
+
+.message-center-header h2 {
+  margin: 0;
+  color: #fff !important; /* White text on blue background */
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unread-badge {
+  background: #fff !important; /* White background - not blue */
+  color: #000 !important; /* Black text */
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+  border: 1px solid #E0F2FE; /* Light border for visibility */
+}
+
+.message-center-close-btn,
+.new-message-btn {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important; /* White on TikTok gradient background */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.message-center-close-btn i,
+.new-message-btn i {
+  color: #ffffff !important; /* White icon on TikTok gradient background */
+  font-size: 18px !important;
+}
+
+.message-center-close-btn:hover,
+.new-message-btn:hover {
+  /* Hover effect removed - no changes on hover */
+}
+
+/* Content */
+.message-center-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.message-sidebar {
+  width: 350px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  background: #E0F2FE;
+}
+
+.message-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 20px 0 20px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.message-alert.error {
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.conversations-loading,
+.conversations-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #0F172A;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.conversations-loading i {
+  color: #FF0050; /* TikTok pink */
+}
+
+.conversations-empty i {
+  color: #94A3B8;
+}
+
+.message-search {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  color: #A8A8A8;
+  font-size: 14px;
+  z-index: 1;
+}
+
+.message-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 24px;
+  color: #0F172A;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.message-search-input:focus {
+  outline: none;
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
+}
+
+.message-search-input::placeholder {
+  color: #A8A8A8;
+}
+
+/* Conversations List */
+.conversations-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.conversation-item:hover {
+  background: #F9FAFB;
+}
+
+.conversation-item.active {
+  background: #E0F2FE !important; /* Website light blue - no black */
+  border-left-color: #2563EB !important; /* Website primary blue - no red */
+}
+
+.conversation-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.conversation-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #00FF88;
+  border: 2px solid #F5F7FA;
+  border-radius: 50%;
+}
+
+.conversation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.conversation-header h4 {
+  margin: 0;
+  color: #0F172A;
+  font-size: 14px;
+  font-weight: 600;
+  truncate: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.conversation-time {
+  color: #A8A8A8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.conversation-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conversation-preview p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.unread-count {
+  background: #fff !important; /* White background - not blue */
+  color: #000 !important; /* Black text */
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  border: 1px solid #E0F2FE; /* Light border for visibility */
+}
+
+/* Chat Area */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #F5F7FA;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #E0F2FE;
+}
+
+.chat-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-user-details h3 {
+  margin: 0 0 2px 0;
+  color: #0F172A;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.chat-user-details p {
+  margin: 0;
+  color: #A8A8A8;
+  font-size: 12px;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-action-btn {
+  width: 36px;
+  height: 36px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 50%;
+  color: #A8A8A8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chat-action-btn:hover {
+  background: #E0F2FE !important; /* Website light blue */
+  color: #FF0050 !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
+}
+
+/* Messages */
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-loading,
+.chat-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #0F172A;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-loading i,
+.chat-empty i {
+  font-size: 24px;
+  color: #FF0050; /* TikTok pink */
+}
+
+.chat-empty i {
+  color: #94A3B8;
+}
+
+.message {
+  display: flex;
+  max-width: 70%;
+}
+
+.message.sent {
+  align-self: flex-end;
+}
+
+.message.received {
+  align-self: flex-start;
+}
+
+.message-content {
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.message.sent .message-content {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
+
+.message.received .message-content {
+  background: #F9FAFB;
+  color: #0F172A;
+  border-bottom-left-radius: 6px;
+  border: 1px solid #E0F2FE;
+}
+
+.message-content p {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Message Input */
+.message-input-form {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #E0F2FE;
+}
+
+.message-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 24px;
+  transition: all 0.3s ease;
+}
+
+.message-input-container:focus-within {
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
+}
+
+.attachment-btn,
+.emoji-btn {
+  background: none;
+  border: none;
+  color: #A8A8A8;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.attachment-btn:hover,
+.emoji-btn:hover {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+.message-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #0F172A;
+  font-size: 14px;
+  outline: none;
+}
+
+.message-input::placeholder {
+  color: #A8A8A8;
+}
+
+.send-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  transform: scale(1.1);
+}
+
+.send-btn:disabled {
+  background: #E0F2FE;
+  color: #A8A8A8;
+  cursor: not-allowed;
+}
+
+/* No Chat Selected */
+.no-chat-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+}
+
+.no-chat-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.no-chat-selected h3 {
+  margin: 0 0 8px 0;
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.no-chat-selected p {
+  margin: 0 0 24px 0;
+  color: #A8A8A8;
+  font-size: 14px;
+}
+
+.start-new-chat-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border: none;
+  border-radius: 24px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-new-chat-btn:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  transform: translateY(-2px);
+}
+
+/* New Message Modal */
+.new-message-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10010;
+  padding: 20px;
+}
+
+.new-message-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+}
+
+.new-message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+}
+
+.new-message-header h3 {
+  margin: 0;
+  color: #ffffff !important; /* White text on TikTok gradient background */
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.new-message-close {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important; /* White on TikTok gradient background */
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.new-message-close i {
+  color: #ffffff !important; /* White icon */
+  font-size: 16px !important;
+}
+
+.new-message-close:hover {
+  /* Hover effect removed - no changes on hover */
+}
+
+.new-message-body {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.user-search {
+  margin-bottom: 24px;
+}
+
+.user-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  color: #0F172A;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.user-search-input:focus {
+  outline: none;
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
+}
+
+.suggested-users h4 {
+  margin: 0 0 16px 0;
+  color: #0F172A;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-item:hover {
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.1) !important; /* Light pink background */
+}
+
+.user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0F172A;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.verified-icon {
+  color: #FF0050 !important; /* TikTok pink */
+  font-size: 12px;
+}
+
+.user-details {
+  color: #A8A8A8;
+  font-size: 12px;
+}
+
+.message-user-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.message-user-btn:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  transform: scale(1.1);
+}
+
+/* Scrollbar */
+.conversations-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.new-message-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conversations-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track,
+.new-message-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.conversations-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.new-message-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border-radius: 2px;
+}
+
+/* Small Phones (≤ 375px) - iPhone SE, small Android */
+@media (max-width: 23.4375rem) {
+  .message-center-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  .message-center-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  .message-center-header {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .message-center-header h2 {
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .message-center-close-btn,
+  .new-message-btn {
+    width: 2rem !important; /* 32px */
+    height: 2rem !important;
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .unread-badge {
+    font-size: 0.625rem !important; /* 10px */
+    padding: 0.125rem 0.375rem !important; /* 2px 6px */
+    min-width: 1.125rem !important; /* 18px */
+  }
+
+  .message-center-content {
+    flex-direction: column;
+    height: calc(100vh - 3.5rem);
+    overflow: hidden;
+  }
+
+  .message-sidebar {
+    width: 100% !important;
+    height: 100%;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    background: #F5F7FA;
+  }
+
+  .message-sidebar.show {
+    display: flex !important;
+  }
+
+  .message-search {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+  }
+
+  .message-search-input {
+    padding: 0.625rem 0.75rem 0.625rem 2.5rem !important; /* 10px 12px 10px 40px */
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .search-icon {
+    left: 0.75rem !important; /* 12px */
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .conversations-list {
+    padding: 0.25rem 0 !important; /* 4px 0 */
+  }
+
+  .conversation-item {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .conversation-avatar {
+    width: 2.5rem !important; /* 40px */
+    height: 2.5rem !important;
+  }
+
+  .conversation-header h4 {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .conversation-time {
+    font-size: 0.625rem !important; /* 10px */
+  }
+
+  .conversation-preview p {
+    font-size: 0.6875rem !important; /* 11px */
+  }
+
+  .unread-count {
+    font-size: 0.5625rem !important; /* 9px */
+    padding: 0.125rem 0.375rem !important; /* 2px 6px */
+    min-width: 0.875rem !important; /* 14px */
+  }
+
+  .chat-area {
+    width: 100% !important;
+    height: 100%;
+  }
+
+  .chat-header {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .chat-avatar {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+  }
+
+  .chat-user-details h3 {
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .chat-user-details p {
+    font-size: 0.6875rem !important; /* 11px */
+  }
+
+  .chat-action-btn {
+    width: 1.875rem !important; /* 30px */
+    height: 1.875rem !important;
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .chat-messages {
+    padding: 1rem !important; /* 16px */
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .message {
+    max-width: 85% !important;
+  }
+
+  .message-content {
+    padding: 0.625rem 0.75rem !important; /* 10px 12px */
+    border-radius: 0.875rem !important; /* 14px */
+  }
+
+  .message-content p {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .message-time {
+    font-size: 0.5625rem !important; /* 9px */
+  }
+
+  .message-input-form {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #E0F2FE;
+  }
+
+  .message-input-container {
+    padding: 0.625rem 0.75rem !important; /* 10px 12px */
+    gap: 0.5rem !important; /* 8px */
+  }
+
+  .message-input {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .attachment-btn,
+  .emoji-btn {
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .send-btn {
+    width: 1.75rem !important; /* 28px */
+    height: 1.75rem !important;
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .no-chat-selected {
+    padding: 1.5rem !important; /* 24px */
+  }
+
+  .no-chat-icon {
+    width: 3.75rem !important; /* 60px */
+    height: 3.75rem !important;
+    font-size: 1.5rem !important; /* 24px */
+    margin-bottom: 1rem !important; /* 16px */
+  }
+
+  .no-chat-selected h3 {
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .no-chat-selected p {
+    font-size: 0.8125rem !important; /* 13px */
+    margin-bottom: 1rem !important; /* 16px */
+  }
+
+  .start-new-chat-btn {
+    padding: 0.75rem 1.25rem !important; /* 12px 20px */
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .new-message-overlay {
+    padding: 0 !important;
+  }
+
+  .new-message-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  .new-message-header {
+    padding: 0.75rem 1rem !important; /* 12px 16px */
+  }
+
+  .new-message-header h3 {
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .new-message-close {
+    width: 1.75rem !important; /* 28px */
+    height: 1.75rem !important;
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .new-message-body {
+    padding: 1rem !important; /* 16px */
+    max-height: calc(100vh - 3.5rem);
+  }
+
+  .user-search {
+    margin-bottom: 1rem !important; /* 16px */
+  }
+
+  .user-search-input {
+    padding: 0.625rem 0.75rem !important; /* 10px 12px */
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .suggested-users h4 {
+    font-size: 0.875rem !important; /* 14px */
+    margin-bottom: 0.75rem !important; /* 12px */
+  }
+
+  .user-item {
+    padding: 0.75rem !important; /* 12px */
+    gap: 0.75rem !important; /* 12px */
+  }
+
+  .user-avatar {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+  }
+
+  .user-name {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .user-details {
+    font-size: 0.6875rem !important; /* 11px */
+  }
+
+  .message-user-btn {
+    width: 1.75rem !important; /* 28px */
+    height: 1.75rem !important;
+    font-size: 0.75rem !important; /* 12px */
+  }
+}
+
+/* Regular Phones (376px–480px) */
+@media (min-width: 23.5rem) and (max-width: 30rem) {
+  .message-center-overlay {
+    padding: 0.5rem !important; /* 8px */
+  }
+
+  .message-center-modal {
+    width: 98% !important;
+    max-width: 98% !important;
+    height: 98vh !important;
+    border-radius: 0.75rem !important; /* 12px */
+  }
+
+  .message-center-header {
+    padding: 1rem 1.25rem !important; /* 16px 20px */
+  }
+
+  .message-center-header h2 {
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .message-center-close-btn,
+  .new-message-btn {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+  }
+
+  .message-sidebar {
+    width: 100% !important;
+    display: none;
+  }
+
+  .message-sidebar.show {
+    display: flex !important;
+  }
+
+  .chat-area {
+    width: 100% !important;
+  }
+
+  .conversation-item {
+    padding: 0.875rem 1rem !important; /* 14px 16px */
+  }
+
+  .chat-messages {
+    padding: 1.25rem !important; /* 20px */
+  }
+
+  .message {
+    max-width: 80% !important;
+  }
+
+  .message-input-form {
+    padding: 1rem !important; /* 16px */
+  }
+
+  .new-message-modal {
+    width: 96% !important;
+    max-width: 96% !important;
+  }
+}
+
+/* Large Phones / Phablets (481px–600px) */
+@media (min-width: 30.0625rem) and (max-width: 37.5rem) {
+  .message-center-modal {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+
+  .message-sidebar {
+    width: 100% !important;
+    display: none;
+  }
+
+  .message-sidebar.show {
+    display: flex !important;
+  }
+
+  .chat-area {
+    width: 100% !important;
+  }
+
+  .message {
+    max-width: 75% !important;
+  }
+}
+
+/* Tablets (601px–900px) */
+@media (min-width: 37.5625rem) and (max-width: 56.25rem) {
+  .message-center-modal {
+    width: 92% !important;
+    max-width: 1000px !important;
+  }
+
+  .message-sidebar {
+    width: 320px !important;
+  }
+
+  .message {
+    max-width: 70% !important;
+  }
+}
+
+/* General Mobile (≤ 768px) */
+@media (max-width: 48rem) {
+  .message-center-overlay {
+    padding: 0;
+  }
+
+  .message-center-modal {
+    border-radius: 0;
+    height: 100vh;
+  }
+
+  .message-sidebar {
+    width: 100%;
+    display: none;
+  }
+
+  .message-sidebar.show {
+    display: flex;
+  }
+
+  .chat-area {
+    width: 100%;
+  }
+
+  .new-message-overlay {
+    padding: 0;
+  }
+
+  .new-message-modal {
+    border-radius: 0;
+    max-height: 100vh;
+  }
+}
+
+/* Dark Mode Styles */
+body.dark-mode .message-center-modal {
+  background: #1E293B !important;
+}
+
+body.dark-mode .message-sidebar {
+  background: #1E293B !important;
+}
+
+body.dark-mode .message-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .conversation-item {
+  background: transparent !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .conversation-item:hover {
+  background: rgba(37, 99, 235, 0.1) !important;
+}
+
+body.dark-mode .conversation-item.active {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .chat-area {
+  background: #1E293B !important;
+}
+
+body.dark-mode .chat-messages {
+  background: #1E293B !important;
+}
+
+body.dark-mode .message {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message.sent .message-content {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .message-input-container {
+  background: #334155 !important;
+}
+
+body.dark-mode .message-input {
+  background: #475569 !important;
+  border-color: #64748B !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .send-btn {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .new-message-modal {
+  background: #1E293B !important;
+}
+
+body.dark-mode .user-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .user-item:hover {
+  border-color: #2563EB !important;
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .message-center-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .message-center-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+}
+
+body.dark-mode .message-sidebar {
+  background: #1E293B !important;
+  border-right-color: #334155 !important;
+}
+
+body.dark-mode .message-search-section {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .conversations-list {
+  background: #1E293B !important;
+}
+
+body.dark-mode .conversation-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .conversation-preview {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .conversation-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .chat-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .chat-user-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .chat-user-status {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .message-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .message-input-form {
+  background: #334155 !important;
+  border-top-color: #475569 !important;
+}
+
+body.dark-mode .attachment-btn,
+body.dark-mode .emoji-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .attachment-btn:hover,
+body.dark-mode .emoji-btn:hover {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .chat-action-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .chat-action-btn:hover {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .new-message-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .new-message-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+}
+
+body.dark-mode .new-message-header h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .new-message-body {
+  background: #1E293B !important;
+}
+
+body.dark-mode .suggested-users h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-details {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .verified-icon {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .no-chat-container {
+  background: #1E293B !important;
+}
+
+body.dark-mode .no-chat-icon {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+}
+
+body.dark-mode .no-chat-text {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .start-new-chat-btn {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .start-new-chat-btn:hover {
+  background: #38BDF8 !important;
+}
+
+/* Additional Dark Mode Styles */
+body.dark-mode .message-center-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .message-center-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .message-alert {
+  margin: 12px 20px 0 20px;
+  color: #FCA5A5 !important;
+}
+
+body.dark-mode .message-alert.error {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+body.dark-mode .conversations-loading,
+body.dark-mode .conversations-empty {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .conversations-empty i {
+  color: #64748B !important;
+}
+
+body.dark-mode .message-center-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .message-sidebar {
+  background: #1E293B !important;
+  border-right-color: #334155 !important;
+}
+
+body.dark-mode .message-search {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .search-icon {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .message-search-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .conversation-item {
+  border-left-color: transparent !important;
+}
+
+body.dark-mode .conversation-item:hover {
+  background: #334155 !important;
+}
+
+body.dark-mode .conversation-item.active {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-left-color: #2563EB !important;
+}
+
+body.dark-mode .conversation-header h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .conversation-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .conversation-preview p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .unread-count {
+  background: #2563EB !important;
+  color: #fff !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .online-indicator {
+  border-color: #1E293B !important;
+}
+
+body.dark-mode .chat-area {
+  background: #1E293B !important;
+}
+
+body.dark-mode .chat-header {
+  background: #334155 !important;
+  border-bottom-color: #475569 !important;
+}
+
+body.dark-mode .chat-user-details h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .chat-user-details p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .chat-action-btn {
+  background: #475569 !important;
+  border-color: #64748B !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .chat-action-btn:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #2563EB !important;
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .message.received .message-content {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .message.sent .message-content {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .message-time {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body.dark-mode .message.received .message-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .message-input-form {
+  background: #334155 !important;
+  border-top-color: #475569 !important;
+}
+
+body.dark-mode .message-input-container {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .message-input-container:focus-within {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .message-input {
+  background: transparent !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .attachment-btn,
+body.dark-mode .emoji-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .attachment-btn:hover,
+body.dark-mode .emoji-btn:hover {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .send-btn:disabled {
+  background: #475569 !important;
+  color: #64748B !important;
+}
+
+body.dark-mode .no-chat-selected {
+  background: #1E293B !important;
+}
+
+body.dark-mode .no-chat-selected h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .no-chat-selected p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .no-chat-icon {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .new-message-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .new-message-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .new-message-header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+}
+
+body.dark-mode .new-message-header h3 {
+  color: #fff !important;
+}
+
+body.dark-mode .new-message-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .new-message-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .new-message-body {
+  background: #1E293B !important;
+}
+
+body.dark-mode .user-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-search-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .user-search-input:focus {
+  border-color: #2563EB !important;
+  background: #475569 !important;
+}
+
+body.dark-mode .suggested-users h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .user-item:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .user-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-details {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .verified-icon {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+body.dark-mode .message-user-btn {
+  background: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .message-user-btn:hover {
+  background: #38BDF8 !important;
+}
+
+/* Scrollbar Dark Mode */
+body.dark-mode .conversations-list::-webkit-scrollbar-track,
+body.dark-mode .chat-messages::-webkit-scrollbar-track,
+body.dark-mode .new-message-body::-webkit-scrollbar-track {
+  background: #334155 !important;
+}
+
+body.dark-mode .conversations-list::-webkit-scrollbar-thumb,
+body.dark-mode .chat-messages::-webkit-scrollbar-thumb,
+body.dark-mode .new-message-body::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .conversations-list::-webkit-scrollbar-thumb:hover,
+body.dark-mode .chat-messages::-webkit-scrollbar-thumb:hover,
+body.dark-mode .new-message-body::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+/* Additional comprehensive dark mode styles for better visibility */
+body.dark-mode .message-center-modal * {
+  color: inherit;
+}
+
+body.dark-mode .message-center-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .message-content p {
+  color: inherit !important;
+}
+
+body.dark-mode .chat-loading,
+body.dark-mode .chat-empty {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .chat-loading i {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .chat-empty i {
+  color: #64748B !important;
+}
+
+body.dark-mode .unread-badge {
+  background: #2563EB !important;
+  color: #fff !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .message-center-header h2 {
+  color: #fff !important;
+}
+
+body.dark-mode .message-center-close-btn,
+body.dark-mode .new-message-btn {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .message-center-close-btn:hover,
+body.dark-mode .new-message-btn:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-mode .message-center-close-btn i,
+body.dark-mode .new-message-btn i {
+  color: #fff !important;
+}
+
+body.dark-mode .message-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message-search-input:focus {
+  border-color: #FF0050 !important;
+  background: #334155 !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2) !important;
+}
+
+body.dark-mode .message-search-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .search-icon {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .conversation-header h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .conversation-preview p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .message-input-form {
+  background: #334155 !important;
+  border-top-color: #475569 !important;
+}
+
+body.dark-mode .message-input-container {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .message-input {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .send-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  transform: scale(1.05) !important;
+}
+
+body.dark-mode .account-settings-overlay.message-center-open .message-center-modal,
+body.dark-mode .account-settings-modal.message-center-open .message-center-modal {
+  background: #1E293B !important;
+}
+
+/* Full Screen Message Center when opened from Account Settings */
+/* Desktop/Laptop: Full page Message Center modal when Account Settings is open */
+@media (min-width: 64.0625rem) {
+  /* When Message Center is opened from Account Settings - use class selector */
+  .account-settings-overlay.message-center-open .message-center-overlay,
+  .account-settings-modal.message-center-open .message-center-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-modal,
+  .account-settings-modal.message-center-open .message-center-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-header,
+  .account-settings-modal.message-center-open .message-center-header {
+    padding: 1.5rem 2rem !important;
+    min-height: 4rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-header h2,
+  .account-settings-modal.message-center-open .message-center-header h2 {
+    font-size: 1.75rem !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-content,
+  .account-settings-modal.message-center-open .message-center-content {
+    flex: 1 !important;
+    overflow: hidden !important;
+    display: flex !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-sidebar,
+  .account-settings-modal.message-center-open .message-sidebar {
+    width: 25rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay.message-center-open .chat-area,
+  .account-settings-modal.message-center-open .chat-area {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .account-settings-overlay.message-center-open .chat-header,
+  .account-settings-modal.message-center-open .chat-header {
+    padding: 1.5rem 2rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .account-settings-overlay.message-center-open .chat-messages,
+  .account-settings-modal.message-center-open .chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.5rem 2rem !important;
+  }
+
+  .account-settings-overlay.message-center-open .chat-input-area,
+  .account-settings-modal.message-center-open .chat-input-area {
+    padding: 1.5rem 2rem !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Tablet: Also full page */
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
+  .account-settings-overlay.message-center-open .message-center-overlay,
+  .account-settings-modal.message-center-open .message-center-overlay,
+  body:has(.account-settings-overlay) .message-center-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-modal,
+  .account-settings-modal.message-center-open .message-center-modal,
+  body:has(.account-settings-overlay) .message-center-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-header,
+  .account-settings-modal.message-center-open .message-center-header,
+  body:has(.account-settings-overlay) .message-center-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
+  }
+
+  .account-settings-overlay.message-center-open .message-center-content,
+  .account-settings-modal.message-center-open .message-center-content,
+  body:has(.account-settings-overlay) .message-center-content {
+    flex: 1 !important;
+    overflow: hidden !important;
+    display: flex !important;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

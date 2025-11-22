@@ -1,0 +1,135 @@
+.system-notification-banner-container {
+  position: fixed;
+  top: 1rem !important; /* Position at top */
+  left: 50% !important; /* Center horizontally */
+  transform: translateX(-50%) !important; /* Perfect center alignment */
+  right: auto !important;
+  z-index: 10001 !important; /* Above navbar (10000) */
+  padding: 12px 20px;
+  pointer-events: none;
+  max-width: 500px; /* Limit width so it doesn't take full width */
+  width: calc(100% - 2rem); /* Responsive width with padding */
+}
+
+.system-notification-banner {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: auto;
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto; /* Center the banner */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.system-notification-banner.info {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.notification-content i {
+  color: #fff;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notification-text {
+  flex: 1;
+}
+
+.notification-text h4 {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.notification-text p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.notification-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.notification-close-btn:hover {
+  /* Hover effect removed - no changes on hover */
+}
+
+.notification-close-btn i {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .system-notification-banner-container {
+    padding: 8px 12px;
+  }
+
+  .system-notification-banner {
+    padding: 10px 12px;
+  }
+
+  .notification-text h4 {
+    font-size: 13px;
+  }
+
+  .notification-text p {
+    font-size: 12px;
+  }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .system-notification-banner {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .system-notification-banner.info {
+  background: rgba(30, 41, 59, 0.95) !important;
+}
+
+body.dark-mode .notification-content i {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .notification-text h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .notification-text p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .notification-close-btn {
+  color: rgba(203, 213, 225, 0.6) !important;
+}
+
+body.dark-mode .notification-close-btn:hover {
+  color: #F9FAFB !important;
+}
+

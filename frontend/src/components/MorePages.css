@@ -1,0 +1,666 @@
+.more-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;   /* change this */
+  width: 100%;
+  background: #f5f7fa;
+  box-sizing: border-box;
+}
+
+
+.more-page__container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
+}
+
+.more-page__header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.more-page__header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.more-page__close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.more-page__close:hover {
+  /* Hover effect removed - no changes on hover */
+}
+
+.more-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  background: #f5f7fa;
+}
+
+.more-page__toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.more-page__toolbar-sync {
+  font-size: 0.9rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.more-page__toolbar-sync--live {
+  color: #FF0050; /* TikTok pink */
+}
+
+.more-page__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.more-page__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.more-page__button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.more-page__button--primary {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(255, 0, 80, 0.3); /* TikTok pink shadow */
+}
+
+.more-page__button--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(255, 0, 80, 0.33); /* TikTok pink shadow */
+}
+
+.more-page__button--ghost {
+  background: rgba(15, 23, 42, 0.05);
+  color: #1f2937;
+}
+
+.more-page__button--ghost:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.more-page__banner {
+  padding: 0.9rem 1.5rem;
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
+  color: #1d4ed8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 0, 80, 0.2); /* TikTok pink border */
+}
+
+.more-page__banner-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.more-page__banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.more-page__banner--warning {
+  background: rgba(248, 113, 113, 0.1);
+  color: #b91c1c;
+  border-bottom-color: rgba(248, 113, 113, 0.2);
+}
+
+.more-page__content {
+  flex: 1;
+  padding: 1.75rem 2rem;
+  background: #f8fafc;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.more-page__grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.more-page__grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.more-page__grid--three {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.more-page__card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.more-page__card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.more-page__card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.more-page__card p {
+  margin: 0;
+  color: #64748b;
+}
+
+.more-page__stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.more-page__stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #FF0050; /* TikTok pink */
+}
+
+.more-page__stat-label {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.more-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.more-page__list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.more-page__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #FF0050; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.more-page__section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.more-page__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.more-page__empty i {
+  font-size: 2rem;
+  color: #FF0050; /* TikTok pink */
+}
+
+.more-page__tabs {
+  display: flex;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  padding: 0.25rem;
+  gap: 0.5rem;
+  width: fit-content;
+}
+
+.more-page__tab {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.4rem;
+  background: transparent;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.more-page__tab--active {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(255, 0, 80, 0.3); /* TikTok pink shadow */
+}
+
+.more-page__tab:hover {
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
+}
+
+.more-page__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.more-page__timeline-item {
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.more-page__timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #FF0050; /* TikTok pink */
+  box-shadow: 0 0 0 4px rgba(255, 0, 80, 0.15); /* TikTok pink shadow */
+}
+
+.more-page__timeline-item::after {
+  content: '';
+  position: absolute;
+  left: 0.84rem;
+  top: 1.5rem;
+  bottom: -1.25rem;
+  width: 2px;
+  background: rgba(255, 0, 80, 0.2); /* TikTok pink */
+}
+
+.more-page__timeline-item:last-child::after {
+  display: none;
+}
+
+.more-page__tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.more-page__tag {
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
+  color: #FF0050; /* TikTok pink */
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.more-page__faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.more-page__faq-item {
+  background: rgba(15, 23, 42, 0.03);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.more-page__faq-item h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.more-page__faq-item p {
+  margin: 0;
+  color: #64748b;
+}
+
+.more-page__cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Tablet (≤ 768px) */
+@media (max-width: 48rem) {
+  .more-page__header {
+    padding: 1rem 1.25rem;
+  }
+
+  .more-page__header h1 {
+    font-size: 1.5rem;
+  }
+
+  .more-page__close {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .more-page__toolbar {
+    padding: 1rem 1.25rem 0.85rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .more-page__toolbar-info,
+  .more-page__toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .more-page__content {
+    padding: 1.25rem;
+  }
+
+  .more-page__grid--two,
+  .more-page__grid--three {
+    grid-template-columns: 1fr;
+  }
+
+  .more-page__cards-row {
+    grid-template-columns: 1fr;
+  }
+
+  .more-page__button {
+    min-height: 44px;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .more-page__tab {
+    min-height: 44px;
+    padding: 0.5rem 1.2rem;
+  }
+}
+
+/* Mobile (≤ 480px) */
+@media (max-width: 30rem) {
+  .more-page__header {
+    padding: 0.875rem 1rem;
+  }
+
+  .more-page__header h1 {
+    font-size: 1.25rem;
+    gap: 0.5rem;
+  }
+
+  .more-page__close {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .more-page__toolbar {
+    padding: 0.875rem 1rem 0.75rem;
+    gap: 0.625rem;
+  }
+
+  .more-page__toolbar-sync {
+    font-size: 0.85rem;
+  }
+
+  .more-page__content {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .more-page__card {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .more-page__card h2 {
+    font-size: 1.125rem;
+  }
+
+  .more-page__card h3 {
+    font-size: 1rem;
+  }
+
+  .more-page__stat-value {
+    font-size: 1.5rem;
+  }
+
+  .more-page__stat-label {
+    font-size: 0.875rem;
+  }
+
+  .more-page__button {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .more-page__banner {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .more-page__banner-content,
+  .more-page__banner-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .more-page__tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .more-page__tab {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .more-page__section-title {
+    font-size: 1.05rem;
+  }
+
+  .more-page__list-item {
+    padding: 0.875rem;
+  }
+
+  .more-page__timeline-item {
+    padding-left: 1.5rem;
+  }
+
+  .more-page__faq-item {
+    padding: 0.875rem;
+  }
+
+  .more-page__faq-item h4 {
+    font-size: 0.95rem;
+  }
+
+  .more-page__faq-item p {
+    font-size: 0.875rem;
+  }
+
+  .more-page__empty {
+    padding: 1.5rem 0.875rem;
+  }
+
+  .more-page__empty i {
+    font-size: 1.75rem;
+  }
+}
+
+/* Small Mobile (≤ 375px) */
+@media (max-width: 23.4375rem) {
+  .more-page__header {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .more-page__header h1 {
+    font-size: 1.125rem;
+  }
+
+  .more-page__toolbar {
+    padding: 0.75rem 0.875rem 0.625rem;
+  }
+
+  .more-page__content {
+    padding: 0.875rem;
+    gap: 1rem;
+  }
+
+  .more-page__card {
+    padding: 1rem;
+  }
+
+  .more-page__card h2 {
+    font-size: 1rem;
+  }
+
+  .more-page__stat-value {
+    font-size: 1.375rem;
+  }
+
+  .more-page__button {
+    padding: 0.55rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .more-page__banner {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .more-page__tab {
+    padding: 0.45rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+}
+
+body.dark-mode .more-page {
+  background: #0f172a;
+}
+
+body.dark-mode .more-page__header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+body.dark-mode .more-page__close {
+  background: rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+}
+
+body.dark-mode .more-page__close:hover {
+  background: rgba(148, 163, 184, 0.3);
+}
+
+body.dark-mode .more-page__toolbar {
+  background: #0f172a;
+}
+
+body.dark-mode .more-page__toolbar-info span {
+  color: #cbd5f5;
+}
+
+body.dark-mode .more-page__button--ghost {
+  background: rgba(148, 163, 184, 0.12);
+  color: #bfdbfe;
+}
+
+body.dark-mode .more-page__content {
+  background: #111d38;
+}
+
+body.dark-mode .more-page__card {
+  background: #16213f;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.15);
+}
+
+body.dark-mode .more-page__card h2,
+body.dark-mode .more-page__card h3 {
+  color: #f8fafc;
+}
+
+body.dark-mode .more-page__card p,
+body.dark-mode .more-page__stat-label {
+  color: #cbd5f5;
+}
+
+body.dark-mode .more-page__list-item,
+body.dark-mode .more-page__faq-item {
+  background: rgba(148, 163, 184, 0.12);
+}
+

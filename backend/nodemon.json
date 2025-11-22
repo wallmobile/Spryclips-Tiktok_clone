@@ -1,0 +1,38 @@
+{
+  "watch": [
+    "routes",
+    "models",
+    "middleware",
+    "utils",
+    "jobs",
+    "socket",
+    "index.js"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**",
+    "uploads/**",
+    "processed/**",
+    "*.log",
+    ".git/**",
+    "package-lock.json",
+    "test/**",
+    "tests/**",
+    "*.test.js",
+    "*.spec.js",
+    ".env",
+    "*.md"
+  ],
+  "exec": "node index.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 2000,
+  "verbose": false,
+  "restartable": "rs",
+  "colours": true,
+  "runOnChangeOnly": false,
+  "signal": "SIGTERM",
+  "killTimeout": 5000
+}
+

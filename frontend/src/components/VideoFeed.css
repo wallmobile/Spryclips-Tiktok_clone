@@ -1,0 +1,83 @@
+﻿.video-feed {
+  flex: 1;
+  height: calc(100vh - 60px);
+  margin-left: 280px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+  position: relative;
+  background: #F9FAFB;
+}
+
+.video-feed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.video-feed::-webkit-scrollbar-track {
+  background: #F9FAFB;
+}
+
+.video-feed::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 10px;
+}
+
+.video-feed::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+.video-container {
+  width: 100%;
+  max-width: 100%;
+  height: calc(100vh - 60px);
+  position: relative;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .video-feed {
+  background: #0F172A !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,923 @@
+
+.user-verification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: flex-start !important; /* Changed from center to flex-start for full page scroll */
+  justify-content: center;
+  z-index: 10030; /* Higher than ManageAccount (10020) */
+  padding: 0; /* Changed to 0 for mobile */
+  box-sizing: border-box;
+  overflow-x: hidden !important;
+  overflow-y: auto !important; /* Added !important for full page scroll */
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+}
+
+.user-verification-modal {
+  background: #ffffff; /* White background */
+  border-radius: 20px;
+  width: 100%;
+  max-width: 100vw;
+  max-height: none !important; /* Changed from 90vh to none for full page scroll */
+  height: auto !important; /* Added for full page scroll */
+  min-height: 100vh; /* Added for full height */
+  display: flex;
+  flex-direction: column;
+  overflow: visible !important; /* Changed from hidden to visible for full page scroll */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.verification-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  padding-right: 4rem !important; /* Added padding-right for close button space */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Changed from dark border to light */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  flex-shrink: 0;
+  position: relative !important; /* Added for absolute positioning of close button */
+  min-height: 3.5rem; /* Added min-height for better visibility */
+}
+
+.verification-close {
+  background: rgba(255, 0, 80, 0.95) !important; /* TikTok pink background */
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+  font-size: 1.125rem !important; /* 18px */
+  cursor: pointer;
+  width: 2.5rem !important; /* 40px */
+  height: 2.5rem !important; /* 40px */
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
+  z-index: 10001 !important;
+  position: absolute !important; /* Changed from relative to absolute */
+  top: 1rem !important; /* 16px from top */
+  right: 1rem !important; /* 16px from right */
+  opacity: 1 !important; /* Ensure fully visible */
+  visibility: visible !important; /* Ensure visible */
+  pointer-events: auto !important; /* Ensure clickable */
+}
+
+.verification-close:hover {
+  /* Hover effect removed - no changes on hover */
+}
+
+.verification-close i {
+  font-size: 1rem !important; /* 16px */
+  color: #FFFFFF !important;
+}
+
+.verification-header h2 {
+  color: #FFFFFF !important; /* White text on blue gradient */
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.verification-header-placeholder {
+  display: none; /* Hidden since close button is now absolute positioned */
+}
+
+.verification-content {
+  flex: 1 1 auto !important;
+  overflow-y: visible !important; /* Changed from auto to visible - no internal scroll */
+  overflow-x: hidden !important;
+  padding: 24px;
+  padding-bottom: 2.5rem; /* 40px */
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* Scrollbar - Now on overlay for full page scroll */
+.user-verification-overlay::-webkit-scrollbar {
+  width: 12px !important; /* Increased width for better visibility */
+}
+
+.user-verification-overlay::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2) !important; /* Darker track for better visibility */
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.user-verification-overlay::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors */
+  border-radius: 6px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important; /* Thicker border for better visibility */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Added shadow for better visibility */
+}
+
+.user-verification-overlay::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  border: 2px solid rgba(255, 255, 255, 0.5) !important; /* Brighter border on hover */
+  box-shadow: 0 4px 8px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
+}
+
+/* Hide content scrollbar since we're using overlay scroll */
+.verification-content::-webkit-scrollbar {
+  width: 0px; /* Hidden since we're using overlay scroll */
+}
+
+.verification-content::-webkit-scrollbar-track {
+  display: none;
+}
+
+.verification-content::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+.verification-status-banner {
+  background: rgba(255, 255, 255, 0.9); /* Light background */
+  border: 2px solid;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.verification-status-banner i {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.status-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.status-info p {
+  margin: 0;
+  color: #64748B; /* Light gray for text on light background */
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.status-reason {
+  margin-top: 8px;
+  color: #1F2937;
+  font-weight: 600;
+}
+
+.status-meta {
+  margin-top: 4px;
+  color: #6B7280;
+  font-size: 13px;
+}
+
+.verification-loading,
+.verification-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  color: #1E3A8A;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.verification-error {
+  background: rgba(254, 242, 242, 0.92);
+  border-color: #FECACA;
+  color: #991B1B;
+}
+
+.verification-loading i,
+.verification-error i {
+  font-size: 24px;
+}
+
+.verification-preview {
+  margin-bottom: 32px;
+}
+
+.verification-badge-preview {
+  background: #FFFFFF; /* White background */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-preview {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.profile-preview img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid #FFFFFF;
+  object-fit: cover;
+}
+
+.verified-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border-radius: 50%;
+  border: 3px solid #FFFFFF; /* White border on light background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 16px;
+}
+
+.verification-badge-preview h3 {
+  color: #0F172A; /* Dark text on light background */
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.verification-badge-preview p {
+  color: #64748B; /* Light gray text on light background */
+  font-size: 14px;
+  margin: 0;
+}
+
+.verification-requirements {
+  margin-bottom: 32px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.verification-requirements h3 {
+  color: #0F172A; /* Dark text on light background */
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+}
+
+.requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.requirement-card {
+  background: #FFFFFF; /* White background */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.requirement-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #FFFFFF;
+  font-size: 24px;
+}
+
+.requirement-card h4 {
+  color: #0F172A; /* Dark text on light background */
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.requirement-card p {
+  color: #64748B; /* Light gray text on light background */
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.verification-apply {
+  text-align: center;
+}
+
+.apply-verification-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border: none;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.apply-verification-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
+}
+
+.apply-hint {
+  color: #64748B; /* Light gray text on light background */
+  font-size: 14px;
+  margin: 16px 0 0 0;
+}
+
+.verification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #0F172A; /* Dark text on light background */
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: #FFFFFF; /* White background */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #0F172A; /* Dark text */
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #FF0050 !important; /* TikTok pink on focus */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink shadow */
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #94A3B8; /* Light gray placeholder */
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.uploaded-documents {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uploaded-document {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid #E0F2FE;
+  border-radius: 12px;
+  background: #FFFFFF;
+  gap: 16px;
+}
+
+.uploaded-document select {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  padding: 6px 14px;
+  font-size: 13px;
+  background: rgba(255, 0, 80, 0.05) !important; /* TikTok pink light background */
+  cursor: pointer;
+  color: #1F2937;
+}
+
+.documents-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #64748B;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancel-btn,
+.submit-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn {
+  background: #F1F5F9; /* Light gray background */
+  color: #0F172A; /* Dark text */
+  border: 1px solid #E0F2FE;
+}
+
+.cancel-btn:hover {
+  background: #E2E8F0; /* Darker gray on hover */
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  color: #FFFFFF;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
+}
+
+.cancel-btn:disabled,
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.submitted-documents {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(255, 0, 80, 0.05) !important; /* TikTok pink light background */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+}
+
+.submitted-documents h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.submitted-documents ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.submitted-documents li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #1F2937;
+  font-size: 14px;
+}
+
+.submitted-documents li i {
+  color: #FF0050 !important; /* TikTok pink */
+}
+
+.submitted-documents a {
+  color: #FF0050 !important; /* TikTok pink */
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.submitted-documents a:hover {
+  text-decoration: underline;
+}
+
+/* Small Phones (≤ 375px) - iPhone SE, small Android */
+@media (max-width: 23.4375rem) {
+  .user-verification-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important;
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  .user-verification-modal {
+    border-radius: 0 !important;
+    min-height: 100vh !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .verification-header {
+    padding: 1rem 1.25rem !important; /* 16px 20px */
+    padding-right: 3.5rem !important; /* 56px - space for close button */
+    min-height: 3rem !important; /* 48px */
+  }
+
+  .verification-close {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important; /* 36px */
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+    font-size: 1rem !important; /* 16px */
+    top: 0.75rem !important; /* 12px from top */
+    right: 0.75rem !important; /* 12px from right */
+  }
+
+  .verification-close i {
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  .verification-header h2 {
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .verification-content {
+    padding: 1rem !important; /* 16px */
+    padding-bottom: 2rem !important; /* 32px */
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .requirements-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    width: 100% !important;
+  }
+
+  /* Mobile Scrollbar - More Visible on Overlay */
+  .user-verification-overlay::-webkit-scrollbar {
+    width: 14px !important; /* Even wider on mobile for better visibility */
+  }
+
+  .user-verification-overlay::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.25) !important; /* Even darker track on mobile */
+    border-radius: 7px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .user-verification-overlay::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+    border-radius: 7px !important;
+    border: 3px solid rgba(255, 255, 255, 0.4) !important; /* Even thicker border on mobile */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important; /* Enhanced shadow on mobile */
+  }
+
+  .user-verification-overlay::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+    border: 3px solid rgba(255, 255, 255, 0.6) !important; /* Brighter border on hover */
+    box-shadow: 0 4px 10px rgba(255, 0, 80, 0.5) !important; /* TikTok pink shadow */
+  }
+}
+
+/* Full Screen UserVerification when opened from ManageAccount */
+/* Desktop/Laptop: Full page UserVerification modal when ManageAccount is open */
+@media (min-width: 64.0625rem) {
+  /* When UserVerification is opened from ManageAccount context */
+  .manage-account-overlay .user-verification-overlay,
+  .manage-account-modal .user-verification-overlay,
+  body:has(.manage-account-overlay) .user-verification-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10030 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .manage-account-overlay .user-verification-modal,
+  .manage-account-modal .user-verification-modal,
+  body:has(.manage-account-overlay) .user-verification-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    background: #ffffff !important; /* White background */
+  }
+
+  .manage-account-overlay .verification-header,
+  .manage-account-modal .verification-header,
+  body:has(.manage-account-overlay) .verification-header {
+    padding: 1.5rem 2rem !important;
+    min-height: 4rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .manage-account-overlay .verification-content,
+  .manage-account-modal .verification-content,
+  body:has(.manage-account-overlay) .verification-content {
+    flex: 1 !important;
+    padding: 1.5rem 2rem !important;
+  }
+}
+
+/* Tablet: Also full page */
+@media (min-width: 48.0625rem) and (max-width: 64rem) {
+  .manage-account-overlay .user-verification-overlay,
+  .manage-account-modal .user-verification-overlay,
+  body:has(.manage-account-overlay) .user-verification-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10030 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .manage-account-overlay .user-verification-modal,
+  .manage-account-modal .user-verification-modal,
+  body:has(.manage-account-overlay) .user-verification-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    background: #ffffff !important; /* White background */
+  }
+
+  .manage-account-overlay .verification-header,
+  .manage-account-modal .verification-header,
+  body:has(.manage-account-overlay) .verification-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .manage-account-overlay .verification-content,
+  .manage-account-modal .verification-content,
+  body:has(.manage-account-overlay) .verification-content {
+    flex: 1 !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .user-verification-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.3) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important;
+}
+
+body.dark-mode .user-verification-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .verification-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .verification-close {
+  background: rgba(255, 0, 80, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .verification-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .verification-status-banner {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .status-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .status-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .status-reason {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .status-meta {
+  color: #64748B !important;
+}
+
+body.dark-mode .verification-loading,
+body.dark-mode .verification-error {
+  background: rgba(51, 65, 85, 0.85) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .verification-error {
+  background: rgba(254, 242, 242, 0.1) !important;
+  border-color: #FCA5A5 !important;
+  color: #FCA5A5 !important;
+}
+
+body.dark-mode .verification-badge-preview {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .verification-badge-preview h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .verification-badge-preview p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .verification-requirements h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .requirement-card {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .requirement-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .requirement-card p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .form-group label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group select,
+body.dark-mode .form-group textarea {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus,
+body.dark-mode .form-group textarea:focus {
+  border-color: #FF0050 !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2) !important;
+}
+
+body.dark-mode .form-group input::placeholder,
+body.dark-mode .form-group textarea::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .uploaded-document {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .uploaded-document select {
+  background: rgba(255, 0, 80, 0.1) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .documents-hint {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .cancel-btn {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .cancel-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .submit-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .submitted-documents {
+  background: rgba(255, 0, 80, 0.1) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .submitted-documents h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .submitted-documents li {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .apply-hint {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .manage-account-overlay .user-verification-modal,
+body.dark-mode .manage-account-modal .user-verification-modal,
+body.dark-mode body:has(.manage-account-overlay) .user-verification-modal {
+  background: #1E293B !important;
+}

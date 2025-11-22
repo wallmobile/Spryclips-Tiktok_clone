@@ -1,0 +1,1796 @@
+﻿.for-you-feed {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  background: #000;
+  -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
+  padding: 0px 0px 0px 25px;
+  margin: 0;
+  padding-bottom: 0 !important; /* Remove bottom padding to prevent empty space */
+  margin-bottom: 0 !important; /* Remove bottom margin to prevent empty space */
+}
+
+/* Mobile padding removed in main mobile media query below */
+.for-you-feed-toast {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom, 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 9999;
+  animation: fadeInOut 2s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 10px); }
+}
+
+
+.for-you-feed-card {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  scroll-snap-align: start;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000; /* Black background by default */
+}
+
+.video-card-container {
+  position: relative;
+  width: 100%;
+  height: 90vh; /* Increased height */
+  max-height: 90vh; /* Increased max height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000; /* Black background like TikTok */
+  overflow: visible !important; /* Allow action bar to be visible outside */
+  box-sizing: border-box;
+  z-index: 1 !important; /* Lower than navbar to stay below */
+  margin: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  transform: translateX(-40px) !important; /* Shift video 40px to the left */
+  border-radius: 16px; /* Rounded corners */
+  /* Ensure video doesn't overlap with navbar - constrain right edge */
+  max-width: min(320px, calc(100vw - 17.5rem - 22rem - 2rem)); /* Account for sidebar, navbar space, and padding - reduced from 360px */
+}
+
+/* Responsive video container */
+@media (max-width: 1200px) {
+  .video-card-container {
+    max-width: 340px;
+  }
+  
+  .video-card-actions {
+    right: -3.5rem; /* Adjust for smaller video */
+  }
+}
+
+@media (max-width: 992px) {
+  .video-card-container {
+    max-width: 320px;
+  }
+  
+  .video-card-actions {
+    right: -3rem; /* Adjust for smaller video */
+  }
+}
+
+@media (max-width: 768px) {
+   .for-you-feed {
+    height: 100dvh; /* Dynamic viewport for mobile browsers */
+  }
+
+  .for-you-feed-card {
+    height: 100dvh;
+  }
+}
+
+.video-card-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* TikTok uses cover to fill container */
+  background: #000; /* Black background */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1 !important; /* Lower than navbar to stay below */
+  transition: opacity 0.3s ease;
+  will-change: opacity;
+  border-radius: 16px; /* Rounded corners to match container */
+}
+
+.video-card-video[loading] {
+  opacity: 0;
+}
+
+.video-card-video:not([loading]) {
+  opacity: 1;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.video-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+  z-index: 10 !important; /* Base z-index for overlay container */
+  overflow: visible !important; /* Allow action bar to be visible outside */
+  /* Clip to container bounds - ensure nothing goes outside */
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  animation: fadeIn 0.6s ease-out 0.2s both;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+}
+
+/* Video Info at Bottom (Follow button removed - TikTok style) */
+.video-card-info {
+  position: absolute;
+  bottom: 9rem !important; /* 144px - moved higher to create proper gap above description */
+  left: 1rem !important; /* 16px - force left alignment */
+  right: 6rem !important; /* 96px - more space for action buttons (64px + 32px padding) */
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  pointer-events: auto;
+  z-index: 20 !important; /* Above overlay base but below volume control */
+  flex-wrap: wrap !important; /* Allow wrapping if text is too long */
+  max-width: calc(100% - 7rem) !important; /* Ensure no overlap - 96px (6rem) + 16px (1rem left) = 112px total */
+  box-sizing: border-box !important;
+  padding-right: 0.5rem !important; /* 8px */
+  overflow: visible;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
+}
+
+.video-card-channel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  flex-shrink: 0;
+  background: transparent !important; /* No background */
+  backdrop-filter: none !important; /* No blur */
+  border-radius: 0 !important; /* No border radius */
+  padding: 0 !important; /* No padding */
+  border: none !important; /* No border */
+  box-shadow: none !important; /* No shadow */
+  transition: all 0.3s ease;
+}
+
+.video-card-channel:hover {
+  background: transparent !important; /* No background on hover */
+  transform: translateY(-1px);
+  box-shadow: none !important; /* No shadow on hover */
+}
+
+.video-card-avatar {
+  width: 2.5rem !important; /* 40px - smaller size */
+  height: 2.5rem !important; /* 40px - smaller size */
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  border-radius: 50%;
+  border: 2px solid #fff !important; /* White border like TikTok */
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Shadow for visibility */
+  margin: 0 !important; /* Remove margin since it's inside button */
+}
+
+.video-card-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+}
+
+.video-card-channel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem; /* 2px - tighter gap */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.video-card-channel-name {
+  color: #fff !important;
+  font-size: 0.875rem !important; /* 14px - slightly smaller */
+  font-weight: 700;
+  text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.9); /* 0 1px 3px */
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-card-song {
+  color: #fff !important;
+  font-size: 0.75rem !important; /* 12px - smaller */
+  font-weight: 400;
+  text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.9); /* 0 1px 3px */
+  opacity: 0.9;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-card-follow-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  color: #fff !important;
+  border: none;
+  padding: 0.375rem 0.875rem !important; /* 6px 14px - smaller size */
+  border-radius: 1.25rem !important; /* 20px - more rounded like TikTok */
+  font-size: 0.75rem !important; /* 12px - smaller font */
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  min-height: 2rem !important; /* 32px - smaller */
+  min-width: auto !important;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) !important; /* TikTok style shadow */
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.video-card-follow-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.video-card-follow-btn.following,
+.video-card-follow-btn:disabled {
+  background: rgba(255, 255, 255, 0.2) !important; /* Light background when following */
+  color: #fff !important; /* White text */
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.video-card-follow-btn.following:hover,
+.video-card-follow-btn:disabled:hover {
+  background: rgba(148, 163, 184, 0.25);
+  transform: none;
+}
+
+.video-card-follow-btn.following::before,
+.video-card-follow-btn:disabled::before {
+  display: none;
+}
+
+.video-card-follow-btn.following {
+  position: relative;
+}
+
+.video-card-follow-btn.following i {
+  margin-right: 6px;
+}
+
+.video-card-follow-btn:hover {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* Keep TikTok gradient */
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(255, 0, 80, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+  filter: brightness(1.1);
+}
+
+.video-card-follow-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.video-card-follow-btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Description - TikTok style (bottom left, above progress bar) */
+.video-card-description {
+  position: absolute;
+  bottom: 5.5rem !important; /* 88px - moved lower to avoid overlap with username info */
+  left: 1rem !important; /* 16px - left aligned */
+  right: 6rem !important; /* 96px - space for action buttons */
+  color: #fff !important;
+  font-size: 0.9375rem !important; /* 15px */
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important; /* Add text shadow for readability */
+  pointer-events: auto !important;
+  z-index: 15 !important; /* Below info and music link */
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  padding: 0 !important; /* No padding */
+  margin: 0 !important; /* No margin */
+  border: none !important; /* No border */
+  border-radius: 0 !important; /* No border radius */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
+  max-width: calc(100% - 7rem) !important; /* Ensure no overlap */
+  word-wrap: break-word !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word !important;
+  overflow: hidden !important;
+  max-height: 4rem !important; /* Limit height */
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important; /* Show max 2 lines */
+  -webkit-box-orient: vertical !important;
+  transition: max-height 0.3s ease;
+  text-align: left !important; /* Left align text */
+  white-space: pre-wrap !important; /* Preserve whitespace and wrap text */
+}
+
+/* Expanded description - remove line clamp */
+.video-card-description.expanded {
+  max-height: 6rem !important; /* Allow more lines when expanded but limit to prevent overlap */
+  -webkit-line-clamp: unset !important;
+  display: block !important;
+  overflow-y: auto !important;
+  bottom: 5.5rem !important; /* Keep same position when expanded */
+}
+
+/* Mute Button - Top Left (Official TikTok style) */
+.video-card-mute-btn {
+  position: absolute !important;
+  top: 1.5rem !important; /* 24px */
+  left: 1rem !important; /* 16px */
+  width: 2.5rem !important; /* 40px - touch-friendly */
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(0.5rem) !important; /* 8px */
+  color: #FFFFFF !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
+  transition: all 0.2s ease !important;
+  z-index: 50 !important; /* High z-index for volume control */
+  visibility: visible !important;
+  opacity: 1 !important;
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3) !important; /* 0 2px 8px */
+  touch-action: manipulation !important;
+}
+
+/* Hide on mobile/tablet - ONLY show on desktop (> 1024px) */
+@media (max-width: 64rem) {
+  .video-card-mute-btn,
+  .video-card-mute-btn *,
+  .video-card-mute-btn i,
+  .video-card-mute-btn::before,
+  .video-card-mute-btn::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  
+  .video-card-volume-control,
+  .video-card-volume-control *,
+  .video-card-volume-control button,
+  .video-card-volume-control svg,
+  .video-card-volume-control::before,
+  .video-card-volume-control::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  
+  .video-card-volume-slider-container,
+  .video-card-volume-slider-container * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+  }
+}
+
+.video-card-mute-btn:hover {
+  transform: scale(1.1);
+  opacity: 1 !important;
+  background: rgba(255, 0, 80, 0.3) !important; /* Light red background on hover */
+  border: 1px solid rgba(255, 0, 80, 0.5) !important; /* Red border on hover */
+}
+
+.video-card-mute-btn:hover i {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: #FF0050 !important; /* Red icon on hover */
+}
+
+.video-card-mute-btn:active {
+  transform: scale(0.95);
+}
+
+.video-card-mute-btn i {
+  font-size: 20px !important;
+  color: #FF0050 !important; /* Red icon like TikTok */
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+/* Volume Control Container */
+.video-card-volume-control {
+  position: absolute !important;
+  top: 24px !important; /* Moved down from top */
+  left: 16px !important;
+  z-index: 50 !important; /* High z-index for volume control */
+  display: flex !important;
+  align-items: center;
+  gap: 6px; /* Reduced gap */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Overlay to close slider on outside click */
+.video-card-volume-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 49; /* Just below volume control */
+  background: transparent;
+  cursor: default;
+}
+
+/* Volume Slider Container - Horizontal */
+.video-card-volume-slider-container {
+  background: rgba(34, 34, 34, 0.8) !important; /* Dark gray background like image */
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  height: 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  margin-left: 8px;
+}
+
+.video-card-volume-slider-container.visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateX(0);
+}
+
+.video-card-volume-label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 35px;
+  text-align: center;
+}
+
+.video-card-volume-slider {
+  flex: 1;
+  width: 100%;
+  height: 4px !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: rgba(255, 255, 255, 0.3) !important; /* White/gray track - no red */
+  outline: none !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  margin: 0;
+  position: relative !important;
+  z-index: 1 !important;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.video-card-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important; /* White thumb */
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+  border: none !important; /* No red border */
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.video-card-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+.video-card-volume-slider::-moz-range-thumb {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important; /* White thumb */
+  cursor: pointer !important;
+  border: none !important; /* No red border */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.video-card-volume-slider::-moz-range-thumb:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+.video-card-actions {
+  position: absolute;
+  right: -4rem; /* Proper spacing from video edge like TikTok */
+  bottom: 5rem; /* 80px - above user info */
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* 20px - proper spacing between icons like TikTok */
+  align-items: center;
+  pointer-events: auto;
+  z-index: 30 !important; /* High z-index for action buttons */
+  top: auto; /* Ensure it doesn't overlap with top navbar */
+}
+
+.video-card-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem; /* 4px */
+}
+
+.video-card-action-btn {
+  width: 2.5rem; /* 40px - proper size like TikTok image */
+  height: 2.5rem; /* 40px */
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  z-index: 30;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.video-card-action-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: scale(1.08);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.video-card-action-btn i {
+  font-size: 1.25rem; /* 20px - proper icon size like TikTok */
+  color: #fff;
+}
+
+.video-card-action-btn.liked {
+  background: rgba(0, 0, 0, 0.35); /* Same background */
+  color: #fff;
+}
+
+.video-card-action-btn.liked i {
+  color: #FF0050; /* TikTok red when liked */
+}
+
+.video-card-action-count {
+  color: #fff;
+  font-size: 0.6875rem; /* 11px - proper size like TikTok */
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  margin-top: 0.125rem; /* 2px */
+  line-height: 1.1;
+}
+
+/* Smooth scrolling */
+.for-you-feed {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.for-you-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.for-you-feed {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dark Mode Styles */
+body.dark-mode .for-you-feed {
+  background: #0F172A !important;
+}
+
+body.dark-mode .for-you-feed-card {
+  background: #0F172A !important;
+}
+
+body.dark-mode .video-card-container {
+  background: #0F172A !important;
+}
+
+/* Note: Video cards remain black in dark mode as they should (TikTok style) */
+/* The overlay elements (text, buttons) remain white/visible on dark video backgrounds */
+
+/* Dark Mode - Lighter Buttons */
+body.dark-mode .video-card-follow-btn {
+  background: rgba(37, 99, 235, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .video-card-follow-btn:hover {
+  background: rgba(37, 99, 235, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Fullscreen Button Dark Mode - Removed */
+
+body.dark-mode .video-progress-bar {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .video-progress-fill {
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Dark Mode - Mute Button Lighter */
+body.dark-mode .video-card-mute-btn {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .video-card-mute-btn:hover {
+  background: rgba(255, 0, 80, 0.3) !important; /* Light red background on hover */
+  border-color: rgba(255, 0, 80, 0.5) !important; /* Red border on hover */
+}
+
+body.dark-mode .video-card-mute-btn i {
+  color: #FF0050 !important; /* Red icon in dark mode */
+}
+
+/* Desktop: > 1024px (64rem) - Ensure desktop layout */
+@media (min-width: 64.0625rem) {
+  .for-you-feed {
+    margin-left: 17.5rem !important; /* 280px = 17.5rem - sidebar width */
+    width: calc(100% - 17.5rem - 4.5rem) !important; /* Account for sidebar and right navbar */
+    max-width: calc(100vw - 17.5rem - 4.5rem) !important;
+    height: 100vh !important; /* Full height - navbar is on right */
+    margin-top: 0 !important; /* No top margin */
+    padding: 0 !important;
+    background: #ffffff !important; /* White background */
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    position: relative !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important; /* Full height */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    background: #ffffff !important; /* White background for desktop */
+  }
+  
+  .video-card-container {
+    width: 100% !important;
+    max-width: 320px !important; /* Reduced width from 360px */
+    height: 90vh !important; /* Increased height */
+    max-height: 90vh !important; /* Increased max height */
+    box-sizing: border-box !important;
+    overflow: visible !important; /* Allow action bar to be visible outside */
+    margin: 0 auto !important;
+    transform: translateX(-40px) !important; /* Shift video 40px to the left */
+    border-radius: 16px !important; /* Rounded corners */
+    background: #ffffff !important; /* White background for desktop */
+  }
+  
+  .video-card-actions {
+    right: -4.5rem !important; /* Move icons further right to avoid video overlap */
+  }
+
+  /* Responsive video container for desktop */
+  @media (max-width: 1200px) {
+    .video-card-container {
+      max-width: 340px !important;
+    }
+    
+    .video-card-actions {
+      right: -3.5rem !important; /* Adjust for smaller video */
+    }
+  }
+
+  @media (max-width: 992px) {
+    .video-card-container {
+      max-width: 320px !important;
+    }
+    
+    .video-card-actions {
+      right: -3rem !important; /* Adjust for smaller video */
+    }
+  }
+  
+  .video-card-video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    box-sizing: border-box !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    border-radius: 0 !important; /* No border radius on mobile */
+  }
+}
+
+/* Mini Tablet / Large Phones (30.0625rem - 47.9375rem = 481px - 767px) */
+@media (min-width: 30.0625rem) and (max-width: 47.9375rem) {
+  .for-you-feed {
+    margin-left: 0 !important; /* No margin - sidebar is drawer on mini tablet */
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important;
+    height: 100dvh !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .video-card-container {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    border-radius: 0 !important; /* Full screen on mini tablet */
+  }
+
+  .video-card-actions {
+    right: 0.75rem !important; /* 12px */
+    bottom: 50% !important;
+    transform: translateY(50%) !important;
+    gap: 0.75rem !important;
+  }
+
+  .video-card-video {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on mini tablet too */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on mini tablet too */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Tablet Responsive - ALL Devices (48rem - 64rem = 768px - 1024px)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336), 
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .for-you-feed {
+    margin-left: 0 !important; /* No margin - sidebar is drawer on tablet */
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important; /* Remove all padding on tablet */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: scroll !important; /* Enable vertical scrolling */
+    scroll-snap-type: y mandatory !important; /* Enable snap scrolling */
+    -webkit-overflow-scrolling: touch !important; /* Smooth scroll on iOS */
+    scroll-behavior: smooth !important; /* Smooth scrolling */
+    position: fixed !important; /* Fixed to prevent extra space */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: #000 !important; /* Black background - no white showing */
+    z-index: 1 !important; /* Above app background */
+    box-sizing: border-box !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    scroll-snap-align: start !important; /* Snap each card to start */
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+    flex-shrink: 0 !important; /* Prevent cards from shrinking */
+    position: relative !important;
+    overflow: hidden !important; /* Hide overflow to prevent empty space */
+    display: block !important; /* Block display - NO flex to prevent centering */
+    background: #000 !important; /* Black background - no white showing */
+    align-items: initial !important; /* Remove flex alignment */
+    justify-content: initial !important; /* Remove flex justification */
+  }
+
+  .video-card-container {
+    max-width: 100vw !important; /* Full viewport width on tablet */
+    width: 100vw !important; /* Full viewport width */
+    margin: 0 !important; /* Remove all margins */
+    padding: 0 !important; /* Remove padding */
+    transform: none !important; /* Remove transform on tablet */
+    border-radius: 0 !important; /* No border radius on tablet for full screen effect */
+    height: 100vh !important; /* Full viewport height - EXACTLY 100vh */
+    height: 100dvh !important; /* Dynamic viewport height */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    position: absolute !important; /* Absolute positioning to fill parent */
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    min-width: unset !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Hide overflow */
+    display: block !important; /* Block display - no flex */
+    background: #000 !important; /* Black background - no white showing */
+    align-items: initial !important; /* Remove flex alignment */
+    justify-content: initial !important; /* Remove flex justification */
+  }
+
+  .video-card-overlay {
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    background: transparent !important; /* No background - transparent */
+  }
+  
+  .video-card-actions {
+    right: 0.75rem !important; /* Icons inside video on tablet */
+    bottom: 50% !important;
+    transform: translateY(50%) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .video-card-video {
+    width: 100vw !important; /* Full viewport width */
+    width: 100% !important; /* Full container width */
+    height: 100vh !important; /* Full viewport height - EXACTLY fill */
+    height: 100dvh !important; /* Dynamic viewport height */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important; /* No border radius on tablet for full screen effect */
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    max-width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    overflow: hidden !important; /* Hide any overflow */
+    background: #000 !important; /* Black background - no white showing */
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on tablet - only show on desktop */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on tablet - only show on desktop */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-info {
+    bottom: 9rem !important; /* Same as mobile - maintain gap above description */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    max-width: calc(100% - 7rem) !important; /* Don't overlap with action buttons */
+    padding-right: 1rem !important;
+  }
+
+  .video-card-username {
+    font-size: 0.9375rem !important; /* Same as mobile */
+    margin-bottom: 0.5rem !important;
+  }
+
+  .video-card-follow-btn {
+    font-size: 0.8125rem !important; /* Same as mobile */
+    padding: 0.5rem 1rem !important;
+  }
+
+  .video-card-description {
+    bottom: 5.5rem !important; /* Same as mobile - consistent spacing */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    font-size: 0.9375rem !important; /* Same as mobile */
+    max-width: calc(100% - 7rem) !important;
+    margin-bottom: 0.5rem !important;
+    padding-right: 0 !important;
+  }
+
+  .video-card-music-link {
+    bottom: 3rem !important; /* Same as mobile - consistent spacing */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    font-size: 0.875rem !important; /* Same as mobile */
+    margin-top: 0.5rem !important;
+  }
+
+  .video-card-music-link i {
+    color: #FF0050 !important; /* Red music icon on tablet - same as desktop */
+    fill: #FF0050 !important;
+  }
+}
+
+/* Mobile Responsive (max-width: 48rem = 768px) */
+@media (max-width: 48rem) {
+  .for-you-feed {
+    margin-left: 0 !important; /* No margin on mobile since sidebar is drawer */
+    width: 100% !important; /* Full width on mobile */
+    width: 100vw !important; /* Full viewport width */
+    max-width: 100vw !important;
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
+    margin-top: 0 !important; /* No top margin */
+    margin-right: 0 !important;
+    padding: 0 !important; /* Remove all padding on mobile */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height */
+    max-width: 100vw;
+  }
+
+  .video-card-container {
+    max-width: 100vw !important; /* Full viewport width */
+    width: 100vw !important; /* Full viewport width */
+    margin: 0 !important; /* Remove all margins */
+    padding: 0 !important; /* Remove padding */
+    transform: none !important; /* Remove transform on mobile */
+    border-radius: 0 !important; /* No border radius on mobile for full screen effect */
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height */
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .video-card-video {
+    width: 100vw !important; /* Full viewport width */
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    max-width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    object-fit: cover !important;
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-slider-container {
+    height: 2.125rem; /* 34px */
+    padding: 0.3125rem 0.5rem; /* 5px 8px */
+    min-width: 6.875rem; /* 110px */
+    gap: 0.375rem; /* 6px */
+  }
+
+  .video-card-volume-slider {
+    height: 0.1875rem; /* 3px */
+    margin: 0;
+  }
+
+  .video-card-volume-label {
+    min-width: 1.75rem; /* 28px */
+    font-size: 0.5625rem; /* 9px */
+  }
+
+  .video-card-actions {
+    right: 0.75rem !important; /* 12px */
+    bottom: 4.375rem !important; /* 70px */
+    gap: 0.75rem !important; /* 12px */
+    position: absolute !important;
+    z-index: 30 !important;
+  }
+
+  .video-card-action-btn {
+    width: 2.5rem !important; /* 40px - smaller on mobile */
+    height: 2.5rem !important;
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+  }
+
+  .video-card-action-btn i {
+    font-size: 1.125rem !important; /* 18px - smaller icons */
+  }
+
+  .video-card-action-count {
+    font-size: 0.625rem !important; /* 10px - smaller text */
+  }
+
+  .video-card-actions {
+    right: 0.75rem !important; /* 12px */
+    gap: 0.5rem !important; /* 8px - smaller gap */
+  }
+
+  .video-card-info {
+    bottom: 9rem !important; /* 144px - maintain gap above description */
+    left: 0.75rem !important; /* 12px - slightly more space on mobile */
+    right: 4.5rem !important; /* 72px - more space to prevent overlap */
+    gap: 0.625rem !important; /* 10px */
+    max-width: calc(100% - 5.5rem) !important; /* Ensure no overlap */
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    z-index: 20 !important;
+    position: absolute !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 1.25rem !important; /* 20px - below translation button with 28px gap */
+    left: 0.5rem !important;
+    right: 4.5rem !important;
+    font-size: 0.75rem !important; /* 12px */
+    max-width: calc(100% - 5rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 50px !important;
+    padding: 14px 12px 10px 12px !important;
+  }
+
+  .video-card-avatar {
+    width: 2.25rem !important; /* 36px */
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+  }
+
+  .video-card-channel-name {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+
+  .video-card-song {
+    font-size: 0.6875rem !important; /* 11px */
+  }
+
+  .video-card-follow-btn {
+    padding: 0.3125rem 0.875rem !important; /* 5px 14px */
+    font-size: 0.75rem !important; /* 12px */
+    min-height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    margin-left: auto !important; /* Push to right side */
+    flex-shrink: 0 !important;
+  }
+  
+  .video-card-channel {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
+  }
+
+  .video-card-description {
+    bottom: 5.5rem !important; /* 88px - maintain consistent spacing */
+    left: 0.75rem !important; /* 12px - slightly more space on mobile */
+    right: 4.5rem !important; /* 72px - more space to prevent overlap */
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1.4 !important;
+    max-width: calc(100% - 5.5rem) !important; /* Ensure no overlap */
+    max-height: 2.5rem !important; /* Limit height to prevent overlap */
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; /* Show max 2 lines to prevent overlap */
+    -webkit-box-orient: vertical !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    z-index: 15 !important; /* Lower than info section */
+    position: absolute !important;
+  }
+  
+  .video-card-translation-btn {
+    bottom: 3rem !important; /* 48px - below description with 40px gap */
+    left: 0.5rem !important;
+    font-size: 0.75rem !important;
+    z-index: 16 !important;
+  }
+}
+
+/* Small Mobile (< 30rem = 480px) */
+@media (max-width: 30rem) {
+   .for-you-feed-toast {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+  .for-you-feed {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    max-width: 100vw;
+  }
+  
+  .video-card-container {
+    width: 100% !important;
+    transform: none !important; /* Remove transform */
+    border-radius: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-slider-container {
+    height: 2rem; /* 32px */
+    padding: 0.25rem 0.375rem; /* 4px 6px */
+    min-width: 6.25rem; /* 100px */
+    gap: 0.3125rem; /* 5px */
+  }
+
+  .video-card-volume-label {
+    min-width: 1.5625rem; /* 25px */
+    font-size: 0.5rem; /* 8px */
+  }
+
+  .video-card-actions {
+    right: 0.625rem !important; /* 10px */
+    bottom: 3.75rem !important; /* 60px */
+    gap: 0.625rem !important; /* 10px */
+    position: absolute !important;
+    z-index: 30 !important;
+  }
+
+  .video-card-action-btn {
+    width: 2.375rem !important; /* 38px */
+    height: 2.375rem !important;
+    min-width: 2.375rem !important;
+    min-height: 2.375rem !important;
+  }
+
+  .video-card-action-btn i {
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .video-card-action-count {
+    font-size: 0.625rem !important; /* 10px */
+  }
+
+  .video-card-info {
+    bottom: 9rem !important; /* 144px - maintain gap above description */
+    left: 0.375rem !important; /* 6px - force left alignment */
+    right: auto !important; /* Remove right constraint */
+    gap: 0.5rem; /* 8px */
+    max-width: calc(100% - 4.125rem) !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    z-index: 20 !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 1rem !important; /* 16px - below translation button with 24px gap */
+    left: 0.375rem !important;
+    right: 3.75rem !important;
+    font-size: 0.6875rem !important; /* 11px */
+    max-width: calc(100% - 4.125rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 48px !important;
+    padding: 12px 10px 8px 10px !important;
+  }
+
+  .video-card-avatar {
+    width: 2rem !important; /* 32px */
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+  }
+
+  .video-card-channel-name {
+    font-size: 0.75rem !important; /* 12px */
+  }
+
+  .video-card-song {
+    font-size: 0.625rem !important; /* 10px */
+  }
+
+  .video-card-follow-btn {
+    padding: 0.25rem 0.75rem !important; /* 4px 12px */
+    font-size: 0.6875rem !important; /* 11px */
+    min-height: 2rem !important;
+    min-width: 2rem !important;
+  }
+
+  .video-card-description {
+    bottom: 6rem !important;
+    left: 1rem !important; /* 6px */
+    right: 3.75rem !important; /* 60px */
+    font-size: 0.6875rem !important; /* 11px */
+    max-width: calc(100% - 4.125rem) !important;
+    max-height: 2rem !important; /* Limit height to prevent overlap */
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; /* Show max 2 lines */
+    -webkit-box-orient: vertical !important;
+    z-index: 15 !important; /* Lower than info section */
+  }
+  
+  .video-card-translation-btn {
+    bottom: 2.5rem !important; /* 40px - below description with 48px gap */
+    left: 0.375rem !important;
+    font-size: 0.6875rem !important;
+    z-index: 16 !important;
+  }
+  
+  .video-card-follow-btn {
+    margin-left: auto !important; /* Push to right side */
+    flex-shrink: 0 !important;
+  }
+  
+  .video-card-channel {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
+  }
+  .video-card-container {
+    transform: none !important; /* Remove transform on small mobile */
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Extra Small Mobile (< 22.5rem = 360px) */
+@media (max-width: 22.5rem) {
+  .for-you-feed {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    max-width: 100vw;
+  }
+  
+  .video-card-container {
+    width: 100% !important;
+    transform: none !important; /* Remove transform */
+    border-radius: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-actions {
+    right: 0.5rem !important; /* 8px */
+    bottom: 3.4375rem !important; /* 55px */
+    gap: 0.5rem !important; /* 8px */
+    position: absolute !important;
+    z-index: 30 !important;
+  }
+
+  .video-card-action-btn {
+    width: 2rem !important; /* 32px - smallest */
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+  }
+
+  .video-card-action-btn i {
+    font-size: 0.9375rem !important; /* 15px - smaller icons */
+  }
+
+  .video-card-action-count {
+    font-size: 0.5rem !important; /* 8px - smallest text */
+  }
+
+  .video-card-actions {
+    right: 0.5rem !important; /* 8px */
+    gap: 0.4375rem !important; /* 7px */
+    position: absolute !important;
+    z-index: 30 !important;
+  }
+
+  .video-card-info {
+    bottom: 9rem !important; /* 144px - maintain gap above description */
+    left: 0.5rem !important; /* 8px - force left alignment */
+    right: auto !important; /* Remove right constraint */
+    max-width: calc(100% - 3.9375rem) !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    z-index: 20 !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 0.75rem !important; /* 12px - below translation button with 24px gap */
+    left: 0.5rem !important;
+    right: 3.4375rem !important;
+    font-size: 0.625rem !important; /* 10px */
+    max-width: calc(100% - 3.9375rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 44px !important;
+    padding: 10px 8px 8px 8px !important;
+  }
+  
+  .video-progress-time {
+    font-size: 11px !important;
+  }
+
+  .video-card-avatar {
+    width: 1.75rem !important; /* 28px */
+    height: 1.75rem !important;
+    min-width: 1.75rem !important;
+    min-height: 1.75rem !important;
+  }
+
+  .video-card-channel-name {
+    font-size: 0.6875rem !important; /* 11px */
+  }
+
+  .video-card-description {
+    
+    right: 3.4375rem !important; /* 55px */
+    font-size: 0.625rem !important; /* 10px */
+    max-width: calc(100% - 3.9375rem) !important;
+    max-height: 1.75rem !important; /* Limit height to prevent overlap */
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; /* Show max 2 lines */
+    -webkit-box-orient: vertical !important;
+    z-index: 15 !important; /* Lower than info section */
+  }
+  
+  .video-card-translation-btn {
+    bottom: 2.25rem !important; /* 36px - below description with 52px gap */
+    left: 0.5rem !important;
+    font-size: 0.625rem !important;
+    z-index: 16 !important;
+  }
+  
+  .video-card-follow-btn {
+    margin-left: auto !important; /* Push to right side */
+    flex-shrink: 0 !important;
+  }
+  
+  .video-card-channel {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
+  }
+}
+
+/* Video Progress Bar */
+.video-progress-container {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  padding: 12px 16px 12px 16px !important; /* Reduced top padding */
+  /* background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 15%, rgba(0, 0, 0, 0.1) 30%, transparent 35%) !important; */
+  pointer-events: auto;
+  z-index: 25 !important; /* Above description and music, below info */
+  height: 50px !important; /* Fixed height */
+  max-height: 50px !important; /* Limit height to prevent overlap */
+  overflow: hidden !important; /* Prevent gradient from extending upward */
+  box-sizing: border-box !important;
+  clip-path: inset(0 0 0 0) !important; /* Clip to container bounds */
+}
+
+.video-progress-bar {
+  width: 100%;
+  height: 4px; /* Slightly reduced for better aesthetics */
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.video-progress-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.video-progress-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* Fullscreen Button - Removed */
+
+/* Clickable Hashtags */
+.video-card-hashtag {
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.video-card-hashtag:hover {
+  opacity: 0.8;
+}
+
+/* Clickable Mentions */
+.video-card-mention {
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.video-card-mention:hover {
+  opacity: 0.8;
+}
+
+/* Description More Button */
+.video-card-description-more {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9) !important;
+  cursor: pointer;
+  font-size: 0.9375rem !important; /* 15px - match description */
+  padding: 0;
+  margin-left: 0.25rem !important; /* 4px */
+  text-decoration: underline;
+  transition: color 0.2s;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.video-card-description-more:hover {
+  color: #fff;
+}
+
+/* Translation Button */
+.video-card-translation-btn {
+  position: absolute;
+  bottom: 3.5rem !important; /* 56px - below description with 32px gap */
+  left: 1rem !important; /* 16px */
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9) !important;
+  cursor: pointer;
+  font-size: 0.875rem !important; /* 14px */
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+  font-weight: 400;
+  z-index: 16 !important; /* Just above description */
+  pointer-events: auto;
+}
+
+.video-card-translation-btn:hover {
+  color: #fff !important;
+}
+
+/* Music/Sound Link */
+.video-card-music-link {
+  position: absolute;
+  bottom: 3rem !important; /* 24px - below translation button with 32px gap */
+  left: 1rem !important; /* 16px */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff !important;
+  cursor: pointer;
+  font-size: 0.875rem !important; /* 14px */
+  font-weight: 500 !important;
+  text-shadow: none !important; /* No text shadow to prevent duplicate text appearance */
+  z-index: 18 !important; /* Above description and translation, below info */
+  pointer-events: auto !important;
+  transition: opacity 0.2s;
+  max-width: calc(100% - 7rem) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  padding: 0 !important; /* No padding */
+  margin: 0 !important; /* No margin */
+  border: none !important; /* No border */
+  border-radius: 0 !important; /* No border radius */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
+}
+
+.video-card-music-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.video-card-music-link i {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* Video Effects Link */
+.video-card-effect-link {
+  position: absolute;
+  top: 1.5rem !important; /* 24px - top of video */
+  left: 1rem !important; /* 16px */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  color: #fff !important;
+  cursor: pointer;
+  font-size: 0.8125rem !important; /* 13px */
+  font-weight: 500;
+  z-index: 45 !important; /* Below volume control but above other elements */
+  pointer-events: auto;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-card-effect-link:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.video-card-effect-link i {
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+/* Clickable Username */
+.video-card-channel-name {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.video-card-channel-name:hover {
+  opacity: 0.8;
+}
+
+/* Clickable Music/Song */
+.video-card-song {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.video-card-song:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+
+
+
+
+
+
+
