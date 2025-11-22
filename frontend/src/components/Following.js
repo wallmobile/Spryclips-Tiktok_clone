@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getAllVideos, toggleFollow } from '../api/videos';
 import { videos as sampleVideos } from '../data/sampleData';
 import './Following.css';
+import './Profile.css'; // Import for video modal styles
 
 const ABSOLUTE_MEDIA_REGEX = /^(?:https?:|data:|blob:)/i;
 
@@ -195,6 +196,7 @@ const Following = () => {
   const [activeVideoId, setActiveVideoId] = useState(null);
   const [activePlayback, setActivePlayback] = useState({ duration: 0, currentTime: 0 });
   const [playerError, setPlayerError] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const playableVideosRef = useRef(new Map());
   const [followStates, setFollowStates] = useState({});
   const [pendingFollowIds, setPendingFollowIds] = useState({});
@@ -335,47 +337,10 @@ const Following = () => {
         return;
       }
       const normalized = normalizeFollowingVideo(video, index);
-      const videoId = normalized?._id || normalized?.id;
-      if (!videoId) {
-        return;
-      }
-
-      if (activeVideoId === videoId) {
-        resetPlayerState();
-        return;
-      }
-
-      const cached = playableVideosRef.current.get(videoId) || normalized;
-      const playbackUrl = cached?.playbackUrl || cached?.url || '';
-      if (!playbackUrl) {
-        setPlayerError('We could not find a playable source for this video.');
-        return;
-      }
-
-      playableVideosRef.current.set(videoId, { ...cached, playbackUrl });
-
-      const durationCandidates = [
-        cached.rawDuration,
-        cached.duration,
-        normalized.rawDuration,
-        normalized.duration
-      ];
-      const derivedDuration =
-        durationCandidates.reduce((acc, candidate) => {
-          if (acc !== null) {
-            return acc;
-          }
-          return parseDuration(candidate);
-        }, null) ?? 0;
-
-      setActiveVideoId(videoId);
-      setActivePlayback({
-        duration: Number.isFinite(derivedDuration) && derivedDuration > 0 ? derivedDuration : 0,
-        currentTime: 0
-      });
-      setPlayerError(null);
+      // Open video in modal instead of playing inline
+      setSelectedVideo(normalized);
     },
-    [activeVideoId, resetPlayerState]
+    []
   );
 
   const handleFollowButtonClick = useCallback(
@@ -736,6 +701,99 @@ const Following = () => {
   return (
     <div className="following-page">
       {content}
+      
+      {/* Video Viewer Modal */}
+      {selectedVideo && (
+        <div className="video-viewer-modal" onClick={() => setSelectedVideo(null)}>
+          <div className="video-viewer-content" onClick={(e) => e.stopPropagation()}>
+            <button className="video-viewer-close" onClick={() => setSelectedVideo(null)}>
+              <i className="fa-solid fa-times"></i>
+            </button>
+            <div className="video-viewer-container">
+              {(() => {
+                // Get the best available video URL (never use thumbnail for video playback)
+                let videoSrc = null;
+                
+                // Priority 1: Check processedVideos array
+                if (selectedVideo.processedVideos && Array.isArray(selectedVideo.processedVideos) && selectedVideo.processedVideos.length > 0) {
+                  const processedVideo = selectedVideo.processedVideos.find(pv => pv.url && !pv.url.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i));
+                  if (processedVideo && processedVideo.url) {
+                    videoSrc = processedVideo.url;
+                  }
+                }
+                
+                // Priority 2: Check playbackUrl field
+                if (!videoSrc && selectedVideo.playbackUrl) {
+                  videoSrc = selectedVideo.playbackUrl;
+                }
+                
+                // Priority 3: Check url field
+                if (!videoSrc && selectedVideo.url) {
+                  videoSrc = selectedVideo.url;
+                }
+                
+                // Priority 4: Check videoUrl field
+                if (!videoSrc && selectedVideo.videoUrl) {
+                  videoSrc = selectedVideo.videoUrl;
+                }
+                
+                // Ensure absolute URL and verify it's a video file
+                let finalVideoSrc = null;
+                if (videoSrc) {
+                  const resolved = toAbsoluteMediaUrl(videoSrc);
+                  // Only use if it's not an image file
+                  if (resolved && !resolved.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+                    finalVideoSrc = resolved;
+                  }
+                }
+                
+                if (!finalVideoSrc || finalVideoSrc.trim() === '') {
+                  return (
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%', 
+                      color: '#fff',
+                      padding: '20px',
+                      textAlign: 'center'
+                    }}>
+                      <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '48px', marginBottom: '16px', color: '#FF0050' }}></i>
+                      <h3>Video Not Available</h3>
+                      <p>This video cannot be loaded.</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <video 
+                    src={finalVideoSrc}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="video-viewer-player"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      background: '#000000',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      console.error('Video playback error:', e.target.error);
+                      console.error('Video URL attempted:', finalVideoSrc);
+                    }}
+                    onLoadedData={() => {
+                      console.log('Video loaded successfully:', finalVideoSrc);
+                    }}
+                  />
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
