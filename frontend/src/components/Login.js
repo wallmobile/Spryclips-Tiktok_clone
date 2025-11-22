@@ -191,7 +191,18 @@ const Login = ({ onClose, onSwitchToSignup }) => {
 
   return (
     <div className="tiktok-signup-container">
-      <button className="close-btn-tiktok" onClick={onClose} aria-label="Close login dialog">
+      <button 
+        className="close-btn-tiktok" 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (onClose && typeof onClose === 'function') {
+            onClose();
+          }
+        }} 
+        aria-label="Close login dialog"
+        type="button"
+      >
         ×
       </button>
 
@@ -305,12 +316,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
           </button>
         </div>
 
-        <p className="signup-footer">
-          Don't have an account?{' '}
-          <span className="link-text" onClick={onSwitchToSignup}>
-            Sign up
-          </span>
-        </p>
       </div>
 
       {showForgotPassword && <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />}

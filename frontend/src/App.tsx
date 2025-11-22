@@ -389,7 +389,12 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, from, navigate]);
 
   const handleClose = () => {
-    navigate(from, { replace: true });
+    // If there's a previous page in history, go back, otherwise go to home
+    if (window.history.length > 1 && from !== '/') {
+      navigate(-1);
+    } else {
+      navigate('/', { replace: true });
+    }
   };
 
   return (

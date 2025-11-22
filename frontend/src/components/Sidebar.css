@@ -343,10 +343,10 @@ body.search-page-open .mobile-menu-toggle {
 .login-btn-sidebar {
   width: 100%;
   padding: 0.75rem; /* 12px - slightly reduced */
-  margin: 0 0 0.5rem 0; /* Add bottom margin for spacing with signup button */
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #fff !important;
+  margin: 0;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border: none !important;
+  color: #FFFFFF !important;
   border-radius: 1.125rem; /* 18px - slightly reduced */
   font-size: 0.9375rem; /* 15px - slightly reduced */
   font-weight: 700;
@@ -358,13 +358,14 @@ body.search-page-open .mobile-menu-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(255, 0, 80, 0.3) !important;
 }
 
 .login-btn-sidebar:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 40%, #25F4EE 100%) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.4) !important;
+  filter: brightness(1.05);
 }
 
 .signup-btn-sidebar {

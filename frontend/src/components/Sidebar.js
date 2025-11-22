@@ -161,26 +161,15 @@ const Sidebar = () => {
               <span>Log out</span>
             </div>
           ) : (
-            <>
-              <button
-                className="login-btn-sidebar"
-                onClick={() => {
-                  navigate('/login', { state: { from: location } });
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Log in
-              </button>
-              <button
-                className="signup-btn-sidebar"
-                onClick={() => {
-                  navigate('/signup', { state: { from: location } });
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Sign up
-              </button>
-            </>
+            <button
+              className="login-btn-sidebar"
+              onClick={() => {
+                navigate('/login', { state: { from: location } });
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              Log in
+            </button>
           )}
         </div>
       </div>
