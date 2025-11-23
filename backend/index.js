@@ -31,17 +31,17 @@ process.on('unhandledRejection', (reason, promise) => {
   if (reason && typeof reason === 'object') {
     const errorMsg = reason.message || String(reason);
     const errorCode = reason.code || '';
-    
+
     // Suppress Redis connection errors
-    if (errorCode === 'ECONNREFUSED' || 
-        errorMsg.includes('ECONNREFUSED') || 
-        errorMsg.includes('Redis') ||
-        errorMsg.includes('6379')) {
+    if (errorCode === 'ECONNREFUSED' ||
+      errorMsg.includes('ECONNREFUSED') ||
+      errorMsg.includes('Redis') ||
+      errorMsg.includes('6379')) {
       // Already handled by videoProcessing.js, just return
       return;
     }
   }
-  
+
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   // In development, log but don't exit to allow nodemon to restart
   if (process.env.NODE_ENV === 'production') {
@@ -78,7 +78,8 @@ const validateEnvironment = () => {
     if (isProduction) {
       missingVars.push('MONGODB_URI');
     } else {
-      const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
+      const defaultUri = 'mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority';
+      //const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
       process.env.MONGODB_URI = defaultUri;
       console.warn(`MONGODB_URI not configured. Using default local instance at ${defaultUri}.`);
     }
@@ -127,16 +128,10 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('http://localhost:5000');
-    connectSrc.add('ws://localhost:5000');
-    connectSrc.add('ws://localhost:3000');
-    connectSrc.add('http://localhost:3000');
-    connectSrc.add('http://localhost:3001');
-    connectSrc.add('ws://localhost:3001');
-  } else {
-    // In production, allow inline styles for dynamic content
-    styleSrc.push("'unsafe-inline'");
-    scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
+    connectSrc.add('https://spryclips.com');
+    // connectSrc.add('http://localhost:5000');
+    // connectSrc.add('ws://localhost:5000');
+    // connectSrc.add('ws://localhost:3000');
   }
 
   allowedOrigins.forEach(origin => {
@@ -233,7 +228,7 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
-    
+
     // Seed sample data (non-blocking)
     seedSampleData().catch(err => {
       console.warn('⚠️ Sample data seeding failed:', err.message);

@@ -28,7 +28,7 @@ const getAPIURL = (): string => {
     const origin = window.location.origin;
     // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'http://localhost:5000';
+      return 'https://spryclips.com/';
     }
     // Production mode: use empty string (same origin, nginx proxies /api)
     return '';
@@ -99,7 +99,7 @@ api.interceptors.response.use(
 
     // Suppress 401 errors for auth endpoints when user is not authenticated (expected behavior)
     const shouldSuppress401 = status === 401 && (
-      isAuthVerify || 
+      isAuthVerify ||
       isAuthRefresh ||
       (isAuthLogin && !originalRequest._retry) ||
       (isAuthRegister && !originalRequest._retry)
