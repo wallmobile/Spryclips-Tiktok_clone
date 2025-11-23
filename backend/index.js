@@ -115,6 +115,10 @@ const getAllowedOrigins = () => {
 
 const allowedOrigins = getAllowedOrigins();
 
+// Log allowed origins on startup
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+console.log('🔒 CORS credentials:', true);
+
 const buildContentSecurityPolicy = () => {
   const styleSrc = ["'self'", "https://fonts.googleapis.com"];
   const scriptSrc = ["'self'"];
@@ -126,6 +130,13 @@ const buildContentSecurityPolicy = () => {
     connectSrc.add('http://localhost:5000');
     connectSrc.add('ws://localhost:5000');
     connectSrc.add('ws://localhost:3000');
+    connectSrc.add('http://localhost:3000');
+    connectSrc.add('http://localhost:3001');
+    connectSrc.add('ws://localhost:3001');
+  } else {
+    // In production, allow inline styles for dynamic content
+    styleSrc.push("'unsafe-inline'");
+    scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
   }
 
   allowedOrigins.forEach(origin => {
@@ -177,12 +188,20 @@ app.use(xssClean());
 // CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) {
       return callback(null, true);
     }
+    
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    
+    // Log blocked origin for debugging
+    console.warn(`⚠️ CORS blocked origin: ${origin}`);
+    console.warn(`   Allowed origins:`, allowedOrigins);
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

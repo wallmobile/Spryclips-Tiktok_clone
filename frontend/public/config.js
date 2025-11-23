@@ -13,6 +13,6 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: '' // Yahan apni backend URL dalen (empty = same domain)
+  API_URL: '' // Empty = same domain (nginx will proxy /api to backend)
 };
 

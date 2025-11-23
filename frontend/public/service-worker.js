@@ -41,6 +41,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip chrome-extension and other unsupported schemes
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   const requestUrl = new URL(event.request.url);
 
   // Let API requests hit the network
@@ -108,10 +113,15 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           }
 
-          const responseToCache = networkResponse.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          // Only cache http/https requests
+          if (event.request.url.startsWith('http')) {
+            const responseToCache = networkResponse.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseToCache).catch((err) => {
+                console.warn('Cache put failed:', err);
+              });
+            });
+          }
 
           return networkResponse;
         })
@@ -126,11 +136,11 @@ self.addEventListener('fetch', (event) => {
 // Push notification event
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'TikTok Clone';
+  const title = data.title || 'SpryClips';
   const options = {
     body: data.body || 'You have a new notification',
-    icon: '/icon-192x192.png',
-    badge: '/icon-96x96.png',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     data: data.url || '/'
   };
 

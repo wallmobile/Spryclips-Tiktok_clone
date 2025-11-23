@@ -12,23 +12,30 @@ declare global {
 const isBrowser = typeof window !== 'undefined';
 
 const getAPIURL = (): string => {
-  if (isBrowser && window.APP_CONFIG?.API_URL) {
-    return window.APP_CONFIG.API_URL;
+  // Priority 1: Runtime config from window.APP_CONFIG (set in public/config.js)
+  // This should ALWAYS win if set, even if it's an empty string
+  if (isBrowser && window.APP_CONFIG && 'API_URL' in window.APP_CONFIG) {
+    return window.APP_CONFIG.API_URL || '';
   }
 
+  // Priority 2: Build-time env variable
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
 
+  // Priority 3: Auto-detect based on current location
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
+    // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
       return 'http://localhost:5000';
     }
-    return origin;
+    // Production mode: use empty string (same origin, nginx proxies /api)
+    return '';
   }
 
-  return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+  // Fallback
+  return '';
 };
 
 const API_URL = getAPIURL();
@@ -117,24 +124,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        // Normalize refresh error to ensure user-friendly message
-        if (isAxiosError(refreshError)) {
-          // Normalize the error to get the correct userMessage
-          const normalized = normalizeAxiosError(refreshError);
-          // Attach normalized userMessage to the error object
-          (refreshError as any).userMessage = normalized.userMessage;
-          // Also update the response data to ensure consistency
-          if (refreshError.response?.data && typeof refreshError.response.data === 'object') {
-            (refreshError.response.data as any).userMessage = normalized.userMessage;
-          }
-          
-          // Only broadcast refresh errors if they're not expected (e.g., user is logged out)
-          if (!hasBeenBroadcast(refreshError)) {
-            const refreshStatus = refreshError.response?.status;
-            // Don't broadcast 401 for refresh if it's expected (user not logged in)
-            if (refreshStatus !== 401) {
-              broadcastAxiosError(refreshError);
-            }
+        // Only broadcast refresh errors if they're not expected (e.g., user is logged out)
+        if (isAxiosError(refreshError) && !hasBeenBroadcast(refreshError)) {
+          const refreshStatus = refreshError.response?.status;
+          // Don't broadcast 401 for refresh if it's expected (user not logged in)
+          if (refreshStatus !== 401) {
+            broadcastAxiosError(refreshError);
           }
         }
         return Promise.reject(refreshError);
@@ -145,10 +140,6 @@ api.interceptors.response.use(
 
     // Don't broadcast expected 401 errors for auth endpoints
     if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401) {
-      // Normalize the error before broadcasting to ensure user-friendly messages
-      const normalized = normalizeAxiosError(error);
-      // Attach normalized userMessage to the error
-      (error as any).userMessage = normalized.userMessage;
       broadcastAxiosError(error);
     }
 
