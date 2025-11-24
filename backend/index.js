@@ -220,9 +220,18 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// PUBLIC UPLOADS DIRECTORY CONFIGURATION
+// In production, Nginx will serve files directly from /home/reactmaster/uploads
+// In development, we serve from the configured uploads directory
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+const PROCESSED_DIR = process.env.PROCESSED_DIR || path.join(__dirname, 'processed');
+
 // Serve uploaded files and processed videos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/processed', express.static(path.join(__dirname, 'processed')));
+// NOTE: In production with Nginx, these routes won't be hit as Nginx serves files directly
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/processed', express.static(PROCESSED_DIR));
+
+console.log(`📁 Serving uploads from: ${UPLOADS_DIR}`);
 
 // MongoDB connection
 const connectDB = async () => {
@@ -285,6 +294,28 @@ app.get('/api/health', (req, res) => {
 // API Documentation
 const { swaggerSpec, swaggerUi } = require('./utils/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Base API route - Welcome message
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TikTok Clone API',
+    version: '1.0.0',
+    endpoints: {
+      documentation: '/api-docs',
+      auth: '/api/auth',
+      videos: '/api/videos',
+      users: '/api/users',
+      upload: '/api/upload',
+      search: '/api/search',
+      analytics: '/api/analytics',
+      live: '/api/live',
+      more: 'See /api-docs for complete API documentation'
+    },
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // API Versioning - v1 routes
 app.use('/api/v1', require('./routes/v1'));

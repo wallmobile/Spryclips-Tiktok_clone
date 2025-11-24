@@ -7,8 +7,12 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
+// PUBLIC UPLOADS DIRECTORY - Production configuration
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+
 // Configure multer for document uploads
-const verificationUploadDir = path.join(__dirname, '../uploads/verification');
+const verificationUploadDir = path.join(UPLOADS_DIR, 'verification');
 if (!fs.existsSync(verificationUploadDir)) {
   fs.mkdirSync(verificationUploadDir, { recursive: true });
 }
@@ -72,7 +76,7 @@ router.post('/request', authMiddleware, upload.array('documents', 5), async (req
     // Prepare documents
     const documents = req.files.map((file, index) => ({
       type: req.body[`documentType_${index}`] || 'id',
-      url: `/uploads/verification/${file.filename}`,
+      url: `${UPLOADS_BASE_URL}/verification/${file.filename}`,
       uploadedAt: new Date(),
     }));
 

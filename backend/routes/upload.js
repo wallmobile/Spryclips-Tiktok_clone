@@ -13,16 +13,23 @@ const { processVideo } = require('../utils/videoProcessor');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
 const router = express.Router();
 
+// PUBLIC UPLOADS DIRECTORY - Production configuration
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  console.log(`✅ Created uploads directory: ${UPLOADS_DIR}`);
 }
+
+console.log(`📁 Uploads directory: ${UPLOADS_DIR}`);
+console.log(`🌐 Public URL base: ${UPLOADS_BASE_URL}`);
 
 // Configure multer for video upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -211,9 +218,12 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     speed: Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1
   };
 
+  // Generate public URL for the uploaded video
+  const videoPublicUrl = `${UPLOADS_BASE_URL}/${req.file.filename}`;
+
   const video = new Video({
     user: req.user._id,
-    url: `/uploads/${req.file.filename}`,
+    url: videoPublicUrl, // Use full public URL
     description: caption,
     hashtags,
     mentions,
