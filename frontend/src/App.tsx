@@ -275,10 +275,15 @@ const HomeFeed: React.FC = () => {
         (video as { avatar?: string }).avatar ||
         `https://ui-avatars.com/api/?name=${username}&background=ff0050&color=fff`;
 
+      // Production: Backend already returns full URLs (https://spryclips.com/uploads/...)
+      // Development: Use relative URLs, browser will use localhost:5000
+      const videoUrl = (video.url as string) || (video.videoUrl as string) || '';
+      const thumbnailUrl = video.thumbnail;
+
       return {
         id,
-        src: (video.url as string) || (video.videoUrl as string) || '',
-        poster: video.thumbnail || undefined,
+        src: videoUrl,
+        poster: thumbnailUrl || undefined,
         profileImg: avatar,
         username,
         description: video.description || '',

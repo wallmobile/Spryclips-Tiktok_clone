@@ -17,9 +17,8 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000',
+  API_URL: 'http://localhost:5000',  // Local: 'http://localhost:5000', Production: '' (empty for same domain)
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: process.env.REACT_APP_UPLOADS_BASE_URL || 
-                    (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads')
+  UPLOADS_BASE_URL: 'http://localhost:5000/uploads'  // Local: 'http://localhost:5000/uploads', Production: 'https://spryclips.com/uploads'
 };
 
