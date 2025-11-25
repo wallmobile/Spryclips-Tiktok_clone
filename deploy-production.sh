@@ -179,9 +179,9 @@ sudo cp $NGINX_CONFIG ${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S) || true
 print_step "Writing new nginx configuration..."
 sudo tee $NGINX_CONFIG > /dev/null << 'NGINX_EOF'
 server {
-    listen 80;
-    listen [::]:80;
-    server_name spryclips.com www.spryclips.com spryclip.com www.spryclip.com;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    # server_name spryclips.com www.spryclips.com spryclip.com www.spryclip.com;
 
     root /var/www/spryclips;
     index index.html;
