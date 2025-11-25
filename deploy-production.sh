@@ -413,7 +413,7 @@ print_success "Backup created: $BACKUP_FILE"
 
 # Write new config with active backend port
 print_step "Writing nginx configuration (pointing to $ACTIVE_ENV on port $ACTIVE_PORT)..."
-sudo tee $NGINX_CONFIG > /dev/null << NGINX_EOF
+sudo tee $NGINX_CONFIG > /dev/null <<EOF
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -438,12 +438,12 @@ server {
 
     # React SPA - catch all
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Static file caching
-    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)$ {
-        try_files $uri =404;
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\$ {
+        try_files \$uri =404;
         access_log off;
         expires 30d;
         add_header Cache-Control "public, max-age=2592000, immutable";
@@ -467,7 +467,7 @@ server {
         add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
         
         # Handle OPTIONS requests for CORS preflight
-        if ($request_method = 'OPTIONS') {
+        if (\$request_method = 'OPTIONS') {
             add_header Access-Control-Allow-Origin "*";
             add_header Access-Control-Allow-Methods "GET, OPTIONS";
             add_header Content-Length 0;
@@ -510,12 +510,12 @@ server {
     location /api/ {
         proxy_pass http://127.0.0.1:$ACTIVE_PORT;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
         client_max_body_size 500M;
         proxy_buffering off;
         proxy_connect_timeout 60s;
@@ -527,16 +527,16 @@ server {
     location /socket.io/ {
         proxy_pass http://127.0.0.1:$ACTIVE_PORT/socket.io/;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_read_timeout 86400;
         proxy_buffering off;
     }
 }
-NGINX_EOF
+EOF
 
 print_success "Nginx configuration written successfully"
 
