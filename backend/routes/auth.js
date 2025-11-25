@@ -27,8 +27,8 @@ const generateRefreshToken = () => {
   return crypto.randomBytes(40).toString('hex');
 };
 
-// Password validation regex - allows common special characters including #
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+// Password validation regex - allows common special characters
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d@$!%*?&#\-_.]{8,}$/;
 
 const sanitizeUsername = (value = '') => value.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
@@ -233,7 +233,7 @@ router.post('/register',
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters')
       .matches(passwordRegex)
-      .withMessage('Password must contain uppercase, lowercase, number, and special character')
+      .withMessage('Password must contain uppercase, lowercase, number, and special character (e.g., !@#$%^&*)')
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
