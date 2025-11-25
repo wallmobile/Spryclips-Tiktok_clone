@@ -260,14 +260,19 @@ echo ""
 print_section "🚀 STARTING TARGET ENVIRONMENT ($TARGET_ENV)"
 
 print_step "Starting backend on port $TARGET_PORT..."
-if [ -f "ecosystem.config.js" ]; then
-    print_substep "Using ecosystem.config.js configuration"
-    # Set PORT environment variable for the target
-    PORT=$TARGET_PORT pm2 start index.js --name $TARGET_APP --env production || print_error "PM2 start failed"
-else
-    print_substep "Starting with custom port configuration"
-    PORT=$TARGET_PORT pm2 start index.js --name $TARGET_APP || print_error "PM2 start failed"
-fi
+print_substep "Starting with custom port configuration for blue-green deployment"
+
+# Start with environment variables (not using ecosystem.config.js for blue-green)
+NODE_ENV=production \
+PORT=$TARGET_PORT \
+MONGODB_URI="mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority" \
+JWT_SECRET="spryclips-secret-key" \
+FRONTEND_URL="https://spryclips.com" \
+ALLOWED_ORIGINS="https://spryclips.com,https://www.spryclips.com,http://spryclips.com,http://www.spryclips.com,https://spryclip.com,https://www.spryclip.com" \
+TRUST_PROXY="true" \
+UPLOADS_DIR="/home/reactmaster/uploads" \
+pm2 start index.js --name $TARGET_APP --max-memory-restart 1G --update-env || print_error "PM2 start failed"
+
 print_success "Target environment started successfully on port $TARGET_PORT"
 
 print_step "Waiting for backend to initialize..."
