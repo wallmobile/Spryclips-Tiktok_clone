@@ -14,7 +14,8 @@ module.exports = {
         JWT_SECRET: "spryclips-secret-key",
         FRONTEND_URL: "https://spryclips.com",
         ALLOWED_ORIGINS: "https://spryclips.com,https://www.spryclips.com,http://spryclips.com,http://www.spryclips.com,https://spryclip.com,https://www.spryclip.com",
-        TRUST_PROXY: "true"
+        TRUST_PROXY: "true",
+        UPLOADS_DIR: "/home/reactmaster/uploads"
       }
     }
   ]

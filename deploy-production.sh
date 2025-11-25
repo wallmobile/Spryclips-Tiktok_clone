@@ -71,6 +71,14 @@ npm cache clean --force 2>/dev/null || true
 print_step "Installing backend dependencies..."
 npm install --production || print_error "Backend npm install failed"
 
+print_step "Creating uploads directory and setting permissions..."
+sudo mkdir -p /home/reactmaster/uploads || print_warn "Failed to create uploads directory"
+sudo mkdir -p /home/reactmaster/uploads/stories || print_warn "Failed to create stories subdirectory"
+sudo mkdir -p /home/reactmaster/uploads/verification || print_warn "Failed to create verification subdirectory"
+sudo mkdir -p /home/reactmaster/uploads/processed || print_warn "Failed to create processed subdirectory"
+sudo chown -R reactmaster:reactmaster /home/reactmaster/uploads || print_warn "Failed to set ownership"
+sudo chmod -R 755 /home/reactmaster/uploads || print_warn "Failed to set permissions"
+
 print_step "Starting backend with PM2..."
 if [ -f "ecosystem.config.js" ]; then
     pm2 start ecosystem.config.js --env production || print_error "PM2 start with ecosystem failed"
@@ -203,6 +211,63 @@ server {
         access_log off;
         expires 30d;
         add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    # Uploads directory - serve uploaded files
+    location /uploads/ {
+        alias /home/reactmaster/uploads/;
+        
+        # Security headers
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        
+        # Cache control for static files
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        
+        # Enable CORS for video/image loading
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        
+        # Handle OPTIONS requests for CORS preflight
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        
+        # Disable access log for uploads (optional, for performance)
+        access_log off;
+        
+        # Allow all file types
+        types {
+            video/mp4 mp4;
+            video/webm webm;
+            video/quicktime mov;
+            video/x-msvideo avi;
+            video/x-matroska mkv;
+            image/jpeg jpg jpeg;
+            image/png png;
+            image/gif gif;
+            application/pdf pdf;
+        }
+    }
+
+    # Processed videos (thumbnails, etc.)
+    location /processed/ {
+        alias /home/reactmaster/uploads/processed/;
+        
+        # Cache control
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin "*" always;
+        
+        access_log off;
     }
 
     # API proxy - preserve /api path
