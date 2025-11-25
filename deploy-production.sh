@@ -78,8 +78,14 @@ print_info() {
 BACKEND_DIR="$HOME/Tiktok_clone/backend"
 FRONTEND_DIR="$HOME/Tiktok_clone/frontend"
 WEB_ROOT="/var/www/spryclips"
-PM2_APP_NAME="spryclips-backend"
 NGINX_CONFIG="/etc/nginx/sites-available/default"
+STATE_FILE="$HOME/Tiktok_clone/.deployment-state"
+
+# Blue-Green Deployment Configuration
+PM2_APP_BLUE="spryclips-blue"
+PM2_APP_GREEN="spryclips-green"
+PORT_BLUE=5000
+PORT_GREEN=5001
 
 # ============================================
 # START DEPLOYMENT
@@ -92,6 +98,45 @@ echo -e "${BOLD}Deployment started at:${NC} $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 print_info "This script will deploy the latest version of Spryclips"
 print_info "All existing video files will be preserved"
+print_info "Using Blue-Green deployment strategy for zero-downtime"
+echo ""
+
+# ============================================
+# BLUE-GREEN DEPLOYMENT: DETERMINE ACTIVE ENVIRONMENT
+# ============================================
+print_section "🔵🟢 BLUE-GREEN DEPLOYMENT INITIALIZATION"
+
+# Determine which environment is currently active
+if [ -f "$STATE_FILE" ]; then
+    ACTIVE_ENV=$(cat "$STATE_FILE")
+    print_info "State file found: $ACTIVE_ENV is currently active"
+else
+    # First deployment - default to blue as active
+    ACTIVE_ENV="blue"
+    echo "$ACTIVE_ENV" > "$STATE_FILE"
+    print_info "First deployment detected: Setting blue as initial active environment"
+fi
+
+# Set deployment target (opposite of active)
+if [ "$ACTIVE_ENV" == "blue" ]; then
+    TARGET_ENV="green"
+    TARGET_APP="$PM2_APP_GREEN"
+    TARGET_PORT=$PORT_GREEN
+    ACTIVE_APP="$PM2_APP_BLUE"
+    ACTIVE_PORT=$PORT_BLUE
+else
+    TARGET_ENV="blue"
+    TARGET_APP="$PM2_APP_BLUE"
+    TARGET_PORT=$PORT_BLUE
+    ACTIVE_APP="$PM2_APP_GREEN"
+    ACTIVE_PORT=$PORT_GREEN
+fi
+
+echo ""
+print_success "Active environment: ${BOLD}${BLUE}$ACTIVE_ENV${NC} (Port: $ACTIVE_PORT)"
+print_success "Target environment: ${BOLD}${GREEN}$TARGET_ENV${NC} (Port: $TARGET_PORT)"
+echo ""
+print_info "Deployment strategy: Deploy to $TARGET_ENV → Health check → Switch traffic"
 echo ""
 
 # Navigate to project root
@@ -149,11 +194,14 @@ print_step "Navigating to backend directory..."
 cd "$BACKEND_DIR" || print_error "Backend directory not found at $BACKEND_DIR"
 print_success "In backend directory"
 
-# Stop existing PM2 process
-print_step "Stopping existing PM2 process..."
-pm2 stop $PM2_APP_NAME 2>/dev/null || true
-pm2 delete $PM2_APP_NAME 2>/dev/null || true
-print_success "Previous PM2 process stopped"
+# Stop target environment PM2 process (keeping active running)
+print_step "Preparing target environment ($TARGET_ENV)..."
+print_substep "Stopping $TARGET_APP if running..."
+pm2 stop $TARGET_APP 2>/dev/null || true
+pm2 delete $TARGET_APP 2>/dev/null || true
+print_success "Target environment prepared"
+
+print_info "Active environment ($ACTIVE_APP) continues serving traffic"
 
 # Clean backend dependencies
 print_step "Cleaning backend dependencies..."
@@ -208,22 +256,23 @@ print_substep "Group (www-data): Read, Write, Execute (for nginx)"
 print_substep "Others: Read, Execute"
 echo ""
 
-# Start backend with PM2
-print_section "🚀 STARTING BACKEND WITH PM2"
+# Start backend with PM2 on target environment
+print_section "🚀 STARTING TARGET ENVIRONMENT ($TARGET_ENV)"
 
-print_step "Starting backend application..."
+print_step "Starting backend on port $TARGET_PORT..."
 if [ -f "ecosystem.config.js" ]; then
     print_substep "Using ecosystem.config.js configuration"
-    pm2 start ecosystem.config.js --env production || print_error "PM2 start with ecosystem failed"
+    # Set PORT environment variable for the target
+    PORT=$TARGET_PORT pm2 start index.js --name $TARGET_APP --env production || print_error "PM2 start failed"
 else
-    print_substep "Using default PM2 configuration"
-    pm2 start npm --name $PM2_APP_NAME -- run start || print_error "PM2 start failed"
+    print_substep "Starting with custom port configuration"
+    PORT=$TARGET_PORT pm2 start index.js --name $TARGET_APP || print_error "PM2 start failed"
 fi
-print_success "Backend started successfully"
+print_success "Target environment started successfully on port $TARGET_PORT"
 
-print_step "Saving PM2 configuration..."
-pm2 save
-print_success "PM2 configuration saved"
+print_step "Waiting for backend to initialize..."
+sleep 5
+print_success "Backend initialization complete"
 
 # ============================================
 # FRONTEND BUILD & DEPLOYMENT
@@ -362,9 +411,9 @@ BACKUP_FILE="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
 sudo cp $NGINX_CONFIG $BACKUP_FILE || true
 print_success "Backup created: $BACKUP_FILE"
 
-# Write new config
-print_step "Writing new nginx configuration..."
-sudo tee $NGINX_CONFIG > /dev/null << 'NGINX_EOF'
+# Write new config with active backend port
+print_step "Writing nginx configuration (pointing to $ACTIVE_ENV on port $ACTIVE_PORT)..."
+sudo tee $NGINX_CONFIG > /dev/null << NGINX_EOF
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -459,7 +508,7 @@ server {
 
     # API proxy - preserve /api path
     location /api/ {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -476,7 +525,7 @@ server {
 
     # WebSocket / Socket.IO
     location /socket.io/ {
-        proxy_pass http://127.0.0.1:5000/socket.io/;
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT/socket.io/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -544,12 +593,35 @@ echo ""
 # ============================================
 print_section "🔍 RUNNING HEALTH CHECKS"
 
-print_step "Testing backend (direct connection)..."
-echo -e "${BLUE}    Endpoint: http://127.0.0.1:5000/api/health${NC}"
-if curl -I http://127.0.0.1:5000/api/health 2>/dev/null | head -n 5 | grep -q "200"; then
-    print_success "Backend responding correctly"
+# Test target environment before switching
+print_step "Testing TARGET environment ($TARGET_ENV on port $TARGET_PORT)..."
+echo -e "${BLUE}    Endpoint: http://127.0.0.1:$TARGET_PORT/api/health${NC}"
+TARGET_HEALTH_ATTEMPTS=0
+TARGET_HEALTHY=false
+
+while [ $TARGET_HEALTH_ATTEMPTS -lt 3 ]; do
+    if curl -I http://127.0.0.1:$TARGET_PORT/api/health 2>/dev/null | head -n 5 | grep -q "200"; then
+        TARGET_HEALTHY=true
+        break
+    fi
+    TARGET_HEALTH_ATTEMPTS=$((TARGET_HEALTH_ATTEMPTS + 1))
+    print_substep "Attempt $TARGET_HEALTH_ATTEMPTS failed, retrying..."
+    sleep 2
+done
+
+if [ "$TARGET_HEALTHY" = true ]; then
+    print_success "Target environment is healthy and ready for traffic"
 else
-    print_warn "Backend health check returned unexpected status"
+    print_error "Target environment health check failed after 3 attempts. Deployment aborted."
+fi
+echo ""
+
+print_step "Testing ACTIVE environment ($ACTIVE_ENV on port $ACTIVE_PORT)..."
+echo -e "${BLUE}    Endpoint: http://127.0.0.1:$ACTIVE_PORT/api/health${NC}"
+if curl -I http://127.0.0.1:$ACTIVE_PORT/api/health 2>/dev/null | head -n 5 | grep -q "200"; then
+    print_success "Active environment still responding correctly"
+else
+    print_warn "Active environment health check returned unexpected status"
 fi
 echo ""
 
@@ -583,6 +655,43 @@ fi
 echo ""
 
 # ============================================
+# BLUE-GREEN SWITCH: REDIRECT TRAFFIC TO NEW ENVIRONMENT
+# ============================================
+print_section "🔄 SWITCHING TRAFFIC TO NEW ENVIRONMENT"
+
+print_step "Current traffic is being served by: ${BOLD}$ACTIVE_ENV${NC}"
+print_step "Switching traffic to: ${BOLD}${GREEN}$TARGET_ENV${NC}"
+echo ""
+
+# Update state file
+echo "$TARGET_ENV" > "$STATE_FILE"
+print_success "State file updated: $TARGET_ENV is now marked as active"
+
+# Update nginx to point to target port
+print_step "Updating nginx configuration to use port $TARGET_PORT..."
+sudo sed -i "s|proxy_pass http://127.0.0.1:$ACTIVE_PORT|proxy_pass http://127.0.0.1:$TARGET_PORT|g" $NGINX_CONFIG
+print_success "Nginx configuration updated"
+
+# Reload nginx (not restart, to avoid dropping connections)
+print_step "Reloading nginx (graceful reload, no dropped connections)..."
+sudo nginx -t && sudo systemctl reload nginx || print_error "Nginx reload failed"
+print_success "Nginx reloaded successfully"
+
+echo ""
+print_success "${BOLD}${GREEN}Traffic successfully switched to $TARGET_ENV!${NC}"
+echo ""
+
+# Keep old environment running for rollback capability
+print_info "Previous environment ($ACTIVE_ENV) is kept running on port $ACTIVE_PORT"
+print_info "You can quickly rollback if needed using: pm2 restart $ACTIVE_APP"
+echo ""
+
+# Save PM2 configuration
+print_step "Saving PM2 configuration..."
+pm2 save
+print_success "PM2 configuration saved"
+
+# ============================================
 # DEPLOYMENT COMPLETE
 # ============================================
 print_header "✅ DEPLOYMENT COMPLETED SUCCESSFULLY! ✅"
@@ -596,9 +705,21 @@ echo -e "${CYAN}  Backend API:${NC} ${BOLD}https://www.spryclips.com/api/health$
 echo -e "${CYAN}  Test Config:${NC} ${BOLD}https://www.spryclips.com/test-config.html${NC}"
 echo ""
 
-print_section "📝 USEFUL COMMANDS"
-echo -e "${CYAN}  View Backend Logs:${NC}"
-echo -e "    pm2 logs $PM2_APP_NAME"
+print_section "�🟢 BLUE-GREEN DEPLOYMENT STATUS"
+echo -e "${CYAN}  Active Environment:${NC}   ${BOLD}${GREEN}$TARGET_ENV${NC} (Port: $TARGET_PORT)"
+echo -e "${CYAN}  Standby Environment:${NC}  ${BOLD}${BLUE}$ACTIVE_ENV${NC} (Port: $ACTIVE_PORT)"
+echo -e "${CYAN}  Traffic Routing:${NC}      All traffic → $TARGET_ENV"
+echo ""
+
+print_section "�📝 USEFUL COMMANDS"
+echo -e "${CYAN}  View Active Backend Logs ($TARGET_ENV):${NC}"
+echo -e "    pm2 logs $TARGET_APP"
+echo ""
+echo -e "${CYAN}  View Standby Backend Logs ($ACTIVE_ENV):${NC}"
+echo -e "    pm2 logs $ACTIVE_APP"
+echo ""
+echo -e "${CYAN}  View All Backend Logs:${NC}"
+echo -e "    pm2 logs"
 echo ""
 echo -e "${CYAN}  View Nginx Error Log:${NC}"
 echo -e "    sudo tail -f /var/log/nginx/spryclips.error.log"
@@ -609,14 +730,23 @@ echo ""
 echo -e "${CYAN}  Check PM2 Status:${NC}"
 echo -e "    pm2 status"
 echo ""
-echo -e "${CYAN}  Restart Backend:${NC}"
-echo -e "    pm2 restart $PM2_APP_NAME"
+echo -e "${CYAN}  Quick Rollback (switch back to $ACTIVE_ENV):${NC}"
+echo -e "    sudo sed -i 's|$TARGET_PORT|$ACTIVE_PORT|g' $NGINX_CONFIG && sudo systemctl reload nginx"
+echo -e "    echo '$ACTIVE_ENV' > $STATE_FILE"
+echo ""
+echo -e "${CYAN}  Stop Old Environment (after confirming new one works):${NC}"
+echo -e "    pm2 stop $ACTIVE_APP"
 echo ""
 
 print_section "📦 IMPORTANT NOTES"
-print_info "All video files have been preserved in /home/reactmaster/uploads"
-print_info "Backend is running with PM2 and will auto-restart on failure"
-print_info "Nginx is configured to serve frontend and proxy API requests"
+print_info "✅ All video files have been preserved in /home/reactmaster/uploads"
+print_info "✅ Zero-downtime deployment completed using blue-green strategy"
+print_info "✅ Both environments are running for instant rollback capability"
+print_info "✅ Backend will auto-restart on failure (PM2 managed)"
+print_info "✅ Nginx is configured to serve frontend and proxy API requests"
+echo ""
+print_warn "After confirming the new deployment works correctly, you can stop the old environment:"
+print_substep "pm2 stop $ACTIVE_APP"
 echo ""
 
 echo -e "${BOLD}${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
