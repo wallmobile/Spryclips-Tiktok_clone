@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import useOverlayPage from '../hooks/useOverlayPage';
+import SearchPage from './SearchPage';
 import {
   fetchSupportedLanguages,
   fetchExperiencePreferences,
@@ -30,6 +31,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
   const [loadingPreferences, setLoadingPreferences] = useState(false);
   const [preferenceFeedback, setPreferenceFeedback] = useState(null);
+  const [isSearchPageOpen, setIsSearchPageOpen] = useState(false);
 
   useOverlayPage(onClose, { bodyClass: 'more-page-open', enabled: isOverlay });
 
@@ -57,18 +59,43 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
 
   useEffect(() => {
     let active = true;
+    let timeoutId;
 
     const loadLanguagesAndPrefs = async () => {
+      // Don't load preferences if not authenticated - show content immediately
       if (!isAuthenticated) {
         return;
       }
+      
+      // Load preferences in background without blocking UI
       try {
-        setLoadingPreferences(true);
+        // Don't show loading spinner for initial load - only for updates
+        // setLoadingPreferences(true); // Removed to prevent blocking UI
+        
+        // Add timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          if (active) {
+            // setLoadingPreferences(false); // Not needed since we don't set it to true
+          }
+        }, 3000); // 3 second timeout
+
         const [supported, experience] = await Promise.all([
-          fetchSupportedLanguages(),
-          fetchExperiencePreferences()
+          fetchSupportedLanguages().catch(err => {
+            console.error('Failed to fetch languages:', err);
+            return []; // Return empty array on error
+          }),
+          fetchExperiencePreferences().catch(err => {
+            console.error('Failed to fetch preferences:', err);
+            return null; // Return null on error
+          })
         ]);
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
         if (!active) return;
+        
         if (Array.isArray(supported) && supported.length > 0) {
           setLanguages(supported);
         }
@@ -84,15 +111,20 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       } catch (error) {
         console.error('Failed to load experience preferences', error);
       } finally {
-        if (active) {
-          setLoadingPreferences(false);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
         }
+        // Don't set loading to false since we never set it to true for initial load
       }
     };
 
+    // Load preferences asynchronously without blocking
     loadLanguagesAndPrefs();
     return () => {
       active = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [isAuthenticated, darkMode, setDarkMode]);
 
@@ -158,6 +190,28 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
   const menuItems = useMemo(() => (
     [
       {
+        id: 'search',
+        label: 'Search',
+        icon: 'fa-search',
+        action: 'search'
+      },
+      {
+        id: 'watch_later',
+        label: 'Watch Later',
+        icon: 'fa-bookmark',
+        action: 'route',
+        path: '/watch-later',
+        auth: true
+      },
+      {
+        id: 'playlists',
+        label: 'Playlists',
+        icon: 'fa-list',
+        action: 'route',
+        path: '/playlists',
+        auth: true
+      },
+      {
         id: 'tiktok_studio',
         label: 'TikTok Studio',
         icon: 'fa-tv',
@@ -213,6 +267,11 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
     ]), [darkMode]);
 
   const handleMenuItemClick = (item) => {
+    if (item.auth && !isAuthenticated) {
+      navigate('/login', { state: { from: '/more' } });
+      return;
+    }
+    
     switch (item.action) {
       case 'route':
         navigate(item.path);
@@ -225,6 +284,9 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
         break;
       case 'toggle-theme':
         handleThemeToggle();
+        break;
+      case 'search':
+        setIsSearchPageOpen(true);
         break;
       default:
         break;
@@ -296,6 +358,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
             ? darkMode ? 'ON' : 'OFF'
             : null;
 
+          // Show all items - authentication check happens on click
           return (
             <div key={item.id}>
               <button className="more-menu-item" onClick={() => handleMenuItemClick(item)} type="button">
@@ -358,13 +421,25 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
 
   if (isOverlay) {
     return (
-      <div className="more-overlay" onClick={onClose} role="dialog" aria-modal="true">
-        {content}
-      </div>
+      <>
+        <div className="more-overlay" onClick={onClose} role="dialog" aria-modal="true">
+          {content}
+        </div>
+        {isSearchPageOpen && (
+          <SearchPage onClose={() => setIsSearchPageOpen(false)} />
+        )}
+      </>
     );
   }
 
-  return <div className="more-page">{content}</div>;
+  return (
+    <>
+      <div className="more-page">{content}</div>
+      {isSearchPageOpen && (
+        <SearchPage onClose={() => setIsSearchPageOpen(false)} />
+      )}
+    </>
+  );
 };
 
 export default More;

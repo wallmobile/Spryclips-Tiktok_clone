@@ -461,3 +461,482 @@
   color: #0F172A !important; /* Dark text */
 }
 
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .search-overlay {
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+
+body.dark-mode .search-header {
+  background: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .search-input-wrapper {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .search-input-wrapper:focus-within {
+  border-color: rgba(255, 0, 80, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.25) !important;
+}
+
+body.dark-mode .search-input {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-input::placeholder {
+  color: rgba(203, 213, 225, 0.5) !important;
+}
+
+body.dark-mode .search-clear-btn {
+  color: rgba(203, 213, 225, 0.6) !important;
+}
+
+body.dark-mode .search-clear-btn:hover {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-close-btn {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.2) 0%, rgba(37, 244, 238, 0.2) 100%) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #FF0050 !important;
+}
+
+body.dark-mode .search-close-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.3) 0%, rgba(37, 244, 238, 0.3) 100%) !important;
+  border-color: rgba(255, 0, 80, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .search-suggestions {
+  background: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .search-section-header {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .clear-history-btn {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .clear-history-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.15) 0%, rgba(37, 244, 238, 0.15) 100%) !important;
+}
+
+body.dark-mode .search-history-item,
+body.dark-mode .search-trending-item,
+body.dark-mode .search-suggestion-item {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-history-item:hover,
+body.dark-mode .search-trending-item:hover,
+body.dark-mode .search-suggestion-item:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.12) 0%, rgba(37, 244, 238, 0.12) 100%) !important;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.15) !important;
+}
+
+body.dark-mode .trending-number {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.2) 0%, rgba(37, 244, 238, 0.2) 100%) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #FF0050 !important;
+}
+
+body.dark-mode .search-results {
+  background: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .search-tabs {
+  border-bottom-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .search-tabs button {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-tabs button:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.08) 0%, rgba(37, 244, 238, 0.08) 100%) !important;
+  color: #FF0050 !important;
+}
+
+body.dark-mode .search-tabs button.active {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.15) 0%, rgba(37, 244, 238, 0.15) 100%) !important;
+  color: #FF0050 !important;
+  border-bottom-color: #FF0050 !important;
+}
+
+body.dark-mode .search-loading {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-results-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-video-thumbnail {
+  background: rgba(51, 65, 85, 0.5) !important;
+}
+
+body.dark-mode .search-video-duration {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .search-video-description {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .search-video-stats {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-user-item,
+body.dark-mode .search-hashtag-item,
+body.dark-mode .search-music-item {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-user-item:hover,
+body.dark-mode .search-hashtag-item:hover,
+body.dark-mode .search-music-item:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.12) 0%, rgba(37, 244, 238, 0.12) 100%) !important;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.15) !important;
+}
+
+body.dark-mode .search-user-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-user-followers {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-hashtag-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-hashtag-count {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-music-title {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .search-music-artist {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-music-stats {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-no-results {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .search-no-results p {
+  color: #CBD5E1 !important;
+}
+
+/* ==================== MOBILE RESPONSIVE STYLES ==================== */
+
+/* Tablet (≤ 768px) */
+@media (max-width: 48rem) {
+  .search-overlay {
+    padding-top: 12px;
+  }
+
+  .search-container {
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .search-header {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .search-input-wrapper {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .search-input {
+    font-size: 15px;
+  }
+
+  .search-close-btn {
+    font-size: 13px;
+    padding: 8px 14px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .search-suggestions,
+  .search-results {
+    padding: 12px 16px;
+    margin-top: 8px;
+  }
+
+  .search-videos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .search-tabs {
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .search-tabs button {
+    padding: 10px 14px;
+    font-size: 15px;
+    min-height: 44px;
+  }
+
+  .search-section {
+    margin-bottom: 20px;
+  }
+
+  .search-results-content {
+    gap: 24px;
+  }
+
+  .search-results-section h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+}
+
+/* Mobile (≤ 480px) */
+@media (max-width: 30rem) {
+  .search-overlay {
+    padding-top: 8px;
+  }
+
+  .search-container {
+    padding: 8px;
+  }
+
+  .search-header {
+    padding: 10px 12px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+
+  .search-input-wrapper {
+    padding: 10px 12px;
+    gap: 8px;
+    border-radius: 20px;
+  }
+
+  .search-input {
+    font-size: 14px;
+  }
+
+  .search-clear-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+
+  .search-close-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 80px;
+  }
+
+  .search-suggestions,
+  .search-results {
+    padding: 10px 12px;
+    margin-top: 8px;
+    border-radius: 10px;
+    max-height: 75vh;
+  }
+
+  .search-videos-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .search-video-thumbnail {
+    border-radius: 6px;
+  }
+
+  .search-video-duration {
+    bottom: 6px;
+    right: 6px;
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+
+  .search-video-info {
+    margin-top: 6px;
+  }
+
+  .search-video-description {
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+
+  .search-video-stats {
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .search-tabs {
+    gap: 4px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+  }
+
+  .search-tabs button {
+    padding: 8px 12px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .search-section {
+    margin-bottom: 16px;
+  }
+
+  .search-section-header {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .search-history-item,
+  .search-trending-item,
+  .search-suggestion-item,
+  .search-user-item,
+  .search-hashtag-item,
+  .search-music-item {
+    padding: 10px;
+    gap: 10px;
+    min-height: 44px;
+  }
+
+  .search-user-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .search-user-name,
+  .search-hashtag-name,
+  .search-music-title {
+    font-size: 15px;
+  }
+
+  .search-user-followers,
+  .search-hashtag-count,
+  .search-music-artist,
+  .search-music-stats {
+    font-size: 13px;
+  }
+
+  .trending-number {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .search-results-content {
+    gap: 20px;
+  }
+
+  .search-results-section h3 {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .search-loading {
+    padding: 40px 16px;
+  }
+
+  .search-loading i {
+    font-size: 28px;
+  }
+
+  .search-no-results {
+    padding: 40px 16px;
+  }
+
+  .search-no-results i {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+
+  .search-no-results p {
+    font-size: 15px;
+  }
+
+  .clear-history-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+    min-height: 44px;
+  }
+}
+
+/* Small Mobile (≤ 375px) */
+@media (max-width: 23.4375rem) {
+  .search-overlay {
+    padding-top: 4px;
+  }
+
+  .search-container {
+    padding: 4px;
+  }
+
+  .search-header {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .search-input-wrapper {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .search-input {
+    font-size: 14px;
+  }
+
+  .search-close-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+    min-width: 70px;
+  }
+
+  .search-videos-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .search-tabs {
+    gap: 2px;
+  }
+
+  .search-tabs button {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .search-history-item,
+  .search-trending-item,
+  .search-suggestion-item,
+  .search-user-item,
+  .search-hashtag-item,
+  .search-music-item {
+    padding: 8px;
+    gap: 8px;
+  }
+}
+

@@ -10,7 +10,7 @@
   min-width: 2.75rem;
   min-height: 2.75rem;
   border-radius: 0.75rem; /* 12px */
-  background: rgba(37, 99, 235, 0.9);
+  background: rgba(255, 0, 80, 0.9) !important; /* Red background like TikTok */
   backdrop-filter: blur(0.625rem); /* 10px */
   border: 0.0625rem solid rgba(255, 255, 255, 0.2); /* 1px */
   color: #fff;
@@ -39,8 +39,36 @@ body.signup-page-open .mobile-menu-toggle {
   pointer-events: none !important;
 }
 
+/* Hide mobile menu toggle (sidebar hamburger) when profile page is open */
+body.profile-page-open .mobile-menu-toggle {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide mobile menu toggle (sidebar hamburger) on all pages except For You */
+/* Show only on For You page (/) - Hide on all other routes */
+body.explore-page-open .mobile-menu-toggle,
+body.upload-page-open .mobile-menu-toggle,
+body.more-page-open .mobile-menu-toggle,
+body.following-page-open .mobile-menu-toggle,
+body.live-page-open .mobile-menu-toggle,
+body.search-page-open .mobile-menu-toggle {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Additional route-based hiding - Hide hamburger on all non-home routes */
+/* This ensures hamburger is hidden even if body classes are not set */
+.mobile-menu-toggle {
+  /* Will be conditionally rendered in Sidebar.js based on location.pathname === '/' */
+}
+
 .mobile-menu-toggle:hover {
-  background: rgba(37, 99, 235, 1);
+  background: rgba(255, 0, 80, 1) !important; /* Red on hover */
   transform: scale(1.05);
 }
 
@@ -50,11 +78,11 @@ body.signup-page-open .mobile-menu-toggle {
 
 /* Page close button styling (when page is open) */
 .mobile-menu-toggle.page-close-btn {
-  background: rgba(37, 99, 235, 0.9);
+  background: rgba(255, 0, 80, 0.9) !important; /* Red background */
 }
 
 .mobile-menu-toggle.page-close-btn:hover {
-  background: rgba(37, 99, 235, 1);
+  background: rgba(255, 0, 80, 1) !important; /* Red on hover */
 }
 
 .mobile-menu-toggle.page-close-btn i {
@@ -101,7 +129,7 @@ body.signup-page-open .mobile-menu-toggle {
   width: 17.5rem; /* 280px converted to rem */
   max-width: 85vw; /* Responsive max width */
   height: 100vh;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: #ffffff !important; /* White background like For You page */
   border-right: 0.0625rem solid rgba(255, 0, 80, 0.15); /* 1px */
   display: flex;
   flex-direction: column;
@@ -144,7 +172,7 @@ body.signup-page-open .mobile-menu-toggle {
 }
 
 .sidebar-header {
-  padding: 1.25rem; /* 20px */
+  padding: 1rem 1.25rem; /* 16px 20px - slightly reduced */
   border-bottom: 0.0625rem solid #E0F2FE; /* 1px */
   display: flex;
   align-items: center;
@@ -182,7 +210,7 @@ body.signup-page-open .mobile-menu-toggle {
 }
 
 .logo {
-  font-size: 1.75rem; /* 28px */
+  font-size: 1.625rem; /* 26px - slightly reduced */
   font-weight: 700;
   background: linear-gradient(135deg, #FF0050 0%, #FE2C55 25%, #25F4EE 75%, #25F4EE 100%);
   -webkit-background-clip: text;
@@ -241,21 +269,21 @@ body.signup-page-open .mobile-menu-toggle {
 
 .sidebar-nav {
   flex: 1;
-  padding: 10px 0;
+  padding: 0.75rem 0; /* 12px - slightly reduced */
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.9375rem; /* 15px */
-  padding: 0.875rem 1.5rem; /* 14px 24px */
-  margin: 0.25rem 0.625rem; /* 4px 10px */
+  gap: 0.875rem; /* 14px - slightly reduced */
+  padding: 0.75rem 1.375rem; /* 12px 22px - slightly reduced */
+  margin: 0.1875rem 0.5625rem; /* 3px 9px - slightly reduced */
   border-radius: 0.625rem; /* 10px */
   color: #656565;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.9375rem; /* 15px */
-  min-height: 3rem; /* 48px - touch-friendly */
+  font-size: 0.9375rem; /* 15px - slightly reduced */
+  min-height: 2.75rem; /* 44px - slightly reduced */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -264,8 +292,8 @@ body.signup-page-open .mobile-menu-toggle {
 }
 
 .nav-item i {
-  font-size: 1.5rem; /* 24px */
-  width: 1.5rem; /* 24px */
+  font-size: 1.375rem; /* 22px - slightly reduced */
+  width: 1.375rem; /* 22px - slightly reduced */
   text-align: center;
   flex-shrink: 0;
 }
@@ -306,7 +334,7 @@ body.signup-page-open .mobile-menu-toggle {
 }
 
 .sidebar-footer {
-  padding: 20px;
+  padding: 1rem 1.25rem; /* 16px 20px - slightly reduced */
   border-top: 1px solid #E0F2FE;
   margin-top: auto;
   flex-shrink: 0;
@@ -314,13 +342,13 @@ body.signup-page-open .mobile-menu-toggle {
 
 .login-btn-sidebar {
   width: 100%;
-  padding: 0.875rem; /* 14px */
+  padding: 0.75rem; /* 12px - slightly reduced */
   margin: 0;
   background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
-  color: #fff;
-  border: none;
-  border-radius: 1.25rem; /* 20px */
-  font-size: 0.9375rem; /* 15px */
+  border: none !important;
+  color: #FFFFFF !important;
+  border-radius: 1.125rem; /* 18px - slightly reduced */
+  font-size: 0.9375rem; /* 15px - slightly reduced */
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -334,6 +362,34 @@ body.signup-page-open .mobile-menu-toggle {
 }
 
 .login-btn-sidebar:hover {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 40%, #25F4EE 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.4) !important;
+  filter: brightness(1.05);
+}
+
+.signup-btn-sidebar {
+  width: 100%;
+  padding: 0.75rem; /* 12px - slightly reduced */
+  margin: 0;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 1.125rem; /* 18px - slightly reduced */
+  font-size: 0.9375rem; /* 15px - slightly reduced */
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 3rem; /* 48px - touch-friendly */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(255, 0, 80, 0.3) !important;
+}
+
+.signup-btn-sidebar:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4) !important;
   filter: brightness(1.05);
@@ -342,14 +398,14 @@ body.signup-page-open .mobile-menu-toggle {
 .logout-btn {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 12px 24px;
-  margin: 5px 10px;
-  border-radius: 10px;
+  gap: 0.875rem; /* 14px - slightly reduced */
+  padding: 0.75rem 1.25rem; /* 12px 20px - slightly reduced */
+  margin: 0.3125rem 0.625rem; /* 5px 10px - slightly reduced */
+  border-radius: 0.625rem; /* 10px */
   color: #656565;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 15px;
+  font-size: 0.9375rem; /* 15px - slightly reduced */
   min-height: 48px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -436,14 +492,27 @@ body.dark-mode .logout-btn:hover {
 }
 
 body.dark-mode .login-btn-sidebar {
-  background: #2563EB !important; /* Exact same blue as Sign up button in dark mode */
-  border: none !important;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important; /* Exact same shadow as Navbar buttons */
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 body.dark-mode .login-btn-sidebar:hover {
-  background: #2563EB !important; /* Same color on hover - no change */
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important; /* Same shadow on hover - no change */
+  background: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .signup-btn-sidebar {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .signup-btn-sidebar:hover {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4) !important;
+  filter: brightness(1.05);
 }
 
 body.dark-mode .sidebar::-webkit-scrollbar-track {
@@ -461,12 +530,12 @@ body.dark-mode .sidebar::-webkit-scrollbar-thumb:hover {
 
 /* Dark Mode - Mobile Menu Toggle */
 body.dark-mode .mobile-menu-toggle {
-  background: rgba(37, 99, 235, 0.9) !important;
+  background: rgba(255, 0, 80, 0.9) !important; /* Red background in dark mode too */
   border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.dark-mode .mobile-menu-toggle:hover {
-  background: rgba(37, 99, 235, 1) !important;
+  background: rgba(255, 0, 80, 1) !important; /* Red on hover in dark mode */
 }
 
 body.dark-mode .mobile-menu-overlay {
@@ -481,6 +550,108 @@ body.dark-mode .mobile-menu-close {
 
 body.dark-mode .mobile-menu-close:hover {
   background: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Mini Tablet / Large Phones: 481px - 767px (30.0625rem - 47.9375rem) */
+@media (min-width: 30.0625rem) and (max-width: 47.9375rem) {
+  .sidebar {
+    transform: translateX(-100%) !important; /* Hidden by default on mini tablet */
+    pointer-events: none !important;
+  }
+
+  .sidebar.open {
+    transform: translateX(0) !important; /* Show when burger menu clicked */
+    pointer-events: auto !important;
+  }
+
+  .mobile-menu-toggle {
+    display: flex !important; /* Show burger menu on mini tablet */
+  }
+
+  .mobile-menu-overlay {
+    display: block !important; /* Show overlay when menu is open */
+  }
+}
+
+/* Tablet: ALL Devices - 768px - 1024px (48rem - 64rem)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro 12.9" (1024x1366),
+   iPad Pro 11" (834x1194), Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini - INCLUDES 1024px */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .sidebar {
+    transform: translateX(-100%) !important; /* Hidden by default on tablet - drawer style */
+    pointer-events: none !important;
+  }
+
+  .sidebar.open,
+  .sidebar.mobile-open {
+    transform: translateX(0) !important; /* Show when burger menu clicked */
+    pointer-events: auto !important;
+  }
+
+  /* Force show hamburger menu on ALL tablet sizes including 1024px (iPad Pro 12.9") */
+  /* Override any body classes or conflicting rules */
+  body .mobile-menu-toggle,
+  html .mobile-menu-toggle,
+  .mobile-menu-toggle {
+    display: flex !important; /* Show burger menu on tablet - same as mobile */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 0.75rem !important; /* 12px from top */
+    left: 0.75rem !important; /* 12px from left */
+    z-index: 10011 !important; /* Above sidebar and overlay */
+    width: 2.75rem !important; /* 44px - touch-friendly */
+    height: 2.75rem !important; /* 44px */
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    max-width: 2.75rem !important;
+    max-height: 2.75rem !important;
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background */
+    backdrop-filter: blur(0.625rem) !important; /* 10px */
+    border: 0.0625rem solid rgba(255, 255, 255, 0.2) !important; /* 1px */
+    color: #fff !important;
+    font-size: 1.125rem !important; /* 18px */
+    border-radius: 0.75rem !important; /* 12px */
+    cursor: pointer !important;
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15) !important; /* 0 4px 12px */
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Override body classes that might hide hamburger on tablet - but only when NOT on profile/signup page */
+  /* On tablet/iPad, hamburger should work on all pages EXCEPT profile and signup */
+  /* Note: profile-page-open and signup-page-open classes still hide hamburger (that's correct) */
+  /* This ensures hamburger works on For You, Explore, etc. pages on iPad Pro */
+  
+  /* Ensure hamburger icon is visible */
+  .mobile-menu-toggle i,
+  .mobile-menu-toggle .fa-bars,
+  .mobile-menu-toggle .fa-x {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: #ffffff !important;
+    font-size: 1.125rem !important; /* 18px */
+  }
+
+  .mobile-menu-overlay {
+    display: block !important; /* Show overlay when menu is open */
+    z-index: 10009 !important; /* Below hamburger, above sidebar */
+  }
+  
+  .mobile-menu-overlay.mobile-open {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
 }
 
 /* Desktop: > 1024px (64rem) - Ensure sidebar is always visible, except when page is open */
@@ -507,43 +678,7 @@ body.dark-mode .mobile-menu-close:hover {
   }
 }
 
-/* Tablet Responsive (48rem - 64rem = 768px - 1024px) */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
-  .sidebar {
-    width: 15rem; /* 240px */
-    max-width: 30vw; /* Responsive */
-    transform: translateX(0) !important;
-    pointer-events: auto !important;
-  }
-
-  /* Hide sidebar on tablet when profile or other overlay pages are open */
-  .sidebar.page-open {
-    transform: translateX(-100%) !important;
-    pointer-events: none !important;
-  }
-
-  .mobile-menu-toggle {
-    display: none !important;
-  }
-
-  .mobile-menu-overlay {
-    display: none !important;
-  }
-
-  .logo {
-    font-size: 1.5rem; /* 24px */
-  }
-
-  .nav-item {
-    padding: 0.75rem 1.25rem; /* 12px 20px */
-    font-size: 0.875rem; /* 14px */
-  }
-
-  .nav-item i {
-    font-size: 1.375rem; /* 22px */
-    width: 1.375rem;
-  }
-}
+/* Removed conflicting duplicate tablet media query - using drawer style from line 551-569 instead */
 
 /* Mobile Responsive (max-width: 48rem = 768px) */
 @media (max-width: 48rem) {
@@ -762,6 +897,14 @@ body.dark-mode .mobile-menu-close:hover {
   }
 
   .login-btn-sidebar {
+    padding: 0.75rem !important; /* 12px */
+    margin: 0 0 0.5rem 0 !important; /* Add bottom margin for spacing */
+    font-size: 0.875rem !important; /* 14px */
+    min-height: 2.75rem !important; /* 44px */
+    border-radius: 1.125rem !important; /* 18px */
+  }
+  
+  .signup-btn-sidebar {
     padding: 0.75rem !important; /* 12px */
     font-size: 0.875rem !important; /* 14px */
     min-height: 2.75rem !important; /* 44px */

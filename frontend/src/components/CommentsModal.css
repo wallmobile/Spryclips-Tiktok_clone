@@ -83,9 +83,7 @@
 }
 
 .comments-modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: rotate(90deg);
-  border-color: rgba(255, 255, 255, 0.4);
+  /* Hover effect removed - no changes on hover */
 }
 
 /* Sort Container */
@@ -631,6 +629,243 @@
     width: 36px;
     height: 36px;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .comments-modal-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .comments-modal-container {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .comments-modal-header {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .comments-modal-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comments-modal-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comments-sort-container {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .sort-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .sort-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .sort-btn.active {
+  background: #2563EB !important;
+  border-color: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comments-list {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+}
+
+body.dark-mode .comments-list::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .comments-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .comments-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .comments-loading,
+body.dark-mode .comments-empty {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .comments-loading i {
+  color: #2563EB !important;
+}
+
+body.dark-mode .comments-empty i {
+  color: #64748B !important;
+}
+
+body.dark-mode .comments-loading p,
+body.dark-mode .comments-empty p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .comment-avatar {
+  border-color: #475569 !important;
+}
+
+body.dark-mode .comment-username {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comment-badge {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comment-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .comment-text {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .comment-action-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .comment-action-btn:hover {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comment-action-btn.liked {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .comment-action-btn.delete-btn {
+  color: #F87171 !important;
+}
+
+body.dark-mode .comment-action-btn.delete-btn:hover {
+  color: #EF4444 !important;
+}
+
+body.dark-mode .view-replies-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .view-replies-btn:hover {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .replies-list {
+  border-left-color: #475569 !important;
+}
+
+body.dark-mode .reply-avatar {
+  border-color: #475569 !important;
+}
+
+body.dark-mode .reply-username {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .reply-badge {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .reply-to {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .reply-to-username {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .reply-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .reply-text {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .reply-input-container {
+  border-top-color: #475569 !important;
+}
+
+body.dark-mode .reply-input-avatar {
+  border-color: #475569 !important;
+}
+
+body.dark-mode .reply-input-wrapper {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .reply-input-wrapper:focus-within {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .reply-input {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .reply-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .reply-send-btn {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .reply-send-btn:hover:not(:disabled) {
+  background: #38BDF8 !important;
+}
+
+body.dark-mode .comments-input-container {
+  background: #1E293B !important;
+  border-top-color: #334155 !important;
+}
+
+body.dark-mode .comments-input-avatar {
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .comments-input-wrapper {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .comments-input-wrapper:focus-within {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .comments-input {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comments-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .comments-send-btn {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .comments-send-btn:hover:not(:disabled) {
+  background: #38BDF8 !important;
 }
 
 

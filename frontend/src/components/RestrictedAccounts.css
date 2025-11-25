@@ -367,3 +367,141 @@
     width: 100%;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .restricted-accounts-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .restricted-accounts-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .restricted-header {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .restricted-close {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .restricted-close:hover {
+  background: #334155 !important;
+}
+
+body.dark-mode .restricted-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .restricted-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .restricted-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .restricted-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .restricted-info {
+  background: rgba(255, 193, 7, 0.15) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
+}
+
+body.dark-mode .restricted-info h3 {
+  color: #FFC107 !important;
+}
+
+body.dark-mode .restricted-info p {
+  color: #FFC107 !important;
+}
+
+body.dark-mode .restricted-features h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .feature-card {
+  background: #334155 !important;
+}
+
+body.dark-mode .feature-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .feature-card p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .restrict-user-section {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .restrict-user-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .restrict-user-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .restrict-user-input:focus {
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .restrict-user-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .restricted-users-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-restricted {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .empty-restricted p {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-restricted span {
+  color: #64748B !important;
+}
+
+body.dark-mode .restricted-user-item {
+  background: #334155 !important;
+}
+
+body.dark-mode .restricted-user-item:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .restricted-user-avatar {
+  background: #475569 !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .restricted-username {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .restricted-date {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .unrestrict-btn {
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .unrestrict-btn:hover {
+  background: #475569 !important;
+  border-color: #10B981 !important;
+  color: #10B981 !important;
+}

@@ -23,7 +23,7 @@
 }
 
 .user-verification-modal {
-  background: #F5F7FA; /* Changed from dark #1E1E2E to light background */
+  background: #ffffff; /* White background */
   border-radius: 20px;
   width: 100%;
   max-width: 100vw;
@@ -46,14 +46,14 @@
   padding: 20px 24px;
   padding-right: 4rem !important; /* Added padding-right for close button space */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Changed from dark border to light */
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Added gradient header like ManageAccount */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   flex-shrink: 0;
   position: relative !important; /* Added for absolute positioning of close button */
   min-height: 3.5rem; /* Added min-height for better visibility */
 }
 
 .verification-close {
-  background: rgba(37, 99, 235, 0.95) !important; /* Website blue background for better visibility */
+  background: rgba(255, 0, 80, 0.95) !important; /* TikTok pink background */
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #FFFFFF !important;
   font-size: 1.125rem !important; /* 18px */
@@ -67,7 +67,7 @@
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
   z-index: 10001 !important;
   position: absolute !important; /* Changed from relative to absolute */
   top: 1rem !important; /* 16px from top */
@@ -78,10 +78,7 @@
 }
 
 .verification-close:hover {
-  background: rgba(37, 99, 235, 1) !important; /* Brighter blue on hover */
-  border: 2px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5) !important;
-  transform: scale(1.05);
+  /* Hover effect removed - no changes on hover */
 }
 
 .verification-close i {
@@ -136,9 +133,9 @@
 }
 
 .user-verification-overlay::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important; /* Website colors */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   border: 2px solid rgba(255, 255, 255, 0.5) !important; /* Brighter border on hover */
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4) !important; /* Enhanced shadow on hover */
+  box-shadow: 0 4px 8px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
 }
 
 /* Hide content scrollbar since we're using overlay scroll */
@@ -205,7 +202,7 @@
   padding: 32px 16px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #E0E7FF;
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   color: #1E3A8A;
   margin-bottom: 24px;
   text-align: center;
@@ -228,7 +225,7 @@
 
 .verification-badge-preview {
   background: #FFFFFF; /* White background */
-  border: 1px solid #E0F2FE; /* Light blue border */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   border-radius: 16px;
   padding: 32px;
   text-align: center;
@@ -305,7 +302,7 @@
 
 .requirement-card {
   background: #FFFFFF; /* White background */
-  border: 1px solid #E0F2FE; /* Light blue border */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   border-radius: 12px;
   padding: 20px;
   text-align: center;
@@ -315,7 +312,7 @@
 .requirement-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%); /* Website blue gradient */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -344,7 +341,7 @@
 }
 
 .apply-verification-btn {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%); /* Website blue gradient */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   color: #FFFFFF;
   font-size: 16px;
@@ -360,7 +357,7 @@
 
 .apply-verification-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4); /* Website blue shadow */
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
 }
 
 .apply-hint {
@@ -397,7 +394,7 @@
 .form-group select,
 .form-group textarea {
   background: #FFFFFF; /* White background */
-  border: 1px solid #E0F2FE; /* Light blue border */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   border-radius: 10px;
   padding: 12px 16px;
   color: #0F172A; /* Dark text */
@@ -409,8 +406,8 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #2563EB; /* Website blue on focus */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #FF0050 !important; /* TikTok pink on focus */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink shadow */
 }
 
 .form-group input::placeholder,
@@ -443,10 +440,10 @@
 
 .uploaded-document select {
   border-radius: 9999px;
-  border: 1px solid #CBD5F5;
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   padding: 6px 14px;
   font-size: 13px;
-  background: #F8FAFF;
+  background: rgba(255, 0, 80, 0.05) !important; /* TikTok pink light background */
   cursor: pointer;
   color: #1F2937;
 }
@@ -486,13 +483,13 @@
 }
 
 .submit-btn {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%); /* Website blue gradient */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   color: #FFFFFF;
 }
 
 .submit-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); /* Website blue shadow */
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
 }
 
 .cancel-btn:disabled,
@@ -507,8 +504,8 @@
   margin-top: 24px;
   padding: 20px;
   border-radius: 12px;
-  background: #F8FAFF;
-  border: 1px solid #E0E7FF;
+  background: rgba(255, 0, 80, 0.05) !important; /* TikTok pink light background */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
 }
 
 .submitted-documents h3 {
@@ -536,11 +533,11 @@
 }
 
 .submitted-documents li i {
-  color: #2563EB;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 .submitted-documents a {
-  color: #2563EB;
+  color: #FF0050 !important; /* TikTok pink */
   text-decoration: none;
   font-weight: 600;
 }
@@ -641,7 +638,7 @@
   .user-verification-overlay::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
     border: 3px solid rgba(255, 255, 255, 0.6) !important; /* Brighter border on hover */
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.5) !important; /* Enhanced shadow on hover */
+    box-shadow: 0 4px 10px rgba(255, 0, 80, 0.5) !important; /* TikTok pink shadow */
   }
 }
 
@@ -678,7 +675,7 @@
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
-    background: #F5F7FA !important;
+    background: #ffffff !important; /* White background */
   }
 
   .manage-account-overlay .verification-header,
@@ -728,7 +725,7 @@
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
-    background: #F5F7FA !important;
+    background: #ffffff !important; /* White background */
   }
 
   .manage-account-overlay .verification-header,
@@ -744,4 +741,183 @@
     flex: 1 !important;
     padding: 1.25rem 1.5rem !important;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .user-verification-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.3) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+}
+
+body.dark-mode .user-verification-overlay::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important;
+}
+
+body.dark-mode .user-verification-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .verification-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .verification-close {
+  background: rgba(255, 0, 80, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .verification-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .verification-status-banner {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .status-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .status-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .status-reason {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .status-meta {
+  color: #64748B !important;
+}
+
+body.dark-mode .verification-loading,
+body.dark-mode .verification-error {
+  background: rgba(51, 65, 85, 0.85) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .verification-error {
+  background: rgba(254, 242, 242, 0.1) !important;
+  border-color: #FCA5A5 !important;
+  color: #FCA5A5 !important;
+}
+
+body.dark-mode .verification-badge-preview {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .verification-badge-preview h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .verification-badge-preview p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .verification-requirements h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .requirement-card {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .requirement-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .requirement-card p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .form-group label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group select,
+body.dark-mode .form-group textarea {
+  background: #334155 !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus,
+body.dark-mode .form-group textarea:focus {
+  border-color: #FF0050 !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2) !important;
+}
+
+body.dark-mode .form-group input::placeholder,
+body.dark-mode .form-group textarea::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .uploaded-document {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .uploaded-document select {
+  background: rgba(255, 0, 80, 0.1) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .documents-hint {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .cancel-btn {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .cancel-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .submit-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .submitted-documents {
+  background: rgba(255, 0, 80, 0.1) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .submitted-documents h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .submitted-documents li {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .apply-hint {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .manage-account-overlay .user-verification-modal,
+body.dark-mode .manage-account-modal .user-verification-modal,
+body.dark-mode body:has(.manage-account-overlay) .user-verification-modal {
+  background: #1E293B !important;
 }

@@ -19,7 +19,7 @@
 
 .more-container {
   width: 100%;
-  max-width: 500px;
+  max-width: 380px;
   height: 100%;
   max-height: 100%;
   margin: 0 auto;
@@ -89,9 +89,7 @@
 }
 
 .more-close-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px) scale(1.05);
+  /* Hover effect removed - no changes on hover */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -199,7 +197,7 @@
 }
 
 .more-container--page {
-  max-width: 720px !important;
+  max-width: 380px !important;
   height: auto !important;
   min-height: calc(100vh - 4rem);
   border-radius: 24px;
@@ -283,6 +281,30 @@ body.dark-mode .more-page {
 
 body.dark-mode .more-container--page {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.dark-mode .more-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .more-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .more-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+}
+
+body.dark-mode .more-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important;
+}
+
+body.dark-mode .more-menu-right i {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .more-menu-item:hover .more-menu-right i {
+  color: #60A5FA !important;
 }
 
 /* Submenu */

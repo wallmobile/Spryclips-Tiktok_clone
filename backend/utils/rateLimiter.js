@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 // Strict rate limiter for authentication routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 5 : 20, // More attempts in development
   message: {
     success: false,
     message: 'Too many login attempts, please try again after 15 minutes'
@@ -11,6 +11,10 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: (req) => {
+    // Skip rate limiting in development for localhost
+    return process.env.NODE_ENV !== 'production' && (req.ip === '::1' || req.ip === '127.0.0.1' || req.ip?.includes('127.0.0.1'));
+  }
 });
 
 // Moderate rate limiter for general routes

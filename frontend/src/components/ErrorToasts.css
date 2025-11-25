@@ -1,12 +1,14 @@
 .error-toasts {
   position: fixed;
   top: 1.5rem;
-  right: 1.5rem;
+  left: 50% !important; /* Center horizontally */
+  transform: translateX(-50%) !important; /* Perfect center alignment */
+  right: auto !important;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   z-index: 1100;
-  width: min(360px, 90vw);
+  width: min(500px, 90vw); /* Increased max width for better visibility */
   pointer-events: none;
 }
 
@@ -89,15 +91,34 @@
 
 @media (max-width: 640px) {
   .error-toasts {
-    top: auto;
-    right: 50%;
-    bottom: 1rem;
-    transform: translateX(50%);
+    top: 1rem;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto;
+    transform: translateX(-50%) !important; /* Center on mobile too */
+    width: calc(100% - 2rem); /* Full width with padding */
   }
 
   .error-toast {
     border-radius: 14px;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .error-toast {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.96), rgba(220, 38, 38, 0.96)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(220, 38, 38, 0.4) !important;
+}
+
+body.dark-mode .error-toast__close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .error-toast__close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
 

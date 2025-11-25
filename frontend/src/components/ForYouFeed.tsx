@@ -3,6 +3,7 @@ import VideoCard from './VideoCard';
 import CommentsModal from './CommentsModal';
 import DuetComponent from './DuetComponent';
 import StitchComponent from './StitchComponent';
+import ScrollNavigationButtons from './ScrollNavigationButtons';
 import { useVideoStore } from '../store/videoStore';
 import { useWatchHistory } from '../context/WatchHistoryContext';
 import { toggleFollow } from '../api/videos';
@@ -368,9 +369,24 @@ const ForYouFeed: React.FC<ForYouFeedProps> = ({ items }) => {
         response?.data?.isFollowing ??
         optimisticNext;
       toggleLocal(nextIsFollowing);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error following user:', error);
       toggleLocal(wasFollowing);
+      
+      // Show user-friendly error message for 401 errors
+      if (error?.status === 401 || error?.response?.status === 401) {
+        const errorMessage = error?.userMessage || 
+                           error?.response?.data?.userMessage ||
+                           error?.response?.data?.message || 
+                           error?.message || 
+                           'Please sign in to follow users.';
+        // Show error toast if available
+        if (typeof (window as any).showToast === 'function') {
+          (window as any).showToast(errorMessage, 'error');
+        } else {
+          alert(errorMessage);
+        }
+      }
     }
   };
 
@@ -511,6 +527,7 @@ const ForYouFeed: React.FC<ForYouFeedProps> = ({ items }) => {
             {saveMessage}
           </div>
         )}
+        <ScrollNavigationButtons />
         {items.map((item) => {
           const metrics = videoStats[item.id] ?? deriveMetricsFromItem(item);
           const creatorId = getCreatorId(item);

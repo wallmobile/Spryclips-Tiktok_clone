@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UserVerification from './UserVerification';
+import api from '../config/axios';
 import './ManageAccount.css';
 
 const ManageAccount = ({ onClose }) => {
@@ -31,15 +32,39 @@ const ManageAccount = ({ onClose }) => {
     verificationCode: ''
   });
 
-  const [accountInfo] = useState({
+  const [accountInfo, setAccountInfo] = useState({
     email: user?.email || 'user@example.com',
     phone: user?.phone || '+1 (555) 123-4567',
-    joinDate: '2023-05-15',
-    lastLogin: '2024-10-28 14:30',
-    accountStatus: 'Active',
-    verificationStatus: 'Verified',
-    twoFactorEnabled: true
+    joinDate: user?.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : '2023-05-15',
+    lastLogin: user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : '2024-10-28 14:30',
+    accountStatus: user?.accountStatus || 'Active',
+    verificationStatus: user?.emailVerified ? 'Verified' : 'Unverified'
   });
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Load account info from backend
+  useEffect(() => {
+    const loadAccountInfo = async () => {
+      try {
+        const response = await api.get('/api/auth/verify');
+        const userData = response.data.user;
+        if (userData) {
+          setAccountInfo({
+            email: userData.email || 'user@example.com',
+            phone: userData.phone || '+1 (555) 123-4567',
+            joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
+            lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
+            accountStatus: userData.accountStatus || 'Active',
+            verificationStatus: userData.emailVerified ? 'Verified' : 'Unverified'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load account info:', error);
+      }
+    };
+    loadAccountInfo();
+  }, [user]);
 
   const [linkedAccounts] = useState([
     { platform: 'Google', email: 'user@gmail.com', connected: true, icon: 'fa-brands fa-google' },
@@ -57,56 +82,129 @@ const ManageAccount = ({ onClose }) => {
     { action: 'Email Verified', device: 'MacBook Pro', location: 'New York, US', time: '2024-10-20 11:30', status: 'success' }
   ]);
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match!');
+      setSaveMessage('New passwords do not match!');
+      setTimeout(() => setSaveMessage(''), 3000);
       return;
     }
     if (passwordForm.newPassword.length < 8) {
-      alert('Password must be at least 8 characters long!');
+      setSaveMessage('Password must be at least 8 characters long!');
+      setTimeout(() => setSaveMessage(''), 3000);
       return;
     }
-    alert('Password changed successfully!');
-    setShowChangePassword(false);
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    try {
+      setSaving(true);
+      await api.put('/api/users/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      setSaveMessage('Password changed successfully!');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowChangePassword(false);
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      setSaveMessage(error.response?.data?.message || 'Failed to change password');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEmailChange = (e) => {
+  const handleEmailChange = async (e) => {
     e.preventDefault();
     if (!emailForm.newEmail.includes('@')) {
-      alert('Please enter a valid email address!');
+      setSaveMessage('Please enter a valid email address!');
+      setTimeout(() => setSaveMessage(''), 3000);
       return;
     }
-    alert(`Verification email sent to ${emailForm.newEmail}. Please check your inbox.`);
-    setShowChangeEmail(false);
-    setEmailForm({ newEmail: '', password: '' });
+    try {
+      setSaving(true);
+      await api.put('/api/users/change-email', {
+        newEmail: emailForm.newEmail,
+        password: emailForm.password
+      });
+      setSaveMessage(`Verification email sent to ${emailForm.newEmail}. Please check your inbox.`);
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowChangeEmail(false);
+        setEmailForm({ newEmail: '', password: '' });
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to change email:', error);
+      setSaveMessage(error.response?.data?.message || 'Failed to change email');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handlePhoneChange = (e) => {
+  const handlePhoneChange = async (e) => {
     e.preventDefault();
     if (phoneForm.verificationCode.length !== 6) {
-      alert('Please enter the 6-digit verification code!');
+      setSaveMessage('Please enter the 6-digit verification code!');
+      setTimeout(() => setSaveMessage(''), 3000);
       return;
     }
-    alert('Phone number updated successfully!');
-    setShowChangePhone(false);
-    setPhoneForm({ newPhone: '', verificationCode: '' });
+    try {
+      setSaving(true);
+      await api.put('/api/users/change-phone', {
+        newPhone: phoneForm.newPhone,
+        verificationCode: phoneForm.verificationCode
+      });
+      setSaveMessage('Phone number updated successfully!');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowChangePhone(false);
+        setPhoneForm({ newPhone: '', verificationCode: '' });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to change phone:', error);
+      setSaveMessage(error.response?.data?.message || 'Failed to change phone number');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleAccountAction = (action) => {
+  const handleAccountAction = async (action) => {
     switch(action) {
       case 'verify':
-        alert('Account verification process started. Please check your email for instructions.');
+        try {
+          await api.post('/api/users/request-verification');
+          setSaveMessage('Account verification process started. Please check your email for instructions.');
+          setTimeout(() => setSaveMessage(''), 3000);
+        } catch (error) {
+          setSaveMessage(error.response?.data?.message || 'Failed to start verification');
+          setTimeout(() => setSaveMessage(''), 3000);
+        }
         break;
       case 'download':
-        alert('Data download request submitted. You will receive an email with download link within 24 hours.');
+        try {
+          await api.post('/api/users/request-data-download');
+          setSaveMessage('Data download request submitted. You will receive an email with download link within 24 hours.');
+          setTimeout(() => setSaveMessage(''), 3000);
+        } catch (error) {
+          setSaveMessage(error.response?.data?.message || 'Failed to request data download');
+          setTimeout(() => setSaveMessage(''), 3000);
+        }
         break;
       case 'deactivate':
-        if (window.confirm('Are you sure you want to deactivate your account? You can reactivate it by logging in again within 30 days.')) {
-          alert('Account deactivated successfully. You have 30 days to reactivate.');
-          logout();
-          onClose();
+        try {
+          await api.post('/api/users/deactivate');
+          setSaveMessage('Account deactivated successfully. You have 30 days to reactivate.');
+          setTimeout(() => {
+            setSaveMessage('');
+            logout();
+            onClose();
+          }, 2000);
+        } catch (error) {
+          setSaveMessage(error.response?.data?.message || 'Failed to deactivate account');
+          setTimeout(() => setSaveMessage(''), 3000);
         }
         break;
       default:
@@ -114,13 +212,25 @@ const ManageAccount = ({ onClose }) => {
     }
   };
 
-  const handleLinkAccount = (platform) => {
-    alert(`Redirecting to ${platform} for account linking...`);
+  const handleLinkAccount = async (platform) => {
+    try {
+      // In a real app, this would redirect to OAuth flow
+      setSaveMessage(`Redirecting to ${platform} for account linking...`);
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (error) {
+      setSaveMessage(`Failed to link ${platform} account`);
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
   };
 
-  const handleUnlinkAccount = (platform) => {
-    if (window.confirm(`Are you sure you want to unlink your ${platform} account?`)) {
-      alert(`${platform} account unlinked successfully!`);
+  const handleUnlinkAccount = async (platform) => {
+    try {
+      await api.post('/api/users/unlink-account', { platform });
+      setSaveMessage(`${platform} account unlinked successfully!`);
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      setSaveMessage(error.response?.data?.message || `Failed to unlink ${platform} account`);
+      setTimeout(() => setSaveMessage(''), 3000);
     }
   };
 
@@ -225,6 +335,21 @@ const ManageAccount = ({ onClose }) => {
           <h2>Manage Account</h2>
           <div className="manage-account-header-placeholder"></div>
         </div>
+
+        {/* Save Message */}
+        {saveMessage && (
+          <div style={{
+            padding: '0.75rem 1.25rem',
+            background: saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            color: saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? '#DC2626' : '#16A34A',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            textAlign: 'center',
+            borderBottom: `1px solid ${saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+          }}>
+            {saveMessage}
+          </div>
+        )}
 
         {/* Account Info */}
         <div className="account-info-section">
@@ -332,8 +457,8 @@ const ManageAccount = ({ onClose }) => {
                     <button type="button" className="cancel-btn" onClick={() => setShowChangePassword(false)}>
                       Cancel
                     </button>
-                    <button type="submit" className="submit-btn">
-                      Change Password
+                    <button type="submit" className="submit-btn" disabled={saving}>
+                      {saving ? 'Changing...' : 'Change Password'}
                     </button>
                   </div>
                 </form>
@@ -379,8 +504,8 @@ const ManageAccount = ({ onClose }) => {
                     <button type="button" className="cancel-btn" onClick={() => setShowChangeEmail(false)}>
                       Cancel
                     </button>
-                    <button type="submit" className="submit-btn">
-                      Send Verification
+                    <button type="submit" className="submit-btn" disabled={saving}>
+                      {saving ? 'Sending...' : 'Send Verification'}
                     </button>
                   </div>
                 </form>
@@ -429,7 +554,18 @@ const ManageAccount = ({ onClose }) => {
                       <button
                         type="button"
                         className="secondary-action-btn"
-                        onClick={() => alert(`Verification code sent to ${phoneForm.newPhone || accountInfo.phone}`)}
+                        onClick={async () => {
+                          try {
+                            await api.post('/api/users/send-phone-verification', {
+                              phone: phoneForm.newPhone || accountInfo.phone
+                            });
+                            setSaveMessage(`Verification code sent to ${phoneForm.newPhone || accountInfo.phone}`);
+                            setTimeout(() => setSaveMessage(''), 3000);
+                          } catch (error) {
+                            setSaveMessage('Failed to send verification code');
+                            setTimeout(() => setSaveMessage(''), 3000);
+                          }
+                        }}
                       >
                         Send Code
                       </button>
@@ -439,8 +575,8 @@ const ManageAccount = ({ onClose }) => {
                     <button type="button" className="cancel-btn" onClick={() => setShowChangePhone(false)}>
                       Cancel
                     </button>
-                    <button type="submit" className="submit-btn">
-                      Update Phone
+                    <button type="submit" className="submit-btn" disabled={saving}>
+                      {saving ? 'Updating...' : 'Update Phone'}
                     </button>
                   </div>
                 </form>

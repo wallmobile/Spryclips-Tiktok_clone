@@ -564,3 +564,210 @@
     align-self: flex-end;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .family-pairing-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .family-pairing-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .family-header {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .family-close {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .family-close:hover {
+  background: #334155 !important;
+}
+
+body.dark-mode .family-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .family-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .family-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .family-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .family-role-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .role-btn {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .role-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .role-btn.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%) !important;
+  border-color: transparent !important;
+}
+
+body.dark-mode .pairing-section {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .pairing-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .pairing-description {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .pairing-code-display {
+  background: #334155 !important;
+}
+
+body.dark-mode .pairing-code-display h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .pairing-code-number {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .copy-code-btn {
+  background: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .copy-code-btn:hover {
+  background: #64748B !important;
+}
+
+body.dark-mode .generate-new-code-btn {
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .generate-new-code-btn:hover {
+  background: #334155 !important;
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .pairing-code-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .pairing-code-input:focus {
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .pairing-code-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .linked-accounts-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-linked {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .empty-linked p {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-linked span {
+  color: #64748B !important;
+}
+
+body.dark-mode .linked-account-item {
+  background: #334155 !important;
+}
+
+body.dark-mode .linked-account-avatar {
+  background: #475569 !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .linked-username {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .linked-role {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .linked-date {
+  color: #64748B !important;
+}
+
+body.dark-mode .manage-settings-btn,
+body.dark-mode .unlink-btn {
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .manage-settings-btn:hover {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .unlink-btn:hover {
+  background: #475569 !important;
+  border-color: #EF4444 !important;
+  color: #EF4444 !important;
+}
+
+body.dark-mode .parental-controls-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .control-item {
+  background: #334155 !important;
+}
+
+body.dark-mode .control-info h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .control-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .toggle-slider {
+  background-color: #475569 !important;
+}
+
+body.dark-mode .control-subsetting {
+  background: #1E293B !important;
+}
+
+body.dark-mode .control-subsetting label {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .screen-time-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .screen-time-input:focus {
+  border-color: #FF0050 !important;
+}

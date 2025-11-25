@@ -36,7 +36,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
 }
 
 .monetization-header h2 {
@@ -64,8 +64,7 @@
 }
 
 .monetization-close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  /* Hover effect removed - no changes on hover */
 }
 
 .monetization-header-placeholder {
@@ -103,7 +102,7 @@
 }
 
 .monetization-tab.active {
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
 }
 
@@ -132,7 +131,7 @@
 .monetization-loading i,
 .monetization-error i {
   font-size: 28px;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
 }
 
 .monetization-error i {
@@ -141,7 +140,7 @@
 
 /* Overview Tab */
 .total-earnings-card {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 24px;
@@ -204,13 +203,13 @@
 
 .stat-card:hover {
   transform: translateY(-2px);
-  border-color: #2563EB;
+  border-color: #FF0050; /* TikTok pink */
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
 }
 
 .stat-card i {
   font-size: 32px;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 12px;
 }
 
@@ -259,7 +258,7 @@
 
 .activity-item i {
   font-size: 24px;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
 }
 
 .activity-info {
@@ -338,7 +337,7 @@
 .fund-stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 4px;
 }
 
@@ -352,7 +351,7 @@
 .apply-fund-btn {
   width: 100%;
   padding: 14px;
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -369,7 +368,7 @@
 .apply-fund-btn:hover {
   background: #1E40AF;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4); /* TikTok pink shadow */
 }
 
 .eligibility-requirements {
@@ -425,7 +424,7 @@
 
 .create-partnership-btn {
   padding: 10px 20px;
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -459,7 +458,7 @@
 
 .partnership-card:hover {
   transform: translateY(-2px);
-  border-color: #2563EB;
+  border-color: #FF0050; /* TikTok pink */
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
 }
 
@@ -502,7 +501,7 @@
 }
 
 .partnership-status.completed {
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
 }
 
@@ -541,7 +540,7 @@
 
 .progress-bar {
   height: 100%;
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   transition: width 0.3s ease;
 }
 
@@ -601,7 +600,7 @@
 .ads-stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 8px;
 }
 
@@ -629,7 +628,7 @@
 
 .setup-subscriptions-btn {
   padding: 10px 20px;
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -665,7 +664,7 @@
 .subscription-stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 8px;
 }
 
@@ -707,7 +706,7 @@
 
 .plan-card:hover {
   transform: translateY(-2px);
-  border-color: #2563EB;
+  border-color: #FF0050; /* TikTok pink */
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
 }
 
@@ -721,7 +720,7 @@
 .plan-price {
   font-size: 24px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 8px;
 }
 
@@ -762,7 +761,7 @@
 .tips-stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
   margin-bottom: 4px;
 }
 
@@ -835,7 +834,7 @@
 .tip-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
 }
 
 /* Scrollbar */
@@ -854,7 +853,7 @@
 }
 
 .monetization-content::-webkit-scrollbar-thumb:hover {
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
 }
 
 /* Responsive */
@@ -876,4 +875,403 @@
   .subscription-stats {
     grid-template-columns: 1fr;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .creator-monetization-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .creator-monetization-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .monetization-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .monetization-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .monetization-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .monetization-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body.dark-mode .monetization-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .monetization-tabs {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .monetization-tab {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .monetization-tab:hover {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .monetization-tab.active {
+  color: #FF0050 !important;
+  border-bottom-color: #FF0050 !important;
+}
+
+body.dark-mode .stat-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .stat-value {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .section-title {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .monetization-section {
+  background: #1E293B !important;
+}
+
+body.dark-mode .revenue-chart {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .ads-stats-card,
+body.dark-mode .subscription-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .ads-stats-card h4,
+body.dark-mode .subscription-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .ads-stats-card p,
+body.dark-mode .subscription-card p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .total-amount {
+  color: #F9FAFB !important;
+}
+
+/* Additional comprehensive dark mode styles */
+body.dark-mode .monetization-loading,
+body.dark-mode .monetization-error {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .monetization-loading i {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .monetization-error i {
+  color: #DC2626 !important;
+}
+
+body.dark-mode .total-earnings-card {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .total-earnings-card h3 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-mode .breakdown-item {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .breakdown-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-mode .breakdown-value {
+  color: #fff !important;
+}
+
+body.dark-mode .stat-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .stat-card:hover {
+  border-color: #FF0050 !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .stat-card i {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .stat-value {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .recent-activity {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .recent-activity h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .activity-item {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .activity-item i {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .activity-title {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .activity-subtitle,
+body.dark-mode .activity-time {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .fund-status-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .status-header h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .fund-stat-value {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .fund-stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .apply-fund-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .eligibility-requirements {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .eligibility-requirements h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .eligibility-requirements li {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .eligibility-requirements li i {
+  color: #10B981 !important;
+}
+
+body.dark-mode .partnerships-header h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .create-partnership-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .partnership-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .partnership-card:hover {
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .partnership-info h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .partnership-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .partnership-detail .detail-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .partnership-detail .detail-value {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .partnership-progress {
+  background: #475569 !important;
+}
+
+body.dark-mode .ads-header-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .ads-header-card h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .enable-ads-btn {
+  background: #10B981 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .ads-stat-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .ads-stat-value {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .ads-stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .subscriptions-header h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .setup-subscriptions-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .subscription-stat-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .subscription-stat-value {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .subscription-stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .subscription-plans {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .subscription-plans h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .plan-card {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .plan-card:hover {
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .plan-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .plan-price {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .plan-subscribers {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tips-header-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .tips-header-card h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tips-stat {
+  background: #475569 !important;
+}
+
+body.dark-mode .tips-stat-value {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .tips-stat-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .recent-tips {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .recent-tips h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tip-item {
+  background: #475569 !important;
+}
+
+body.dark-mode .tip-username {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tip-message {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tip-amount {
+  color: #FF0050 !important;
+}
+
+/* Scrollbar Dark Mode */
+body.dark-mode .monetization-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .monetization-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .monetization-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
 }

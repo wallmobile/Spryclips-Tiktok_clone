@@ -10,9 +10,12 @@ router.get('/video/:videoId', async (req, res) => {
   try {
     const videoId = req.params.videoId;
     
-    // Validate ObjectId
+    // Validate ObjectId - if invalid, return empty comments (for sample videos)
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
-      return res.status(400).json({ message: 'Invalid video ID' });
+      return res.status(200).json({ 
+        comments: [],
+        message: 'No comments available for this video'
+      });
     }
     
     // Get top-level comments (no parent)
@@ -54,13 +57,19 @@ router.post('/video/:videoId', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Comment text is too long (max 1000 characters)' });
     }
     
-    // Validate ObjectId
+    // Validate ObjectId - if invalid, return user-friendly error
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
-      return res.status(400).json({ message: 'Invalid video ID' });
+      return res.status(400).json({ 
+        message: 'We could not process your request. Please check the information and try again.',
+        userMessage: 'This video does not support comments. Please try a different video.'
+      });
     }
     
     if (parentId && !mongoose.Types.ObjectId.isValid(parentId)) {
-      return res.status(400).json({ message: 'Invalid parent comment ID' });
+      return res.status(400).json({ 
+        message: 'We could not process your request. Please check the information and try again.',
+        userMessage: 'Invalid comment reference. Please try again.'
+      });
     }
 
     // Check if video exists

@@ -130,6 +130,41 @@ const userSchema = new mongoose.Schema({
       default: 'everyone'
     }
   },
+  notificationSettings: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  notificationFrequency: {
+    type: String,
+    enum: ['instant', 'bundled', 'daily'],
+    default: 'instant'
+  },
+  quietHours: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    from: {
+      type: String,
+      default: '22:00'
+    },
+    to: {
+      type: String,
+      default: '08:00'
+    }
+  },
+  appSettings: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  preferredLanguage: {
+    type: String,
+    default: 'English'
+  },
+  preferredRegion: {
+    type: String,
+    default: 'United States'
+  },
   videos: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Video'
@@ -220,7 +255,7 @@ userSchema.pre('save', async function(next) {
   
   try {
     // Check password complexity
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d@$!%*?&#\-_.]{8,}$/;
     if (!passwordRegex.test(this.password)) {
       return next(new Error('Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'));
     }
@@ -239,16 +274,14 @@ userSchema.pre('save', async function(next) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(this.password, salt);
     
-    // Add to password history (keep last 5)
-    if (!this.passwordHistory) {
-      this.passwordHistory = [];
-    }
-    if (this.password) {
-      // If updating password, add old password to history
-      if (this.isModified('password') && !this.isNew) {
-        const oldPassword = this.constructor.findById(this._id).select('password');
-        // Note: We can't access old password here, so we'll handle this in the route
+    // Add to password history (keep last 5) - only for password changes, not initial signup
+    if (this.isModified('password') && !this.isNew) {
+      // This is a password change, not initial signup
+      if (!this.passwordHistory) {
+        this.passwordHistory = [];
       }
+      // Note: We can't access old password here, so we'll handle this in the route
+      // For now, just add the new password to history
       this.passwordHistory.push({
         password: hashedPassword,
         changedAt: new Date()
@@ -258,6 +291,7 @@ userSchema.pre('save', async function(next) {
         this.passwordHistory = this.passwordHistory.slice(-5);
       }
     }
+    // For new users (signup), don't add to password history yet
     
     this.password = hashedPassword;
     next();

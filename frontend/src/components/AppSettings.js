@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import api from '../config/axios';
 import './AppSettings.css';
 
 const AppSettings = ({ onClose }) => {
   const { user, logout } = useAuth();
+  const { darkMode, setDarkMode } = useTheme();
   
   const [settings, setSettings] = useState({
-    darkMode: true,
+    darkMode: darkMode,
     dataSaver: false,
     autoPlay: true,
     notifications: true,
@@ -21,6 +24,36 @@ const AppSettings = ({ onClose }) => {
   const [showClearCacheModal, setShowClearCacheModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cacheSize] = useState('245 MB');
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await api.get('/api/auth/verify');
+        const userData = response.data.user;
+        if (userData?.appSettings) {
+          setSettings(prev => ({
+            ...prev,
+            ...userData.appSettings
+          }));
+          if (userData.appSettings.darkMode !== undefined) {
+            setDarkMode(userData.appSettings.darkMode);
+          }
+        }
+        if (userData?.preferredLanguage) {
+          setSelectedLanguage(userData.preferredLanguage);
+        }
+        if (userData?.preferredRegion) {
+          setSelectedRegion(userData.preferredRegion);
+        }
+      } catch (error) {
+        console.error('Failed to load app settings:', error);
+      }
+    };
+    loadSettings();
+  }, [setDarkMode]);
 
   const languages = [
     { code: 'en', name: 'English', native: 'English' },
@@ -43,35 +76,81 @@ const AppSettings = ({ onClose }) => {
     'India', 'China', 'Russia', 'Netherlands', 'Sweden', 'Norway'
   ];
 
-  const handleToggle = (key) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    
-    // Show feedback for specific toggles
-    if (key === 'darkMode') {
-      alert(settings[key] ? 'Switched to Light Mode' : 'Switched to Dark Mode');
-    } else if (key === 'dataSaver') {
-      alert(settings[key] ? 'Data Saver disabled' : 'Data Saver enabled - videos will use less data');
+  const saveSettings = async () => {
+    try {
+      setSaving(true);
+      await api.put('/api/users/app-settings', {
+        appSettings: settings,
+        preferredLanguage: selectedLanguage,
+        preferredRegion: selectedRegion
+      });
+      setSaveMessage('Settings saved successfully');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to save app settings:', error);
+      setSaveMessage('Failed to save settings');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleLanguageSelect = (language) => {
-    setSelectedLanguage(language.name);
-    setShowLanguageModal(false);
-    alert(`Language changed to ${language.native}`);
+  const handleToggle = async (key) => {
+    const newValue = !settings[key];
+    setSettings(prev => ({
+      ...prev,
+      [key]: newValue
+    }));
+    
+    // Apply dark mode immediately if toggled
+    if (key === 'darkMode') {
+      setDarkMode(newValue);
+    }
+    
+    // Auto-save after toggle
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
   };
 
-  const handleRegionSelect = (region) => {
+  const handleLanguageSelect = async (language) => {
+    setSelectedLanguage(language.name);
+    setShowLanguageModal(false);
+    setSaveMessage(`Language changed to ${language.native}`);
+    setTimeout(() => {
+      setSaveMessage('');
+      saveSettings();
+    }, 2000);
+  };
+
+  const handleRegionSelect = async (region) => {
     setSelectedRegion(region);
     setShowRegionModal(false);
-    alert(`Region changed to ${region}`);
+    setSaveMessage(`Region changed to ${region}`);
+    setTimeout(() => {
+      setSaveMessage('');
+      saveSettings();
+    }, 2000);
   };
 
   const handleClearCache = () => {
     setShowClearCacheModal(false);
-    alert('Cache cleared successfully! App may take longer to load initially.');
+    // Clear browser cache
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    // Clear localStorage (except auth)
+    const authToken = localStorage.getItem('token');
+    localStorage.clear();
+    if (authToken) {
+      localStorage.setItem('token', authToken);
+    }
+    setSaveMessage('Cache cleared successfully! App may take longer to load initially.');
+    setTimeout(() => setSaveMessage(''), 3000);
   };
 
   const handleLogout = () => {
@@ -203,6 +282,21 @@ const AppSettings = ({ onClose }) => {
           <h2>App Settings</h2>
           <div className="app-settings-header-placeholder"></div>
         </div>
+
+        {/* Save Message */}
+        {saveMessage && (
+          <div style={{
+            padding: '0.75rem 1.25rem',
+            background: saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            color: saveMessage.includes('Failed') ? '#DC2626' : '#16A34A',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            textAlign: 'center',
+            borderBottom: `1px solid ${saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+          }}>
+            {saveMessage}
+          </div>
+        )}
 
         {/* User Info */}
         <div className="app-settings-user-info">

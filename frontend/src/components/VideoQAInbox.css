@@ -180,3 +180,108 @@
     max-height: 95vh;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .qa-overlay {
+  background: rgba(0, 0, 0, 0.85) !important;
+}
+
+body.dark-mode .qa-page {
+  background: #0F172A !important;
+}
+
+body.dark-mode .qa-container {
+  background: #1E293B !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .qa-header {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .qa-close {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-input {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .qa-input label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .qa-input input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-input input:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .qa-help {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .qa-error {
+  color: #F87171 !important;
+}
+
+body.dark-mode .qa-card {
+  background: #334155 !important;
+}
+
+body.dark-mode .qa-card.pinned {
+  border-color: #FACC15 !important;
+}
+
+body.dark-mode .qa-card-header h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-meta {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .qa-pin {
+  color: #FACC15 !important;
+}
+
+body.dark-mode .qa-answer {
+  background: rgba(37, 99, 235, 0.15) !important;
+}
+
+body.dark-mode .qa-answer-form textarea {
+  background: #1E293B !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-answer-form textarea:focus {
+  border-color: #2563EB !important;
+  background: #1E293B !important;
+}
+
+body.dark-mode .qa-answer-actions button:first-child {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .qa-answer-actions button:first-child:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-answer-btn {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .qa-answer-btn:hover {
+  background: #38BDF8 !important;
+}

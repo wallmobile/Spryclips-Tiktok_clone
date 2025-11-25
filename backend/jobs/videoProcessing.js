@@ -156,10 +156,20 @@ if (isTestEnv) {
 
     // Only process jobs if queue is not disabled
     if (!queueDisabled && videoQueue && !videoQueue.isDisabled) {
-      // Process video job
+      // Process video job with timeout
       videoQueue.process(async (job) => {
         const { videoId, videoPath } = job.data;
         
+        // Set timeout for processing (25 minutes - before cleanup job runs)
+        const PROCESSING_TIMEOUT = 25 * 60 * 1000; // 25 minutes
+        let timeoutId;
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Video processing timed out after 25 minutes'));
+          }, PROCESSING_TIMEOUT);
+        });
+
         try {
           // Update video status to processing
           await Video.findByIdAndUpdate(videoId, { status: 'processing' });
@@ -181,8 +191,17 @@ if (isTestEnv) {
             fs.mkdirSync(outputDir, { recursive: true });
           }
 
-          // Process video
-          const result = await processVideo(videoPath, videoId, outputDir, processingOptions);
+          // Process video with timeout
+          const processPromise = (async () => {
+            const result = await processVideo(videoPath, videoId, outputDir, processingOptions);
+            return result;
+          })();
+
+          // Race between processing and timeout
+          const result = await Promise.race([processPromise, timeoutPromise]);
+          
+          // Clear timeout if processing completed
+          clearTimeout(timeoutId);
 
           // Update video with processed data
           await Video.findByIdAndUpdate(videoId, {
@@ -194,10 +213,13 @@ if (isTestEnv) {
 
           return { success: true, videoId, result };
         } catch (error) {
+          // Clear timeout if error occurred
+          if (timeoutId) clearTimeout(timeoutId);
+          
           // Update video status to failed
           await Video.findByIdAndUpdate(videoId, { 
             status: 'failed',
-            processingError: error.message
+            processingError: error.message || 'Video processing failed or timed out'
           });
           throw error;
         }

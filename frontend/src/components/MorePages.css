@@ -2,21 +2,24 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;   /* change this */
   width: 100%;
   background: #f5f7fa;
   box-sizing: border-box;
 }
 
+
 .more-page__container {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
 }
 
 .more-page__header {
-  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   padding: 1.25rem 2rem;
   display: flex;
   align-items: center;
@@ -49,8 +52,7 @@
 }
 
 .more-page__close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  /* Hover effect removed - no changes on hover */
 }
 
 .more-page__toolbar {
@@ -79,7 +81,7 @@
 }
 
 .more-page__toolbar-sync--live {
-  color: #2563eb;
+  color: #FF0050; /* TikTok pink */
 }
 
 .more-page__toolbar-actions {
@@ -108,14 +110,14 @@
 }
 
 .more-page__button--primary {
-  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
-  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 10px 25px rgba(255, 0, 80, 0.3); /* TikTok pink shadow */
 }
 
 .more-page__button--primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.33);
+  box-shadow: 0 12px 30px rgba(255, 0, 80, 0.33); /* TikTok pink shadow */
 }
 
 .more-page__button--ghost {
@@ -130,14 +132,14 @@
 
 .more-page__banner {
   padding: 0.9rem 1.5rem;
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
   color: #1d4ed8;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border-bottom: 1px solid rgba(37, 99, 235, 0.2);
+  border-bottom: 1px solid rgba(255, 0, 80, 0.2); /* TikTok pink border */
 }
 
 .more-page__banner-content {
@@ -218,7 +220,7 @@
 .more-page__stat-value {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #2563eb;
+  color: #FF0050; /* TikTok pink */
 }
 
 .more-page__stat-label {
@@ -247,8 +249,8 @@
   gap: 0.4rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.12);
+  color: #FF0050; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
 }
@@ -272,7 +274,7 @@
 
 .more-page__empty i {
   font-size: 2rem;
-  color: #2563eb;
+  color: #FF0050; /* TikTok pink */
 }
 
 .more-page__tabs {
@@ -296,13 +298,13 @@
 }
 
 .more-page__tab--active {
-  background: #2563eb;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #fff;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 12px 28px rgba(255, 0, 80, 0.3); /* TikTok pink shadow */
 }
 
 .more-page__tab:hover {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
 }
 
 .more-page__timeline {
@@ -324,8 +326,8 @@
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  background: #FF0050; /* TikTok pink */
+  box-shadow: 0 0 0 4px rgba(255, 0, 80, 0.15); /* TikTok pink shadow */
 }
 
 .more-page__timeline-item::after {
@@ -335,7 +337,7 @@
   top: 1.5rem;
   bottom: -1.25rem;
   width: 2px;
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(255, 0, 80, 0.2); /* TikTok pink */
 }
 
 .more-page__timeline-item:last-child::after {
@@ -349,8 +351,8 @@
 }
 
 .more-page__tag {
-  background: rgba(37, 99, 235, 0.12);
-  color: #2563eb;
+  background: rgba(255, 0, 80, 0.12); /* TikTok pink light background */
+  color: #FF0050; /* TikTok pink */
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
   font-size: 0.85rem;
@@ -386,7 +388,8 @@
   gap: 1.25rem;
 }
 
-@media (max-width: 768px) {
+/* Tablet (≤ 768px) */
+@media (max-width: 48rem) {
   .more-page__header {
     padding: 1rem 1.25rem;
   }
@@ -396,17 +399,214 @@
   }
 
   .more-page__close {
-    width: 36px;
-    height: 36px;
-    font-size: 0.95rem;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
   }
 
   .more-page__toolbar {
     padding: 1rem 1.25rem 0.85rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .more-page__toolbar-info,
+  .more-page__toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .more-page__content {
     padding: 1.25rem;
+  }
+
+  .more-page__grid--two,
+  .more-page__grid--three {
+    grid-template-columns: 1fr;
+  }
+
+  .more-page__cards-row {
+    grid-template-columns: 1fr;
+  }
+
+  .more-page__button {
+    min-height: 44px;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .more-page__tab {
+    min-height: 44px;
+    padding: 0.5rem 1.2rem;
+  }
+}
+
+/* Mobile (≤ 480px) */
+@media (max-width: 30rem) {
+  .more-page__header {
+    padding: 0.875rem 1rem;
+  }
+
+  .more-page__header h1 {
+    font-size: 1.25rem;
+    gap: 0.5rem;
+  }
+
+  .more-page__close {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .more-page__toolbar {
+    padding: 0.875rem 1rem 0.75rem;
+    gap: 0.625rem;
+  }
+
+  .more-page__toolbar-sync {
+    font-size: 0.85rem;
+  }
+
+  .more-page__content {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .more-page__card {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .more-page__card h2 {
+    font-size: 1.125rem;
+  }
+
+  .more-page__card h3 {
+    font-size: 1rem;
+  }
+
+  .more-page__stat-value {
+    font-size: 1.5rem;
+  }
+
+  .more-page__stat-label {
+    font-size: 0.875rem;
+  }
+
+  .more-page__button {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .more-page__banner {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .more-page__banner-content,
+  .more-page__banner-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .more-page__tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .more-page__tab {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .more-page__section-title {
+    font-size: 1.05rem;
+  }
+
+  .more-page__list-item {
+    padding: 0.875rem;
+  }
+
+  .more-page__timeline-item {
+    padding-left: 1.5rem;
+  }
+
+  .more-page__faq-item {
+    padding: 0.875rem;
+  }
+
+  .more-page__faq-item h4 {
+    font-size: 0.95rem;
+  }
+
+  .more-page__faq-item p {
+    font-size: 0.875rem;
+  }
+
+  .more-page__empty {
+    padding: 1.5rem 0.875rem;
+  }
+
+  .more-page__empty i {
+    font-size: 1.75rem;
+  }
+}
+
+/* Small Mobile (≤ 375px) */
+@media (max-width: 23.4375rem) {
+  .more-page__header {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .more-page__header h1 {
+    font-size: 1.125rem;
+  }
+
+  .more-page__toolbar {
+    padding: 0.75rem 0.875rem 0.625rem;
+  }
+
+  .more-page__content {
+    padding: 0.875rem;
+    gap: 1rem;
+  }
+
+  .more-page__card {
+    padding: 1rem;
+  }
+
+  .more-page__card h2 {
+    font-size: 1rem;
+  }
+
+  .more-page__stat-value {
+    font-size: 1.375rem;
+  }
+
+  .more-page__button {
+    padding: 0.55rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .more-page__banner {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .more-page__tab {
+    padding: 0.45rem 0.875rem;
+    font-size: 0.8125rem;
   }
 }
 

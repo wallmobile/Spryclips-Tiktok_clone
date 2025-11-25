@@ -6,6 +6,7 @@
   width: 100%;
   background: #ffffff !important; /* White background like TikTok */
   box-sizing: border-box;
+  padding: 2rem 0rem;
 }
 
 .playlists-container {
@@ -34,7 +35,18 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
-
+ 
+@media (max-width: 340px) {
+  .playlists-header {
+        padding: 1.25rem 5rem 1rem 2rem !important;
+  }
+  .playlists-toolbar{
+padding: 1.25rem 1rem 1rem !important;
+  }
+  .playlists-body{
+    padding: 1.75rem 1rem !important;
+  }
+}
 .playlists-header h1 {
   margin: 0;
   font-size: 1.75rem;
@@ -208,7 +220,11 @@
   overflow: hidden;
   background: #ffffff !important; /* White background */
 }
-
+@media (max-width: 480px) {
+  .playlists-body {
+    display: block !important;
+  }
+}
 .playlists-sidebar {
   width: 320px;
   max-width: 100%;
@@ -370,5 +386,122 @@
   font-size: 1rem;
   font-weight: 600;
   color: #0f172a;
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .playlists-page {
+  background: #0F172A !important;
+}
+
+body.dark-mode .playlists-container {
+  background: #0F172A !important;
+}
+
+body.dark-mode .playlists-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .playlists-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .playlists-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body.dark-mode .playlists-toolbar {
+  background: #1E293B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .playlists-toolbar__count {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-toolbar__detail {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .playlists-button {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-button--primary {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-button--primary:hover:not(:disabled) {
+  background: #38BDF8 !important;
+}
+
+body.dark-mode .playlists-button--secondary {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-button--secondary:hover:not(:disabled) {
+  background: #475569 !important;
+}
+
+body.dark-mode .playlists-button--ghost {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .playlists-button--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-banner {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .playlists-body {
+  background: #1E293B !important;
+}
+
+body.dark-mode .playlists-sidebar {
+  background: #1E293B !important;
+  border-right-color: #334155 !important;
+}
+
+body.dark-mode .playlists-form input,
+body.dark-mode .playlists-form textarea {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-form input:focus,
+body.dark-mode .playlists-form textarea:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .playlists-form-group label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .playlists-sidebar-item {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .playlists-sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+body.dark-mode .playlists-sidebar-item.active {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .playlists-sidebar-meta h3 {
+  color: #F9FAFB !important;
 }
 

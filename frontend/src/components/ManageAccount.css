@@ -24,7 +24,7 @@
 }
 
 .manage-account-modal {
-  background: #F5F7FA;
+  background: #ffffff; /* White background */
   border-radius: 20px;
   width: 100%;
   max-width: 100vw;
@@ -34,8 +34,8 @@
   overflow: visible !important; /* Changed from hidden to visible for full page scroll */
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow - no red */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border - no red */
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   cursor: default;
   box-sizing: border-box;
   margin: 0;
@@ -49,7 +49,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .manage-account-header h2 {
@@ -110,9 +110,9 @@
 }
 
 .account-info-card:hover {
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  background: #E0F2FE !important; /* Website light blue - no black */
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important; /* Website blue shadow */
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.08) !important; /* TikTok pink light background */
+  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
 }
 
 .account-avatar {
@@ -121,7 +121,7 @@
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  border: 3px solid #2563EB !important; /* Website primary blue - no red */
+  border: 3px solid #FF0050 !important; /* TikTok pink */
 }
 
 .account-avatar img {
@@ -237,20 +237,20 @@
 }
 
 .manage-account-item:hover {
-  border-color: #2563EB !important; /* Website primary blue - no red */
+  border-color: #FF0050 !important; /* TikTok pink */
   background: #E0F2FE !important; /* Website light blue - no black */
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important; /* Website blue shadow */
 }
 
 .manage-account-item.danger {
-  border-color: #2563EB !important; /* Website primary blue - no red */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 .manage-account-item.danger:hover {
-  border-color: #38BDF8 !important; /* Website secondary blue - no red */
-  background: #E0F2FE !important; /* Website light blue - no black */
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important; /* Website blue shadow */
+  border-color: #25F4EE !important; /* TikTok cyan */
+  background: rgba(255, 0, 80, 0.08) !important; /* TikTok pink light background */
+  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
 }
 
 .account-item-icon {
@@ -295,7 +295,7 @@
 }
 
 .manage-account-item:hover .account-item-arrow {
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
   transform: translateX(4px);
 }
 
@@ -316,14 +316,14 @@
 }
 
 .account-modal-content {
-  background: #F5F7FA;
+  background: #ffffff; /* White background */
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border */
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
 }
 
 .account-modal-content.large {
@@ -335,12 +335,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .account-modal-header h3 {
   margin: 0;
-  color: #0F172A;
+  color: #fff !important; /* White text on gradient background */
   font-size: 18px;
   font-weight: 600;
 }
@@ -348,7 +348,7 @@
 .account-modal-close {
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: #0F172A;
+  color: #fff !important; /* White icon on gradient background */
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -360,7 +360,11 @@
 }
 
 .account-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  /* Hover effect removed - no changes on hover */
+}
+
+.account-modal-close i {
+  color: #fff !important; /* White icon */
 }
 
 .account-modal-body {
@@ -410,8 +414,8 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #2563EB !important; /* Website primary blue */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important; /* Website blue */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink shadow */
 }
 
 .form-group small {
@@ -443,13 +447,13 @@
 }
 
 .cancel-btn:hover {
-  background: #E0F2FE !important; /* Website light blue */
-  border-color: #2563EB !important; /* Website primary blue */
+  background: rgba(255, 0, 80, 0.08) !important; /* TikTok pink light background */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 .submit-btn {
   padding: 12px 24px;
-  background: #2563EB !important; /* Website primary blue */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -460,8 +464,95 @@
 }
 
 .submit-btn:hover {
-  background: #38BDF8 !important; /* Website secondary blue */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: translateY(-2px);
+}
+
+.submit-btn.danger {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  color: #fff;
+}
+
+.submit-btn.danger:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  transform: translateY(-2px);
+}
+
+.input-with-action {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.secondary-action-btn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.secondary-action-btn:hover {
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+  transform: translateY(-2px);
+}
+
+.warning-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 0, 80, 0.1) !important; /* TikTok pink light background */
+  border: 1px solid rgba(255, 0, 80, 0.3) !important; /* TikTok pink border */
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.warning-box i {
+  color: #FF0050 !important; /* TikTok pink */
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.warning-box span {
+  color: #0F172A;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.download-details {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.download-details li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #0F172A;
+  font-size: 14px;
+}
+
+.download-details li:last-child {
+  border-bottom: none;
+}
+
+.download-details li i {
+  color: #FF0050 !important; /* TikTok pink */
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 /* Activity List */
@@ -483,8 +574,8 @@
 }
 
 .activity-item:hover {
-  border-color: #2563EB !important; /* Website primary blue */
-  background: #E0F2FE !important; /* Website light blue - no black */
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.08) !important; /* TikTok pink light background */
 }
 
 .activity-icon {
@@ -567,8 +658,8 @@
 }
 
 .linked-account-item:hover {
-  border-color: #2563EB !important; /* Website primary blue */
-  background: #E0F2FE !important; /* Website light blue - no black */
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.08) !important; /* TikTok pink light background */
 }
 
 .linked-account-info {
@@ -624,7 +715,7 @@
 
 .link-btn {
   padding: 8px 16px;
-  background: #2563EB !important; /* Website primary blue */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -635,16 +726,16 @@
 }
 
 .link-btn:hover {
-  background: #38BDF8 !important; /* Website secondary blue */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: translateY(-2px);
 }
 
 .unlink-btn {
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid #2563EB !important; /* Website primary blue - no red */
+  border: 1px solid #FF0050 !important; /* TikTok pink */
   border-radius: 6px;
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -652,7 +743,7 @@
 }
 
 .unlink-btn:hover {
-  background: #2563EB !important; /* Website primary blue - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   color: #fff;
 }
 
@@ -668,16 +759,16 @@
 }
 
 .manage-account-overlay::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 6px !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important; /* Thicker border for better visibility */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Added shadow for better visibility */
 }
 
 .manage-account-overlay::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   border: 2px solid rgba(255, 255, 255, 0.5) !important; /* Brighter border on hover */
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4) !important; /* Enhanced shadow on hover */
+    box-shadow: 0 4px 8px rgba(255, 0, 80, 0.4) !important; /* TikTok pink shadow */
 }
 
 /* Keep content scrollbar for backward compatibility (but it won't be used) */
@@ -703,12 +794,12 @@
 }
 
 .account-modal-body::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 3px;
 }
 
 .account-modal-body::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
 }
 
 /* Small Phones (≤ 375px) - iPhone SE, small Android */
@@ -1240,16 +1331,16 @@
   }
 
   .manage-account-overlay::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
     border-radius: 7px !important;
     border: 3px solid rgba(255, 255, 255, 0.4) !important; /* Even thicker border on mobile */
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important; /* Enhanced shadow on mobile */
   }
 
   .manage-account-overlay::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+    background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
     border: 3px solid rgba(255, 255, 255, 0.6) !important; /* Brighter border on hover */
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.5) !important; /* Enhanced shadow on hover */
+    box-shadow: 0 4px 10px rgba(255, 0, 80, 0.5) !important; /* TikTok pink shadow */
   }
 }
 
@@ -1268,8 +1359,8 @@ body.dark-mode .account-info-card {
 }
 
 body.dark-mode .account-info-card:hover {
-  border-color: #2563EB !important;
-  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
 }
 
 body.dark-mode .manage-account-item {
@@ -1278,8 +1369,8 @@ body.dark-mode .manage-account-item {
 }
 
 body.dark-mode .manage-account-item:hover {
-  border-color: #2563EB !important;
-  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
 }
 
 body.dark-mode .account-item-title {
@@ -1292,8 +1383,8 @@ body.dark-mode .activity-item {
 }
 
 body.dark-mode .activity-item:hover {
-  border-color: #2563EB !important;
-  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
 }
 
 body.dark-mode .linked-account-item {
@@ -1302,8 +1393,8 @@ body.dark-mode .linked-account-item {
 }
 
 body.dark-mode .linked-account-item:hover {
-  border-color: #2563EB !important;
-  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
 }
 
 body.dark-mode .account-modal-content {
@@ -1317,7 +1408,7 @@ body.dark-mode .form-group input {
 }
 
 body.dark-mode .form-group input:focus {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: #475569 !important;
 }
 
@@ -1332,7 +1423,7 @@ body.dark-mode .manage-account-modal {
 }
 
 body.dark-mode .manage-account-header {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-bottom-color: #334155 !important;
 }
 
@@ -1365,12 +1456,12 @@ body.dark-mode .account-info-card {
 }
 
 body.dark-mode .account-info-card:hover {
-  background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .account-avatar {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .account-details h3 {
@@ -1412,8 +1503,8 @@ body.dark-mode .manage-account-item {
 }
 
 body.dark-mode .manage-account-item:hover {
-  background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .manage-account-item.danger {
@@ -1426,15 +1517,15 @@ body.dark-mode .manage-account-item.danger:hover {
 }
 
 body.dark-mode .account-item-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .account-item-icon i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .manage-account-item:hover .account-item-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .manage-account-item.danger .account-item-icon {
@@ -1454,7 +1545,7 @@ body.dark-mode .account-item-arrow {
 }
 
 body.dark-mode .manage-account-item:hover .account-item-arrow {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 /* Modal Dark Mode */
@@ -1468,7 +1559,7 @@ body.dark-mode .account-modal-content {
 }
 
 body.dark-mode .account-modal-header {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 body.dark-mode .account-modal-header h3 {
@@ -1517,9 +1608,9 @@ body.dark-mode .form-group input::placeholder {
 }
 
 body.dark-mode .form-group input:focus {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: #475569 !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2) !important; /* TikTok pink shadow */
 }
 
 body.dark-mode .form-group small {
@@ -1538,7 +1629,7 @@ body.dark-mode .cancel-btn {
 
 body.dark-mode .cancel-btn:hover {
   background: #334155 !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .submit-btn {
@@ -1557,16 +1648,16 @@ body.dark-mode .activity-item {
 }
 
 body.dark-mode .activity-item:hover {
-  background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .activity-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .activity-icon i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .activity-action {
@@ -1603,12 +1694,12 @@ body.dark-mode .linked-account-item {
 }
 
 body.dark-mode .linked-account-item:hover {
-  background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .linked-account-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .linked-account-icon .fa-google {
@@ -1650,14 +1741,14 @@ body.dark-mode .link-btn:hover {
 
 body.dark-mode .unlink-btn {
   background: transparent !important;
-  border-color: #2563EB !important;
-  color: #60A5FA !important;
+  border-color: #FF0050 !important; /* TikTok pink */
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .unlink-btn:hover {
-  background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
-  color: #60A5FA !important;
+  background: rgba(255, 0, 80, 0.2) !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 /* Scrollbar Dark Mode */
@@ -1709,7 +1800,7 @@ body.dark-mode .account-modal-body::-webkit-scrollbar-thumb:hover {
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
-    background: #F5F7FA !important;
+    background: #ffffff !important; /* White background */
   }
 
   .account-settings-overlay .manage-account-header,
@@ -1729,6 +1820,58 @@ body.dark-mode .account-modal-body::-webkit-scrollbar-thumb:hover {
 }
 
 /* Tablet: Also full page */
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
+  .account-settings-overlay .manage-account-overlay,
+  .account-settings-modal .manage-account-overlay,
+  body:has(.account-settings-overlay) .manage-account-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .manage-account-modal,
+  .account-settings-modal .manage-account-modal,
+  body:has(.account-settings-overlay) .manage-account-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+  }
+
+  .account-settings-overlay .manage-account-header,
+  .account-settings-modal .manage-account-header,
+  body:has(.account-settings-overlay) .manage-account-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
+  }
+
+  .account-settings-overlay .manage-account-content,
+  .account-settings-modal .manage-account-content,
+  body:has(.account-settings-overlay) .manage-account-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}
+
 @media (min-width: 48.0625rem) and (max-width: 64rem) {
   .account-settings-overlay .manage-account-overlay,
   .account-settings-modal .manage-account-overlay,
@@ -1759,7 +1902,7 @@ body.dark-mode .account-modal-body::-webkit-scrollbar-thumb:hover {
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
-    background: #F5F7FA !important;
+    background: #ffffff !important; /* White background */
   }
 
   .account-settings-overlay .manage-account-header,

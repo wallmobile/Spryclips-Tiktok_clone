@@ -150,3 +150,24 @@
     gap: 6px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .react-picker-container {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.dark-mode .react-option:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-mode .react-option.active {
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-mode .react-check {
+  background: #2563EB !important;
+  border-color: rgba(30, 41, 59, 0.95) !important;
+}

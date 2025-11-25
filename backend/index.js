@@ -31,17 +31,17 @@ process.on('unhandledRejection', (reason, promise) => {
   if (reason && typeof reason === 'object') {
     const errorMsg = reason.message || String(reason);
     const errorCode = reason.code || '';
-
+    
     // Suppress Redis connection errors
-    if (errorCode === 'ECONNREFUSED' ||
-      errorMsg.includes('ECONNREFUSED') ||
-      errorMsg.includes('Redis') ||
-      errorMsg.includes('6379')) {
+    if (errorCode === 'ECONNREFUSED' || 
+        errorMsg.includes('ECONNREFUSED') || 
+        errorMsg.includes('Redis') ||
+        errorMsg.includes('6379')) {
       // Already handled by videoProcessing.js, just return
       return;
     }
   }
-
+  
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   // In development, log but don't exit to allow nodemon to restart
   if (process.env.NODE_ENV === 'production') {
@@ -78,8 +78,7 @@ const validateEnvironment = () => {
     if (isProduction) {
       missingVars.push('MONGODB_URI');
     } else {
-      const defaultUri = 'mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority';
-      //const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
+      const defaultUri = 'mongodb://localhost:27017/tiktok-clone';
       process.env.MONGODB_URI = defaultUri;
       console.warn(`MONGODB_URI not configured. Using default local instance at ${defaultUri}.`);
     }
@@ -116,6 +115,10 @@ const getAllowedOrigins = () => {
 
 const allowedOrigins = getAllowedOrigins();
 
+// Log allowed origins on startup
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+console.log('🔒 CORS credentials:', true);
+
 const buildContentSecurityPolicy = () => {
   const styleSrc = ["'self'", "https://fonts.googleapis.com"];
   const scriptSrc = ["'self'"];
@@ -124,10 +127,16 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('https://spryclips.com');
-    // connectSrc.add('http://localhost:5000');
-    // connectSrc.add('ws://localhost:5000');
-    // connectSrc.add('ws://localhost:3000');
+    connectSrc.add('http://localhost:5000');
+    connectSrc.add('ws://localhost:5000');
+    connectSrc.add('ws://localhost:3000');
+    connectSrc.add('http://localhost:3000');
+    connectSrc.add('http://localhost:3001');
+    connectSrc.add('ws://localhost:3001');
+  } else {
+    // In production, allow inline styles for dynamic content
+    styleSrc.push("'unsafe-inline'");
+    scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
   }
 
   allowedOrigins.forEach(origin => {
@@ -179,12 +188,20 @@ app.use(xssClean());
 // CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) {
       return callback(null, true);
     }
+    
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    
+    // Log blocked origin for debugging
+    console.warn(`⚠️ CORS blocked origin: ${origin}`);
+    console.warn(`   Allowed origins:`, allowedOrigins);
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -203,9 +220,18 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// PUBLIC UPLOADS DIRECTORY CONFIGURATION
+// In production, Nginx will serve files directly from /home/reactmaster/uploads
+// In development, we serve from the configured uploads directory
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+const PROCESSED_DIR = process.env.PROCESSED_DIR || path.join(__dirname, 'processed');
+
 // Serve uploaded files and processed videos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/processed', express.static(path.join(__dirname, 'processed')));
+// NOTE: In production with Nginx, these routes won't be hit as Nginx serves files directly
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/processed', express.static(PROCESSED_DIR));
+
+console.log(`📁 Serving uploads from: ${UPLOADS_DIR}`);
 
 // MongoDB connection
 const connectDB = async () => {
@@ -216,7 +242,7 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
-
+    
     // Seed sample data (non-blocking)
     seedSampleData().catch(err => {
       console.warn('⚠️ Sample data seeding failed:', err.message);
@@ -268,6 +294,28 @@ app.get('/api/health', (req, res) => {
 // API Documentation
 const { swaggerSpec, swaggerUi } = require('./utils/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Base API route - Welcome message
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TikTok Clone API',
+    version: '1.0.0',
+    endpoints: {
+      documentation: '/api-docs',
+      auth: '/api/auth',
+      videos: '/api/videos',
+      users: '/api/users',
+      upload: '/api/upload',
+      search: '/api/search',
+      analytics: '/api/analytics',
+      live: '/api/live',
+      more: 'See /api-docs for complete API documentation'
+    },
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // API Versioning - v1 routes
 app.use('/api/v1', require('./routes/v1'));
@@ -449,6 +497,38 @@ if (!isTestEnv) {
     });
 
     initializeSocket(server);
+
+    // Cleanup stuck processing videos - run every 10 minutes
+    const Video = require('./models/Video');
+    const cleanupStuckVideos = async () => {
+      try {
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+        
+        const stuckVideos = await Video.updateMany(
+          {
+            status: 'processing',
+            updatedAt: { $lt: thirtyMinutesAgo }
+          },
+          {
+            $set: {
+              status: 'failed',
+              processingError: 'Video processing timed out after 30 minutes. Please try uploading again or retry processing.'
+            }
+          }
+        );
+
+        if (stuckVideos.modifiedCount > 0) {
+          console.log(`🧹 Cleaned up ${stuckVideos.modifiedCount} stuck processing video(s)`);
+        }
+      } catch (error) {
+        console.error('❌ Error cleaning up stuck videos:', error.message);
+      }
+    };
+
+    // Run cleanup immediately on startup, then every 10 minutes
+    cleanupStuckVideos();
+    setInterval(cleanupStuckVideos, 10 * 60 * 1000); // Every 10 minutes
+    console.log('🧹 Stuck video cleanup job started (runs every 10 minutes)');
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     console.error('Stack:', error.stack);

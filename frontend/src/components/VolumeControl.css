@@ -48,7 +48,7 @@
 }
 
 .volume-icon-btn:hover svg {
-  stroke: #FFFFFF !important; /* White icon on hover */
+  stroke: #FF0050 !important; /* Red icon on hover */
   transform: scale(1.05) !important;
   transition: transform 0.2s ease !important;
 }
@@ -63,11 +63,11 @@
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* SVG icon - White */
+/* SVG icon - Red */
 .volume-icon-btn svg {
-  stroke: #FFFFFF !important; /* White icon */
-  color: #FFFFFF !important; /* White icon */
-  fill: #FFFFFF !important; /* White icon */
+  stroke: #FF0050 !important; /* Red icon like TikTok */
+  color: #FF0050 !important; /* Red icon */
+  fill: #FF0050 !important; /* Red icon */
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -338,33 +338,128 @@
   border-radius: 4px;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .volume-control {
-    top: 20px; /* Moved down on mobile too */
-    left: 12px;
+/* Mobile & Mini Tablet Responsive (≤ 767px) - Hide volume icon COMPLETELY */
+@media (max-width: 47.9375rem) {
+  .volume-control,
+  .volume-control *,
+  .volume-control button,
+  .volume-control svg,
+  .volume-control::before,
+  .volume-control::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .volume-icon-btn,
+  .volume-icon-btn *,
+  .volume-icon-btn svg,
+  .volume-icon-btn::before,
+  .volume-icon-btn::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  .volume-slider-container,
+  .volume-slider-container *,
+  .volume-slider-container.visible {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+}
+
+/* Tablet: ALL Devices - 768px - 1024px (48rem - 64rem) - Hide volume icon COMPLETELY
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .volume-control,
+  .volume-control *,
+  .volume-control button,
+  .volume-control svg,
+  .volume-control::before,
+  .volume-control::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .volume-icon-btn,
+  .volume-icon-btn *,
+  .volume-icon-btn svg,
+  .volume-icon-btn::before,
+  .volume-icon-btn::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    background: transparent !important;
+    border: none !important;
   }
 
-  .volume-icon-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  .volume-slider-container {
-    min-width: 100px !important;
-    max-width: 140px !important;
-    height: 32px;
-    padding: 6px 12px !important;
-  }
-
-  .volume-slider {
-    height: 3px;
-  }
-
-  .volume-slider::-webkit-slider-thumb,
-  .volume-slider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+  .volume-slider-container,
+  .volume-slider-container *,
+  .volume-slider-container.visible {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
   }
 }
 

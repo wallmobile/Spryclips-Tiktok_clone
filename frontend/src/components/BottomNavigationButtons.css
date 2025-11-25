@@ -79,3 +79,38 @@
   }
 }
 
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .bottom-nav-btn {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .bottom-nav-btn:hover {
+  background: rgba(51, 65, 85, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.dark-mode .get-coins-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
+}
+
+body.dark-mode .get-coins-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #e53935) !important;
+}
+
+body.dark-mode .get-app-btn {
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .login-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .login-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+

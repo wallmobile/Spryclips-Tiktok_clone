@@ -445,7 +445,30 @@ const WatchLater = () => {
       )}
 
       <div className="watchlater-content">
-        {loading ? (
+        {!isAuthenticated ? (
+          <div className="watchlater-empty">
+            <i className="fa-solid fa-user-lock"></i>
+            <p>Please sign in to view your Watch Later list.</p>
+            <span>Sign in to save videos and watch them later.</span>
+            <div className="watchlater-empty-actions">
+              <button
+                type="button"
+                className="watchlater-button watchlater-button--primary"
+                onClick={() => navigate('/login')}
+              >
+                <i className="fa-solid fa-sign-in-alt"></i>
+                Sign In
+              </button>
+              <button
+                type="button"
+                className="watchlater-button watchlater-button--ghost"
+                onClick={handleGoHome}
+              >
+                Back to For You
+              </button>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="watchlater-status" role="status">
             <i className="fa-solid fa-spinner fa-spin"></i>
             <p>Loading your Watch Later list...</p>

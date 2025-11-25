@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SearchPage from './SearchPage';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -8,15 +9,15 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchPageOpen, setIsSearchPageOpen] = useState(false);
 
   const navItems = useMemo(
     () => [
       { id: 'home', icon: 'fa-home', label: 'For You', path: '/' },
       { id: 'explore', icon: 'fa-compass', label: 'Explore', path: '/explore' },
       { id: 'following', icon: 'fa-user-plus', label: 'Following', path: '/following', auth: true },
-      { id: 'watch-later', icon: 'fa-bookmark', label: 'Watch Later', path: '/watch-later', auth: true },
-      { id: 'playlists', icon: 'fa-list', label: 'Playlists', path: '/playlists', auth: true },
       { id: 'live', icon: 'fa-tv', label: 'LIVE', path: '/live' },
+      { id: 'search', icon: 'fa-search', label: 'Search', action: 'search' },
       { id: 'upload', icon: 'fa-square-plus', label: 'Upload', path: '/upload', auth: true },
       { id: 'profile', icon: 'fa-user', label: 'Profile', path: '/profile', auth: true },
       { id: 'more', icon: 'fa-ellipsis', label: 'More', path: '/more' }
@@ -32,12 +33,19 @@ const Sidebar = () => {
     }
 
     const match = navItems.find((item) => {
+      if (!item.path) return false; // Skip items without path (like search)
       if (item.path === '/') return currentPath === '/';
       return currentPath.startsWith(item.path);
     });
 
     return match ? match.id : 'home';
   }, [location.pathname, navItems]);
+
+  // Check if we're on the For You page (home page only)
+  // Show hamburger only on For You page (/), hide on all other pages
+  const isForYouPage = useMemo(() => {
+    return location.pathname === '/' && !isSearchPageOpen;
+  }, [location.pathname, isSearchPageOpen]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -98,13 +106,16 @@ const Sidebar = () => {
 
   return (
     <>
-      <button
-        className="mobile-menu-toggle"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        aria-label="Toggle menu"
-      >
-        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-x' : 'fa-bars'}`}></i>
-      </button>
+      {/* Show hamburger button only on For You page */}
+      {isForYouPage && (
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <i className={`fa-solid ${isMobileMenuOpen ? 'fa-x' : 'fa-bars'}`}></i>
+        </button>
+      )}
 
       {isMobileMenuOpen && (
         <div 
@@ -126,9 +137,12 @@ const Sidebar = () => {
               key={item.id}
               className={`nav-item ${activeNav === item.id ? 'active' : ''}`}
               onClick={() => {
-                if (item.auth && !isAuthenticated) {
+                if (item.action === 'search') {
+                  setIsSearchPageOpen(true);
+                  setIsMobileMenuOpen(false);
+                } else if (item.auth && !isAuthenticated) {
                   navigate('/login', { state: { from: location } });
-                } else {
+                } else if (item.path) {
                   navigate(item.path);
                 }
                 setIsMobileMenuOpen(false);
@@ -159,6 +173,11 @@ const Sidebar = () => {
           )}
         </div>
       </div>
+
+      {/* Search Page Modal */}
+      {isSearchPageOpen && (
+        <SearchPage onClose={() => setIsSearchPageOpen(false)} />
+      )}
     </>
   );
 };

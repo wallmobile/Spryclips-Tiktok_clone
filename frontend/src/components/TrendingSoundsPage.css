@@ -320,3 +320,122 @@
     padding: 12px 16px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .trending-sounds-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .trending-sounds-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .trending-sounds-header {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .trending-sounds-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .trending-sounds-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .trending-sounds-search {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .trending-sounds-search i {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .sound-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .sound-search-input:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .sound-search-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .trending-sounds-categories {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .sound-category-btn {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .sound-category-btn:hover {
+  border-color: #2563EB !important;
+  background: #475569 !important;
+}
+
+body.dark-mode .sound-category-btn.active {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-color: #2563EB !important;
+  color: #fff !important;
+}
+
+body.dark-mode .trending-sounds-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .trending-sounds-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .trending-sounds-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .trending-sounds-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+body.dark-mode .sound-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .sound-card:hover {
+  background: #475569 !important;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3) !important;
+}
+
+body.dark-mode .sound-card-image {
+  background: #0F172A !important;
+}
+
+body.dark-mode .sound-card-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .sound-artist {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .sound-stats {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .use-sound-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}

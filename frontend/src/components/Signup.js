@@ -406,10 +406,6 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
             <i className="fa-brands fa-facebook" aria-hidden="true" />
             {socialLoading ? 'Connecting…' : 'Sign up with Facebook'}
           </button>
-          <button type="button" className="social-btn apple-btn" disabled>
-            <i className="fa-brands fa-apple" aria-hidden="true" />
-            Coming soon: Sign up with Apple
-          </button>
         </div>
 
         <p className="terms-hint">

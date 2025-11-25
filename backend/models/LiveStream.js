@@ -39,6 +39,12 @@ const liveStreamSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  roomId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
   status: {
     type: String,
     enum: ['scheduled', 'live', 'ended', 'cancelled'],

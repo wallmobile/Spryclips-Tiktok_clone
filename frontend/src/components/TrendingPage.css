@@ -383,3 +383,74 @@
     gap: 16px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .trending-page-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .trending-page-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .trending-page-header {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .trending-page-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .trending-page-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .trending-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .trending-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .trending-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .trending-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+body.dark-mode .trending-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .trending-video-item {
+  background: #334155 !important;
+}
+
+body.dark-mode .trending-video-item:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .trending-video-info h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .trending-video-stats {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .hashtag-view-btn {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .hashtag-view-btn:hover {
+  background: #38BDF8 !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}

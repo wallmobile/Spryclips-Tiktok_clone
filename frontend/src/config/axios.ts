@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig, AxiosError } from 'axios';
-import { broadcastAxiosError } from '../utils/apiError';
+import { broadcastAxiosError, normalizeAxiosError } from '../utils/apiError';
 
 declare global {
   interface Window {
@@ -12,23 +12,30 @@ declare global {
 const isBrowser = typeof window !== 'undefined';
 
 const getAPIURL = (): string => {
-  if (isBrowser && window.APP_CONFIG?.API_URL) {
-    return window.APP_CONFIG.API_URL;
+  // Priority 1: Runtime config from window.APP_CONFIG (set in public/config.js)
+  // This should ALWAYS win if set, even if it's an empty string
+  if (isBrowser && window.APP_CONFIG && 'API_URL' in window.APP_CONFIG) {
+    return window.APP_CONFIG.API_URL || '';
   }
 
+  // Priority 2: Build-time env variable
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
 
+  // Priority 3: Auto-detect based on current location
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
+    // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'https://spryclips.com/';
+      return 'http://localhost:5000';
     }
-    return origin;
+    // Production mode: use empty string (same origin, nginx proxies /api)
+    return '';
   }
 
-  return process.env.NODE_ENV === 'production' ? 'https://spryclips.com/' : 'https://spryclips.com/';
+  // Fallback
+  return '';
 };
 
 const API_URL = getAPIURL();
@@ -92,7 +99,7 @@ api.interceptors.response.use(
 
     // Suppress 401 errors for auth endpoints when user is not authenticated (expected behavior)
     const shouldSuppress401 = status === 401 && (
-      isAuthVerify ||
+      isAuthVerify || 
       isAuthRefresh ||
       (isAuthLogin && !originalRequest._retry) ||
       (isAuthRegister && !originalRequest._retry)

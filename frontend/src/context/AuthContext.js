@@ -31,9 +31,20 @@ export const AuthProvider = ({ children }) => {
       }
       return;
     }
+    
+    // Add timeout to prevent infinite loading - reduced to 3 seconds for faster UX
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Auth verification timeout'));
+      }, 3000); // 3 second timeout for faster UX
+    });
+    
     try {
-      const response = await api.get('/api/auth/verify');
-      if (isMountedRef.current) {
+      const response = await Promise.race([
+        api.get('/api/auth/verify'),
+        timeoutPromise
+      ]);
+      if (isMountedRef.current && response?.data?.user) {
         setUser(response.data.user);
       }
     } catch (error) {
@@ -46,7 +57,11 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       }
     } finally {
+      // Always set loading to false, even if component unmounted
       if (isMountedRef.current) {
+        setLoading(false);
+      } else {
+        // If component unmounted, still try to set loading (might be needed for cleanup)
         setLoading(false);
       }
     }
@@ -63,6 +78,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setAuthenticating(true);
+      console.log('Attempting login with email:', email);
       const response = await api.post('/api/auth/login', { email, password });
       if (response?.data?.user) {
         setUser(response.data.user);
@@ -70,13 +86,40 @@ export const AuthProvider = ({ children }) => {
       skipAuthVerify = false;
       setLoading(true);
       await fetchCurrentUser();
+      console.log('Login successful');
       return { success: true };
     } catch (error) {
-      const message =
-        (typeof error?.userMessage === 'string' && error.userMessage) ||
-        error.response?.data?.userMessage ||
-        error.response?.data?.message ||
-        'Login failed';
+      console.error('Login error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      
+      // Extract error message from various possible locations
+      let message = 'Login failed';
+      
+      if (error?.response?.data) {
+        // Check for userMessage first (custom error format)
+        message = error.response.data.userMessage || 
+                  error.response.data.message || 
+                  error.response.data.error ||
+                  message;
+        
+        // If it's a validation error, extract the first error message
+        if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          const firstError = error.response.data.errors[0];
+          if (firstError?.msg) {
+            message = firstError.msg;
+          } else if (firstError?.message) {
+            message = firstError.message;
+          }
+        }
+      } else if (error?.userMessage) {
+        message = error.userMessage;
+      } else if (error?.message) {
+        message = error.message;
+      }
+      
       return { success: false, message };
     } finally {
       setAuthenticating(false);

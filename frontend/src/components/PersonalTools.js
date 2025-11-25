@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './PersonalTools.css';
 
 const PersonalTools = ({ onClose }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   
   const [personalStats] = useState({
@@ -58,16 +60,60 @@ const PersonalTools = ({ onClose }) => {
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'activity':
-        alert('Opening Activity Center - View all notifications and interactions');
+        // Navigate to notifications/activity center
+        onClose();
+        navigate('/more?section=notifications');
         break;
       case 'offline':
-        alert('Opening Offline Videos - Access downloaded content');
+        // Navigate to watch later (offline videos)
+        onClose();
+        navigate('/watch-later');
         break;
       case 'qrcode':
-        alert('Opening QR Code - Share your profile');
+        // Show QR code modal or navigate to profile
+        // For now, navigate to profile
+        onClose();
+        navigate('/profile');
         break;
       default:
         break;
+    }
+  };
+
+  const handleActivityClick = (activity) => {
+    if (activity.video) {
+      // Navigate to video or user profile
+      navigate(`/@${activity.user}`);
+    } else {
+      // Navigate to user profile
+      navigate(`/@${activity.user}`);
+    }
+  };
+
+  const handleOfflineVideoClick = (video) => {
+    // Navigate to watch later to play the video
+    navigate('/watch-later');
+  };
+
+  const handleQRDownload = () => {
+    // In a real app, this would download the QR code image
+    // For now, we can show a message or trigger download
+    alert('QR Code download feature will be implemented');
+  };
+
+  const handleQRShare = () => {
+    // In a real app, this would share the QR code
+    // For now, we can use Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: `Follow @${user?.username} on TikTok`,
+        text: `Scan this QR code to follow @${user?.username}`,
+        url: window.location.origin + `/@${user?.username}`
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      // Fallback: copy link to clipboard
+      navigator.clipboard.writeText(window.location.origin + `/@${user?.username}`);
+      alert('Profile link copied to clipboard!');
     }
   };
 
@@ -164,7 +210,12 @@ const PersonalTools = ({ onClose }) => {
             <h3>Recent Activity</h3>
             <div className="activity-preview-list">
               {activities.slice(0, 5).map(activity => (
-                <div key={activity.id} className="activity-preview-item">
+                <div 
+                  key={activity.id} 
+                  className="activity-preview-item"
+                  onClick={() => handleActivityClick(activity)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div
                     className="activity-icon"
                     style={{
@@ -202,7 +253,12 @@ const PersonalTools = ({ onClose }) => {
             <h3>Offline Videos</h3>
             <div className="offline-videos-grid">
               {offlineVideos.slice(0, 4).map(video => (
-                <div key={video.id} className="offline-video-card">
+                <div 
+                  key={video.id} 
+                  className="offline-video-card"
+                  onClick={() => handleOfflineVideoClick(video)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="offline-video-thumbnail">
                     <i className="fa-solid fa-play"></i>
                     <div className="video-duration">{video.duration}</div>
@@ -229,11 +285,11 @@ const PersonalTools = ({ onClose }) => {
                   <h4>Share Your Profile</h4>
                   <p>Let others scan this QR code to follow you instantly</p>
                   <div className="qr-actions">
-                    <button className="qr-action-btn">
+                    <button className="qr-action-btn" onClick={handleQRDownload}>
                       <i className="fa-solid fa-download"></i>
                       Save QR Code
                     </button>
-                    <button className="qr-action-btn">
+                    <button className="qr-action-btn" onClick={handleQRShare}>
                       <i className="fa-solid fa-share"></i>
                       Share
                     </button>

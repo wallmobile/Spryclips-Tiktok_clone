@@ -12,13 +12,13 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const { asyncHandler, AppError } = require('../utils/errorHandler');
 
-// Generate JWT access token (15 minutes)
+// Generate JWT access token (3 days - user stays logged in for 2-3 days)
 const generateAccessToken = (userId) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured');
   }
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '15m' // 15 minutes
+    expiresIn: '3d' // 3 days - user stays logged in
   });
 };
 
@@ -27,8 +27,8 @@ const generateRefreshToken = () => {
   return crypto.randomBytes(40).toString('hex');
 };
 
-// Password validation regex - allows common special characters including #
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+// Password validation regex - allows common special characters
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d@$!%*?&#\-_.]{8,}$/;
 
 const sanitizeUsername = (value = '') => value.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
@@ -72,7 +72,7 @@ const issueAuthSuccess = async ({
   const refreshToken = new RefreshToken({
     user: user._id,
     token: refreshTokenValue,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
     ipAddress: req.ip,
     userAgent: req.get('user-agent')
   });
@@ -89,7 +89,7 @@ const issueAuthSuccess = async ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
   });
 
   res.status(statusCode).json({
@@ -233,7 +233,7 @@ router.post('/register',
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters')
       .matches(passwordRegex)
-      .withMessage('Password must contain uppercase, lowercase, number, and special character')
+      .withMessage('Password must contain uppercase, lowercase, number, and special character (e.g., !@#$%^&*)')
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -243,8 +243,12 @@ router.post('/register',
 
     const { username, email, password } = req.body;
 
+    // Normalize email to lowercase (even though validation normalizes it)
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedUsername = username.toLowerCase().trim();
+
     const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }] 
     });
 
     if (existingUser) {
@@ -255,14 +259,14 @@ router.post('/register',
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const user = new User({
-      username,
-      email,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password,
       authProvider: 'local',
       emailVerificationToken,
       emailVerificationExpires,
       profile: {
-        displayName: username
+        displayName: username // Keep original case for display name
       }
     });
 
@@ -274,7 +278,7 @@ router.post('/register',
     const refreshToken = new RefreshToken({
       user: user._id,
       token: refreshTokenValue,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days // 7 days
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
@@ -300,34 +304,84 @@ router.post('/register',
 router.post('/login', 
   authLimiter,
   [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty()
+    body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email address (e.g., yourname@example.com)'),
+    body('password').notEmpty().withMessage('Password is required')
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      throw new AppError('Validation failed', 400, true, errors.array());
+      // Extract specific validation error messages
+      const errorMessages = errors.array().map(err => {
+        return err.msg || (err.param === 'email' ? 'Please enter a valid email address' : 'Invalid input');
+      });
+      throw new AppError(errorMessages.join('. '), 400, true, errors.array());
     }
 
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // Ensure email is lowercase for lookup (even though validation normalizes it)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Try to find user with normalized email
+    let user = await User.findOne({ email: normalizedEmail });
+    
+    // If not found, try case-insensitive search as fallback
     if (!user) {
-      throw new AppError('Invalid credentials', 400);
+      user = await User.findOne({ 
+        email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+      });
+    }
+    
+    if (!user) {
+      // Don't reveal if email exists for security, but log for debugging
+      console.log(`Login attempt failed: User not found for email: ${normalizedEmail}`);
+      throw new AppError('Invalid email or password. Please check your credentials and try again.', 400);
+    }
+
+    // Check if user has a password (for social auth users trying to login with email/password)
+    if (user.authProvider !== 'local') {
+      console.log(`Login attempt failed: User ${normalizedEmail} was created with ${user.authProvider} login`);
+      throw new AppError('This account was created with social login. Please use the same method to sign in.', 400);
+    }
+
+    if (!user.password) {
+      console.log(`Login attempt failed: User ${normalizedEmail} has no password set`);
+      throw new AppError('This account has no password set. Please use password reset or social login.', 400);
     }
 
     if (user.isLocked()) {
-      throw new AppError('Account is temporarily locked due to too many failed login attempts. Please try again later.', 423);
+      const lockTime = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+      throw new AppError(`Account is temporarily locked due to too many failed login attempts. Please try again in ${lockTime} minutes.`, 423);
     }
 
     if (user.accountStatus !== 'active') {
-      throw new AppError('Account is suspended or banned', 403);
+      throw new AppError('Account is suspended or banned. Please contact support.', 403);
     }
 
-    const isMatch = await user.comparePassword(password);
+    // Compare password - ensure no extra whitespace
+    const trimmedPassword = password.trim();
+    
+    // Debug: Log user info (without password)
+    console.log(`Login attempt for: ${normalizedEmail}, authProvider: ${user.authProvider}, hasPassword: ${!!user.password}`);
+    
+    if (!user.password) {
+      console.log(`Login attempt failed: User ${normalizedEmail} has no password`);
+      throw new AppError('Invalid email or password. Please check your credentials and try again.', 400);
+    }
+    
+    const isMatch = await user.comparePassword(trimmedPassword);
+    console.log(`Password match result for ${normalizedEmail}: ${isMatch}`);
+    
     if (!isMatch) {
+      console.log(`Login attempt failed: Password mismatch for user ${normalizedEmail}`);
       await user.incLoginAttempts();
-      throw new AppError('Invalid credentials', 400);
+      // Reload to get updated failed attempts count
+      const updatedUser = await User.findById(user._id);
+      const remainingAttempts = 5 - ((updatedUser?.failedLoginAttempts || 0) + 1);
+      if (remainingAttempts > 0) {
+        throw new AppError(`Invalid email or password. ${remainingAttempts} attempt${remainingAttempts > 1 ? 's' : ''} remaining.`, 400);
+      }
+      throw new AppError('Invalid email or password. Account will be locked after too many failed attempts.', 400);
     }
 
     await user.resetLoginAttempts();
@@ -341,7 +395,7 @@ router.post('/login',
     const refreshToken = new RefreshToken({
       user: user._id,
       token: refreshTokenValue,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days // 7 days
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
@@ -361,15 +415,25 @@ router.post('/login',
 // Refresh token endpoint
 router.post('/refresh', asyncHandler(async (req, res) => {
   const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
-  
+
   if (!refreshToken) {
-    throw new AppError('Refresh token required', 401);
+    throw new AppError({
+      message: 'Refresh token required',
+      statusCode: 401,
+      code: 'UNAUTHORIZED',
+      userMessage: 'Please sign in to continue.'
+    });
   }
 
   const tokenDoc = await RefreshToken.findOne({ token: refreshToken });
-  
+
   if (!tokenDoc || !tokenDoc.isValid()) {
-    throw new AppError('Invalid or expired refresh token', 401);
+    throw new AppError({
+      message: 'Invalid or expired refresh token',
+      statusCode: 401,
+      code: 'UNAUTHORIZED',
+      userMessage: 'Your session has expired. Please sign in again.'
+    });
   }
 
   const accessToken = generateAccessToken(tokenDoc.user);
@@ -378,7 +442,7 @@ router.post('/refresh', asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days - matches token expiration
   });
 
   res.json({
@@ -427,7 +491,7 @@ router.post('/oidc/login', asyncHandler(async (req, res) => {
   const refreshToken = new RefreshToken({
     user: user._id,
     token: refreshTokenValue,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
     ipAddress: req.ip,
     userAgent: req.get('user-agent')
   });
@@ -444,7 +508,7 @@ router.post('/oidc/login', asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
   });
 
   res.json({

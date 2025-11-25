@@ -8,8 +8,12 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
+// PUBLIC UPLOADS DIRECTORY - Production configuration
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+
 // Configure multer for story uploads
-const storiesUploadDir = path.join(__dirname, '../uploads/stories');
+const storiesUploadDir = path.join(UPLOADS_DIR, 'stories');
 if (!fs.existsSync(storiesUploadDir)) {
   fs.mkdirSync(storiesUploadDir, { recursive: true });
 }
@@ -52,7 +56,7 @@ router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
       });
     }
 
-    const mediaUrl = `/uploads/stories/${req.file.filename}`;
+    const mediaUrl = `${UPLOADS_BASE_URL}/stories/${req.file.filename}`;
     const thumbnail = type === 'video' ? mediaUrl : mediaUrl;
 
     // Create story

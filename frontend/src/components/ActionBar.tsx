@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toggleLike, shareVideo } from '../api/videos';
 import { generateIdempotencyKey } from '../utils/idempotency';
 import ReactPicker from './ReactPicker';
@@ -19,12 +20,15 @@ interface ReactionOption {
 interface ActionBarProps {
   videoId: string;
   profileImg?: string;
+  username?: string;
+  userId?: string;
   likes: number;
   comments: number;
   shares: number;
   saves?: number;
   isLiked?: boolean;
   isBookmarked?: boolean;
+  isFollowing?: boolean;
   allowDuet?: boolean;
   allowStitch?: boolean;
   onLike?: (videoId: string, payload: { isLiked: boolean; likes: number }) => void;
@@ -72,12 +76,15 @@ const isHexObjectId = (value?: string): boolean => {
 const ActionBar: React.FC<ActionBarProps> = ({
   videoId,
   profileImg,
+  username,
+  userId,
   likes,
   comments,
   shares,
   saves = 0,
   isLiked = false,
   isBookmarked = false,
+  isFollowing = false,
   allowDuet = true,
   allowStitch = true,
   onLike,
@@ -93,6 +100,8 @@ const ActionBar: React.FC<ActionBarProps> = ({
   interactionMode = 'api',
   currentReaction: currentReactionProp = null,
 }) => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
   const [state, setState] = useState<ActionState>({
     liked: isLiked,
@@ -146,7 +155,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
   const watchLaterEntries = useLibraryStore((state) => state.watchLater);
   const addToWatchLater = useLibraryStore((state) => state.addToWatchLater);
   const removeFromWatchLater = useLibraryStore((state) => state.removeFromWatchLater);
-  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     hydrateLibrary();
@@ -290,9 +298,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
             pending: { ...prev.pending, like: false },
           }));
           
-          // Better error message
-          const errorMessage = (error as any)?.response?.data?.message || 
-                             (error as any)?.message || 
+          // Better error message - prioritize userMessage for 401 errors
+          const errorObj = error as any;
+          const errorMessage = errorObj?.userMessage || 
+                             errorObj?.response?.data?.userMessage ||
+                             errorObj?.response?.data?.message || 
+                             errorObj?.message || 
                              'Failed to update like. Please try again.';
           
           onError && onError(errorMessage);
@@ -508,7 +519,16 @@ const ActionBar: React.FC<ActionBarProps> = ({
             shares: previousShares,
             pending: { ...prev.pending, share: false },
           }));
-          onError && onError('Failed to update share count. Please try again.');
+          
+          // Better error message - prioritize userMessage for 401 errors
+          const errorObj = error as any;
+          const errorMessage = errorObj?.userMessage || 
+                             errorObj?.response?.data?.userMessage ||
+                             errorObj?.response?.data?.message || 
+                             errorObj?.message || 
+                             'Failed to update share count. Please try again.';
+          
+          onError && onError(errorMessage);
           console.error('Share error:', error);
         })
         .finally(() => {
@@ -849,16 +869,64 @@ const ActionBar: React.FC<ActionBarProps> = ({
             src={profileImg || `https://ui-avatars.com/api/?name=User&background=E50914&color=fff`}
             alt="Profile"
             className="profile-picture"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Check if user is authenticated
+              if (!isAuthenticated) {
+                // Show error message
+                if (onError) {
+                  onError('Please login to view profile');
+                } else {
+                  // Show alert message
+                  alert('Please login to view profile');
+                }
+                // Navigate to login page with message
+                navigate('/login', { state: { message: 'Please login to view profile' } });
+                return;
+              }
+              
+              // Navigate to user profile page without page reload
+              if (username) {
+                const cleanUsername = username.replace('@', '');
+                navigate(`/user/${cleanUsername}`);
+              } else if (userId) {
+                navigate(`/user/${userId}`);
+              } else if (video?.user) {
+                const user = video.user;
+                const userUsername = (typeof user === 'object' ? (user.username || user._id || user.id) : user) || 
+                                   (video as any)?.username || 
+                                   (video as any)?.channel;
+                if (userUsername) {
+                  navigate(`/user/${String(userUsername).replace('@', '')}`);
+                } else {
+                  navigate('/profile');
+                }
+              } else {
+                navigate('/profile');
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+            title="View profile"
           />
-          <button 
-            className="follow-button"
-            onClick={() => onFollow && onFollow(videoId)}
-            aria-label="Follow user"
-            title="Follow user"
-            onKeyDown={(e) => handleKeyDown(e, () => onFollow && onFollow(videoId))}
-          >
-            <i className="fa-solid fa-plus"></i>
-          </button>
+          {!isFollowing && (
+            <button 
+              className="follow-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFollow && onFollow(videoId);
+              }}
+              aria-label="Follow user"
+              title="Follow user"
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                handleKeyDown(e, () => onFollow && onFollow(videoId));
+              }}
+            >
+              <i className="fa-solid fa-plus"></i>
+            </button>
+          )}
         </div>
       </div>
 

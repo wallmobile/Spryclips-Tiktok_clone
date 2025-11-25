@@ -11,7 +11,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
-  if (loading && !isAuthenticated) {
+  if (loading) {
     return (
       <div
         style={{
@@ -23,7 +23,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
           fontWeight: 600
         }}
       >
-        Loading...
+        <div style={{ textAlign: 'center' }}>
+          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px', display: 'block' }}></i>
+          <p>Checking authentication...</p>
+        </div>
       </div>
     );
   }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/axios';
 import './NotificationSettings.css';
 
 const NotificationSettings = ({ onClose }) => {
@@ -42,6 +43,40 @@ const NotificationSettings = ({ onClose }) => {
       sms: false
     }
   });
+  const [frequency, setFrequency] = useState('instant');
+  const [quietHours, setQuietHours] = useState({
+    enabled: true,
+    from: '22:00',
+    to: '08:00'
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await api.get('/api/auth/verify');
+        const userData = response.data.user;
+        if (userData?.notificationSettings && Object.keys(userData.notificationSettings).length > 0) {
+          setNotificationSettings(userData.notificationSettings);
+        }
+        if (userData?.notificationFrequency) {
+          setFrequency(userData.notificationFrequency);
+        }
+        if (userData?.quietHours) {
+          setQuietHours({
+            enabled: userData.quietHours.enabled || false,
+            from: userData.quietHours.from || '22:00',
+            to: userData.quietHours.to || '08:00'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load notification settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const notificationCategories = [
     {
@@ -116,22 +151,79 @@ const NotificationSettings = ({ onClose }) => {
     }
   ];
 
-  const handleToggle = (category, type) => {
+  const saveSettings = async () => {
+    try {
+      setSaving(true);
+      await api.put('/api/users/notifications', {
+        notificationSettings,
+        notificationFrequency: frequency,
+        quietHours
+      });
+      setSaveMessage('Settings saved successfully');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to save notification settings:', error);
+      setSaveMessage('Failed to save settings');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggle = async (category, type) => {
+    const newValue = !notificationSettings[category][type];
     setNotificationSettings(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [type]: !prev[category][type]
+        [type]: newValue
       }
     }));
+    
+    // Auto-save after toggle
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
   };
 
-  const handleMasterToggle = (type, enabled) => {
+  const handleMasterToggle = async (type, enabled) => {
     const updatedSettings = { ...notificationSettings };
     Object.keys(updatedSettings).forEach(category => {
       updatedSettings[category][type] = enabled;
     });
     setNotificationSettings(updatedSettings);
+    
+    // Auto-save after master toggle
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
+  };
+
+  const handleFrequencyChange = async (value) => {
+    setFrequency(value);
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
+  };
+
+  const handleQuietHoursToggle = async () => {
+    setQuietHours(prev => ({
+      ...prev,
+      enabled: !prev.enabled
+    }));
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
+  };
+
+  const handleQuietHoursTimeChange = async (field, value) => {
+    setQuietHours(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setTimeout(() => {
+      saveSettings();
+    }, 500);
   };
 
   return (
@@ -145,6 +237,21 @@ const NotificationSettings = ({ onClose }) => {
           <h2>Notification Settings</h2>
           <div className="notification-settings-header-placeholder"></div>
         </div>
+
+        {/* Save Message */}
+        {saveMessage && (
+          <div style={{
+            padding: '0.75rem 1.25rem',
+            background: saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            color: saveMessage.includes('Failed') ? '#DC2626' : '#16A34A',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            textAlign: 'center',
+            borderBottom: `1px solid ${saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+          }}>
+            {saveMessage}
+          </div>
+        )}
 
         {/* Full Page Scrollable Content */}
         <div className="notification-settings-content">
@@ -224,7 +331,13 @@ const NotificationSettings = ({ onClose }) => {
             <h3>Notification Frequency</h3>
             <div className="frequency-options">
               <div className="frequency-option">
-                <input type="radio" id="instant" name="frequency" defaultChecked />
+                <input 
+                  type="radio" 
+                  id="instant" 
+                  name="frequency" 
+                  checked={frequency === 'instant'}
+                  onChange={() => handleFrequencyChange('instant')}
+                />
                 <label htmlFor="instant">
                   <div className="frequency-content">
                     <h5>Instant</h5>
@@ -233,7 +346,13 @@ const NotificationSettings = ({ onClose }) => {
                 </label>
               </div>
               <div className="frequency-option">
-                <input type="radio" id="bundled" name="frequency" />
+                <input 
+                  type="radio" 
+                  id="bundled" 
+                  name="frequency"
+                  checked={frequency === 'bundled'}
+                  onChange={() => handleFrequencyChange('bundled')}
+                />
                 <label htmlFor="bundled">
                   <div className="frequency-content">
                     <h5>Bundled</h5>
@@ -242,7 +361,13 @@ const NotificationSettings = ({ onClose }) => {
                 </label>
               </div>
               <div className="frequency-option">
-                <input type="radio" id="daily" name="frequency" />
+                <input 
+                  type="radio" 
+                  id="daily" 
+                  name="frequency"
+                  checked={frequency === 'daily'}
+                  onChange={() => handleFrequencyChange('daily')}
+                />
                 <label htmlFor="daily">
                   <div className="frequency-content">
                     <h5>Daily Summary</h5>
@@ -267,14 +392,25 @@ const NotificationSettings = ({ onClose }) => {
               <div className="quiet-hours-controls">
                 <div className="time-input-group">
                   <label>From</label>
-                  <input type="time" defaultValue="22:00" />
+                  <input 
+                    type="time" 
+                    value={quietHours.from}
+                    onChange={(e) => handleQuietHoursTimeChange('from', e.target.value)}
+                  />
                 </div>
                 <div className="time-input-group">
                   <label>To</label>
-                  <input type="time" defaultValue="08:00" />
+                  <input 
+                    type="time" 
+                    value={quietHours.to}
+                    onChange={(e) => handleQuietHoursTimeChange('to', e.target.value)}
+                  />
                 </div>
                 <div className="quiet-hours-toggle">
-                  <div className="notification-toggle-switch active">
+                  <div 
+                    className={`notification-toggle-switch ${quietHours.enabled ? 'active' : ''}`}
+                    onClick={handleQuietHoursToggle}
+                  >
                     <div className="notification-toggle-slider"></div>
                   </div>
                 </div>

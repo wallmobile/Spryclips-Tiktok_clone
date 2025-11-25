@@ -1,11 +1,14 @@
 .system-notification-banner-container {
   position: fixed;
-  top: 60px; /* Below navbar */
-  left: 0;
-  right: 0;
-  z-index: 10009 !important; /* Below navbar (10010) but above video cards */
+  top: 1rem !important; /* Position at top */
+  left: 50% !important; /* Center horizontally */
+  transform: translateX(-50%) !important; /* Perfect center alignment */
+  right: auto !important;
+  z-index: 10001 !important; /* Above navbar (10000) */
   padding: 12px 20px;
   pointer-events: none;
+  max-width: 500px; /* Limit width so it doesn't take full width */
+  width: calc(100% - 2rem); /* Responsive width with padding */
 }
 
 .system-notification-banner {
@@ -18,8 +21,9 @@
   justify-content: space-between;
   gap: 12px;
   pointer-events: auto;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto; /* Center the banner */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -72,7 +76,7 @@
 }
 
 .notification-close-btn:hover {
-  color: #fff;
+  /* Hover effect removed - no changes on hover */
 }
 
 .notification-close-btn i {
@@ -95,5 +99,37 @@
   .notification-text p {
     font-size: 12px;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .system-notification-banner {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .system-notification-banner.info {
+  background: rgba(30, 41, 59, 0.95) !important;
+}
+
+body.dark-mode .notification-content i {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .notification-text h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .notification-text p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .notification-close-btn {
+  color: rgba(203, 213, 225, 0.6) !important;
+}
+
+body.dark-mode .notification-close-btn:hover {
+  color: #F9FAFB !important;
 }
 

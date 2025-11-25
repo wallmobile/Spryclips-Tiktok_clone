@@ -1,63 +1,57 @@
 ﻿.for-you-feed {
-  flex: 1;
-  height: calc(100vh - 3.75rem); /* Account for Navbar (60px = 3.75rem) */
-  margin-left: 17.5rem; /* Account for sidebar (280px = 17.5rem) */
-  margin-top: 3.75rem !important; /* Account for Navbar */
-  padding: 0 !important;
+  position: relative;
+  width: 100%;
+  height: 100vh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
-  position: relative;
-  background: #ffffff !important; /* White background like TikTok */
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overflow-x: hidden !important;
-  width: calc(100% - 17.5rem); /* Full width minus sidebar */
-  max-width: calc(100vw - 17.5rem) !important;
-  box-sizing: border-box !important;
-  z-index: 1;
+  background: #000;
+  -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
+  padding: 0px 0px 0px 25px;
+  margin: 0;
+  padding-bottom: 0 !important; /* Remove bottom padding to prevent empty space */
+  margin-bottom: 0 !important; /* Remove bottom margin to prevent empty space */
 }
 
+/* Mobile padding removed in main mobile media query below */
 .for-you-feed-toast {
-  position: sticky;
-  top: 1rem;
-  margin: 0 auto;
-  padding: 0.75rem 1.25rem;
-  max-width: 320px;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.85);
+  position: fixed;
+  bottom: env(safe-area-inset-bottom, 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.7);
   color: #fff;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
-  z-index: 2000;
-  pointer-events: none;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 9999;
+  animation: fadeInOut 2s ease forwards;
 }
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 10px); }
+}
+
 
 .for-you-feed-card {
-  width: 100%;
-  height: calc(100vh - 3.75rem); /* Account for Navbar (60px = 3.75rem) */
-  scroll-snap-align: start;
   position: relative;
+  width: 100%;
+  height: 100vh;
+  scroll-snap-align: start;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible !important; /* Allow icons to be visible outside */
-  margin-top: 0;
-  background: transparent !important; /* Transparent to show white page background */
-  z-index: 1;
-  max-width: 100vw;
-  animation: fadeIn 0.5s ease-out;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  background: #000; /* Black background by default */
 }
 
 .video-card-container {
   position: relative;
   width: 100%;
-  max-width: 360px; /* Reduced width */
-  height: 85vh; /* Reduced height */
-  max-height: 85vh; /* Reduced max height */
+  height: 90vh; /* Increased height */
+  max-height: 90vh; /* Increased max height */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,8 +59,13 @@
   overflow: visible !important; /* Allow action bar to be visible outside */
   box-sizing: border-box;
   z-index: 1 !important; /* Lower than navbar to stay below */
-  margin: 0 auto; /* Center the container */
+  margin: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  transform: translateX(-40px) !important; /* Shift video 40px to the left */
   border-radius: 16px; /* Rounded corners */
+  /* Ensure video doesn't overlap with navbar - constrain right edge */
+  max-width: min(320px, calc(100vw - 17.5rem - 22rem - 2rem)); /* Account for sidebar, navbar space, and padding - reduced from 360px */
 }
 
 /* Responsive video container */
@@ -91,9 +90,12 @@
 }
 
 @media (max-width: 768px) {
-  .video-card-container {
-    max-width: 100%;
-    width: 100%;
+   .for-you-feed {
+    height: 100dvh; /* Dynamic viewport for mobile browsers */
+  }
+
+  .for-you-feed-card {
+    height: 100dvh;
   }
 }
 
@@ -131,7 +133,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 0;
-  z-index: 100 !important; /* Lower than navbar (10010) */
+  z-index: 10 !important; /* Base z-index for overlay container */
   overflow: visible !important; /* Allow action bar to be visible outside */
   /* Clip to container bounds - ensure nothing goes outside */
   width: 100%;
@@ -140,24 +142,33 @@
   max-height: 100%;
   box-sizing: border-box;
   animation: fadeIn 0.6s ease-out 0.2s both;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
 }
 
-/* Video Info & Follow Button at Bottom */
+/* Video Info at Bottom (Follow button removed - TikTok style) */
 .video-card-info {
   position: absolute;
-  bottom: 4.5rem !important; /* 72px - above progress bar (progress bar ~50px + gap) */
+  bottom: 9rem !important; /* 144px - moved higher to create proper gap above description */
   left: 1rem !important; /* 16px - force left alignment */
-  right: auto !important; /* Remove right constraint */
+  right: 6rem !important; /* 96px - more space for action buttons (64px + 32px padding) */
   display: flex;
   align-items: center;
   gap: 0.75rem; /* 12px */
   pointer-events: auto;
-  z-index: 101; /* Higher than description to stay on top */
-  flex-wrap: nowrap;
-  max-width: calc(100% - 6rem); /* Responsive */
-  box-sizing: border-box;
-  padding-right: 0.5rem; /* 8px */
-  overflow: visible; /* Allow button to be visible */
+  z-index: 20 !important; /* Above overlay base but below volume control */
+  flex-wrap: wrap !important; /* Allow wrapping if text is too long */
+  max-width: calc(100% - 7rem) !important; /* Ensure no overlap - 96px (6rem) + 16px (1rem left) = 112px total */
+  box-sizing: border-box !important;
+  padding-right: 0.5rem !important; /* 8px */
+  overflow: visible;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
 }
 
 .video-card-channel {
@@ -165,19 +176,19 @@
   align-items: center;
   gap: 0.75rem; /* 12px */
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.4); /* Button-like background */
-  backdrop-filter: blur(8px);
-  border-radius: 1.5rem; /* Rounded like button */
-  padding: 0.375rem 0.75rem; /* 6px 12px - button padding */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: transparent !important; /* No background */
+  backdrop-filter: none !important; /* No blur */
+  border-radius: 0 !important; /* No border radius */
+  padding: 0 !important; /* No padding */
+  border: none !important; /* No border */
+  box-shadow: none !important; /* No shadow */
   transition: all 0.3s ease;
 }
 
 .video-card-channel:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent !important; /* No background on hover */
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: none !important; /* No shadow on hover */
 }
 
 .video-card-avatar {
@@ -311,29 +322,50 @@
   height: 300px;
 }
 
-/* Description */
+/* Description - TikTok style (bottom left, above progress bar) */
 .video-card-description {
   position: absolute;
-  bottom: 7rem; /* 112px - above info section (4.5rem = 72px + 2.5rem = 40px gap) */
-  left: 1rem; /* 16px */
-  right: 5rem; /* 80px - space for action buttons */
-  color: #fff;
-  font-size: 0.9375rem; /* 15px */
-  font-weight: 400;
-  line-height: 1.5;
-  text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.9); /* 0 1px 3px */
-  pointer-events: auto;
-  z-index: 100; /* Lower than info section */
-  max-width: calc(100% - 6rem); /* Responsive */
-  word-wrap: break-word;
-  box-sizing: border-box;
-  padding-right: 0.5rem; /* 8px */
-  overflow-wrap: break-word;
-  overflow: hidden;
-  max-height: 3.5rem; /* Limit height to prevent overlap */
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Show max 2 lines */
-  -webkit-box-orient: vertical;
+  bottom: 5.5rem !important; /* 88px - moved lower to avoid overlap with username info */
+  left: 1rem !important; /* 16px - left aligned */
+  right: 6rem !important; /* 96px - space for action buttons */
+  color: #fff !important;
+  font-size: 0.9375rem !important; /* 15px */
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important; /* Add text shadow for readability */
+  pointer-events: auto !important;
+  z-index: 15 !important; /* Below info and music link */
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  padding: 0 !important; /* No padding */
+  margin: 0 !important; /* No margin */
+  border: none !important; /* No border */
+  border-radius: 0 !important; /* No border radius */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
+  max-width: calc(100% - 7rem) !important; /* Ensure no overlap */
+  word-wrap: break-word !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word !important;
+  overflow: hidden !important;
+  max-height: 4rem !important; /* Limit height */
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important; /* Show max 2 lines */
+  -webkit-box-orient: vertical !important;
+  transition: max-height 0.3s ease;
+  text-align: left !important; /* Left align text */
+  white-space: pre-wrap !important; /* Preserve whitespace and wrap text */
+}
+
+/* Expanded description - remove line clamp */
+.video-card-description.expanded {
+  max-height: 6rem !important; /* Allow more lines when expanded but limit to prevent overlap */
+  -webkit-line-clamp: unset !important;
+  display: block !important;
+  overflow-y: auto !important;
+  bottom: 5.5rem !important; /* Keep same position when expanded */
 }
 
 /* Mute Button - Top Left (Official TikTok style) */
@@ -356,23 +388,75 @@
   justify-content: center !important;
   pointer-events: auto !important;
   transition: all 0.2s ease !important;
-  z-index: 1000 !important;
+  z-index: 50 !important; /* High z-index for volume control */
   visibility: visible !important;
   opacity: 1 !important;
   box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3) !important; /* 0 2px 8px */
   touch-action: manipulation !important;
 }
 
+/* Hide on mobile/tablet - ONLY show on desktop (> 1024px) */
+@media (max-width: 64rem) {
+  .video-card-mute-btn,
+  .video-card-mute-btn *,
+  .video-card-mute-btn i,
+  .video-card-mute-btn::before,
+  .video-card-mute-btn::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  
+  .video-card-volume-control,
+  .video-card-volume-control *,
+  .video-card-volume-control button,
+  .video-card-volume-control svg,
+  .video-card-volume-control::before,
+  .video-card-volume-control::after {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+  }
+  
+  .video-card-volume-slider-container,
+  .video-card-volume-slider-container * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+  }
+}
+
 .video-card-mute-btn:hover {
   transform: scale(1.1);
   opacity: 1 !important;
-  background: rgba(0, 0, 0, 0.7) !important; /* Darker on hover */
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 0, 80, 0.3) !important; /* Light red background on hover */
+  border: 1px solid rgba(255, 0, 80, 0.5) !important; /* Red border on hover */
 }
 
 .video-card-mute-btn:hover i {
   opacity: 1 !important;
   visibility: visible !important;
+  color: #FF0050 !important; /* Red icon on hover */
 }
 
 .video-card-mute-btn:active {
@@ -381,7 +465,7 @@
 
 .video-card-mute-btn i {
   font-size: 20px !important;
-  color: #FFFFFF !important; /* White icon */
+  color: #FF0050 !important; /* Red icon like TikTok */
   display: inline-block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -396,7 +480,7 @@
   position: absolute !important;
   top: 24px !important; /* Moved down from top */
   left: 16px !important;
-  z-index: 1001 !important;
+  z-index: 50 !important; /* High z-index for volume control */
   display: flex !important;
   align-items: center;
   gap: 6px; /* Reduced gap */
@@ -412,7 +496,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: 49; /* Just below volume control */
   background: transparent;
   cursor: default;
 }
@@ -511,14 +595,15 @@
 
 .video-card-actions {
   position: absolute;
-  right: -4rem; /* Move icons to the right side of video */
+  right: -4rem; /* Proper spacing from video edge like TikTok */
   bottom: 5rem; /* 80px - above user info */
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* 16px - proper spacing like TikTok image */
+  gap: 1.25rem; /* 20px - proper spacing between icons like TikTok */
   align-items: center;
   pointer-events: auto;
-  z-index: 1000;
+  z-index: 30 !important; /* High z-index for action buttons */
+  top: auto; /* Ensure it doesn't overlap with top navbar */
 }
 
 .video-card-action-item {
@@ -543,7 +628,7 @@
   justify-content: center;
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 30;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -639,18 +724,22 @@ body.dark-mode .video-card-mute-btn {
 }
 
 body.dark-mode .video-card-mute-btn:hover {
-  background: rgba(255, 255, 255, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 0, 80, 0.3) !important; /* Light red background on hover */
+  border-color: rgba(255, 0, 80, 0.5) !important; /* Red border on hover */
+}
+
+body.dark-mode .video-card-mute-btn i {
+  color: #FF0050 !important; /* Red icon in dark mode */
 }
 
 /* Desktop: > 1024px (64rem) - Ensure desktop layout */
 @media (min-width: 64.0625rem) {
   .for-you-feed {
     margin-left: 17.5rem !important; /* 280px = 17.5rem - sidebar width */
-    width: calc(100% - 17.5rem) !important;
-    max-width: calc(100vw - 17.5rem) !important;
-    height: calc(100vh - 3.75rem) !important; /* Account for Navbar (60px = 3.75rem) */
-    margin-top: 3.75rem !important; /* Account for Navbar */
+    width: calc(100% - 17.5rem - 4.5rem) !important; /* Account for sidebar and right navbar */
+    max-width: calc(100vw - 17.5rem - 4.5rem) !important;
+    height: 100vh !important; /* Full height - navbar is on right */
+    margin-top: 0 !important; /* No top margin */
     padding: 0 !important;
     background: #ffffff !important; /* White background */
     box-sizing: border-box !important;
@@ -660,26 +749,29 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .for-you-feed-card {
-    height: calc(100vh - 3.75rem) !important; /* Account for Navbar */
+    height: 100vh !important; /* Full height */
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+    background: #ffffff !important; /* White background for desktop */
   }
   
   .video-card-container {
     width: 100% !important;
-    max-width: 360px !important; /* Reduced width */
-    height: 85vh !important; /* Reduced height */
-    max-height: 85vh !important; /* Reduced max height */
+    max-width: 320px !important; /* Reduced width from 360px */
+    height: 90vh !important; /* Increased height */
+    max-height: 90vh !important; /* Increased max height */
     box-sizing: border-box !important;
     overflow: visible !important; /* Allow action bar to be visible outside */
-    margin: 0 auto !important; /* Center the container */
+    margin: 0 auto !important;
+    transform: translateX(-40px) !important; /* Shift video 40px to the left */
     border-radius: 16px !important; /* Rounded corners */
+    background: #ffffff !important; /* White background for desktop */
   }
   
   .video-card-actions {
-    right: -4rem !important; /* Move icons to the right side of video */
+    right: -4.5rem !important; /* Move icons further right to avoid video overlap */
   }
 
   /* Responsive video container for desktop */
@@ -712,30 +804,259 @@ body.dark-mode .video-card-mute-btn:hover {
     top: 0 !important;
     left: 0 !important;
     transform: none !important;
+    border-radius: 0 !important; /* No border radius on mobile */
   }
 }
 
-/* Tablet Responsive (48rem - 64rem = 768px - 1024px) */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+/* Mini Tablet / Large Phones (30.0625rem - 47.9375rem = 481px - 767px) */
+@media (min-width: 30.0625rem) and (max-width: 47.9375rem) {
   .for-you-feed {
-    margin-left: 15rem !important; /* 240px = 15rem */
-    width: calc(100% - 15rem) !important;
-    max-width: calc(100vw - 15rem);
-    height: calc(100vh - 3.75rem) !important; /* Account for Navbar */
-    margin-top: 3.75rem !important; /* Account for Navbar */
+    margin-left: 0 !important; /* No margin - sidebar is drawer on mini tablet */
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
   }
 
   .for-you-feed-card {
-    height: calc(100vh - 3.75rem) !important; /* Account for Navbar */
+    height: 100vh !important;
+    height: 100dvh !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 
   .video-card-container {
-    max-width: 320px !important; /* Reduced width on tablet */
-    border-radius: 16px !important; /* Rounded corners */
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    border-radius: 0 !important; /* Full screen on mini tablet */
+  }
+
+  .video-card-actions {
+    right: 0.75rem !important; /* 12px */
+    bottom: 50% !important;
+    transform: translateY(50%) !important;
+    gap: 0.75rem !important;
+  }
+
+  .video-card-video {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on mini tablet too */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on mini tablet too */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Tablet Responsive - ALL Devices (48rem - 64rem = 768px - 1024px)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336), 
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .for-you-feed {
+    margin-left: 0 !important; /* No margin - sidebar is drawer on tablet */
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important; /* Remove all padding on tablet */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: scroll !important; /* Enable vertical scrolling */
+    scroll-snap-type: y mandatory !important; /* Enable snap scrolling */
+    -webkit-overflow-scrolling: touch !important; /* Smooth scroll on iOS */
+    scroll-behavior: smooth !important; /* Smooth scrolling */
+    position: fixed !important; /* Fixed to prevent extra space */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: #000 !important; /* Black background - no white showing */
+    z-index: 1 !important; /* Above app background */
+    box-sizing: border-box !important;
+  }
+
+  .for-you-feed-card {
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    scroll-snap-align: start !important; /* Snap each card to start */
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+    flex-shrink: 0 !important; /* Prevent cards from shrinking */
+    position: relative !important;
+    overflow: hidden !important; /* Hide overflow to prevent empty space */
+    display: block !important; /* Block display - NO flex to prevent centering */
+    background: #000 !important; /* Black background - no white showing */
+    align-items: initial !important; /* Remove flex alignment */
+    justify-content: initial !important; /* Remove flex justification */
+  }
+
+  .video-card-container {
+    max-width: 100vw !important; /* Full viewport width on tablet */
+    width: 100vw !important; /* Full viewport width */
+    margin: 0 !important; /* Remove all margins */
+    padding: 0 !important; /* Remove padding */
+    transform: none !important; /* Remove transform on tablet */
+    border-radius: 0 !important; /* No border radius on tablet for full screen effect */
+    height: 100vh !important; /* Full viewport height - EXACTLY 100vh */
+    height: 100dvh !important; /* Dynamic viewport height */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    position: absolute !important; /* Absolute positioning to fill parent */
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    min-width: unset !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Hide overflow */
+    display: block !important; /* Block display - no flex */
+    background: #000 !important; /* Black background - no white showing */
+    align-items: initial !important; /* Remove flex alignment */
+    justify-content: initial !important; /* Remove flex justification */
+  }
+
+  .video-card-overlay {
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    background: transparent !important; /* No background - transparent */
   }
   
   .video-card-actions {
-    right: -3rem !important; /* Icons on side for tablet */
+    right: 0.75rem !important; /* Icons inside video on tablet */
+    bottom: 50% !important;
+    transform: translateY(50%) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .video-card-video {
+    width: 100vw !important; /* Full viewport width */
+    width: 100% !important; /* Full container width */
+    height: 100vh !important; /* Full viewport height - EXACTLY fill */
+    height: 100dvh !important; /* Dynamic viewport height */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important; /* No border radius on tablet for full screen effect */
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    max-width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    overflow: hidden !important; /* Hide any overflow */
+    background: #000 !important; /* Black background - no white showing */
+  }
+
+  .video-card-mute-btn {
+    display: none !important; /* Hide on tablet - only show on desktop */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-volume-control {
+    display: none !important; /* Hide on tablet - only show on desktop */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .video-card-info {
+    bottom: 9rem !important; /* Same as mobile - maintain gap above description */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    max-width: calc(100% - 7rem) !important; /* Don't overlap with action buttons */
+    padding-right: 1rem !important;
+  }
+
+  .video-card-username {
+    font-size: 0.9375rem !important; /* Same as mobile */
+    margin-bottom: 0.5rem !important;
+  }
+
+  .video-card-follow-btn {
+    font-size: 0.8125rem !important; /* Same as mobile */
+    padding: 0.5rem 1rem !important;
+  }
+
+  .video-card-description {
+    bottom: 5.5rem !important; /* Same as mobile - consistent spacing */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    font-size: 0.9375rem !important; /* Same as mobile */
+    max-width: calc(100% - 7rem) !important;
+    margin-bottom: 0.5rem !important;
+    padding-right: 0 !important;
+  }
+
+  .video-card-music-link {
+    bottom: 3rem !important; /* Same as mobile - consistent spacing */
+    left: 1rem !important; /* Same as mobile */
+    right: 6rem !important; /* Space for action buttons */
+    font-size: 0.875rem !important; /* Same as mobile */
+    margin-top: 0.5rem !important;
+  }
+
+  .video-card-music-link i {
+    color: #FF0050 !important; /* Red music icon on tablet - same as desktop */
+    fill: #FF0050 !important;
   }
 }
 
@@ -743,44 +1064,70 @@ body.dark-mode .video-card-mute-btn:hover {
 @media (max-width: 48rem) {
   .for-you-feed {
     margin-left: 0 !important; /* No margin on mobile since sidebar is drawer */
-    width: 100% !important;
+    width: 100% !important; /* Full width on mobile */
+    width: 100vw !important; /* Full viewport width */
     max-width: 100vw !important;
-    height: calc(100vh - 3.5rem) !important; /* Account for Navbar (56px = 3.5rem) */
-    margin-top: 3.5rem !important; /* Account for Navbar */
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
+    margin-top: 0 !important; /* No top margin */
+    margin-right: 0 !important;
+    padding: 0 !important; /* Remove all padding on mobile */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow-x: hidden !important;
   }
 
   .for-you-feed-card {
-    height: calc(100vh - 3.5rem) !important; /* Account for Navbar */
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height */
     max-width: 100vw;
   }
 
   .video-card-container {
-    max-width: 100% !important; /* Full width on mobile */
-    width: 100% !important;
+    max-width: 100vw !important; /* Full viewport width */
+    width: 100vw !important; /* Full viewport width */
+    margin: 0 !important; /* Remove all margins */
+    padding: 0 !important; /* Remove padding */
+    transform: none !important; /* Remove transform on mobile */
+    border-radius: 0 !important; /* No border radius on mobile for full screen effect */
+    height: 100vh !important; /* Full height */
+    height: 100dvh !important; /* Dynamic viewport height */
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .video-card-video {
+    width: 100vw !important; /* Full viewport width */
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    max-width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    object-fit: cover !important;
   }
 
   .video-card-mute-btn {
-    top: 1rem !important; /* 16px */
-    left: 0.75rem !important; /* 12px */
-    width: 2.25rem !important; /* 36px */
-    height: 2.25rem !important;
-    min-width: 2.25rem !important;
-    min-height: 2.25rem !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-
-  .video-card-mute-btn i {
-    font-size: 1.125rem !important; /* 18px */
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .video-card-volume-control {
-    top: 1rem !important; /* 16px */
-    left: 0.75rem !important; /* 12px */
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .video-card-volume-slider-container {
@@ -801,9 +1148,11 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-actions {
-    right: 0.75rem; /* 12px */
-    bottom: 4.375rem; /* 70px */
-    gap: 0.75rem; /* 12px */
+    right: 0.75rem !important; /* 12px */
+    bottom: 4.375rem !important; /* 70px */
+    gap: 0.75rem !important; /* 12px */
+    position: absolute !important;
+    z-index: 30 !important;
   }
 
   .video-card-action-btn {
@@ -827,13 +1176,29 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-info {
-    bottom: 4.5rem !important; /* 72px - moved up to give space for description */
-    left: 0.5rem !important; /* 8px - force left alignment */
-    right: auto !important; /* Remove right constraint */
-    gap: 0.625rem; /* 10px */
-    max-width: calc(100% - 4.875rem) !important;
+    bottom: 9rem !important; /* 144px - maintain gap above description */
+    left: 0.75rem !important; /* 12px - slightly more space on mobile */
+    right: 4.5rem !important; /* 72px - more space to prevent overlap */
+    gap: 0.625rem !important; /* 10px */
+    max-width: calc(100% - 5.5rem) !important; /* Ensure no overlap */
     flex-wrap: wrap !important;
     align-items: flex-start !important;
+    z-index: 20 !important;
+    position: absolute !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 1.25rem !important; /* 20px - below translation button with 28px gap */
+    left: 0.5rem !important;
+    right: 4.5rem !important;
+    font-size: 0.75rem !important; /* 12px */
+    max-width: calc(100% - 5rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 50px !important;
+    padding: 14px 12px 10px 12px !important;
   }
 
   .video-card-avatar {
@@ -864,59 +1229,81 @@ body.dark-mode .video-card-mute-btn:hover {
     flex: 1 1 auto !important;
     min-width: 0 !important;
     overflow: hidden !important;
-    background: rgba(0, 0, 0, 0.4) !important; /* Button-like background */
-    backdrop-filter: blur(8px) !important;
-    border-radius: 1.5rem !important; /* Rounded like button */
-    padding: 0.375rem 0.75rem !important; /* 6px 12px - button padding */
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
   }
 
   .video-card-description {
-    bottom: 5.5rem !important; /* 88px - above video-card-info (4.5rem = 72px + 1rem = 16px gap) */
-    left: 0.5rem !important; /* 8px */
-    right: 4.375rem !important; /* 70px */
+    bottom: 5.5rem !important; /* 88px - maintain consistent spacing */
+    left: 0.75rem !important; /* 12px - slightly more space on mobile */
+    right: 4.5rem !important; /* 72px - more space to prevent overlap */
     font-size: 0.75rem !important; /* 12px */
-    line-height: 1.4;
-    max-width: calc(100% - 4.875rem) !important;
+    line-height: 1.4 !important;
+    max-width: calc(100% - 5.5rem) !important; /* Ensure no overlap */
     max-height: 2.5rem !important; /* Limit height to prevent overlap */
     display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important; /* Show max 2 lines */
+    -webkit-line-clamp: 2 !important; /* Show max 2 lines to prevent overlap */
     -webkit-box-orient: vertical !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    z-index: 15 !important; /* Lower than info section */
+    position: absolute !important;
+  }
+  
+  .video-card-translation-btn {
+    bottom: 3rem !important; /* 48px - below description with 40px gap */
+    left: 0.5rem !important;
+    font-size: 0.75rem !important;
+    z-index: 16 !important;
   }
 }
 
 /* Small Mobile (< 30rem = 480px) */
 @media (max-width: 30rem) {
+   .for-you-feed-toast {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
   .for-you-feed {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
-    height: calc(100vh - 3.25rem) !important; /* 52px = 3.25rem */
-    margin-top: 3.25rem !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
   }
 
   .for-you-feed-card {
-    height: calc(100vh - 3.25rem) !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
     max-width: 100vw;
+  }
+  
+  .video-card-container {
+    width: 100% !important;
+    transform: none !important; /* Remove transform */
+    border-radius: 0 !important;
+    margin-top: 0 !important;
   }
 
   .video-card-mute-btn {
-    top: 0.75rem !important; /* 12px */
-    left: 0.625rem !important; /* 10px */
-    width: 2rem !important; /* 32px */
-    height: 2rem !important;
-    min-width: 2rem !important;
-    min-height: 2rem !important;
-  }
-
-  .video-card-mute-btn i {
-    font-size: 1rem !important; /* 16px */
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .video-card-volume-control {
-    top: 0.75rem !important; /* 12px */
-    left: 0.625rem !important; /* 10px */
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .video-card-volume-slider-container {
@@ -932,9 +1319,11 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-actions {
-    right: 0.625rem; /* 10px */
-    bottom: 3.75rem; /* 60px */
-    gap: 0.625rem; /* 10px */
+    right: 0.625rem !important; /* 10px */
+    bottom: 3.75rem !important; /* 60px */
+    gap: 0.625rem !important; /* 10px */
+    position: absolute !important;
+    z-index: 30 !important;
   }
 
   .video-card-action-btn {
@@ -953,13 +1342,28 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-info {
-    bottom: 4rem !important; /* 64px - moved up to give space for description */
+    bottom: 9rem !important; /* 144px - maintain gap above description */
     left: 0.375rem !important; /* 6px - force left alignment */
     right: auto !important; /* Remove right constraint */
     gap: 0.5rem; /* 8px */
     max-width: calc(100% - 4.125rem) !important;
     flex-wrap: wrap !important;
     align-items: flex-start !important;
+    z-index: 20 !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 1rem !important; /* 16px - below translation button with 24px gap */
+    left: 0.375rem !important;
+    right: 3.75rem !important;
+    font-size: 0.6875rem !important; /* 11px */
+    max-width: calc(100% - 4.125rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 48px !important;
+    padding: 12px 10px 8px 10px !important;
   }
 
   .video-card-avatar {
@@ -985,15 +1389,23 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-description {
-    bottom: 5rem !important; /* 80px - above video-card-info (4rem = 64px + 1rem = 16px gap) */
-    left: 0.375rem !important; /* 6px */
+    bottom: 6rem !important;
+    left: 1rem !important; /* 6px */
     right: 3.75rem !important; /* 60px */
     font-size: 0.6875rem !important; /* 11px */
     max-width: calc(100% - 4.125rem) !important;
-    max-height: 2.25rem !important; /* Limit height to prevent overlap */
+    max-height: 2rem !important; /* Limit height to prevent overlap */
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important; /* Show max 2 lines */
     -webkit-box-orient: vertical !important;
+    z-index: 15 !important; /* Lower than info section */
+  }
+  
+  .video-card-translation-btn {
+    bottom: 2.5rem !important; /* 40px - below description with 48px gap */
+    left: 0.375rem !important;
+    font-size: 0.6875rem !important;
+    z-index: 16 !important;
   }
   
   .video-card-follow-btn {
@@ -1005,12 +1417,17 @@ body.dark-mode .video-card-mute-btn:hover {
     flex: 1 1 auto !important;
     min-width: 0 !important;
     overflow: hidden !important;
-    background: rgba(0, 0, 0, 0.4) !important; /* Button-like background */
-    backdrop-filter: blur(8px) !important;
-    border-radius: 1.5rem !important; /* Rounded like button */
-    padding: 0.375rem 0.75rem !important; /* 6px 12px - button padding */
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
+  }
+  .video-card-container {
+    transform: none !important; /* Remove transform on small mobile */
+    width: 100% !important;
+    border-radius: 0 !important;
   }
 }
 
@@ -1020,30 +1437,46 @@ body.dark-mode .video-card-mute-btn:hover {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
-    height: calc(100vh - 3rem) !important; /* 48px = 3rem */
-    margin-top: 3rem !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
   }
 
   .for-you-feed-card {
-    height: calc(100vh - 3rem) !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
     max-width: 100vw;
+  }
+  
+  .video-card-container {
+    width: 100% !important;
+    transform: none !important; /* Remove transform */
+    border-radius: 0 !important;
+    margin-top: 0 !important;
   }
 
   .video-card-mute-btn {
-    width: 1.875rem !important; /* 30px */
-    height: 1.875rem !important;
-    min-width: 1.875rem !important;
-    min-height: 1.875rem !important;
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
-  .video-card-mute-btn i {
-    font-size: 0.875rem !important; /* 14px */
+  .video-card-volume-control {
+    display: none !important; /* Hide on mobile - only show on website */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .video-card-actions {
-    right: 0.5rem; /* 8px */
-    bottom: 3.4375rem; /* 55px */
-    gap: 0.5rem; /* 8px */
+    right: 0.5rem !important; /* 8px */
+    bottom: 3.4375rem !important; /* 55px */
+    gap: 0.5rem !important; /* 8px */
+    position: absolute !important;
+    z-index: 30 !important;
   }
 
   .video-card-action-btn {
@@ -1064,15 +1497,36 @@ body.dark-mode .video-card-mute-btn:hover {
   .video-card-actions {
     right: 0.5rem !important; /* 8px */
     gap: 0.4375rem !important; /* 7px */
+    position: absolute !important;
+    z-index: 30 !important;
   }
 
   .video-card-info {
-    bottom: 3.5rem !important; /* 56px - moved up to give space for description */
+    bottom: 9rem !important; /* 144px - maintain gap above description */
     left: 0.5rem !important; /* 8px - force left alignment */
     right: auto !important; /* Remove right constraint */
     max-width: calc(100% - 3.9375rem) !important;
     flex-wrap: wrap !important;
     align-items: flex-start !important;
+    z-index: 20 !important;
+  }
+  
+  .video-card-music-link {
+    bottom: 0.75rem !important; /* 12px - below translation button with 24px gap */
+    left: 0.5rem !important;
+    right: 3.4375rem !important;
+    font-size: 0.625rem !important; /* 10px */
+    max-width: calc(100% - 3.9375rem) !important;
+    z-index: 18 !important;
+  }
+  
+  .video-progress-container {
+    min-height: 44px !important;
+    padding: 10px 8px 8px 8px !important;
+  }
+  
+  .video-progress-time {
+    font-size: 11px !important;
   }
 
   .video-card-avatar {
@@ -1087,15 +1541,22 @@ body.dark-mode .video-card-mute-btn:hover {
   }
 
   .video-card-description {
-    bottom: 4.5rem !important; /* 72px - above video-card-info (3.5rem = 56px + 1rem = 16px gap) */
-    left: 0.5rem !important; /* 8px */
+    
     right: 3.4375rem !important; /* 55px */
     font-size: 0.625rem !important; /* 10px */
     max-width: calc(100% - 3.9375rem) !important;
-    max-height: 2rem !important; /* Limit height to prevent overlap */
+    max-height: 1.75rem !important; /* Limit height to prevent overlap */
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important; /* Show max 2 lines */
     -webkit-box-orient: vertical !important;
+    z-index: 15 !important; /* Lower than info section */
+  }
+  
+  .video-card-translation-btn {
+    bottom: 2.25rem !important; /* 36px - below description with 52px gap */
+    left: 0.5rem !important;
+    font-size: 0.625rem !important;
+    z-index: 16 !important;
   }
   
   .video-card-follow-btn {
@@ -1107,35 +1568,41 @@ body.dark-mode .video-card-mute-btn:hover {
     flex: 1 1 auto !important;
     min-width: 0 !important;
     overflow: hidden !important;
-    background: rgba(0, 0, 0, 0.4) !important; /* Button-like background */
-    backdrop-filter: blur(8px) !important;
-    border-radius: 1.5rem !important; /* Rounded like button */
-    padding: 0.375rem 0.75rem !important; /* 6px 12px - button padding */
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    background: transparent !important; /* No background */
+    backdrop-filter: none !important; /* No blur */
+    border-radius: 0 !important; /* No border radius */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No border */
+    box-shadow: none !important; /* No shadow */
   }
 }
 
 /* Video Progress Bar */
 .video-progress-container {
   position: absolute;
-  bottom: 0;
+  bottom: 4px;
   left: 0;
   right: 0;
-  padding: 12px 16px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 12px 16px 12px 16px !important; /* Reduced top padding */
+  /* background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 15%, rgba(0, 0, 0, 0.1) 30%, transparent 35%) !important; */
   pointer-events: auto;
-  z-index: 101;
+  z-index: 25 !important; /* Above description and music, below info */
+  height: 50px !important; /* Fixed height */
+  max-height: 50px !important; /* Limit height to prevent overlap */
+  overflow: hidden !important; /* Prevent gradient from extending upward */
+  box-sizing: border-box !important;
+  clip-path: inset(0 0 0 0) !important; /* Clip to container bounds */
 }
 
 .video-progress-bar {
   width: 100%;
-  height: 4px;
+  height: 4px; /* Slightly reduced for better aesthetics */
   background: rgba(255, 255, 255, 0.3);
   border-radius: 2px;
   cursor: pointer;
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .video-progress-fill {
@@ -1143,6 +1610,7 @@ body.dark-mode .video-card-mute-btn:hover {
   background: #fff;
   border-radius: 2px;
   transition: width 0.1s linear;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
 }
 
 .video-progress-time {
@@ -1152,6 +1620,7 @@ body.dark-mode .video-card-mute-btn:hover {
   color: #fff;
   font-size: 12px;
   font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
 /* Fullscreen Button - Removed */
@@ -1186,17 +1655,115 @@ body.dark-mode .video-card-mute-btn:hover {
 .video-card-description-more {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9) !important;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.9375rem !important; /* 15px - match description */
   padding: 0;
-  margin-left: 4px;
+  margin-left: 0.25rem !important; /* 4px */
   text-decoration: underline;
   transition: color 0.2s;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .video-card-description-more:hover {
   color: #fff;
+}
+
+/* Translation Button */
+.video-card-translation-btn {
+  position: absolute;
+  bottom: 3.5rem !important; /* 56px - below description with 32px gap */
+  left: 1rem !important; /* 16px */
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9) !important;
+  cursor: pointer;
+  font-size: 0.875rem !important; /* 14px */
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+  font-weight: 400;
+  z-index: 16 !important; /* Just above description */
+  pointer-events: auto;
+}
+
+.video-card-translation-btn:hover {
+  color: #fff !important;
+}
+
+/* Music/Sound Link */
+.video-card-music-link {
+  position: absolute;
+  bottom: 3rem !important; /* 24px - below translation button with 32px gap */
+  left: 1rem !important; /* 16px */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff !important;
+  cursor: pointer;
+  font-size: 0.875rem !important; /* 14px */
+  font-weight: 500 !important;
+  text-shadow: none !important; /* No text shadow to prevent duplicate text appearance */
+  z-index: 18 !important; /* Above description and translation, below info */
+  pointer-events: auto !important;
+  transition: opacity 0.2s;
+  max-width: calc(100% - 7rem) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none !important; /* No background */
+  background-color: transparent !important; /* No background color */
+  background-image: none !important; /* No background image */
+  padding: 0 !important; /* No padding */
+  margin: 0 !important; /* No margin */
+  border: none !important; /* No border */
+  border-radius: 0 !important; /* No border radius */
+  backdrop-filter: none !important; /* No blur */
+  -webkit-backdrop-filter: none !important; /* No blur for webkit */
+  box-shadow: none !important; /* No shadow */
+}
+
+.video-card-music-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.video-card-music-link i {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* Video Effects Link */
+.video-card-effect-link {
+  position: absolute;
+  top: 1.5rem !important; /* 24px - top of video */
+  left: 1rem !important; /* 16px */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  color: #fff !important;
+  cursor: pointer;
+  font-size: 0.8125rem !important; /* 13px */
+  font-weight: 500;
+  z-index: 45 !important; /* Below volume control but above other elements */
+  pointer-events: auto;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-card-effect-link:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.video-card-effect-link i {
+  font-size: 0.8125rem;
+  flex-shrink: 0;
 }
 
 /* Clickable Username */

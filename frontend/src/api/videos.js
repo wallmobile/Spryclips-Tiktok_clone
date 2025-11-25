@@ -390,6 +390,20 @@ export const toggleLike = async (id, idempotencyKey) => {
       likes: toFiniteNumber(payload?.likes)
     };
   } catch (error) {
+    // Check for 401 (unauthorized) error and throw user-friendly message
+    if (error?.response?.status === 401 || error?.status === 401) {
+      // Prioritize userMessage from error object or response data
+      const userMessage = error?.userMessage || 
+                         error?.response?.data?.userMessage || 
+                         error?.response?.data?.message || 
+                         'Please sign in to like videos.';
+      const authError = new Error(userMessage);
+      authError.status = 401;
+      authError.userMessage = userMessage;
+      // Preserve original error for debugging
+      authError.originalError = error;
+      throw authError;
+    }
     console.warn('toggleLike fell back to local cache.', error?.message ?? error);
     skipVideoRequests = true;
     return fallbackLikeToggle(id);
@@ -416,6 +430,20 @@ export const shareVideo = async (id, idempotencyKey) => {
       shares: toFiniteNumber(payload?.shares)
     };
   } catch (error) {
+    // Check for 401 (unauthorized) error and throw user-friendly message
+    if (error?.response?.status === 401 || error?.status === 401) {
+      // Prioritize userMessage from error object or response data
+      const userMessage = error?.userMessage || 
+                         error?.response?.data?.userMessage || 
+                         error?.response?.data?.message || 
+                         'Please sign in to share videos.';
+      const authError = new Error(userMessage);
+      authError.status = 401;
+      authError.userMessage = userMessage;
+      // Preserve original error for debugging
+      authError.originalError = error;
+      throw authError;
+    }
     console.warn('shareVideo fell back to local cache.', error?.message ?? error);
     skipVideoRequests = true;
     return fallbackShareIncrement(id);
@@ -469,6 +497,20 @@ export const toggleFollow = async (id) => {
       ...data
     };
   } catch (error) {
+    // Check for 401 (unauthorized) error and throw user-friendly message
+    if (error?.response?.status === 401 || error?.status === 401) {
+      // Prioritize userMessage from error object or response data
+      const userMessage = error?.userMessage || 
+                         error?.response?.data?.userMessage || 
+                         error?.response?.data?.message || 
+                         'Please sign in to follow users.';
+      const authError = new Error(userMessage);
+      authError.status = 401;
+      authError.userMessage = userMessage;
+      // Preserve original error for debugging
+      authError.originalError = error;
+      throw authError;
+    }
     console.warn('toggleFollow fell back to local cache.', error?.message ?? error);
     skipVideoRequests = true;
     return fallbackFollowToggle(id);

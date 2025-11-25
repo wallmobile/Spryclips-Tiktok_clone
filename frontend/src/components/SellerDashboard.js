@@ -135,10 +135,36 @@ const SellerDashboard = ({ onClose = () => {} }) => {
         )}
 
         <main className="more-page__content">
-          {loading ? (
+          {loading && !errorMessage ? (
             <div className="more-page__empty" role="status">
               <i className="fa-solid fa-spinner fa-spin"></i>
               <p>Loading seller analytics…</p>
+            </div>
+          ) : errorMessage && !overview ? (
+            <div className="more-page__empty">
+              <i className="fa-solid fa-exclamation-triangle"></i>
+              <p>{errorMessage}</p>
+              <button
+                className="more-page__button more-page__button--primary"
+                type="button"
+                onClick={() => {
+                  setErrorMessage('');
+                  setLoading(true);
+                  fetchShopOverview()
+                    .then((data) => {
+                      setOverview(data);
+                      setErrorMessage('');
+                    })
+                    .catch((error) => {
+                      console.error('Retry shop overview failed', error);
+                      setErrorMessage('Commerce service still unavailable. Please try again later.');
+                    })
+                    .finally(() => setLoading(false));
+                }}
+              >
+                <i className="fa-solid fa-rotate"></i>
+                Try Again
+              </button>
             </div>
           ) : !overview ? (
             <div className="more-page__empty">

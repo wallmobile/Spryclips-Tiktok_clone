@@ -28,8 +28,9 @@ router.post('/start', authMiddleware, async (req, res) => {
       });
     }
 
-    // Generate unique stream key
+    // Generate unique stream key and room ID
     const streamKey = crypto.randomBytes(32).toString('hex');
+    const roomId = crypto.randomBytes(16).toString('hex');
     const rtmpUrl = `rtmp://your-rtmp-server.com/live/${streamKey}`;
     const streamUrl = `https://your-streaming-server.com/live/${streamKey}`;
 
@@ -42,6 +43,7 @@ router.post('/start', authMiddleware, async (req, res) => {
       streamUrl,
       rtmpUrl,
       streamKey,
+      roomId, // Add roomId for WebRTC
       isPrivate: isPrivate || false,
       scheduledStartTime: scheduledStartTime || null,
       status: scheduledStartTime ? 'scheduled' : 'live',
@@ -56,6 +58,7 @@ router.post('/start', authMiddleware, async (req, res) => {
       stream: liveStream,
       rtmpUrl,
       streamKey,
+      roomId: liveStream.roomId,
       message: 'Live stream started successfully',
     });
   } catch (error) {
@@ -129,13 +132,27 @@ router.get('/active', async (req, res) => {
 
     const activeStreams = await LiveStream.find(query)
       .populate('streamer', 'username profile')
+      .select('_id streamer title thumbnail viewers roomId category createdAt')
       .sort({ viewers: -1, createdAt: -1 })
       .limit(50);
 
+    // Format response for frontend
+    const formattedStreams = activeStreams.map(stream => ({
+      id: stream._id,
+      roomId: stream.roomId,
+      username: stream.streamer.username,
+      profilePicture: stream.streamer.profile?.profilePicture || '',
+      title: stream.title,
+      thumbnail: stream.thumbnail || stream.streamer.profile?.profilePicture || '',
+      viewerCount: stream.viewers,
+      category: stream.category,
+      createdAt: stream.createdAt
+    }));
+
     res.json({
       success: true,
-      streams: activeStreams,
-      count: activeStreams.length,
+      streams: formattedStreams,
+      count: formattedStreams.length,
     });
   } catch (error) {
     console.error('Error fetching active streams:', error);

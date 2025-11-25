@@ -11,15 +11,19 @@
   justify-content: flex-start;
   z-index: 1000;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: auto; /* Enable vertical scrolling */
   padding: 0 !important;
   margin: 0 !important;
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height */
+  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 100vw;
-  max-height: 100vh;
+  max-height: none; /* Allow scrolling - remove max-height restriction */
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* Prevent scroll chaining */
 }
 
 .profile-overlay::-webkit-scrollbar {
@@ -90,9 +94,10 @@
   padding: 0 !important;
   box-sizing: border-box;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible; /* Changed from auto to visible - let parent handle scrolling */
   min-height: 100vh;
   height: auto;
+  max-height: none; /* Allow content to expand */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -143,39 +148,976 @@
   }
 }
 
-/* Tablet: Show sidebar with profile content */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+/* Tablet/iPad: Hide sidebar, show full-screen overlay */
+@media (min-width: 48rem) and (max-width: 64rem) {
   .profile-modal.settings-open {
-    display: flex !important;
-    flex-direction: row !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    position: relative !important;
+    flex-direction: column !important;
   }
 
   .profile-modal.settings-open .profile-content-wrapper {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    max-width: calc(100% - 22rem) !important; /* Account for sidebar (352px = 22rem) */
+    max-width: 100% !important;
     width: 100% !important;
+  }
+
+  /* Hide inline sidebar on tablet */
+  .profile-modal.settings-open .account-settings-overlay.profile-inline-settings {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+  }
+
+  /* Show full-screen overlay when Account Settings is opened from profile */
+  .profile-modal.settings-open .account-settings-overlay:not(.profile-inline-settings) {
+    display: flex !important;
+    z-index: 10003 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    width: 100vw !important;
     height: 100vh !important;
-    max-height: 100vh !important;
+  }
+}
+
+/* Tablet Responsive - ALL Devices (48rem - 64rem = 768px - 1024px)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  /* Profile page full-screen on tablet */
+  .profile-overlay {
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    max-height: none !important; /* Remove max-height restriction to allow scrolling */
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important; /* Allow vertical scrolling */
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-overflow-scrolling: touch !important; /* Smooth scroll on iOS */
+    overscroll-behavior: contain !important; /* Prevent scroll chaining */
+    will-change: scroll-position !important; /* Optimize scrolling performance */
+  }
+
+  .profile-modal {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important; /* Auto height to allow content to expand */
+    max-height: none !important; /* No max height restriction */
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 2rem !important; /* Add bottom padding for scroll space */
+    overflow-x: hidden !important;
+    overflow-y: visible !important; /* Allow content to overflow naturally */
+  }
+
+  .profile-content-wrapper {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important; /* Allow content to overflow naturally */
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important; /* Auto height to allow content to expand */
+    max-height: none !important; /* No max height restriction */
+    padding-bottom: 2rem !important; /* Add bottom padding for scroll space */
+  }
+
+  .profile-header-new {
+    padding: 1.25rem 1.5rem !important; /* 20px 24px - tablet spacing */
+  }
+
+  .profile-info-section {
+    padding: 0 1.5rem !important; /* 24px horizontal padding */
+    margin-top: 1rem !important;
+  }
+
+  .profile-avatar-new {
+    width: 6.25rem !important; /* 100px - larger on tablet */
+    height: 6.25rem !important; /* 100px */
+    min-width: 6.25rem !important;
+    min-height: 6.25rem !important;
+    max-width: 6.25rem !important;
+    max-height: 6.25rem !important;
+  }
+
+  /* Uploaded Videos Section - ABSOLUTE MINIMUM SPACE */
+  .uploaded-videos-dashboard {
+    padding: 0.75rem 1rem 0 !important; /* 12px 16px sides/top, 0 bottom - NO bottom padding */
+    margin: 0 !important;
+    margin-bottom: 0 !important; /* No bottom margin */
+    max-width: 100vw !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-top-bar {
+    margin-bottom: 1.5rem !important; /* 24px */
+    padding: 0 !important;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem !important; /* 24px - tablet size */
+    margin-bottom: 1rem !important; /* 16px */
+    padding: 0 !important;
+  }
+
+  .search-filter-bar {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Video Grid - 2 columns - COMPACT SIZE */
+  .uploaded-videos-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on tablet */
+    gap: 0.375rem !important; /* 6px - minimal gap between cards */
+    row-gap: 0.375rem !important; /* 6px - minimal row gap */
+    column-gap: 0.375rem !important; /* 6px - minimal column gap */
+    padding: 0 !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important; /* NO bottom margin */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    align-items: start !important; /* Align cards to top */
+  }
+
+  /* Video Card - Vertical layout - ABSOLUTE MINIMUM SPACE - ENDS RIGHT AFTER CONTENT */
+  .uploaded-video-card {
+    border-radius: 0.75rem !important; /* 12px */
+    overflow: hidden !important; /* Clip content to card */
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important; /* Vertical layout */
+    position: relative !important;
+    background: #ffffff !important;
+    border: none !important; /* NO BORDER - Remove horizontal line */
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; /* Subtle shadow */
+    height: auto !important; /* Auto height - fit content exactly */
+    min-height: 0 !important; /* NO minimum height */
+    max-height: none !important; /* No maximum height restriction */
+    gap: 0 !important; /* NO gap between thumbnail and content */
+    padding: 0 !important; /* NO padding on card */
+    padding-bottom: 0 !important; /* NO bottom padding */
+    align-items: stretch !important; /* Stretch items */
+    align-content: flex-start !important; /* Align content to start */
+    justify-content: flex-start !important; /* Align to start - no extra space */
+    flex-shrink: 0 !important; /* Don't shrink */
+    flex-grow: 0 !important; /* Don't grow */
+    line-height: 0 !important; /* Remove default line-height spacing */
+  }
+
+  /* Force remove all default spacing from card */
+  .uploaded-video-card * {
+    box-sizing: border-box !important;
+  }
+
+  /* Remove default margins/padding from all card children */
+  .uploaded-video-card > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Ensure card ends right after last element - NO EXTRA SPACE */
+  .uploaded-video-card > .video-card-actions {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  /* Remove any default spacing from all nested elements */
+  .uploaded-video-card * {
+    margin-bottom: 0 !important;
+  }
+
+  /* Force card to be exactly the height of its content - NO EXTRA SPACE */
+  .uploaded-videos-grid .uploaded-video-card {
+    height: fit-content !important;
+    min-height: 0 !important; /* NO minimum height */
+    max-height: none !important; /* NO max height */
+    flex-grow: 0 !important; /* Don't grow */
+    flex-shrink: 0 !important; /* Don't shrink */
+    line-height: 0 !important; /* Remove default line-height */
+  }
+
+  /* Force all card children to have no extra space */
+  .uploaded-video-card > * {
+    line-height: normal !important; /* Normal line-height for text elements */
+  }
+
+  /* Actions section should be the last element with NO space after */
+  .uploaded-video-card > .video-card-actions {
+    line-height: 0 !important; /* Remove line-height from actions container */
+  }
+
+  .uploaded-video-card::after {
+    display: none !important; /* Remove any pseudo-elements */
+    content: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .uploaded-video-card::before {
+    display: none !important; /* Remove any pseudo-elements */
+    content: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .video-thumbnail-wrapper {
+    width: 100% !important; /* Full width */
+    min-width: 100% !important;
+    max-width: 100% !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important; /* Don't grow */
+    overflow: hidden !important; /* Only thumbnail should be clipped */
+    border-radius: 0.75rem 0.75rem 0 0 !important; /* Rounded top corners */
+    aspect-ratio: 16 / 9 !important; /* HORIZONTAL/COMPACT aspect ratio - smaller height */
+    position: relative !important;
+    margin: 0 !important; /* NO margin */
+    margin-bottom: 0 !important; /* NO bottom margin */
+    padding: 0 !important; /* NO padding */
+    padding-bottom: 0 !important; /* NO bottom padding */
+    height: auto !important; /* Auto height based on aspect ratio */
+    min-height: 0 !important; /* No minimum height */
+    max-height: none !important; /* No max height */
+    line-height: 0 !important; /* Remove default line-height */
+  }
+
+  /* Remove any space from thumbnail wrapper children */
+  .video-thumbnail-wrapper > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Thumbnail image - Fill wrapper exactly - NO EXTRA SPACE INSIDE CARD */
+  .video-thumbnail-wrapper .uploaded-video-thumbnail,
+  .video-thumbnail-wrapper img,
+  .uploaded-video-card .uploaded-video-thumbnail {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: top !important; /* Remove default inline spacing */
+    line-height: 0 !important; /* Remove line-height spacing */
+    position: absolute !important; /* Absolute to fill wrapper exactly */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Video player - Fill wrapper exactly - NO EXTRA SPACE INSIDE CARD */
+  .video-thumbnail-wrapper .uploaded-video-player,
+  .video-thumbnail-wrapper video,
+  .uploaded-video-card .uploaded-video-player {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: top !important; /* Remove default inline spacing */
+    line-height: 0 !important; /* Remove line-height spacing */
+    position: absolute !important; /* Absolute to fill wrapper exactly */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Play button overlay - NO EXTRA SPACE */
+  .video-thumbnail-wrapper .thumbnail-play-button {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  /* Duration badge - NO EXTRA SPACE */
+  .video-thumbnail-wrapper .video-duration-badge {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  /* Visibility tag - NO EXTRA SPACE */
+  .video-thumbnail-wrapper .visibility-tag {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  /* All elements inside thumbnail wrapper - NO EXTRA SPACE */
+  .video-thumbnail-wrapper * {
+    box-sizing: border-box !important;
+  }
+
+  /* Remove any default spacing from all thumbnail wrapper children */
+  .video-thumbnail-wrapper > * {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    vertical-align: top !important;
+  }
+
+  /* Hide any delete button in thumbnail wrapper */
+  .video-thumbnail-wrapper .action-btn-danger,
+  .video-thumbnail-wrapper .video-card-header-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* Video Card Content - iPad Layout: Thumbnail → Delete → Title → Stats → Timestamp */
+  .video-card-content {
+    padding: 0.75rem !important; /* 12px padding all around - better spacing for iPad */
+    overflow: visible !important; /* Allow buttons to be visible */
+    position: relative !important;
+    flex: 0 0 auto !important; /* Don't expand or shrink, just fit content exactly */
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important; /* Allow content to shrink */
+    max-height: none !important; /* No max height */
+    padding-bottom: 0.75rem !important; /* 12px bottom padding */
+    gap: 0.5rem !important; /* 8px gap between elements - better spacing */
+    margin: 0 !important; /* No margin */
+    margin-bottom: 0 !important; /* ZERO bottom margin */
+    align-items: stretch !important; /* Stretch items */
+    align-content: flex-start !important; /* Align content to start */
+    justify-content: flex-start !important; /* Align to start */
+    height: auto !important; /* Auto height - fit content only */
+    flex-grow: 0 !important; /* Don't grow */
+    flex-shrink: 0 !important; /* Don't shrink */
+    line-height: normal !important; /* Normal line-height for text */
+  }
+
+  /* Delete Button - Below Thumbnail on iPad */
+  .video-card-delete-button {
+    display: flex !important; /* Show delete button on iPad */
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0.5rem 1rem !important; /* 8px 16px - larger for iPad */
+    font-size: 0.875rem !important; /* 14px - larger for iPad */
+    min-height: 2rem !important; /* 32px - touch-friendly on iPad */
+    max-height: 2rem !important;
+    gap: 0.375rem !important; /* 6px */
+    background: #DC2626 !important; /* Red background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.5rem !important; /* 8px */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important;
+    width: fit-content !important; /* Only as wide as content */
+    margin: 0 !important;
+    pointer-events: auto !important;
+    order: 1 !important; /* First after thumbnail */
+  }
+
+  .video-card-delete-button i {
+    font-size: 0.875rem !important; /* 14px */
+  }
+
+  /* Hide Edit Button on iPad */
+  .video-card-header-actions .action-btn-edit,
+  .action-btn-edit,
+  .video-card-title-row .action-btn-edit {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide inline delete button from stats on iPad (moved to top) */
+  .video-card-stats-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Title - Below Delete Button on iPad */
+  .video-card-caption {
+    order: 2 !important; /* Second after delete button */
+    margin: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    font-size: 0.875rem !important; /* 14px - larger for iPad */
+    line-height: 1.3 !important;
+    text-align: left !important;
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    word-wrap: break-word !important;
+    max-height: 2.6rem !important; /* Limit to 2 lines */
+  }
+
+  /* Stats/Icons Row - Below Title on iPad */
+  .video-card-stats {
+    order: 3 !important; /* Third after title */
+    display: flex !important;
+    justify-content: flex-start !important; /* Stats aligned to left */
+    align-items: center !important; /* Vertical center alignment */
+    gap: 0.75rem !important; /* 12px - larger gap for iPad */
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    width: 100% !important; /* Full width */
+    box-sizing: border-box !important;
+  }
+
+  .video-card-stats .stat {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important; /* 6px - gap between icon and text */
+    font-size: 0.8125rem !important; /* 13px - larger for iPad */
+    color: #64748B !important; /* Gray color */
+    font-weight: 500 !important;
+    white-space: nowrap !important; /* Prevent wrapping */
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .video-card-stats .stat i {
+    font-size: 0.8125rem !important; /* 13px */
+    color: #2563EB !important; /* Blue icon color */
+  }
+
+  /* Time Text - Below Stats on iPad */
+  .video-card-meta {
+    order: 4 !important; /* Last after stats */
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important; /* Vertical layout */
+    align-items: flex-start !important; /* Left align */
+    gap: 0.25rem !important; /* 4px gap between timestamp and processing state */
     visibility: visible !important;
     opacity: 1 !important;
   }
 
-  /* Account Settings sidebar on left */
+  .video-card-meta .upload-date {
+    font-size: 0.75rem !important; /* 12px - larger for iPad */
+    color: #64748B !important; /* Gray color */
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure video-card-content ends right after last child - NO EXTRA SPACE */
+  .video-card-content:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove any space from last child in content */
+  .video-card-content > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Video card should end right after content - NO EXTRA SPACE */
+  .uploaded-video-card > .video-card-content:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .video-card-content::after {
+    display: none !important; /* Remove any pseudo-elements */
+    content: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide header actions on tablet - they're in bottom actions */
+  /* Hide top delete button on tablet - only show inline with stats */
+  .video-card-header-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    overflow: hidden !important;
+    width: 0 !important;
+  }
+
+  .video-card-header-actions .action-btn-danger {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Video Card Caption - Compact - COMPACT SIZE */
+  .video-card-caption {
+    margin: 0 !important;
+    margin-bottom: 0.125rem !important; /* 2px - minimal bottom margin */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    font-size: 0.6875rem !important; /* 11px - smaller compact size */
+    line-height: 1.2 !important; /* Tight line height */
+    max-height: 1.65rem !important; /* Limit to 2 lines - smaller */
+    overflow: hidden !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    height: auto !important; /* Auto height */
+  }
+
+  /* Video Card Stats - Compact - COMPACT SIZE - INLINE WITH DELETE BUTTON */
+  .video-card-stats {
+    display: flex !important;
+    justify-content: space-between !important; /* Stats left, button right */
+    align-items: center !important; /* Vertical center alignment */
+    gap: 0.1875rem !important; /* 3px - minimal gap */
+    margin: 0 !important;
+    margin-bottom: 0.125rem !important; /* 2px - minimal bottom margin */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    font-size: 0.625rem !important; /* 10px - smaller compact size */
+    line-height: 1 !important; /* Tight line height */
+    height: auto !important; /* Auto height */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .video-card-stats-left {
+    display: flex !important;
+    gap: 0.1875rem !important; /* 3px - gap between stats */
+    align-items: center !important;
+    flex: 1 !important; /* Take available space */
+  }
+
+  .video-card-stats-right {
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important; /* Don't shrink */
+  }
+
+  .video-card-stats .stat {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+  }
+
+  /* Delete Button - Inline with Stats - COMPACT */
+  .video-card-stats-right .action-btn-danger-inline {
+    padding: 0.1875rem 0.375rem !important; /* 3px 6px - very compact */
+    font-size: 0.5625rem !important; /* 9px - very small font */
+    min-height: 1.25rem !important; /* 20px - compact height */
+    max-height: 1.25rem !important; /* 20px - fixed height */
+    gap: 0.125rem !important; /* 2px - minimal space between icon and text */
+    background: #DC2626 !important; /* Red background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.25rem !important; /* 4px - small rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+  }
+
+  .video-card-stats-right .action-btn-danger-inline:hover {
+    background: #B91C1C !important; /* Darker red on hover */
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.4) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .video-card-stats-right .action-btn-danger-inline:active {
+    background: #991B1B !important; /* Even darker on click */
+    transform: translateY(0) !important;
+  }
+
+  .video-card-stats-right .action-btn-danger-inline i {
+    font-size: 0.625rem !important; /* 10px - small icon size */
+    color: #ffffff !important;
+  }
+
+  .video-card-meta {
+    margin: 0 !important;
+    margin-top: 0.1875rem !important; /* 3px - small spacing after stats */
+    margin-bottom: 0 !important; /* ZERO bottom margin - last element */
+    padding: 0 !important;
+    padding-bottom: 0 !important; /* ZERO bottom padding - last element */
+    gap: 0.125rem !important; /* 2px - minimal gap */
+    font-size: 0.625rem !important; /* 10px - smaller compact size */
+    line-height: 1.2 !important; /* Slightly more readable line height */
+    height: auto !important; /* Auto height */
+    flex-grow: 0 !important; /* Don't grow */
+    flex-shrink: 0 !important; /* Don't shrink */
+    display: flex !important; /* Flex to properly align children */
+    flex-direction: row !important; /* Horizontal layout */
+    align-items: center !important; /* Center align vertically */
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    color: #6C6C6C !important; /* Default gray color for meta info */
+  }
+
+  .video-card-meta .upload-date {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important; /* Slightly more readable */
+    font-size: 0.625rem !important; /* 10px - visible but compact */
+    color: #6C6C6C !important; /* Gray color for visibility */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    display: inline-block !important; /* Display as block to ensure visibility */
+    white-space: nowrap !important; /* Prevent wrapping */
+  }
+
+  /* Last element in content should have NO space after */
+  .video-card-content > .video-card-meta:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  /* Card should end right after content - NO EXTRA SPACE */
+  .uploaded-video-card > .video-card-content:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove any space from all nested last children */
+  .video-card-content > *:last-child,
+  .video-card-content > *:last-child > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Action Buttons - Bottom - NO SPACE - CARD ENDS EXACTLY HERE */
+  .video-card-actions {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important; /* 4px - minimal spacing between buttons */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0.125rem !important; /* 2px - minimal spacing from content above */
+    margin-bottom: 0 !important; /* NO bottom margin */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-top: 0.25rem !important; /* 4px - minimal top spacing */
+    padding-bottom: 0 !important; /* ZERO bottom padding - card ends here */
+    padding-left: 0.375rem !important; /* 6px - match content padding */
+    padding-right: 0.375rem !important; /* 6px - match content padding */
+    overflow: visible !important;
+    z-index: 10 !important;
+    justify-content: flex-start !important; /* Align buttons to left */
+    align-items: center !important;
+    box-sizing: border-box !important;
+    border-top: 0.0625rem solid rgba(0, 0, 0, 0.1) !important; /* 1px top border for separation */
+    border-bottom: none !important; /* NO bottom border */
+    background: #F9FAFB !important; /* Light background for buttons area */
+    border-radius: 0 0 0.75rem 0.75rem !important; /* Rounded bottom corners to match card */
+    flex-shrink: 0 !important; /* Don't shrink */
+    height: auto !important; /* Auto height - fit buttons only */
+    min-height: 0 !important; /* No minimum height */
+    max-height: none !important; /* No max height */
+    flex-grow: 0 !important; /* Don't grow */
+    line-height: 0 !important; /* Remove default line-height spacing */
+  }
+
+  .video-card-actions::after {
+    display: none !important; /* Remove any pseudo-elements */
+    content: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure card ends right after actions - NO EXTRA SPACE */
+  .uploaded-video-card > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .uploaded-video-card > .video-card-actions:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important; /* ZERO bottom padding - card ends here */
+    border-bottom: none !important;
+  }
+
+  /* Remove all extra space from card children */
+  .uploaded-video-card > * {
+    margin-bottom: 0 !important;
+  }
+
+  /* Video card should have NO bottom margin or padding - FIT CONTENT EXACTLY */
+  .uploaded-videos-grid .uploaded-video-card {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    height: fit-content !important; /* Fit content exactly */
+    min-height: 0 !important; /* No minimum height */
+    max-height: none !important; /* No max height */
+    flex-grow: 0 !important; /* Don't grow */
+    flex-shrink: 0 !important; /* Don't shrink */
+  }
+
+  /* Remove default spacing from all nested elements */
+  .uploaded-video-card *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove default spacing from buttons inside actions */
+  .video-card-actions > * {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Hide old bottom actions - button is now inline with stats */
+  .video-card-actions-bottom {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Button Styling - Compact */
+  .action-btn-primary,
+  .action-btn-secondary,
+  .action-btn-danger {
+    padding: 0.375rem 0.75rem !important; /* 6px 12px - compact touch target */
+    font-size: 0.75rem !important; /* 12px - compact size */
+    min-height: 2rem !important; /* 32px - smaller touch target */
+    gap: 0.25rem !important; /* 4px - minimal space between icon and text */
+  }
+
+  /* Button Styling */
+  .action-btn-primary,
+  .action-btn-secondary,
+  .action-btn-danger {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    padding: 0.625rem 1rem !important; /* 10px 16px - better touch target */
+    font-size: 0.875rem !important; /* 14px - readable size */
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+    z-index: 10 !important;
+    box-sizing: border-box !important;
+    border: none !important;
+    border-radius: 0.5rem !important; /* 8px */
+    cursor: pointer !important;
+    font-weight: 600 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.375rem !important; /* 6px - space between icon and text */
+    min-height: 2.5rem !important; /* 40px - touch-friendly */
+    transition: all 0.3s ease !important;
+  }
+
+  .action-btn-primary {
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+  }
+
+  .action-btn-secondary {
+    background: #E0F2FE !important;
+    color: #0F172A !important;
+    border: 0.0625rem solid rgba(0, 0, 0, 0.2) !important; /* 1px border */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .action-btn-danger {
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+  }
+
+  /* Hide sidebar when Account Settings is open */
+  .profile-modal.settings-open {
+    flex-direction: column !important;
+  }
+
+  .profile-modal.settings-open .profile-content-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
   .profile-modal.settings-open .account-settings-overlay.profile-inline-settings {
-    position: sticky !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+  }
+
+  .profile-modal.settings-open .account-settings-overlay:not(.profile-inline-settings) {
+    display: flex !important;
+    z-index: 10003 !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 22rem !important; /* 352px - sidebar width */
-    max-width: 22rem !important;
-    flex-shrink: 0 !important;
-    order: -1 !important;
-    z-index: 1 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+
+  /* Camera icon overlay always visible on tablet */
+  .avatar-container .camera-icon-overlay {
+    opacity: 1 !important; /* Always visible on tablet - no hover needed */
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background for better visibility */
+    border: 0.1875rem solid #ffffff !important; /* White border for contrast */
+    width: 2.5rem !important; /* 40px - larger for touch */
+    height: 2.5rem !important; /* 40px */
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+    bottom: 0 !important; /* Position at bottom */
+    right: 0 !important; /* Position at right */
+    z-index: 12 !important; /* Above avatar */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; /* Shadow for depth */
+  }
+
+  .avatar-container .camera-icon-overlay i {
+    font-size: 1.125rem !important; /* 18px - larger icon for touch */
+    color: #ffffff !important;
+  }
+
+  /* Account Settings button (Gear Icon) - Show on tablet */
+  .profile-header-new .profile-account-settings-btn {
+    display: flex !important; /* Show account settings button on tablet */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 0.75rem !important; /* 12px from top */
+    right: 0.75rem !important; /* 12px from right - top-right corner */
+    z-index: 10002 !important; /* Above profile overlay */
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background */
+    backdrop-filter: blur(0.625rem) !important; /* 10px */
+    border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+    color: #fff !important;
+    width: 2.75rem !important; /* 44px - touch-friendly */
+    height: 2.75rem !important; /* 44px */
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 0.75rem !important; /* 12px */
+    cursor: pointer !important;
+    font-size: 1.125rem !important; /* 18px */
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* Close Button - Show on tablet */
+  .profile-header-new .profile-back-btn {
+    display: flex !important; /* Show close button on tablet */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 0.75rem !important; /* 12px from top */
+    left: 0.75rem !important; /* 12px from left - top-left corner */
+    z-index: 10002 !important; /* Above profile overlay */
+    background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+    backdrop-filter: blur(0.625rem) !important; /* 10px */
+    border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+    color: #fff !important;
+    width: 2.75rem !important; /* 44px - touch-friendly */
+    height: 2.75rem !important; /* 44px */
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 0.75rem !important; /* 12px */
+    cursor: pointer !important;
+    font-size: 1.125rem !important; /* 18px */
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 }
 
@@ -285,12 +1227,12 @@
     position: relative;
   }
 
-  /* Back Navigation Button - Hidden on desktop, shown on mobile only */
-  .profile-header-new .profile-back-btn {
-    position: absolute !important;
-    top: 0.75rem !important; /* 12px */
-    left: 4rem !important; /* 64px - space for hamburger button */
-    background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+  /* Account Settings Button (Hamburger) - Top-right corner, hidden on desktop */
+  .profile-header-new .profile-account-settings-btn {
+    position: fixed !important; /* Fixed so it stays on top of banner */
+    top: 0.75rem !important; /* 12px from top */
+    right: 0.75rem !important; /* 12px from right - opposite to close button */
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background like burger menu */
     backdrop-filter: blur(0.625rem) !important; /* 10px */
     border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
     color: #fff !important;
@@ -302,29 +1244,193 @@
     border-radius: 0.75rem !important; /* 12px */
     cursor: pointer !important;
     font-size: 1.125rem !important; /* 18px */
-    display: none !important; /* Hidden on desktop by default - mobile only */
+    display: none !important; /* Hidden on desktop by default */
     align-items: center !important;
     justify-content: center !important;
     transition: all 0.3s ease !important;
-    z-index: 100 !important; /* Above header content */
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15) !important; /* 0 4px 12px */
+    z-index: 10002 !important; /* Above profile overlay (z-index: 1000) */
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    pointer-events: auto !important;
+  }
+
+  .profile-header-new .profile-account-settings-btn:hover {
+    background: rgba(255, 0, 80, 1) !important; /* Darker red on hover */
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4);
+  }
+
+  .profile-header-new .profile-account-settings-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Back Navigation Button (Close) - Top-left, hidden on desktop, shown on mobile/tablet/iPad */
+  .profile-header-new .profile-back-btn {
+    position: fixed !important; /* Fixed so it stays on top of banner */
+    top: 0.75rem !important; /* 12px from top */
+    left: 0.75rem !important; /* 12px from left - close button on left */
+    z-index: 10002 !important; /* Above profile overlay */
+    background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+    backdrop-filter: blur(0.625rem) !important; /* 10px */
+    border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+    color: #fff !important;
+    width: 2.75rem !important; /* 44px - touch-friendly */
+    height: 2.75rem !important; /* 44px */
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 0.75rem !important; /* 12px */
+    cursor: pointer !important;
+    font-size: 1.125rem !important; /* 18px */
+    display: none !important; /* Hidden on desktop by default - shown on mobile/tablet/iPad */
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
     touch-action: manipulation !important;
     -webkit-tap-highlight-color: transparent !important;
     pointer-events: auto !important;
   }
   
-  /* Fallback for buttons outside header (if any) */
+  /* Show Close Button on ALL Mobile and Tablet/iPad sizes (max-width: 1024px) */
+  @media (max-width: 64rem) {
+    .profile-header-new .profile-back-btn {
+      display: flex !important; /* Show close button on ALL mobile/tablet/iPad */
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important; /* 12px from top */
+      left: 0.75rem !important; /* 12px from left - top-left corner */
+      z-index: 10002 !important; /* Above profile overlay */
+      background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+  }
+  
+  /* Fallback for buttons outside header (if any) - Only on desktop */
+  @media (min-width: 64.0625rem) {
   .profile-back-btn {
     position: absolute !important;
+    }
   }
 
   /* Hide Profile buttons when AccountSettings overlay is active (not inline) - CSS fallback */
+  /* But show close button when NOT in account settings sub-features */
   .profile-overlay:has(.account-settings-overlay:not(.profile-inline-settings)) .profile-back-btn,
   .profile-overlay:has(.account-settings-overlay:not(.profile-inline-settings)) .profile-mobile-settings-btn {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
+    /* Only hide if account settings sub-feature is open */
+  }
+  
+  /* Override: ALWAYS show BOTH buttons on ALL mobile/tablet/iPad when profile is open */
+  /* Covers ALL sizes: iPhone SE (375px) to iPad Pro 12.9 (1024px) */
+  @media (max-width: 64rem) {
+    /* Force show Settings button (Gear Icon) - Top-right */
+    .profile-overlay .profile-header-new .profile-account-settings-btn,
+    .profile-overlay:not(.hide-profile-buttons) .profile-header-new .profile-account-settings-btn,
+    .profile-header-new .profile-account-settings-btn,
+    body .profile-header-new .profile-account-settings-btn,
+    html .profile-header-new .profile-account-settings-btn {
+      display: flex !important; /* Force show on ALL mobile/tablet/iPad */
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important; /* 12px from top */
+      right: 0.75rem !important; /* 12px from right - top-right corner */
+      z-index: 10002 !important; /* Above profile overlay */
+      background: rgba(255, 0, 80, 0.9) !important; /* Red background */
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Ensure Settings button icon (gear) is visible */
+    .profile-header-new .profile-account-settings-btn i,
+    .profile-header-new .profile-account-settings-btn .fa-gear {
+      display: inline-block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #ffffff !important;
+      font-size: 1.125rem !important; /* 18px */
+    }
+    
+    /* Force show Close button (X Icon) - Top-left */
+    .profile-overlay .profile-header-new .profile-back-btn,
+    .profile-overlay:not(.hide-profile-buttons) .profile-header-new .profile-back-btn,
+    .profile-header-new .profile-back-btn,
+    body .profile-header-new .profile-back-btn,
+    html .profile-header-new .profile-back-btn {
+      display: flex !important; /* Force show on ALL mobile/tablet/iPad */
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important; /* 12px from top */
+      left: 0.75rem !important; /* 12px from left - top-left corner */
+      z-index: 10002 !important; /* Above profile overlay */
+      background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Ensure Close button icon (X) is visible */
+    .profile-header-new .profile-back-btn i,
+    .profile-header-new .profile-back-btn .fa-times {
+      display: inline-block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #ffffff !important;
+      font-size: 1.125rem !important; /* 18px */
+    }
   }
 
   /* Hide buttons when AccountSettings sub-features are open - Additional CSS for compatibility */
@@ -378,9 +1484,7 @@
   }
 
   .close-btn:hover {
-    background: #f0f0f0;
-    transform: rotate(90deg);
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.2); /* 0 4px 12px */
+    /* Hover effect removed - no changes on hover */
   }
 
 /* TikTok-Style Profile Header */
@@ -425,7 +1529,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem; /* 8px */
-  backdrop-filter: blur(0.625rem); /* 10px */
   z-index: 20;
   min-height: 2.75rem; /* 44px - touch-friendly */
   min-width: 2.75rem;
@@ -518,6 +1621,33 @@
 
 .avatar-container:hover .profile-avatar-new {
   filter: brightness(0.9);
+}
+
+/* Mobile/Tablet: Camera icon overlay always visible (no hover needed) */
+@media (max-width: 64rem) {
+  .avatar-container .camera-icon-overlay {
+    opacity: 1 !important; /* Always visible on mobile/tablet - no hover needed */
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background for better visibility */
+    border: 0.1875rem solid #ffffff !important; /* White border for contrast */
+    width: 2.5rem !important; /* 40px - larger for touch */
+    height: 2.5rem !important; /* 40px */
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+    bottom: 0 !important; /* Position at bottom */
+    right: 0 !important; /* Position at right */
+    z-index: 12 !important; /* Above avatar */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; /* Shadow for depth */
+    pointer-events: auto !important; /* Ensure it's clickable */
+  }
+
+  .avatar-container .camera-icon-overlay i {
+    font-size: 1.125rem !important; /* 18px - larger icon for touch */
+    color: #ffffff !important;
+  }
+
+  .avatar-container {
+    cursor: pointer !important; /* Show pointer cursor on touch devices too */
+  }
 }
 
 .profile-header-right {
@@ -856,15 +1986,15 @@
 }
 
 .sort-btn:hover {
-  color: #0F172A;
+  color: #FF4757; /* Red hover color */
 }
 
 .sort-btn.active {
-  background: linear-gradient(135deg, rgba(255, 0, 80, 0.1) 0%, rgba(37, 244, 238, 0.1) 100%);
-  color: #0F172A;
+  background: #FF4757 !important; /* Red background */
+  color: #FFFFFF !important; /* White text on red */
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.15);
-  border: 1px solid rgba(255, 0, 80, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3); /* Red shadow */
+  border: none;
 }
 
 /* Pinned Video Section */
@@ -1119,7 +2249,6 @@
     right: 0 !important;
     bottom: 0 !important;
     background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(4px) !important;
   }
 
   .profile-header-new {
@@ -1145,6 +2274,25 @@
 
   .avatar-container {
     margin-left: 0 !important; /* Center alignment on mobile */
+  }
+
+  .avatar-container .camera-icon-overlay {
+    opacity: 1 !important; /* Always visible on mobile/tablet - no hover needed */
+    background: rgba(255, 0, 80, 0.9) !important; /* Red background for better visibility */
+    border: 0.1875rem solid #ffffff !important; /* White border for contrast */
+    width: 2.5rem !important; /* 40px - larger for touch */
+    height: 2.5rem !important; /* 40px */
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+    bottom: 0 !important; /* Position at bottom */
+    right: 0 !important; /* Position at right */
+    z-index: 12 !important; /* Above avatar */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; /* Shadow for depth */
+  }
+
+  .avatar-container .camera-icon-overlay i {
+    font-size: 1.125rem !important; /* 18px - larger icon for touch */
+    color: #ffffff !important;
   }
 
   .profile-avatar-new {
@@ -1227,14 +2375,31 @@
     font-size: 1rem; /* 16px */
   }
 
-  .profile-back-btn {
-    top: 0.625rem; /* 10px */
-    left: 0.75rem; /* 12px - no hamburger button */
-    width: 2.5rem; /* 40px */
-    height: 2.5rem; /* 40px */
-    min-width: 2.5rem;
-    min-height: 2.5rem;
-    font-size: 1rem; /* 16px */
+  .profile-header-new .profile-back-btn {
+    display: flex !important; /* Show close button on mobile */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 0.625rem !important; /* 10px */
+    left: 0.75rem !important; /* 12px - no hamburger button */
+    width: 2.75rem !important; /* 44px - touch-friendly */
+    height: 2.75rem !important; /* 44px */
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    font-size: 1.125rem !important; /* 18px */
+    z-index: 10002 !important; /* Above profile overlay */
+    background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+    backdrop-filter: blur(0.625rem) !important; /* 10px */
+    border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+    border-radius: 0.75rem !important; /* 12px */
+    cursor: pointer !important;
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
   .close-btn {
@@ -1284,6 +2449,100 @@
     pointer-events: none !important;
   }
 
+  /* Show Account Settings button on tablet and mobile (max-width: 1024px) - Consolidated */
+  /* This ensures buttons are visible on ALL devices from 360px to 1024px */
+  @media (max-width: 64rem) {
+    /* Settings Button (Gear Icon) - Top-right - FORCE SHOW */
+    .profile-header-new .profile-account-settings-btn,
+    .profile-overlay .profile-header-new .profile-account-settings-btn,
+    body .profile-header-new .profile-account-settings-btn {
+      display: flex !important; /* Show account settings button on ALL mobile/tablet/iPad */
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      right: 0.75rem !important; /* Top-right corner */
+      z-index: 10002 !important;
+      background: rgba(255, 0, 80, 0.9) !important; /* Red background */
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Settings Button Icon - Ensure visible */
+    .profile-header-new .profile-account-settings-btn i,
+    .profile-header-new .profile-account-settings-btn .fa-gear {
+      display: inline-block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #ffffff !important;
+      font-size: 1.125rem !important; /* 18px */
+    }
+    
+    /* Close button (X Icon) - Top-left - FORCE SHOW */
+    .profile-header-new .profile-back-btn,
+    .profile-overlay .profile-header-new .profile-back-btn,
+    body .profile-header-new .profile-back-btn {
+      display: flex !important; /* Show close button on ALL mobile/tablet/iPad */
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      left: 0.75rem !important; /* Top-left corner */
+      z-index: 10002 !important;
+      background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Close Button Icon - Ensure visible */
+    .profile-header-new .profile-back-btn i,
+    .profile-header-new .profile-back-btn .fa-times {
+      display: inline-block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      color: #ffffff !important;
+      font-size: 1.125rem !important; /* 18px */
+    }
+  }
+
   /* Show buttons on mobile only (max-width: 768px) */
   @media (max-width: 48rem) {
     /* Hamburger button removed - hide on all devices */
@@ -1294,23 +2553,150 @@
       pointer-events: none !important;
     }
     
-    /* Show close button on mobile */
+    /* Account Settings button already visible on mobile via tablet breakpoint */
+    .profile-header-new .profile-account-settings-btn {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    
+    /* Show back button on mobile */
     .profile-header-new .profile-back-btn {
       display: flex !important;
-      top: 0.625rem !important;
-      left: 0.75rem !important;
-      width: 2.5rem !important;
-      height: 2.5rem !important;
-      font-size: 1rem !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    
+    /* Account Settings button - top-right on mobile */
+    .profile-header-new .profile-account-settings-btn {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      right: 0.75rem !important; /* Top-right corner */
+      z-index: 10002 !important;
+    }
+    
+    /* Close button - top-left on mobile */
+    .profile-header-new .profile-back-btn {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      left: 0.75rem !important; /* Top-left corner */
+      z-index: 10002 !important;
     }
     
     /* Hamburger button removed - no positioning needed */
   }
   
-  /* Hide buttons on desktop (min-width: 769px) */
-  @media (min-width: 48.0625rem) {
-    .profile-header-new .profile-back-btn,
+  /* Tablet: ALL Devices - 768px - 1024px (48rem - 64rem)
+     iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+     Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+     Same settings as iPad Mini - Show buttons on tablet */
+  @media (min-width: 48rem) and (max-width: 64rem) {
+    /* Account Settings button - top-right on tablet */
+    .profile-header-new .profile-account-settings-btn {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      right: 0.75rem !important; /* Top-right corner */
+      z-index: 10002 !important;
+      background: rgba(255, 0, 80, 0.9) !important; /* Red background */
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Close button - top-left on tablet */
+    .profile-header-new .profile-back-btn {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      top: 0.75rem !important;
+      left: 0.75rem !important; /* Top-left corner */
+      z-index: 10002 !important;
+      background: linear-gradient(135deg, rgba(255, 0, 80, 0.9) 0%, rgba(37, 244, 238, 0.9) 100%) !important;
+      backdrop-filter: blur(0.625rem) !important; /* 10px */
+      border: 0.0625rem solid rgba(255, 255, 255, 0.3) !important; /* 1px */
+      color: #fff !important;
+      width: 2.75rem !important; /* 44px - touch-friendly */
+      height: 2.75rem !important; /* 44px */
+      box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3) !important;
+      min-width: 2.75rem !important;
+      min-height: 2.75rem !important;
+      max-width: 2.75rem !important;
+      max-height: 2.75rem !important;
+      border-radius: 0.75rem !important; /* 12px */
+      cursor: pointer !important;
+      font-size: 1.125rem !important; /* 18px */
+      align-items: center !important;
+      justify-content: center !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* Hide mobile settings button on tablet (using account settings button instead) */
     .profile-header-new .profile-mobile-settings-btn {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    
+    /* Avatar camera icon - visible on tablet */
+    .avatar-container .camera-icon-overlay {
+      opacity: 1 !important; /* Always visible on tablet - no hover needed */
+      background: rgba(255, 0, 80, 0.9) !important; /* Red background for better visibility */
+      border: 0.1875rem solid #ffffff !important; /* White border for contrast */
+      width: 2.5rem !important; /* 40px - larger for touch */
+      height: 2.5rem !important; /* 40px */
+      min-width: 2.5rem !important;
+      min-height: 2.5rem !important;
+      bottom: 0 !important; /* Position at bottom */
+      right: 0 !important; /* Position at right */
+      z-index: 12 !important; /* Above avatar */
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; /* Shadow for depth */
+      font-size: 1.125rem !important; /* 18px - larger icon for touch */
+    }
+  }
+  
+  /* Hide buttons on desktop (min-width: 1025px) */
+  @media (min-width: 64.0625rem) {
+    .profile-header-new .profile-back-btn,
+    .profile-header-new .profile-mobile-settings-btn,
+    .profile-header-new .profile-account-settings-btn {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
@@ -1403,6 +2789,9 @@
   .filter-btn {
     width: 100%;
     justify-content: center;
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
   }
 
   /* Video cards mobile */
@@ -1629,9 +3018,201 @@
     font-size: 13px;
   }
 
+  /* Mobile Layout: Title + Delete button on top row, Stats below */
+  .video-card-content {
+    position: relative !important;
+    border: none !important; /* NO BORDER - Remove horizontal line */
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* HORIZONTAL LAYOUT - Title and Delete button on SAME HORIZONTAL LINE using FLEXBOX */
+  .video-card-title-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important; /* Space between - title LEFT, button RIGHT */
+    gap: 0.5rem !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important; /* 8px - spacing before stats */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+  }
+
+  /* Title - LEFT side of flex container */
+  .video-card-title-row .video-card-caption {
+    font-size: 13px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-right: 5rem !important; /* Space for Edit button only (Delete moved to thumbnail) */
+    display: block !important;
+    flex: 1 1 auto !important; /* Take available space */
+    min-width: 0 !important; /* Allow text truncation */
+    line-height: 1.3 !important;
+    text-align: left !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important; /* Single line */
+  }
+
+  /* Action buttons container - FAR RIGHT EDGE - where arrow points */
+  .video-card-title-row .video-card-header-actions {
+    position: absolute !important; /* Absolute positioning to place at far right */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important; /* Align buttons to right */
+    gap: 0.375rem !important; /* 6px - gap between Edit and Delete buttons */
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    flex: 0 0 auto !important; /* Don't grow or shrink */
+    z-index: 10 !important;
+    top: 0 !important; /* Align with title top */
+    right: 0 !important; /* FAR RIGHT EDGE - where arrow points */
+  }
+
+  /* Edit button - LEFT side of Delete button */
+  .video-card-title-row .video-card-header-actions .action-btn-edit {
+    padding: 0.375rem 0.75rem !important; /* 6px 12px - compact but touch-friendly */
+    font-size: 0.75rem !important; /* 12px - readable on mobile */
+    min-height: 1.75rem !important; /* 28px - touch-friendly */
+    gap: 0.25rem !important; /* 4px - space between icon and text */
+    background: #2563EB !important; /* Blue background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.375rem !important; /* 6px - rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    margin: 0 !important; /* No margin - flex handles spacing */
+    line-height: 1.3 !important; /* Match caption line-height */
+    flex-shrink: 0 !important; /* Don't shrink */
+  }
+
+  /* Hide Delete button from title row on mobile (moved to thumbnail) */
+  .video-card-title-row .video-card-header-actions .action-btn-danger {
+    display: none !important; /* Hide from title row - moved to thumbnail */
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* Show Delete button in thumbnail on mobile - Bottom right, below duration badge */
+  .thumbnail-delete-button {
+    display: flex !important; /* Show on mobile */
+    visibility: visible !important;
+    opacity: 1 !important;
+    bottom: 0.375rem !important; /* 6px from bottom */
+    right: 0.375rem !important; /* 6px from right */
+  }
+
+  /* Adjust duration badge position to make room for delete button below */
+  .video-duration-badge {
+    bottom: 2.5rem !important; /* 40px from bottom - above delete button */
+    right: 0.375rem !important; /* 6px from right - same as delete button */
+  }
+
+  /* Hide inline delete button from stats on mobile */
+  .video-card-stats-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Stats - SEPARATE LINE below title, left-aligned, no right button */
   .video-card-stats {
-    gap: 0.75rem;
+    display: flex !important;
+    justify-content: flex-start !important; /* Stats aligned to left */
+    align-items: center !important; /* Vertical center alignment */
+    gap: 0.5rem !important; /* 8px - gap between stats */
+    margin: 0 !important;
+    margin-top: 0 !important; /* No top margin - directly below title */
+    margin-bottom: 0.25rem !important; /* 4px - spacing before meta */
+    padding: 0 !important;
     font-size: 11px;
+    flex-wrap: nowrap !important; /* Keep stats in single line */
+    width: 100% !important; /* Full width */
+    box-sizing: border-box !important;
+  }
+
+  .video-card-stats-left {
+    display: flex !important;
+    gap: 0.5rem !important; /* 8px - gap between stats */
+    align-items: center !important;
+    flex: 0 0 auto !important; /* Don't take all space */
+  }
+
+  .video-card-stats .stat {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important; /* Prevent wrapping */
+  }
+
+  .video-card-stats-right .action-btn-danger-inline {
+    padding: 0.25rem 0.5rem !important; /* 4px 8px - compact but touch-friendly */
+    font-size: 0.625rem !important; /* 10px - readable on mobile */
+    min-height: 1.5rem !important; /* 24px - touch-friendly */
+    max-height: 1.5rem !important; /* 24px - fixed height */
+    gap: 0.125rem !important; /* 2px - minimal space between icon and text */
+    background: #DC2626 !important; /* Red background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.375rem !important; /* 6px - small rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+  }
+
+  .video-card-meta {
+    margin-top: 0.25rem !important; /* 4px - spacing after stats */
+    margin-bottom: 0.5rem !important; /* 8px */
+    padding: 0 !important;
+    display: flex !important; /* Flex to properly align children */
+    flex-direction: row !important; /* Horizontal layout */
+    align-items: center !important; /* Center align vertically */
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    color: #6C6C6C !important; /* Default gray color for meta info */
+    gap: 0.125rem !important; /* 2px - minimal gap */
+    font-size: 0.625rem !important; /* 10px - compact size */
+    line-height: 1.2 !important; /* Readable line height */
+  }
+
+  .video-card-meta .upload-date {
+    font-size: 0.625rem !important; /* 10px - visible but compact */
+    color: #6C6C6C !important; /* Gray color for visibility */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    display: inline-block !important; /* Display as block to ensure visibility */
+    white-space: nowrap !important; /* Prevent wrapping */
+    line-height: 1.2 !important; /* Slightly more readable */
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .action-btn-primary,
@@ -1705,11 +3286,14 @@
   }
 
   .video-viewer-player {
-    height: calc(100% - 120px);
+    height: 55%;
+    min-height: 300px;
   }
 
   .video-viewer-info {
     padding: 16px;
+    height: 45%;
+    min-height: 250px;
   }
 
   .video-viewer-info h2 {
@@ -1916,69 +3500,596 @@
 
   .search-filter-bar {
     gap: 0.5rem !important; /* 8px - reduced */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
   }
 
   .search-input-wrapper {
     padding: 0 !important;
+    position: relative !important;
+    flex: 1 1 auto !important; /* Take available space */
+    min-width: 0 !important;
   }
 
   .dashboard-search-input {
     padding: 0.625rem 0.75rem 0.625rem 2.5rem !important; /* 10px 12px 10px 40px - reduced */
     font-size: 0.8125rem !important; /* 13px - smaller */
     border-radius: 1rem !important; /* 16px */
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .search-input-wrapper i {
     left: 0.75rem !important; /* 12px */
     font-size: 0.875rem !important; /* 14px */
+    color: #64748B !important; /* Gray icon color */
   }
 
+  /* Filter Button - RED COLOR (EXACT SAME AS 414x896 iPhone XR) */
   .filter-btn {
     padding: 0.625rem 1rem !important; /* 10px 16px - reduced */
     font-size: 0.75rem !important; /* 12px - smaller */
     border-radius: 1rem !important; /* 16px */
+    background: #FF0050 !important; /* RED background - SAME AS 414x896 */
+    background-color: #FF0050 !important; /* Force red color */
+    background-image: none !important; /* Remove any gradient */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
+    border-color: transparent !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.375rem !important; /* 6px gap between icon and text */
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important; /* Don't shrink */
+    min-width: fit-content !important;
+  }
+
+  /* Filter Button Hover/Active States - RED (SAME AS 414x896) */
+  .filter-btn:hover {
+    background: #FE2C55 !important; /* Slightly lighter red on hover */
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+  }
+
+  .filter-btn:active {
+    background: #DC0045 !important; /* Darker red on click */
+    background-color: #DC0045 !important;
+    background-image: none !important;
+  }
+
+  .filter-btn:focus {
+    background: #FF0050 !important; /* Red on focus */
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
+
+  .filter-btn i {
+    color: #ffffff !important; /* White icon */
+    font-size: 0.75rem !important; /* 12px */
   }
 
   /* Video Cards - compact */
   .uploaded-video-card {
     margin-bottom: 0.75rem !important; /* 12px - reduced */
     border-radius: 0.75rem !important; /* 12px */
+    border: none !important; /* NO BORDER - Remove horizontal line */
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
   }
 
   .video-thumbnail-wrapper {
     border-radius: 0.75rem 0.75rem 0 0 !important;
   }
 
+  /* Video Card Content - Column layout */
   .video-card-content {
+    position: relative !important;
     padding: 0.75rem 0.5rem !important; /* 12px 8px - reduced */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.375rem !important; /* 6px gap between elements */
+    border: none !important; /* NO BORDER - Remove horizontal line */
   }
 
-  .video-card-caption {
-    font-size: 0.8125rem !important; /* 13px - smaller */
-    margin-bottom: 0.5rem !important; /* 8px */
+  /* Title + Delete Button Row - HORIZONTAL LAYOUT (Title left, Button right, SAME HORIZONTAL LINE) */
+  .video-card-title-delete-row {
+    display: flex !important; /* Flex layout for horizontal alignment */
+    flex-direction: row !important; /* HORIZONTAL layout - same line */
+    align-items: center !important; /* Vertical center alignment - same line height */
+    justify-content: space-between !important; /* Space between title (left) and button (right) */
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    margin-bottom: 0.5rem !important; /* 8px gap before stats */
+    box-sizing: border-box !important;
+    order: 1 !important; /* First after thumbnail */
+    overflow: hidden !important; /* Hide overflow */
+    gap: 0.5rem !important; /* 8px gap between title and button */
+    flex-wrap: nowrap !important; /* No wrapping - force same line */
+  }
+
+  /* Title - LEFT ALIGNED, HORIZONTAL TEXT (SINGLE LINE) - SIMPLE/PLAIN TEXT - SAME HORIZONTAL LINE AS BUTTON - NO WRAP */
+  .video-card-title-delete-row .video-card-caption {
+    font-size: 0.875rem !important; /* 14px */
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important; /* Block for flex item */
+    flex: 1 !important; /* Take remaining space */
+    min-width: 0 !important; /* Allow shrinking */
+    max-width: 100% !important;
+    line-height: 1.4 !important; /* Normal line height - Simple text - SAME LINE HEIGHT AS BUTTON */
+    text-align: left !important; /* LEFT ALIGNED */
+    overflow: hidden !important; /* Hide overflow */
+    text-overflow: ellipsis !important; /* Show ... when text is too long */
+    white-space: nowrap !important; /* FORCE SINGLE LINE - NO WRAPPING - NO NEXT LINE */
+    word-wrap: normal !important; /* No word wrapping */
+    word-break: keep-all !important; /* Keep all words together - NO BREAKING */
+    hyphens: none !important; /* No hyphens */
+    box-sizing: border-box !important;
+    color: #0F172A !important; /* Simple dark text color */
+    font-weight: 400 !important; /* NORMAL weight - Simple plain text (not bold) */
+    font-style: normal !important; /* No italic */
+    text-decoration: none !important; /* No underline */
+    text-transform: none !important; /* No text transformation */
+    align-self: center !important; /* Align with button center on same line */
+    max-height: 1.4em !important; /* Force single line height */
+    height: 1.4em !important; /* Force single line height */
+  }
+
+  /* Delete Button - EXACT STYLES AS REQUESTED - HORIZONTAL WITH TITLE - NO ICON, FULL RED, SMALLER HEIGHT */
+  .video-card-title-delete-row .video-card-delete-button,
+  .uploaded-video-card .video-card-delete-button,
+  .video-card-content .video-card-delete-button,
+  .video-card-delete-button {
+    display: inline-flex !important; /* 1. DISPLAY: INLINE-FLEX */
+    align-items: center !important; /* Center text vertically */
+    justify-content: center !important; /* Center content horizontally */
+    gap: 0 !important; /* NO GAP - No icon */
+    margin-top: 0 !important; /* NO MARGIN TOP - Same line as title */
+    padding: 0.25rem 0.75rem !important; /* REDUCED PADDING - Smaller height (4px 12px) */
+    border-radius: 0.375rem !important; /* 6px - Slightly smaller radius */
+    background-color: #FF0050 !important; /* 5. BACKGROUND COLOR RED - FULL RED */
+    background: #FF0050 !important; /* Red background - FULL RED */
+    background-image: none !important; /* Remove gradient */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    font-size: 0.75rem !important; /* 12px */
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    white-space: nowrap !important; /* No wrapping */
+    width: fit-content !important; /* Only as wide as content */
+    height: auto !important; /* Auto height */
+    min-height: 1.25rem !important; /* 20px minimum - REDUCED HEIGHT */
+    line-height: 1.2 !important; /* Tighter line height */
+    margin-left: auto !important; /* Push to right side */
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important; /* Don't shrink */
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+  }
+
+  /* Delete Button Icon - HIDE ICON (NO ICON, JUST TEXT) */
+  .video-card-delete-button i,
+  .video-card-title-delete-row .video-card-delete-button i,
+  .uploaded-video-card .video-card-delete-button i,
+  .video-card-content .video-card-delete-button i {
+    display: none !important; /* HIDE ICON - NO ICON */
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+
+  /* Force red color on all states - iPhone SE - MAXIMUM SPECIFICITY */
+  .uploaded-video-card .video-card-delete-button:hover,
+  .video-card-content .video-card-delete-button:hover,
+  .video-card-delete-button:hover {
+    background: #FE2C55 !important; /* Slightly lighter red on hover */
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+  }
+
+  .uploaded-video-card .video-card-delete-button:active,
+  .video-card-content .video-card-delete-button:active,
+  .video-card-delete-button:active {
+    background: #DC0045 !important; /* Darker red on click */
+    background-color: #DC0045 !important;
+    background-image: none !important;
+  }
+
+  .uploaded-video-card .video-card-delete-button:focus,
+  .video-card-content .video-card-delete-button:focus,
+  .video-card-delete-button:focus {
+    background: #FF0050 !important; /* Red on focus */
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
+
+  .uploaded-video-card .video-card-delete-button i,
+  .video-card-content .video-card-delete-button i,
+  .video-card-delete-button i {
+    font-size: 0.75rem !important; /* 12px */
+    color: #ffffff !important; /* White icon */
+  }
+
+  /* Override any other button styles that might affect delete button - MAXIMUM SPECIFICITY */
+  .uploaded-video-card .video-card-content .video-card-delete-button,
+  .uploaded-video-card .video-card-delete-button,
+  .video-card-content .video-card-delete-button,
+  .video-card-header-actions .video-card-delete-button,
+  .video-card-title-row .video-card-delete-button,
+  button.video-card-delete-button,
+  .video-card-delete-button {
+    background: #FF0050 !important;
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+  }
+
+  /* Override all button states with maximum specificity */
+  .uploaded-video-card .video-card-content .video-card-delete-button:hover,
+  .uploaded-video-card .video-card-delete-button:hover,
+  .video-card-content .video-card-delete-button:hover,
+  button.video-card-delete-button:hover,
+  .video-card-delete-button:hover {
+    background: #FE2C55 !important;
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+  }
+
+  .uploaded-video-card .video-card-content .video-card-delete-button:active,
+  .uploaded-video-card .video-card-delete-button:active,
+  .video-card-content .video-card-delete-button:active,
+  button.video-card-delete-button:active,
+  .video-card-delete-button:active {
+    background: #DC0045 !important;
+    background-color: #DC0045 !important;
+    background-image: none !important;
+  }
+
+  .uploaded-video-card .video-card-content .video-card-delete-button:focus,
+  .uploaded-video-card .video-card-delete-button:focus,
+  .video-card-content .video-card-delete-button:focus,
+  button.video-card-delete-button:focus,
+  .video-card-delete-button:focus {
+    background: #FF0050 !important;
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
+
+  .uploaded-video-card .video-card-content .video-card-delete-button i,
+  .uploaded-video-card .video-card-delete-button i,
+  .video-card-content .video-card-delete-button i,
+  button.video-card-delete-button i,
+  .video-card-delete-button i {
+    color: #ffffff !important;
+  }
+
+  /* Title - Inside Title+Delete Row - LEFT side, SINGLE LINE */
+  .video-card-title-delete-row .video-card-caption {
+    font-size: 0.875rem !important; /* 14px */
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-right: 0.5rem !important; /* Space for delete button */
+    display: block !important;
+    flex: 1 1 auto !important; /* Take available space */
+    min-width: 0 !important; /* Allow text truncation */
     line-height: 1.3 !important;
+    text-align: left !important;
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important; /* SINGLE LINE - No wrapping */
+    max-width: 100% !important; /* Full width for truncation */
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
+  /* Fallback for caption outside title-delete-row */
+  .video-card-caption {
+    font-size: 0.875rem !important; /* 14px */
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important; /* SINGLE LINE - No wrapping */
+    max-width: 100% !important; /* Full width for truncation */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Stats - Horizontal line below title */
   .video-card-stats {
-    gap: 0.5rem !important; /* 8px - reduced */
-    margin-bottom: 0.5rem !important; /* 8px */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important; /* 12px gap between stats */
+    margin: 0 !important;
+    padding: 0 !important;
+    order: 3 !important; /* Third after title */
+  }
+
+  .video-card-stats-left {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important; /* 12px gap between stats */
   }
 
   .video-card-stats .stat {
-    font-size: 0.625rem !important; /* 10px - smaller */
-    gap: 0.25rem !important; /* 4px */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.25rem !important; /* 4px gap between icon and number */
+    font-size: 0.75rem !important; /* 12px */
+    color: #64748B !important;
+    white-space: nowrap !important;
+  }
+
+  /* Timestamp - Below stats */
+  .video-card-meta {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    order: 4 !important; /* Fourth after stats */
+  }
+
+  .video-card-meta .upload-date {
+    font-size: 0.6875rem !important; /* 11px */
+    color: #94A3B8 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Layout Structure:
+     Line 1: Title (LEFT) + Delete button (RIGHT) - SAME HORIZONTAL LINE
+     Line 2: Stats (views, likes, comments) - BELOW title
+     Line 3: Timestamp - BELOW stats
+  */
+  
+  /* HORIZONTAL LAYOUT - Title and Delete button on SAME HORIZONTAL LINE using FLEXBOX */
+  .video-card-title-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important; /* Space between title and button */
+    gap: 0.5rem !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important; /* 8px - spacing before stats */
+    margin-top: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+  }
+
+  /* Title - LEFT side of flex container */
+  .video-card-title-row .video-card-caption {
+    font-size: 0.8125rem !important; /* 13px - smaller */
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-right: 5rem !important; /* Space for Edit button only (Delete moved to thumbnail) */
+    display: block !important;
+    flex: 1 1 auto !important; /* Take available space */
+    min-width: 0 !important; /* Allow text truncation */
+    line-height: 1.3 !important;
+    text-align: left !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important; /* Single line */
+  }
+
+  /* Action buttons container - FAR RIGHT EDGE - where arrow points */
+  .video-card-title-row .video-card-header-actions {
+    position: absolute !important; /* Absolute positioning to place at far right */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important; /* Align buttons to right */
+    gap: 0.375rem !important; /* 6px - gap between Edit and Delete buttons */
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    flex: 0 0 auto !important; /* Don't grow or shrink */
+    z-index: 10 !important;
+    top: 0 !important; /* Align with title top */
+    right: 0 !important; /* FAR RIGHT EDGE - where arrow points */
+  }
+
+  /* Edit button - LEFT side of Delete button */
+  .video-card-title-row .video-card-header-actions .action-btn-edit {
+    padding: 0.3125rem 0.625rem !important; /* 5px 10px - compact but touch-friendly */
+    font-size: 0.6875rem !important; /* 11px - readable on small mobile */
+    min-height: 1.5rem !important; /* 24px - touch-friendly */
+    max-height: 1.5rem !important; /* 24px - fixed height */
+    gap: 0.1875rem !important; /* 3px - space between icon and text */
+    background: #2563EB !important; /* Blue background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.3125rem !important; /* 5px - rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    margin: 0 !important; /* No margin - flex handles spacing */
+    line-height: 1.3 !important; /* Match caption line-height */
+    flex-shrink: 0 !important; /* Don't shrink */
+  }
+
+  /* Hide Delete button from title row on mobile (moved to thumbnail) */
+  .video-card-title-row .video-card-header-actions .action-btn-danger {
+    display: none !important; /* Hide from title row - moved to thumbnail */
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* Show Delete button in thumbnail on mobile - Bottom right, below duration badge */
+  .thumbnail-delete-button {
+    display: flex !important; /* Show on mobile */
+    visibility: visible !important;
+    opacity: 1 !important;
+    bottom: 0.375rem !important; /* 6px from bottom */
+    right: 0.375rem !important; /* 6px from right */
+  }
+
+  /* Adjust duration badge position to make room for delete button below */
+  .video-duration-badge {
+    bottom: 2.5rem !important; /* 40px from bottom - above delete button */
+    right: 0.375rem !important; /* 6px from right - same as delete button */
+  }
+
+  /* Edit button next to Delete button */
+  .video-card-title-row .video-card-header-actions .action-btn-edit {
+    padding: 0.3125rem 0.625rem !important; /* 5px 10px - compact but touch-friendly */
+    font-size: 0.6875rem !important; /* 11px - readable on small mobile */
+    min-height: 1.5rem !important; /* 24px - touch-friendly */
+    max-height: 1.5rem !important; /* 24px - fixed height */
+    gap: 0.1875rem !important; /* 3px - space between icon and text */
+    background: #2563EB !important; /* Blue background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.3125rem !important; /* 5px - rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    margin: 0 !important; /* No margin - flex handles spacing */
+    line-height: 1.3 !important; /* Match caption line-height */
+    flex-shrink: 0 !important; /* Don't shrink */
+  }
+
+  /* Hide inline delete button from stats on small mobile */
+  .video-card-stats-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Stats/Icons Row - Below Title */
+  .video-card-stats {
+    display: flex !important;
+    justify-content: flex-start !important; /* Stats aligned to left */
+    align-items: center !important; /* Vertical center alignment */
+    gap: 0.5rem !important; /* 8px - gap between stats */
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    width: 100% !important; /* Full width */
+    box-sizing: border-box !important;
+  }
+
+  .video-card-stats .stat {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important; /* 4px - gap between icon and text */
+    font-size: 0.75rem !important; /* 12px */
+    color: #64748B !important; /* Gray color */
+    font-weight: 500 !important;
+    white-space: nowrap !important; /* Prevent wrapping */
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .video-card-stats .stat i {
-    font-size: 0.625rem !important; /* 10px */
+    font-size: 0.75rem !important; /* 12px */
+    color: #2563EB !important; /* Blue icon color */
+  }
+
+  /* Ensure inline delete button is hidden */
+  .video-card-stats-right .action-btn-danger-inline {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0.25rem !important; /* 4px - small rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
   }
 
   .video-card-meta {
-    margin-bottom: 0.75rem !important; /* 12px */
+    margin-top: 0.1875rem !important; /* 3px - small spacing after stats */
+    margin-bottom: 0.5rem !important; /* 8px */
+    padding: 0 !important;
+    display: flex !important; /* Flex to properly align children */
+    flex-direction: row !important; /* Horizontal layout */
+    align-items: center !important; /* Center align vertically */
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    color: #6C6C6C !important; /* Default gray color for meta info */
+    gap: 0.125rem !important; /* 2px - minimal gap */
+    font-size: 0.625rem !important; /* 10px - compact size */
+    line-height: 1.2 !important; /* Readable line height */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    color: #6C6C6C !important; /* Default gray color for meta info */
+    gap: 0.125rem !important; /* 2px - minimal gap */
   }
 
-  .upload-date {
+  .video-card-meta .upload-date {
     font-size: 0.625rem !important; /* 10px - smaller */
+    color: #6C6C6C !important; /* Gray color for visibility */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    display: inline-block !important; /* Display as block to ensure visibility */
+    white-space: nowrap !important; /* Prevent wrapping */
+    line-height: 1.2 !important; /* Slightly more readable */
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Action Buttons - compact */
@@ -2218,6 +4329,97 @@
   .toast-content i {
     font-size: 0.875rem !important; /* 14px - smaller */
   }
+
+  /* FINAL OVERRIDE - Force RED delete button on iPhone SE (375px) - ABSOLUTE MAXIMUM SPECIFICITY */
+  /* This must be at the END of the media query to override everything - Multiple selectors for maximum specificity */
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button,
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button,
+  .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button,
+  .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button,
+  .uploaded-video-card .video-card-content button.video-card-delete-button,
+  .uploaded-video-card button.video-card-delete-button,
+  .video-card-content button.video-card-delete-button,
+  button[class*="video-card-delete-button"],
+  button.video-card-delete-button.video-card-delete-button,
+  .uploaded-video-card .video-card-delete-button,
+  .video-card-content .video-card-delete-button,
+  button.video-card-delete-button,
+  .video-card-delete-button,
+  .uploaded-videos-dashboard .uploaded-video-card .video-card-content .video-card-delete-button,
+  .uploaded-videos-dashboard .uploaded-video-card .video-card-delete-button,
+  .profile-overlay .uploaded-videos-dashboard .uploaded-video-card .video-card-delete-button,
+  body .uploaded-video-card .video-card-delete-button,
+  html body .uploaded-video-card .video-card-delete-button {
+    background: #FF0050 !important;
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    background-clip: padding-box !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+  }
+
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button i,
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button i,
+  .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button i,
+  .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button i,
+  .uploaded-video-card .video-card-content button.video-card-delete-button i,
+  .uploaded-video-card button.video-card-delete-button i,
+  .video-card-content button.video-card-delete-button i,
+  button[class*="video-card-delete-button"] i,
+  button.video-card-delete-button.video-card-delete-button i,
+  .uploaded-video-card .video-card-delete-button i,
+  .video-card-content .video-card-delete-button i,
+  button.video-card-delete-button i,
+  .video-card-delete-button i,
+  .uploaded-videos-dashboard .uploaded-video-card .video-card-content .video-card-delete-button i,
+  .uploaded-videos-dashboard .uploaded-video-card .video-card-delete-button i,
+  .profile-overlay .uploaded-videos-dashboard .uploaded-video-card .video-card-delete-button i {
+    color: #ffffff !important;
+  }
+
+  /* Force ALL button states to be red - Even more specific */
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button:hover,
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button:hover,
+  .uploaded-video-card .video-card-content button.video-card-delete-button:hover,
+  .uploaded-video-card button.video-card-delete-button:hover,
+  button.video-card-delete-button:hover,
+  .uploaded-video-card .video-card-delete-button:hover,
+  .video-card-delete-button:hover {
+    background: #FE2C55 !important;
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+  }
+
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button:active,
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button:active,
+  .uploaded-video-card .video-card-content button.video-card-delete-button:active,
+  .uploaded-video-card button.video-card-delete-button:active,
+  button.video-card-delete-button:active,
+  .uploaded-video-card .video-card-delete-button:active,
+  .video-card-delete-button:active {
+    background: #DC0045 !important;
+    background-color: #DC0045 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+  }
+
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card .video-card-content button.video-card-delete-button:focus,
+  .uploaded-videos-dashboard .uploaded-videos-grid .uploaded-video-card button.video-card-delete-button:focus,
+  .uploaded-video-card .video-card-content button.video-card-delete-button:focus,
+  .uploaded-video-card button.video-card-delete-button:focus,
+  button.video-card-delete-button:focus,
+  .uploaded-video-card .video-card-delete-button:focus,
+  .video-card-delete-button:focus {
+    background: #FF0050 !important;
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
 }
 
 /* Regular Phones (376px–480px) - iPhone 12, Galaxy S20, etc. */
@@ -2238,11 +4440,122 @@
   /* Prevent text overflow */
   .profile-header-right h2,
   .username-text,
-  .bio-text,
-  .video-card-caption {
+  .bio-text {
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
     hyphens: auto !important;
+  }
+
+  /* Video card caption - SINGLE LINE on mobile */
+  .video-card-caption {
+    white-space: nowrap !important; /* SINGLE LINE - No wrapping */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important; /* Full width for truncation */
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    line-height: 1.3 !important;
+    word-wrap: normal !important; /* Override break-word */
+    overflow-wrap: normal !important; /* Override break-word */
+    hyphens: none !important; /* No hyphens */
+  }
+
+  /* Delete Button - RED COLOR on Regular Phones (376px-480px) */
+  .video-card-delete-button {
+    padding: 0.375rem 0.75rem !important; /* 6px 12px */
+    font-size: 0.75rem !important; /* 12px */
+    min-height: 1.75rem !important; /* 28px */
+    max-height: 1.75rem !important;
+    gap: 0.25rem !important; /* 4px */
+    background: #FF0050 !important; /* BRIGHT RED BACKGROUND */
+    background-color: #FF0050 !important; /* Force red color */
+    background-image: none !important; /* Remove any gradient */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-color: transparent !important;
+    border-radius: 0.375rem !important; /* 6px */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+    white-space: nowrap !important;
+    width: fit-content !important; /* Only as wide as content */
+    margin: 0 !important;
+    order: 1 !important; /* First after thumbnail */
+  }
+
+  /* Force red color on all states - Regular Phones */
+  .video-card-delete-button:hover {
+    background: #FE2C55 !important; /* Slightly lighter red on hover */
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+  }
+
+  .video-card-delete-button:active {
+    background: #DC0045 !important; /* Darker red on click */
+    background-color: #DC0045 !important;
+    background-image: none !important;
+  }
+
+  .video-card-delete-button:focus {
+    background: #FF0050 !important; /* Red on focus */
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
+
+  .video-card-delete-button i {
+    font-size: 0.75rem !important; /* 12px */
+    color: #ffffff !important; /* White icon */
+  }
+
+  /* Stats - Horizontal line below title */
+  .video-card-stats {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important; /* 12px gap between stats */
+    margin: 0 !important;
+    padding: 0 !important;
+    order: 3 !important; /* Third after title */
+  }
+
+  .video-card-stats-left {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important; /* 12px gap between stats */
+  }
+
+  .video-card-stats .stat {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.25rem !important; /* 4px gap between icon and number */
+    font-size: 0.75rem !important; /* 12px */
+    color: #64748B !important;
+    white-space: nowrap !important;
+  }
+
+  /* Timestamp - Below stats */
+  .video-card-meta {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    order: 4 !important; /* Fourth after stats */
+  }
+
+  .video-card-meta .upload-date {
+    font-size: 0.6875rem !important; /* 11px */
+    color: #94A3B8 !important;
+    white-space: nowrap !important;
   }
 
   /* Ensure no horizontal scrolling */
@@ -2345,19 +4658,255 @@
   .filter-btn {
     padding: 0.75rem 1.25rem !important; /* 12px 20px */
     font-size: 0.8125rem !important; /* 13px */
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
   }
 
-  /* Video Cards */
+  /* Layout Structure:
+     Line 1: Title (LEFT) + Delete button (RIGHT) - SAME HORIZONTAL LINE
+     Line 2: Stats (views, likes, comments) - BELOW title
+     Line 3: Timestamp - BELOW stats
+  */
+
+  /* Video Cards - New Layout: Thumbnail → Delete → Title → Stats → Timestamp */
   .video-card-content {
-    padding: 1rem 0.75rem !important; /* 16px 12px */
+    position: relative !important;
+    padding: 0.75rem !important; /* 12px padding all around */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important; /* 8px gap between elements */
+    border: none !important; /* NO BORDER - Remove horizontal line */
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
   }
 
+  /* Delete Button - Below Thumbnail - BRIGHT RED COLOR (#FF0050) */
+  .video-card-delete-button {
+    padding: 0.375rem 0.75rem !important; /* 6px 12px */
+    font-size: 0.75rem !important; /* 12px */
+    min-height: 1.75rem !important; /* 28px */
+    max-height: 1.75rem !important;
+    gap: 0.25rem !important; /* 4px */
+    background: #FF0050 !important; /* Bright red background - APP PRIMARY RED */
+    background-color: #FF0050 !important; /* Bright red background color */
+    background-image: none !important; /* Remove any gradient */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-color: transparent !important;
+    border-radius: 0.375rem !important; /* 6px */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(255, 0, 80, 0.3) !important;
+    white-space: nowrap !important;
+    width: fit-content !important; /* Only as wide as content */
+    margin: 0 !important;
+  }
+
+  /* Force red color on all states */
+  .video-card-delete-button:hover {
+    background: #FE2C55 !important; /* Slightly lighter red on hover */
+    background-color: #FE2C55 !important;
+    background-image: none !important;
+  }
+
+  .video-card-delete-button:active {
+    background: #DC0045 !important; /* Darker red on click */
+    background-color: #DC0045 !important;
+    background-image: none !important;
+  }
+
+  .video-card-delete-button:focus {
+    background: #FF0050 !important; /* Red on focus */
+    background-color: #FF0050 !important;
+    background-image: none !important;
+    outline: 2px solid rgba(255, 0, 80, 0.5) !important;
+  }
+
+  .video-card-delete-button i {
+    font-size: 0.75rem !important; /* 12px */
+    color: #ffffff !important; /* White icon */
+  }
+
+  /* Hide Edit Button on Mobile */
+  .video-card-header-actions .action-btn-edit,
+  .action-btn-edit,
+  .video-card-title-row .action-btn-edit {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide title row layout on mobile (no longer needed) */
+  .video-card-title-row {
+    display: none !important;
+  }
+
+  /* Title - Below Delete Button - SINGLE LINE ON MOBILE */
   .video-card-caption {
     font-size: 0.875rem !important; /* 14px */
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important; /* SINGLE LINE - No wrapping */
+    max-width: 100% !important; /* Full width for truncation */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Action buttons container - FAR RIGHT EDGE - where arrow points */
+  .video-card-title-row .video-card-header-actions {
+    position: absolute !important; /* Absolute positioning to place at far right */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important; /* Align buttons to right */
+    gap: 0.375rem !important; /* 6px - gap between Edit and Delete buttons */
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    flex: 0 0 auto !important; /* Don't grow or shrink */
+    z-index: 10 !important;
+    top: 0 !important; /* Align with title top */
+    right: 0 !important; /* FAR RIGHT EDGE - where arrow points */
+  }
+
+  .video-card-header-actions .action-btn-danger {
+    padding: 0.375rem 0.75rem !important; /* 6px 12px - compact but touch-friendly */
+    font-size: 0.75rem !important; /* 12px - readable on mobile */
+    min-height: 1.75rem !important; /* 28px - touch-friendly */
+    gap: 0.25rem !important; /* 4px - space between icon and text */
+    background: #DC2626 !important; /* Red background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.375rem !important; /* 6px - rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+    margin-top: 0 !important; /* EXACTLY align with caption top */
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.3 !important; /* Match caption line-height */
+    vertical-align: top !important;
+  }
+
+  /* Hide inline delete button from stats */
+  .video-card-stats-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Stats - SEPARATE LINE below title, left-aligned, no right button */
+  .video-card-stats {
+    display: flex !important;
+    justify-content: flex-start !important; /* Stats aligned to left */
+    align-items: center !important; /* Vertical center alignment */
+    gap: 0.5rem !important; /* 8px - gap between stats */
+    margin: 0 !important;
+    margin-top: 0 !important; /* No top margin - directly below title */
+    margin-bottom: 0.25rem !important; /* 4px - spacing before meta */
+    padding: 0 !important;
+    flex-wrap: nowrap !important; /* Keep stats in single line */
+    width: 100% !important; /* Full width */
+    box-sizing: border-box !important;
+  }
+
+  .video-card-stats-left {
+    display: flex !important;
+    gap: 0.5rem !important; /* 8px - gap between stats */
+    align-items: center !important;
+    flex: 0 0 auto !important; /* Don't take all space */
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .video-card-stats .stat {
     font-size: 0.6875rem !important; /* 11px */
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important; /* Prevent wrapping */
+  }
+
+  .video-card-stats-right .action-btn-danger-inline {
+    padding: 0.25rem 0.5rem !important; /* 4px 8px - compact but touch-friendly */
+    font-size: 0.625rem !important; /* 10px - readable on mobile */
+    min-height: 1.5rem !important; /* 24px - touch-friendly */
+    max-height: 1.5rem !important; /* 24px - fixed height */
+    gap: 0.125rem !important; /* 2px - minimal space between icon and text */
+    background: #DC2626 !important; /* Red background */
+    color: #ffffff !important; /* White text */
+    border: none !important;
+    border-radius: 0.375rem !important; /* 6px - small rounded corners */
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+    white-space: nowrap !important; /* Prevent text wrapping */
+  }
+
+  .video-card-meta {
+    margin-top: 0.25rem !important; /* 4px - spacing after stats */
+    margin-bottom: 0.5rem !important; /* 8px */
+    padding: 0 !important;
+    display: flex !important; /* Flex to properly align children */
+    flex-direction: row !important; /* Horizontal layout */
+    align-items: center !important; /* Center align vertically */
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    color: #6C6C6C !important; /* Default gray color for meta info */
+    gap: 0.125rem !important; /* 2px - minimal gap */
+    font-size: 0.625rem !important; /* 10px - compact size */
+    line-height: 1.2 !important; /* Readable line height */
+  }
+
+  .video-card-meta .upload-date {
+    font-size: 0.625rem !important; /* 10px - visible but compact */
+    color: #6C6C6C !important; /* Gray color for visibility */
+    visibility: visible !important; /* Ensure visible */
+    opacity: 1 !important; /* Full opacity */
+    display: inline-block !important; /* Display as block to ensure visibility */
+    white-space: nowrap !important; /* Prevent wrapping */
+    line-height: 1.2 !important; /* Slightly more readable */
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .action-btn-primary,
@@ -2504,6 +5053,9 @@
 
   .filter-btn {
     font-size: 0.875rem !important; /* 14px */
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
   }
 
   /* Video Cards - better spacing */
@@ -2631,6 +5183,9 @@
 
   .filter-btn {
     font-size: 0.9375rem !important; /* 15px */
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
   }
 
   /* Video Cards - 2 column layout possible */
@@ -2789,6 +5344,9 @@
 
   .filter-btn {
     font-size: 1rem !important; /* 16px */
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
   }
 
   /* Video Cards */
@@ -2839,22 +5397,21 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10020;
-  backdrop-filter: blur(10px);
 }
 
 .edit-modal-content {
-  background: #F5F7FA;
+  background: #ffffff;
   border-radius: 16px;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid #E0F2FE;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   margin: 20px;
 }
 
@@ -3090,7 +5647,6 @@
     align-items: stretch !important;
     justify-content: stretch !important;
     background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(0.5rem) !important;
     padding: 0 !important;
   }
 
@@ -3262,7 +5818,7 @@
 
   .profile-modal.settings-open .save-profile-btn,
   body:has(.profile-modal.settings-open) .save-profile-btn {
-    background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%) !important;
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
     color: #FFFFFF !important;
   }
 
@@ -3301,14 +5857,13 @@
 }
 
 /* Tablet: Also full page */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+@media (min-width: 48rem) and (max-width: 64rem) {
   /* When Edit Profile is opened from Account Settings context */
   .profile-modal.settings-open .edit-modal-overlay,
   body:has(.profile-modal.settings-open) .edit-modal-overlay {
     align-items: stretch !important;
     justify-content: stretch !important;
     background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(0.5rem) !important;
     padding: 0 !important;
   }
 
@@ -3437,7 +5992,7 @@
 }
 
 .edit-modal-header {
-  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%) !important; /* Lighter blue gradient */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .edit-modal-header h2 {
@@ -3471,8 +6026,7 @@
 }
 
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: rotate(90deg);
+  /* Hover effect removed - no changes on hover */
 }
 
 .edit-modal-body {
@@ -3691,6 +6245,10 @@
   background: #F5F7FA;
   min-height: 100vh;
   padding: 30px;
+  padding-right: 30px; /* Ensure right padding */
+  overflow-x: visible !important; /* Allow horizontal overflow for buttons */
+  overflow-y: auto; /* Allow vertical scroll */
+  box-sizing: border-box;
 }
 
 /* Dashboard Top Bar */
@@ -3773,25 +6331,44 @@
   box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
 }
 
+/* Mobile: Red filter button */
+@media (max-width: 48rem) { /* 768px and below - all mobile/tablet */
+  .filter-btn {
+    background: #FF0050 !important; /* Red background on mobile */
+    color: #ffffff !important; /* White text on red */
+    border: none !important;
+  }
+
+  .filter-btn:hover {
+    background: #FE2C55 !important; /* Slightly lighter red on hover */
+    box-shadow: 0 8px 20px rgba(255, 0, 80, 0.4) !important;
+  }
+}
+
 /* Uploaded Videos Grid */
 .uploaded-videos-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding-top: 20px;
+  padding-right: 20px; /* Add right padding so buttons aren't cut off */
+  overflow: visible !important; /* Ensure buttons are visible */
 }
 
 .uploaded-video-card {
   background: #F9FAFB;
   border: 1px solid #E0F2FE;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: hidden; /* Keep hidden for border-radius on thumbnail */
   transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: stretch;
   position: relative;
+  margin-right: 0; /* No right margin */
+  width: 100%; /* Full width */
+  max-width: 100%; /* Don't exceed container */
 }
 
 .uploaded-video-card:hover {
@@ -3805,17 +6382,26 @@
   position: relative;
   width: 240px;
   min-width: 240px;
+  max-width: 240px; /* Fixed width */
   background: #F5F7FA;
-  overflow: hidden;
+  overflow: hidden; /* Keep hidden for thumbnail only */
   aspect-ratio: 16 / 9;
+  flex-shrink: 0; /* Don't shrink */
 }
 
 .uploaded-video-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  object-fit: cover !important;
   transition: transform 0.3s ease;
-  display: block;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: top !important; /* Remove default inline spacing */
+  line-height: 0 !important; /* Remove line-height spacing */
 }
 
 .uploaded-video-card:hover .uploaded-video-thumbnail {
@@ -3865,30 +6451,72 @@
 
 .video-thumbnail-wrapper.is-playing .play-overlay,
 .video-thumbnail-wrapper.is-playing .video-duration-badge,
-.video-thumbnail-wrapper.is-playing .thumbnail-play-button {
+.video-thumbnail-wrapper.is-playing .thumbnail-play-button,
+.video-thumbnail-wrapper.is-playing .thumbnail-delete-button {
   opacity: 0;
   pointer-events: none;
 }
 
+/* Delete button in thumbnail - Bottom right, below duration badge - MOBILE ONLY */
+.thumbnail-delete-button {
+  position: absolute !important;
+  bottom: 0.375rem !important; /* 6px from bottom */
+  right: 0.375rem !important; /* 6px from right */
+  padding: 0.3125rem 0.625rem !important; /* 5px 10px - compact */
+  font-size: 0.6875rem !important; /* 11px */
+  min-height: 1.5rem !important; /* 24px */
+  max-height: 1.5rem !important;
+  gap: 0.1875rem !important; /* 3px */
+  background: #DC2626 !important; /* Red background */
+  color: #ffffff !important; /* White text */
+  border: none !important;
+  border-radius: 0.3125rem !important; /* 5px */
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: none !important; /* Hidden on desktop */
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+  white-space: nowrap !important;
+  z-index: 6 !important; /* Above duration badge */
+  pointer-events: auto !important;
+}
+
+.thumbnail-delete-button i {
+  font-size: 0.625rem !important; /* 10px */
+}
+
 .uploaded-video-player {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  object-fit: cover !important;
   background: #000;
-  display: block;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: top !important; /* Remove default inline spacing */
+  line-height: 0 !important; /* Remove line-height spacing */
 }
 
 .thumbnail-play-button {
   position: absolute;
-  bottom: 12px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   background: rgba(15, 23, 42, 0.85);
   color: #F9FAFB;
   border: none;
-  border-radius: 999px;
-  padding: 8px 16px;
+  border-radius: 50%;
+  padding: 16px;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
   align-items: center;
   gap: 6px;
   font-size: 14px;
@@ -3899,11 +6527,12 @@
 }
 
 .thumbnail-play-button i {
-  font-size: 16px;
+  font-size: 24px;
+  margin-left: 3px;
 }
 
 .thumbnail-play-button:hover {
-  transform: translateX(-50%) translateY(-2px);
+  transform: translate(-50%, -50%) scale(1.1);
   background: rgba(37, 99, 235, 0.95);
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
 }
@@ -4104,11 +6733,19 @@
 
 /* Video Card Content */
 .video-card-content {
-  padding: 20px;
+  padding: 20px !important;
+  padding-right: 20px !important; /* Ensure right padding for button */
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0 !important; /* Allow flex to shrink */
+  overflow: visible !important; /* Ensure buttons are not cut off */
+  box-sizing: border-box !important; /* Ensure padding is included in width */
+  width: 100%; /* Full width of available space */
+  position: relative; /* For proper positioning */
+  flex-grow: 1; /* Take available space */
+  max-width: calc(100% - 240px); /* Account for thumbnail width (240px) */
 }
 
 .video-card-caption {
@@ -4153,11 +6790,40 @@
   font-size: 12px;
 }
 
+/* Video Card Header Actions - Top Right */
+.video-card-header-actions {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px;
+  overflow: visible !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-bottom: 10px !important; /* Space below button */
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  visibility: visible !important;
+  justify-content: flex-end !important; /* Align to right */
+  align-items: flex-start !important;
+  position: relative !important;
+}
+
 /* Video Card Actions */
 .video-card-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: flex !important;
+  flex-wrap: nowrap !important; /* Don't wrap buttons */
   gap: 8px;
+  overflow: visible !important; /* Ensure buttons are fully visible */
+  width: 100% !important; /* Full width of content area */
+  max-width: 100% !important; /* Don't exceed parent width */
+  margin-top: auto; /* Push to bottom of card */
+  padding-top: 10px; /* Add spacing from content above */
+  padding-right: 0 !important; /* No right padding */
+  box-sizing: border-box !important; /* Include padding in width calculation */
+  visibility: visible !important; /* Force visibility */
+  justify-content: flex-end !important; /* Align buttons to right */
+  margin-left: 0 !important; /* No left margin */
+  margin-right: 0 !important; /* No right margin */
+  align-self: flex-end !important; /* Align to end */
 }
 
 .action-btn-primary,
@@ -4172,12 +6838,14 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
+  display: flex !important; /* Force display */
   align-items: center;
   justify-content: center;
   gap: 6px;
   white-space: nowrap;
   overflow: visible;
+  visibility: visible !important; /* Force visibility */
+  opacity: 1 !important; /* Ensure full opacity */
 }
 
 .action-btn-primary {
@@ -4203,14 +6871,30 @@
 }
 
 .action-btn-danger {
-  background: #FF4757;
-  color: #0F172A;
+  background: #FF4757 !important; /* Red color - original */
+  color: #FFFFFF !important;
+  z-index: 10 !important;
+  position: relative !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important; /* Changed to inline-flex */
+  flex-shrink: 1 !important;
+  min-width: 60px !important; /* Further reduced */
+  max-width: 100% !important; /* Don't exceed parent */
+  width: fit-content !important; /* Fit content */
+  white-space: nowrap !important;
+  margin-left: auto !important; /* Push to right */
+  margin-right: 10px !important; /* 10px from right side */
+  padding: 8px 12px !important; /* Reduced padding */
+  box-sizing: border-box !important;
+  font-size: 12px !important; /* Smaller font */
+  border: none !important;
 }
 
 .action-btn-danger:hover {
-  background: #FF3742;
+  background: #FF3742 !important; /* Darker red on hover */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4) !important; /* Red shadow */
 }
 
 .action-btn-primary i,
@@ -4356,14 +7040,14 @@
 .video-viewer-content {
   width: 100%;
   max-width: 90vw;
-  height: 85vh;
-  max-height: 800px;
+  height: 90vh;
+  max-height: 900px;
   position: relative;
-  background: #F5F7FA;
+  background: #000000;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
   border-radius: 16px;
-  border: 2px solid #2563EB;
+  border: 2px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4386,7 +7070,7 @@
   right: 16px;
   width: 40px;
   height: 40px;
-  background: rgba(37, 99, 235, 0.8);
+  background: rgba(255, 0, 80, 0.9);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
@@ -4401,8 +7085,8 @@
 }
 
 .video-viewer-close:hover {
-  background: rgba(56, 189, 248, 0.9);
-  border-color: rgba(56, 189, 248, 1);
+  background: rgba(255, 0, 80, 1);
+  border-color: rgba(255, 0, 80, 1);
   transform: rotate(90deg);
 }
 
@@ -4410,36 +7094,89 @@
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #000000;
 }
 
 .video-viewer-player {
   width: 100%;
-  height: calc(100% - 150px);
+  height: 100%;
   max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  background: #F5F7FA;
+  background: #000000;
   display: block;
+  z-index: 1;
+  position: relative;
 }
 
 .video-viewer-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+  width: 100%;
   padding: 24px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
+  background: rgba(0, 0, 0, 0.98);
   border: none;
+  color: #FFFFFF;
+  z-index: 10;
+  height: 40%;
+  min-height: 300px;
+  max-height: 40%;
+  overflow-y: auto;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.video-viewer-header {
+  margin-bottom: 16px;
+}
+
+.video-viewer-creator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.video-viewer-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  object-fit: cover;
+}
+
+.video-viewer-creator-info h3 {
+  color: #FFFFFF;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.video-viewer-username {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
 }
 
 .video-viewer-info h2 {
-  color: #0F172A;
+  color: #FFFFFF;
   font-size: 20px;
   font-weight: 600;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   line-height: 1.4;
+}
+
+.video-viewer-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
 }
 
 .video-viewer-stats {
@@ -4453,18 +7190,26 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #A8A8A8;
+  color: #FFFFFF;
   font-size: 14px;
   font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
 }
 
 .video-viewer-stats i {
-  color: #2563EB;
-  font-size: 14px;
+  color: #FF0050;
+  font-size: 16px;
+}
+
+.video-viewer-meta {
+  margin-top: 12px;
 }
 
 .video-viewer-meta span {
-  color: #6C6C6C;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
 }
 
@@ -4540,8 +7285,7 @@
 }
 
 .followers-modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: rotate(90deg);
+  /* Hover effect removed - no changes on hover */
 }
 
 .followers-count {
@@ -4819,7 +7563,7 @@
 }
 
 /* Tablet: Also hide profile content when sub-features are open */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+@media (min-width: 48rem) and (max-width: 64rem) {
   /* Hide profile content when Message Center is open */
   .profile-modal.settings-open:has(.message-center-overlay) .profile-content-wrapper,
   .profile-modal.settings-open:has(.account-settings-overlay .message-center-overlay) .profile-content-wrapper,
@@ -5187,9 +7931,9 @@ body.dark-mode .sort-btn:hover {
 }
 
 body.dark-mode .sort-btn.active {
-  background: rgba(37, 99, 235, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #60A5FA !important;
+  background: #FF4757 !important; /* Red background in dark mode too */
+  border: none !important;
+  color: #FFFFFF !important; /* White text */
 }
 
 body.dark-mode .video-grid-container {
@@ -5354,7 +8098,7 @@ body.dark-mode .edit-modal-content {
 }
 
 body.dark-mode .edit-modal-header {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
   border-bottom-color: #334155 !important;
 }
 
@@ -5362,12 +8106,39 @@ body.dark-mode .edit-modal-body {
   background: #1E293B !important;
 }
 
+body.dark-mode .edit-modal-content {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+
 body.dark-mode .edit-form-group label {
   color: #F9FAFB !important;
 }
 
+body.dark-mode .edit-modal-content .edit-form-group label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .edit-modal-body .edit-form-group label {
+  color: #CBD5E1 !important;
+}
+
 body.dark-mode .edit-input,
 body.dark-mode .edit-textarea {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .edit-modal-content .edit-input,
+body.dark-mode .edit-modal-content .edit-textarea {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .edit-modal-body .edit-input,
+body.dark-mode .edit-modal-body .edit-textarea {
   background: #334155 !important;
   border-color: #475569 !important;
   color: #F9FAFB !important;
@@ -5378,8 +8149,20 @@ body.dark-mode .edit-textarea::placeholder {
   color: #94A3B8 !important;
 }
 
+body.dark-mode .edit-modal-content .edit-input::placeholder,
+body.dark-mode .edit-modal-content .edit-textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
 body.dark-mode .edit-input:focus,
 body.dark-mode .edit-textarea:focus {
+  border-color: #2563EB !important;
+  background: #475569 !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .edit-modal-content .edit-input:focus,
+body.dark-mode .edit-modal-content .edit-textarea:focus {
   border-color: #2563EB !important;
   background: #475569 !important;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
@@ -5473,6 +8256,77 @@ body.dark-mode .save-profile-btn:hover {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(56, 189, 248, 0.9)) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .edit-modal-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .modal-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .modal-close-btn i {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .banner-remove-btn {
+  background: rgba(239, 68, 68, 0.9) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .banner-remove-btn:hover {
+  background: #EF4444 !important;
+}
+
+body.dark-mode .banner-preview {
+  border-color: #475569 !important;
+}
+
+body.dark-mode .edit-modal-footer {
+  background: #1E293B !important;
+  border-top-color: #334155 !important;
+}
+
+body.dark-mode .privacy-toggle {
+  background: transparent !important;
+}
+
+/* Additional dark mode overrides for better visibility */
+body.dark-mode .edit-modal-content * {
+  color: inherit;
+}
+
+body.dark-mode .edit-modal-body {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .edit-modal-content input[type="text"],
+body.dark-mode .edit-modal-content input[type="url"],
+body.dark-mode .edit-modal-content textarea {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .edit-modal-content input[type="text"]::placeholder,
+body.dark-mode .edit-modal-content input[type="url"]::placeholder,
+body.dark-mode .edit-modal-content textarea::placeholder {
+  color: #94A3B8 !important;
+  opacity: 1 !important;
+}
+
+body.dark-mode .edit-modal-content input[type="text"]:focus,
+body.dark-mode .edit-modal-content input[type="url"]:focus,
+body.dark-mode .edit-modal-content textarea:focus {
+  background: #475569 !important;
+  border-color: #2563EB !important;
+  color: #F9FAFB !important;
 }
 
 

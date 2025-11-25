@@ -358,3 +358,105 @@
     gap: 4px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .stitch-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .stitch-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .stitch-header {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .stitch-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .stitch-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .stitch-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .stitch-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .video-preview-container {
+  background: #0F172A !important;
+}
+
+body.dark-mode .timeline-selector {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .timeline-label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .timeline-track {
+  background: #475569 !important;
+}
+
+body.dark-mode .timeline-btn {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .timeline-btn:hover {
+  background: #475569 !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .recording-placeholder {
+  background: #1E293B !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .recording-placeholder i {
+  color: #64748B !important;
+}
+
+body.dark-mode .recording-placeholder p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .attribution-notice {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .attribution-notice i {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .attribution-notice p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .stitch-cancel-btn {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .stitch-cancel-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .stitch-create-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}

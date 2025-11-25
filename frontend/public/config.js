@@ -1,18 +1,24 @@
 // Runtime API Configuration
 // Is file ko edit karke apni backend API URL set karein
 // 
+// PRODUCTION CONFIGURATION:
+// For spryclips.com deployment, set empty string for API_URL
+// Uploads will be served from: https://spryclips.com/uploads
+// 
 // Options:
-// 1. Agar backend SAME domain par hai (frontend aur backend ek hi server par):
-//    API_URL: ''  (empty string rakhein)
+// 1. Production (same domain with Nginx proxy):
+//    API_URL: ''  (empty string - Nginx will proxy /api to backend)
 //
-// 2. Agar backend ALAG domain par hai:
+// 2. Backend on different domain:
 //    API_URL: 'https://your-backend-domain.com'  (domain dalen, /api mat dalen)
 //    Example: 'https://api.yoursite.com' ya 'https://backend.yoursite.com'
 //
-// 3. Agar backend localhost par test kar rahe hain:
+// 3. Local development:
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'https://spryclips.com/' // Arun Yahan apni backend URL dalen (empty = same domain)
+  API_URL: '',  // Empty for Nginx proxy
+  // Public uploads base URL - videos/images will be loaded from here
+  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Local: 'http://localhost:5000/uploads', Production: 'https://spryclips.com/uploads'
 };
 

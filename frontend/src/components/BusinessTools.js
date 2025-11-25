@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './BusinessTools.css';
 
 const BusinessTools = ({ onClose }) => {
+  const navigate = useNavigate();
   useAuth(); // Get auth context but don't need to destructure user
   
   const [businessStats] = useState({
@@ -99,22 +101,34 @@ const BusinessTools = ({ onClose }) => {
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'suite':
-        alert('Opening Business Suite - Complete business management dashboard');
+        // Navigate to business suite or show business dashboard
+        onClose();
+        navigate('/more/growth-tools?section=business-suite');
         break;
       case 'ads':
-        alert('Opening Ad Manager - Create and manage advertising campaigns');
+        // Navigate to ad manager
+        onClose();
+        navigate('/more/growth-tools?section=ad-manager');
         break;
       case 'biolink':
-        alert('Opening Website Link in Bio - Drive traffic to your website');
+        // Navigate to profile settings for bio link
+        onClose();
+        navigate('/profile?tab=bio-link');
         break;
       case 'promo':
-        alert('Opening Promotional Codes - Create and track discount codes');
+        // Navigate to promotional codes
+        onClose();
+        navigate('/more/growth-tools?section=promo-codes');
         break;
       case 'partnerships':
-        alert('Opening Brand Partnerships - Connect with brands and collaborators');
+        // Navigate to brand partnerships
+        onClose();
+        navigate('/more/growth-tools?section=partnerships');
         break;
       case 'analytics':
-        alert('Opening Business Analytics - Advanced insights and metrics');
+        // Navigate to business analytics
+        onClose();
+        navigate('/more/growth-tools?section=analytics');
         break;
       default:
         break;
@@ -124,16 +138,24 @@ const BusinessTools = ({ onClose }) => {
   const handleFeatureClick = (featureId) => {
     switch (featureId) {
       case 'verification':
-        alert('Starting business verification process');
+        // Navigate to verification page
+        onClose();
+        navigate('/profile?tab=verification');
         break;
       case 'catalog':
-        alert('Setting up product catalog');
+        // Navigate to product catalog setup
+        onClose();
+        navigate('/more/shop?setup=catalog');
         break;
       case 'messaging':
-        alert('Opening business messaging center');
+        // Navigate to business messaging (message center)
+        onClose();
+        navigate('/more?section=messaging');
         break;
       case 'insights':
-        alert('Opening audience insights dashboard');
+        // Navigate to audience insights
+        onClose();
+        navigate('/more/growth-tools?section=insights');
         break;
       default:
         break;

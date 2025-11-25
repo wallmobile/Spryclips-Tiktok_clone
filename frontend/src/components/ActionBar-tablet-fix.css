@@ -1,0 +1,85 @@
+/* Tablet: ALL Devices - 768px - 1024px (48rem - 64rem)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini - Action buttons visible */
+@media (min-width: 48rem) and (max-width: 64rem) {
+  .action-bar {
+    left: auto !important;
+    right: 0.75rem !important; /* 12px - same as mobile/iPad Mini */
+    bottom: 50% !important; /* Center vertically with video */
+    top: auto !important;
+    transform: translateY(50%) !important; /* Perfect vertical centering */
+    gap: 0.5rem !important; /* 8px gap - same as mobile/iPad Mini */
+    position: absolute !important;
+    z-index: 30 !important;
+    max-width: none !important;
+    display: flex !important; /* Visible - same as iPad Mini */
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .action-button {
+    width: 2.5rem !important; /* 40px - touch-friendly - same as mobile/iPad Mini */
+    height: 2.5rem !important;
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .action-button i {
+    font-size: 1.125rem !important; /* 18px - same as mobile/iPad Mini */
+  }
+
+  .action-count {
+    font-size: 0.625rem !important; /* 10px - same as mobile/iPad Mini */
+    margin-top: 0.125rem !important;
+  }
+
+  .profile-picture-wrapper {
+    width: 2.5rem !important; /* 40px - same as mobile/iPad Mini */
+    height: 2.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .profile-picture {
+    width: 2.5rem !important; /* 40px - same as mobile/iPad Mini */
+    height: 2.5rem !important;
+  }
+
+  .follow-button {
+    width: 1.125rem !important; /* 18px - same as mobile/iPad Mini */
+    height: 1.125rem !important;
+    min-width: 1.125rem !important;
+    min-height: 1.125rem !important;
+    font-size: 0.5625rem !important; /* 9px - same as mobile/iPad Mini */
+  }
+
+  .follow-button i {
+    font-size: 0.5625rem !important; /* 9px - same as mobile/iPad Mini */
+  }
+
+  .share-menu,
+  .more-menu {
+    right: 3.5rem !important; /* 56px from right edge - same as mobile/iPad Mini */
+    left: auto !important;
+    min-width: 8.75rem !important; /* 140px - same as mobile/iPad Mini */
+    padding: 0.375rem !important; /* 6px - same as mobile/iPad Mini */
+    max-width: calc(100vw - 4.5rem) !important; /* Don't overflow screen */
+  }
+
+  .share-menu-item,
+  .more-menu-item {
+    padding: 0.625rem !important; /* 10px - same as mobile/iPad Mini */
+    font-size: 0.8125rem !important; /* 13px - same as mobile/iPad Mini */
+    gap: 0.625rem !important; /* 10px - same as mobile/iPad Mini */
+    min-height: 2.5rem !important; /* 40px - touch-friendly - same as mobile/iPad Mini */
+  }
+
+  .share-menu-item i,
+  .more-menu-item i {
+    width: 1.125rem !important; /* 18px - same as mobile/iPad Mini */
+    font-size: 1rem !important; /* 16px - same as mobile/iPad Mini */
+  }
+}
+

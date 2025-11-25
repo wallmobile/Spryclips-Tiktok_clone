@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/axios';
 import './PrivacySettings.css';
 
 const PrivacySettings = ({ onClose }) => {
@@ -15,6 +16,28 @@ const PrivacySettings = ({ onClose }) => {
     stitchEnabled: true,
     activityStatus: true,
   });
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await api.get('/api/auth/verify');
+        const userData = response.data.user;
+        if (userData?.privacy) {
+          setSettings(prev => ({
+            ...prev,
+            privateAccount: userData.privacy.accountType === 'private',
+            activityStatus: userData.privacy.showActivityStatus !== false,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load privacy settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showDataAccess, setShowDataAccess] = useState(false);
@@ -36,11 +59,41 @@ const PrivacySettings = ({ onClose }) => {
     showDevices: false
   });
 
-  const handleToggle = (key) => {
+  const handleToggle = async (key) => {
+    const newValue = !settings[key];
     setSettings(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: newValue
     }));
+
+    // Save to backend
+    try {
+      setSaving(true);
+      const updateData = {};
+      
+      if (key === 'privateAccount') {
+        updateData.accountType = newValue ? 'private' : 'public';
+      } else if (key === 'activityStatus') {
+        updateData.showActivityStatus = newValue;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await api.put('/api/users/privacy', updateData);
+        setSaveMessage('Settings saved');
+        setTimeout(() => setSaveMessage(''), 2000);
+      }
+    } catch (error) {
+      console.error('Failed to save privacy settings:', error);
+      // Revert on error
+      setSettings(prev => ({
+        ...prev,
+        [key]: !newValue
+      }));
+      setSaveMessage('Failed to save settings');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const [blockedUsers, setBlockedUsers] = useState([
@@ -56,25 +109,122 @@ const PrivacySettings = ({ onClose }) => {
         blockedDate: new Date().toISOString().split('T')[0]
       };
       setBlockedUsers([...blockedUsers, newBlockedUser]);
+      const username = blockUserInput.trim();
       setBlockUserInput('');
-      alert(`User @${blockUserInput.trim()} has been blocked successfully!`);
+      setSaveMessage(`User @${username} has been blocked`);
+      setTimeout(() => setSaveMessage(''), 3000);
     }
   };
 
   const handleUnblockUser = (userId) => {
+    const userToUnblock = blockedUsers.find(u => u.id === userId);
     setBlockedUsers(blockedUsers.filter(user => user.id !== userId));
-    alert('User has been unblocked successfully!');
+    if (userToUnblock) {
+      setSaveMessage(`User @${userToUnblock.username} has been unblocked`);
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
   };
 
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !commentKeywords.includes(newKeyword.trim().toLowerCase())) {
       setCommentKeywords([...commentKeywords, newKeyword.trim().toLowerCase()]);
       setNewKeyword('');
+      setSaveMessage('Keyword added');
+      setTimeout(() => setSaveMessage(''), 2000);
+    }
+  };
+
+  const handleSaveCommentFilters = async () => {
+    try {
+      setSaving(true);
+      // Save comment filter keywords to backend (if API exists)
+      setSaveMessage('Comment filters saved');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowCommentFilters(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save comment filters:', error);
+      setSaveMessage('Failed to save filters');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleRemoveKeyword = (keyword) => {
     setCommentKeywords(commentKeywords.filter(k => k !== keyword));
+  };
+
+  const handleRequestDownload = async () => {
+    try {
+      setSaveMessage('Data download request submitted. You will receive an email when ready.');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowDataAccess(false);
+      }, 3000);
+    } catch (error) {
+      setSaveMessage('Failed to request data download');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  const handleRequestDeletion = () => {
+    const confirmDelete = window.confirm('Are you sure you want to delete your account? This action cannot be undone.');
+    if (confirmDelete) {
+      setSaveMessage('Account deletion request submitted. You will receive a confirmation email.');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowDataAccess(false);
+      }, 3000);
+    }
+  };
+
+  const handleViewReport = () => {
+    setSaveMessage('Privacy report is being generated...');
+    setTimeout(() => {
+      setSaveMessage('');
+      setShowDataAccess(false);
+    }, 2000);
+  };
+
+  const handleSaveDownloadPreferences = async () => {
+    try {
+      setSaving(true);
+      // Save download preferences to backend (if API exists)
+      setSaveMessage('Download preferences saved');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowDownloadSettings(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save download preferences:', error);
+      setSaveMessage('Failed to save preferences');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveActivityPreferences = async () => {
+    try {
+      setSaving(true);
+      await api.put('/api/users/privacy', {
+        showActivityStatus: activityPreferences.visibility !== 'off',
+        allowDirectMessages: activityPreferences.visibility
+      });
+      setSaveMessage('Activity preferences saved');
+      setTimeout(() => {
+        setSaveMessage('');
+        setShowActivitySettings(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save activity preferences:', error);
+      setSaveMessage('Failed to save preferences');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const privacySections = [
@@ -151,13 +301,28 @@ const PrivacySettings = ({ onClose }) => {
           <div className="privacy-header-placeholder"></div>
         </div>
 
+        {/* Save Message */}
+        {saveMessage && (
+          <div style={{
+            padding: '0.75rem 1.25rem',
+            background: saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            color: saveMessage.includes('Failed') ? '#DC2626' : '#16A34A',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            textAlign: 'center',
+            borderBottom: `1px solid ${saveMessage.includes('Failed') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+          }}>
+            {saveMessage}
+          </div>
+        )}
+
         {/* Settings List */}
         <div className="privacy-settings-list">
           {user && (
             <div className="privacy-user-summary">
               <div className="privacy-user-avatar">
                 <img
-                  src={user?.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'Creator')}&background=2563EB&color=fff`}
+                  src={user?.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'Creator')}&background=FF0050&color=fff`}
                   alt={user?.username || 'Current user'}
                 />
               </div>
@@ -269,6 +434,7 @@ const PrivacySettings = ({ onClose }) => {
                       placeholder="Enter username to block"
                       value={blockUserInput}
                       onChange={(e) => setBlockUserInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleBlockUser()}
                       className="block-user-input"
                     />
                     <button onClick={handleBlockUser} className="block-user-btn">
@@ -330,6 +496,7 @@ const PrivacySettings = ({ onClose }) => {
                       placeholder="Add keyword to filter"
                       value={newKeyword}
                       onChange={(e) => setNewKeyword(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
                       className="keyword-input"
                     />
                     <button onClick={handleAddKeyword} className="add-keyword-btn">
@@ -373,6 +540,17 @@ const PrivacySettings = ({ onClose }) => {
                     </label>
                   </div>
                 </div>
+
+                <div className="modal-section" style={{ marginTop: '1.5rem' }}>
+                  <button 
+                    className="data-action-btn primary" 
+                    onClick={handleSaveCommentFilters}
+                    disabled={saving}
+                    style={{ width: '100%', padding: '12px' }}
+                  >
+                    {saving ? 'Saving...' : 'Save Filters'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -397,7 +575,7 @@ const PrivacySettings = ({ onClose }) => {
                     <div className="data-action-content">
                       <h4>Download My Data</h4>
                       <p>Get a copy of all your TikTok data</p>
-                      <button className="data-action-btn primary">Request Download</button>
+                      <button className="data-action-btn primary" onClick={handleRequestDownload}>Request Download</button>
                     </div>
                   </div>
                   
@@ -408,7 +586,7 @@ const PrivacySettings = ({ onClose }) => {
                     <div className="data-action-content">
                       <h4>Delete My Data</h4>
                       <p>Permanently delete your account and data</p>
-                      <button className="data-action-btn danger">Request Deletion</button>
+                      <button className="data-action-btn danger" onClick={handleRequestDeletion}>Request Deletion</button>
                     </div>
                   </div>
                   
@@ -419,7 +597,7 @@ const PrivacySettings = ({ onClose }) => {
                     <div className="data-action-content">
                       <h4>Privacy Report</h4>
                       <p>See how your data is being used</p>
-                      <button className="data-action-btn secondary">View Report</button>
+                      <button className="data-action-btn secondary" onClick={handleViewReport}>View Report</button>
                     </div>
                   </div>
                 </div>
@@ -523,6 +701,17 @@ const PrivacySettings = ({ onClose }) => {
                       <strong>Tip:</strong> Turning downloads off will stop others from saving your videos, but they can still share links unless you also disable link sharing.
                     </div>
                   </div>
+                </div>
+
+                <div className="modal-section" style={{ marginTop: '1.5rem' }}>
+                  <button 
+                    className="data-action-btn primary" 
+                    onClick={handleSaveDownloadPreferences}
+                    disabled={saving}
+                    style={{ width: '100%', padding: '12px' }}
+                  >
+                    {saving ? 'Saving...' : 'Save Preferences'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -630,6 +819,17 @@ const PrivacySettings = ({ onClose }) => {
                       Turning off activity status means you also won't be able to see when others are active.
                     </div>
                   </div>
+                </div>
+
+                <div className="modal-section" style={{ marginTop: '1.5rem' }}>
+                  <button 
+                    className="data-action-btn primary" 
+                    onClick={handleSaveActivityPreferences}
+                    disabled={saving}
+                    style={{ width: '100%', padding: '12px' }}
+                  >
+                    {saving ? 'Saving...' : 'Save Preferences'}
+                  </button>
                 </div>
               </div>
             </div>

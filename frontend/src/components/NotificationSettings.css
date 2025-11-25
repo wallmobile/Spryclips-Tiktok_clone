@@ -40,6 +40,58 @@
   padding: 0;
 }
 
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
+  .account-settings-overlay .notification-settings-overlay,
+  .account-settings-modal .notification-settings-overlay,
+  body:has(.account-settings-overlay) .notification-settings-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .notification-settings-modal,
+  .account-settings-modal .notification-settings-modal,
+  body:has(.account-settings-overlay) .notification-settings-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .notification-settings-header,
+  .account-settings-modal .notification-settings-header,
+  body:has(.account-settings-overlay) .notification-settings-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
+  }
+
+  .account-settings-overlay .notification-settings-content,
+  .account-settings-modal .notification-settings-content,
+  body:has(.account-settings-overlay) .notification-settings-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+}
+
 /* Full Screen Notification Settings when opened from Account Settings */
 /* Desktop/Laptop: Full page Notification Settings modal when Account Settings is open */
 @media (min-width: 64.0625rem) {
@@ -158,7 +210,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
 }
 
 .notification-settings-header h2 {
@@ -258,7 +310,7 @@
 }
 
 .master-control-item:hover {
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
   background: #E0F2FE !important; /* Website light blue - no black */
 }
 
@@ -273,7 +325,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,7 +353,7 @@
 
 .master-toggle-btn {
   padding: 8px 12px;
-  background: #2563EB;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #0F172A;
   border: none;
   border-radius: 6px;
@@ -312,7 +364,7 @@
 }
 
 .master-toggle-btn:hover {
-  background: #38BDF8 !important; /* Website secondary blue - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */ /* Website secondary blue - no red */
   transform: translateY(-1px);
 }
 
@@ -351,7 +403,7 @@
 }
 
 .notification-category-card:hover {
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
   background: #E0F2FE !important; /* Website light blue - no black */
 }
 
@@ -412,7 +464,7 @@
 
 .notification-toggle-item:hover {
   background: rgba(37, 99, 235, 0.1) !important; /* Website blue - no purple */
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
 }
 
 .toggle-info {
@@ -444,7 +496,7 @@
 }
 
 .notification-toggle-switch.active {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
 }
 
 .notification-toggle-slider {
@@ -498,12 +550,12 @@
 }
 
 .frequency-option input[type="radio"]:checked + label {
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
   background: rgba(37, 99, 235, 0.1) !important; /* Website blue - no purple */
 }
 
 .frequency-option label:hover {
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
   background: #E0F2FE !important; /* Website light blue - no black */
 }
 
@@ -540,7 +592,7 @@
 }
 
 .quiet-hours-card:hover {
-  border-color: #2563EB !important; /* Website primary blue */
+  border-color: #FF0050 !important; /* TikTok pink */ /* Website primary blue */
   background: #E0F2FE !important; /* Website light blue - no black */
 }
 
@@ -552,7 +604,7 @@
 
 .quiet-hours-info i {
   font-size: 24px;
-  color: #38BDF8;
+  color: #25F4EE; /* TikTok cyan */
 }
 
 .quiet-hours-content h4 {
@@ -615,13 +667,13 @@
 }
 
 .notification-settings-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .notification-settings-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%); /* TikTok gradient reversed */
 }
 
 /* Small Phones (≤ 375px) - iPhone SE, small Android */
@@ -1073,7 +1125,7 @@ body.dark-mode .master-control-item {
 
 body.dark-mode .master-control-item:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .notification-category-card {
@@ -1083,7 +1135,7 @@ body.dark-mode .notification-category-card {
 
 body.dark-mode .notification-category-card:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .notification-toggle-item {
@@ -1093,7 +1145,7 @@ body.dark-mode .notification-toggle-item {
 
 body.dark-mode .notification-toggle-item:hover {
   background: rgba(37, 99, 235, 0.1) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .category-title,
@@ -1108,7 +1160,7 @@ body.dark-mode .frequency-option label {
 }
 
 body.dark-mode .frequency-option label:hover {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: rgba(37, 99, 235, 0.2) !important;
 }
 
@@ -1118,7 +1170,7 @@ body.dark-mode .quiet-hours-card {
 }
 
 body.dark-mode .quiet-hours-card:hover {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: rgba(37, 99, 235, 0.2) !important;
 }
 
@@ -1175,7 +1227,7 @@ body.dark-mode .master-control-item {
 
 body.dark-mode .master-control-item:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .master-control-icon {
@@ -1201,7 +1253,7 @@ body.dark-mode .master-toggle-btn {
 }
 
 body.dark-mode .master-toggle-btn:hover {
-  background: #38BDF8 !important;
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
 }
 
 body.dark-mode .master-toggle-btn.secondary {
@@ -1212,7 +1264,7 @@ body.dark-mode .master-toggle-btn.secondary {
 
 body.dark-mode .master-toggle-btn.secondary:hover {
   background: #334155 !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   color: #F9FAFB !important;
 }
 
@@ -1228,15 +1280,15 @@ body.dark-mode .notification-category-card {
 
 body.dark-mode .notification-category-card:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .category-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .category-icon i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .category-info h4 {
@@ -1254,11 +1306,11 @@ body.dark-mode .notification-toggle-item {
 
 body.dark-mode .notification-toggle-item:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .toggle-info i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .toggle-info span {
@@ -1292,12 +1344,12 @@ body.dark-mode .frequency-option label {
 }
 
 body.dark-mode .frequency-option input[type="radio"]:checked + label {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: rgba(37, 99, 235, 0.2) !important;
 }
 
 body.dark-mode .frequency-option label:hover {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: rgba(37, 99, 235, 0.15) !important;
 }
 
@@ -1310,7 +1362,7 @@ body.dark-mode .frequency-content p {
 }
 
 body.dark-mode .frequency-option input[type="radio"] {
-  accent-color: #2563EB !important;
+  accent-color: #FF0050 !important; /* TikTok pink */
 }
 
 /* Quiet Hours Dark Mode */
@@ -1329,11 +1381,11 @@ body.dark-mode .quiet-hours-card {
 
 body.dark-mode .quiet-hours-card:hover {
   background: rgba(37, 99, 235, 0.2) !important;
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .quiet-hours-info i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .quiet-hours-content h4 {
@@ -1355,7 +1407,7 @@ body.dark-mode .time-input-group input[type="time"] {
 }
 
 body.dark-mode .time-input-group input[type="time"]:focus {
-  border-color: #2563EB !important;
+  border-color: #FF0050 !important; /* TikTok pink */
   background: #64748B !important;
 }
 

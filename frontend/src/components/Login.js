@@ -113,30 +113,53 @@ const Login = ({ onClose, onSwitchToSignup }) => {
       const password = formState.password || passwordInput?.value || '';
 
       if (!email || !password) {
-        if (isMountedRef.current) {
-          setError('Please fill in all fields');
-          setLoading(false);
-        }
+        setError('Please fill in all fields');
+        setLoading(false);
         return;
       }
 
+      // Client-side email validation - MUST be valid email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Please enter a valid email address (e.g., yourname@example.com)');
+        setLoading(false);
+        return;
+      }
+
+      // Call login function - it handles errors internally and returns { success, message }
       const result = await login(email, password);
 
-      if (result.success) {
+      // Always reset loading state
+      setLoading(false);
+
+      if (result && result.success) {
         onClose();
       } else {
-        if (isMountedRef.current) {
-          setError(result.message || 'Login failed. Please check your credentials and try again.');
-        }
+        // Show the error message from backend
+        const errorMsg = result?.message || 'Login failed. Please check your credentials and try again.';
+        setError(errorMsg);
+        console.error('Login failed:', errorMsg);
       }
     } catch (err) {
-      if (isMountedRef.current) {
-        setError(err.message || 'An unexpected error occurred. Please try again.');
+      console.error('Login error:', err);
+      // Always reset loading state on error
+      setLoading(false);
+      
+      // Extract error message from various possible locations
+      let errorMsg = 
+        err?.response?.data?.message ||
+        err?.response?.data?.userMessage ||
+        err?.message ||
+        'An unexpected error occurred. Please try again.';
+      
+      // Check for network/timeout errors
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout')) {
+        errorMsg = 'Request timed out. Please check if the backend server is running and try again.';
+      } else if (err?.message?.includes('Network Error') || err?.code === 'ERR_NETWORK') {
+        errorMsg = 'Network error. Please check your internet connection and ensure the backend server is running.';
       }
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
+      
+      setError(errorMsg);
     }
   };
 
@@ -168,7 +191,18 @@ const Login = ({ onClose, onSwitchToSignup }) => {
 
   return (
     <div className="tiktok-signup-container">
-      <button className="close-btn-tiktok" onClick={onClose} aria-label="Close login dialog">
+      <button 
+        className="close-btn-tiktok" 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (onClose && typeof onClose === 'function') {
+            onClose();
+          }
+        }} 
+        aria-label="Close login dialog"
+        type="button"
+      >
         ×
       </button>
 
@@ -280,18 +314,8 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             <i className="fa-brands fa-facebook" aria-hidden="true" />
             {socialLoading ? 'Connecting…' : 'Continue with Facebook'}
           </button>
-          <button type="button" className="social-btn apple-btn" disabled>
-            <i className="fa-brands fa-apple" aria-hidden="true" />
-            Coming soon: Sign in with Apple
-          </button>
         </div>
 
-        <p className="signup-footer">
-          Don't have an account?{' '}
-          <span className="link-text" onClick={onSwitchToSignup}>
-            Sign up
-          </span>
-        </p>
       </div>
 
       {showForgotPassword && <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />}

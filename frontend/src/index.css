@@ -48,6 +48,11 @@ input[type="submit"],
 
 @media (min-width: 769px) and (max-width: 1024px) {
   /* Tablet */
+  /* Black background for video feed on tablet */
+  body:has(.for-you-feed),
+  html:has(.for-you-feed) {
+    background: #000 !important; /* Black background when feed is active */
+  }
 }
 
 @media (min-width: 1025px) {

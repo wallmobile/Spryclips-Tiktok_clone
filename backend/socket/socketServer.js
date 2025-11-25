@@ -1,6 +1,7 @@
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { initializeLiveStreamHandlers } = require('../websocket/liveStreamHandler');
 
 let io;
 
@@ -61,12 +62,12 @@ const initializeSocket = (server) => {
       socket.join(`conversation:${conversationId}`);
     });
 
-    // Handle live stream join
+    // Handle live stream join (legacy - kept for backward compatibility)
     socket.on('join:livestream', (streamId) => {
       socket.join(`livestream:${streamId}`);
     });
 
-    // Handle live chat message
+    // Handle live chat message (legacy - kept for backward compatibility)
     socket.on('livestream:message', (data) => {
       io.to(`livestream:${data.streamId}`).emit('livestream:message', {
         ...data,
@@ -79,6 +80,9 @@ const initializeSocket = (server) => {
       console.log(`User disconnected: ${socket.userId}`);
     });
   });
+
+  // Initialize WebRTC-based live streaming handlers
+  initializeLiveStreamHandlers(io);
 
   return io;
 };

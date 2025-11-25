@@ -3,6 +3,11 @@ import api from '../config/axios';
 // Get comments for a video
 export const getComments = async (videoId) => {
   try {
+    // Skip API call for sample videos (IDs starting with "sample-")
+    if (videoId && typeof videoId === 'string' && videoId.startsWith('sample-')) {
+      return { comments: [] };
+    }
+    
     const response = await api.get(`/api/comments/video/${videoId}`);
     // Backend returns { comments: [...] }, ensure we return the same format
     if (response.data && response.data.comments) {
@@ -14,6 +19,14 @@ export const getComments = async (videoId) => {
     }
     return response.data || { comments: [] };
   } catch (error) {
+    // Don't show error for sample videos or 400 errors (invalid ID)
+    if (videoId && typeof videoId === 'string' && videoId.startsWith('sample-')) {
+      return { comments: [] };
+    }
+    if (error?.response?.status === 400) {
+      // Invalid video ID - return empty comments silently
+      return { comments: [] };
+    }
     console.error('Error fetching comments:', error);
     return { comments: [] };
   }
@@ -22,6 +35,11 @@ export const getComments = async (videoId) => {
 // Add comment
 export const addComment = async (videoId, text, parentId = null) => {
   try {
+    // Don't allow commenting on sample videos
+    if (videoId && typeof videoId === 'string' && videoId.startsWith('sample-')) {
+      throw new Error('Comments are not available for this video. Please sign in to comment on uploaded videos.');
+    }
+    
     const response = await api.post(`/api/comments/video/${videoId}`, { text, parentId });
     // Backend returns { comment: {...} }
     return response.data || {};

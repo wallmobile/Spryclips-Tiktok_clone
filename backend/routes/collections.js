@@ -30,8 +30,7 @@ const ensureAbsoluteUrl = (url) => {
     return trimmed;
   }
   // Make relative URL absolute
-  const baseUrl = "https://spryclips.com/";
-  //process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
   const normalizedBase = baseUrl.replace(/\/+$/, '');
   const normalizedPath = trimmed.replace(/^\/+/, '');
   return `${normalizedBase}/${normalizedPath}`;
@@ -59,17 +58,17 @@ const populateWatchLaterEntries = async (userDoc) => {
       if (video?.user) {
         video.user = toPlainObject(video.user);
       }
-
+      
       // Ensure absolute URLs for video and thumbnail
       const rawVideoUrl = video?.transcoded?.playbackUrl || video?.processedUrl || video?.url || '';
       const rawThumbnail = video?.thumbnail || '';
-
+      
       if (video) {
         video.url = ensureAbsoluteUrl(rawVideoUrl);
         video.videoUrl = video.url; // Also set videoUrl for compatibility
         video.thumbnail = ensureAbsoluteUrl(rawThumbnail);
       }
-
+      
       return {
         video,
         addedAt: entry?.addedAt || entry?.createdAt || new Date().toISOString()
@@ -98,7 +97,7 @@ router.post('/playlists', authMiddleware, async (req, res) => {
       isPublic: isPublic !== false
     });
     await playlist.save();
-
+    
     await User.findByIdAndUpdate(req.user._id, {
       $push: { playlists: playlist._id }
     });
@@ -127,11 +126,11 @@ router.get('/playlists/:id', async (req, res) => {
     const playlist = await Playlist.findById(req.params.id)
       .populate('user', 'username profile')
       .populate('videos.video');
-
+    
     if (!playlist || (!playlist.isPublic && playlist.user._id.toString() !== req.user?._id?.toString())) {
       return res.status(404).json({ message: 'Playlist not found' });
     }
-
+    
     res.json(playlist);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -143,22 +142,22 @@ router.post('/playlists/:id/videos', authMiddleware, async (req, res) => {
   try {
     const { videoId } = req.body;
     const playlist = await Playlist.findById(req.params.id);
-
+    
     if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
       return res.status(404).json({ message: 'Playlist not found or unauthorized' });
     }
-
+    
     const existingIndex = playlist.videos.findIndex(v => v.video.toString() === videoId);
     if (existingIndex >= 0) {
       return res.status(400).json({ message: 'Video already in playlist' });
     }
-
+    
     playlist.videos.push({
       video: videoId,
       order: playlist.videos.length
     });
     await playlist.save();
-
+    
     res.json(playlist);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -169,14 +168,14 @@ router.post('/playlists/:id/videos', authMiddleware, async (req, res) => {
 router.delete('/playlists/:id/videos/:videoId', authMiddleware, async (req, res) => {
   try {
     const playlist = await Playlist.findById(req.params.id);
-
+    
     if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
       return res.status(404).json({ message: 'Playlist not found or unauthorized' });
     }
-
+    
     playlist.videos = playlist.videos.filter(v => v.video.toString() !== req.params.videoId);
     await playlist.save();
-
+    
     res.json(playlist);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -196,7 +195,7 @@ router.post('/series', authMiddleware, async (req, res) => {
       status: status || 'ongoing'
     });
     await series.save();
-
+    
     await User.findByIdAndUpdate(req.user._id, {
       $push: { videoSeries: series._id }
     });
@@ -224,11 +223,11 @@ router.post('/series/:id/episodes', authMiddleware, async (req, res) => {
   try {
     const { videoId, episodeNumber, title } = req.body;
     const series = await VideoSeries.findById(req.params.id);
-
+    
     if (!series || series.user.toString() !== req.user._id.toString()) {
       return res.status(404).json({ message: 'Series not found or unauthorized' });
     }
-
+    
     series.videos.push({
       video: videoId,
       episodeNumber,
@@ -236,7 +235,7 @@ router.post('/series/:id/episodes', authMiddleware, async (req, res) => {
     });
     series.totalEpisodes = series.videos.length;
     await series.save();
-
+    
     res.json(series);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -256,7 +255,7 @@ router.post('/collections', authMiddleware, async (req, res) => {
       isPublic: isPublic || false
     });
     await collection.save();
-
+    
     await User.findByIdAndUpdate(req.user._id, {
       $push: { collections: collection._id }
     });
@@ -284,22 +283,22 @@ router.post('/collections/:id/videos', authMiddleware, async (req, res) => {
   try {
     const { videoId, note } = req.body;
     const collection = await Collection.findById(req.params.id);
-
+    
     if (!collection || collection.user.toString() !== req.user._id.toString()) {
       return res.status(404).json({ message: 'Collection not found or unauthorized' });
     }
-
+    
     const existingIndex = collection.videos.findIndex(v => v.video.toString() === videoId);
     if (existingIndex >= 0) {
       return res.status(400).json({ message: 'Video already in collection' });
     }
-
+    
     collection.videos.push({
       video: videoId,
       note: note || ''
     });
     await collection.save();
-
+    
     res.json(collection);
   } catch (error) {
     res.status(500).json({ message: error.message });

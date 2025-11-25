@@ -424,3 +424,126 @@
     justify-content: center;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .video-collections-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .video-collections-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .collections-header {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .collections-close {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .collections-close:hover {
+  background: #334155 !important;
+}
+
+body.dark-mode .collections-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .collections-tabs {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .collection-tab {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .collection-tab:hover {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .collection-tab.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .collections-tabs::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .collections-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .collections-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .create-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .create-input:focus {
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .create-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .cancel-create-btn {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .cancel-create-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .empty-collections {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .empty-collections p {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-collections span {
+  color: #64748B !important;
+}
+
+body.dark-mode .collection-item {
+  background: #334155 !important;
+}
+
+body.dark-mode .collection-item:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .collection-thumbnail {
+  background: #1E293B !important;
+}
+
+body.dark-mode .collection-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .collection-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .remove-btn {
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .remove-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #EF4444 !important;
+  color: #EF4444 !important;
+}

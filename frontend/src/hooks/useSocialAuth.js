@@ -126,49 +126,29 @@ const useSocialAuth = ({ onSuccess, onError } = {}) => {
       return Promise.resolve();
     }
 
-    if (!googleTokenClientRef.current) {
-      // Try to initialize if not ready
-      if (window.google?.accounts?.oauth2) {
-        try {
-          googleTokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-            client_id: googleClientId,
-            scope: 'openid email profile',
-            callback: () => {},
-            error_callback: (err) => {
-              if (onError) {
-                onError(err?.type === 'popup_closed_by_user' ? 'Google sign-in cancelled.' : 'Google sign-in failed.');
-              }
-            }
-          });
-        } catch (err) {
-          onError?.('Failed to initialize Google login. Please refresh the page.');
-          return Promise.resolve();
-        }
-      } else {
-        onError?.('Google services are loading. Please wait a moment and try again.');
-        return Promise.resolve();
-      }
-    }
-
-    return new Promise((resolve) => {
-      googleTokenClientRef.current.callback = async (response) => {
-        if (!response?.access_token) {
-          onError?.('Google sign-in was cancelled.');
-          resolve();
-          return;
-        }
-        const result = await socialLogin('google', { accessToken: response.access_token });
-        if (result.success) {
-          onSuccess?.('google');
-        } else {
-          onError?.(result.message);
-        }
-        resolve();
-      };
-
-      googleTokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
-    });
-  }, [googleClientId, onError, onSuccess, socialLogin]);
+    // Use redirect flow to open Google login page directly
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    const scope = 'openid email profile';
+    const responseType = 'token';
+    const state = Math.random().toString(36).substring(7); // Random state for security
+    
+    // Store state in sessionStorage for verification
+    sessionStorage.setItem('google_oauth_state', state);
+    
+    // Build Google OAuth URL
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${encodeURIComponent(googleClientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=${responseType}` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&state=${encodeURIComponent(state)}` +
+      `&prompt=select_account`;
+    
+    // Open Google login page in same window
+    window.location.href = googleAuthUrl;
+    
+    return Promise.resolve();
+  }, [googleClientId, onError]);
 
   const startFacebookLogin = useCallback(() => {
     if (!facebookAppId) {

@@ -78,6 +78,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -449,7 +452,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const descriptionParts = description ? parseDescription(description) : [];
   const maxDescriptionLength = 100;
   const shouldShowMore = description && description.length > maxDescriptionLength;
-  const displayDescription = showFullDescription || !shouldShowMore ? description : description.substring(0, maxDescriptionLength) + '...';
+  // Ensure description is properly sanitized and displayed
+  const sanitizedDescription = description ? String(description).trim() : '';
+  const displayDescription = showFullDescription || !shouldShowMore ? sanitizedDescription : sanitizedDescription.substring(0, maxDescriptionLength) + '...';
 
   // Handle hashtag click
   const handleHashtagClick = (hashtag: string) => {
@@ -472,6 +477,32 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const handleMusicClick = () => {
     if (video?.soundId || video?.musicId) {
       window.location.href = `/music/${video.soundId || video.musicId}`;
+    }
+  };
+
+  // Handle translation
+  const handleTranslation = async () => {
+    if (showTranslation) {
+      setShowTranslation(false);
+      return;
+    }
+
+    if (translatedText) {
+      setShowTranslation(true);
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      // TODO: Integrate with translation API (Google Translate, etc.)
+      // For now, just show a placeholder
+      const translated = description ? `[Translated] ${description}` : '';
+      setTranslatedText(translated);
+      setShowTranslation(true);
+    } catch (error) {
+      console.error('Translation error:', error);
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -525,6 +556,22 @@ const VideoCard: React.FC<VideoCardProps> = ({
             <span>{videoError}</span>
           </div>
         )}
+
+        {/* Video Effects Link */}
+        {(video as any)?.effect?.name && (
+          <div 
+            className="video-card-effect-link"
+            onClick={() => {
+              const effectId = (video as any)?.effect?.id || (video as any)?.effectId;
+              if (effectId) {
+                window.location.href = `/effect/${effectId}`;
+              }
+            }}
+          >
+            <i className="fa-solid fa-wand-magic-sparkles"></i>
+            <span>{(video as any).effect.name}</span>
+          </div>
+        )}
         
         {/* Video Progress Bar */}
         <div className="video-progress-container">
@@ -557,12 +604,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
         <ActionBar
           videoId={id}
           profileImg={profileImg}
+          username={username}
+          userId={(video?.user as any)?._id || (video?.user as any)?.id}
           likes={likesCount}
           comments={commentsCount}
           shares={sharesCount}
           saves={savesCount}
           isLiked={isLiked}
           isBookmarked={false}
+          isFollowing={isFollowing}
           allowDuet={true}
           allowStitch={true}
           video={video}
@@ -578,95 +628,97 @@ const VideoCard: React.FC<VideoCardProps> = ({
           currentReaction={currentReaction}
         />
 
-        {/* Video Info & Follow Button at Bottom */}
-        <div className="video-card-info">
-          <div className="video-card-channel">
-            <img 
-              src={profileImg || `https://ui-avatars.com/api/?name=${username || 'User'}&background=E50914&color=fff`}
-              alt="Channel"
-              className="video-card-avatar"
-              onClick={handleUsernameClick}
-              style={{ cursor: 'pointer' }}
-            />
-            <div className="video-card-channel-text">
-              <span 
-                className="video-card-channel-name"
-                onClick={handleUsernameClick}
-                style={{ cursor: 'pointer' }}
-              >
-                {username || '@username'}
-              </span>
-              {song && (
-                <span 
-                  className="video-card-song"
-                  onClick={handleMusicClick}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {song}
-                </span>
-              )}
-            </div>
-          </div>
-          <button 
-            className={`video-card-follow-btn ${isFollowing ? 'following' : ''}`}
-            onClick={() => onFollow && onFollow(id)}
-          >
-            {isFollowing ? 'Following' : 'Follow'}
-          </button>
-        </div>
-        
         {/* Description with clickable hashtags and mentions */}
         {description && (
-          <div className="video-card-description">
-            {descriptionParts.length > 0 ? (
-              <>
-                {descriptionParts.map((part, index) => {
-                  if (part.type === 'hashtag') {
-                    return (
-                      <span
+          <>
+            <div className={`video-card-description ${showFullDescription ? 'expanded' : ''}`}>
+              {showTranslation && translatedText ? (
+                <span>{translatedText}</span>
+              ) : descriptionParts.length > 0 ? (
+                <>
+                  {descriptionParts.map((part, index) => {
+                    if (part.type === 'hashtag') {
+                      return (
+                        <span
+                          key={index}
+                          className="video-card-hashtag"
+                          onClick={() => handleHashtagClick(part.content)}
+                        >
+                          #{part.content}
+                        </span>
+                      );
+                    } else if (part.type === 'mention') {
+                      return (
+                        <span
+                          key={index}
+                          className="video-card-mention"
+                          onClick={() => handleMentionClick(part.content)}
+                        >
+                          @{part.content}
+                        </span>
+                      );
+                    } else {
+                      return <span 
                         key={index}
-                        className="video-card-hashtag"
-                        onClick={() => handleHashtagClick(part.content)}
-                      >
-                        #{part.content}
-                      </span>
-                    );
-                  } else if (part.type === 'mention') {
-                    return (
-                      <span
-                        key={index}
-                        className="video-card-mention"
-                        onClick={() => handleMentionClick(part.content)}
-                      >
-                        @{part.content}
-                      </span>
-                    );
-                  } else {
-                    return <span key={index}>{part.content}</span>;
-                  }
-                })}
-                {shouldShowMore && (
-                  <button
-                    className="video-card-description-more"
-                    onClick={() => setShowFullDescription(!showFullDescription)}
-                  >
-                    {showFullDescription ? 'less' : 'more'}
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                {displayDescription}
-                {shouldShowMore && (
-                  <button
-                    className="video-card-description-more"
-                    onClick={() => setShowFullDescription(!showFullDescription)}
-                  >
-                    {showFullDescription ? 'less' : 'more'}
-                  </button>
-                )}
-              </>
-            )}
+                        style={{ 
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word'
+                        }}
+                      >{part.content}</span>;
+                    }
+                  })}
+                  {shouldShowMore && (
+                    <button
+                      className="video-card-description-more"
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                    >
+                      {showFullDescription ? 'less' : 'more'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span style={{ 
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    display: 'inline-block',
+                    width: '100%'
+                  }}>{displayDescription}</span>
+                  {shouldShowMore && (
+                    <button
+                      className="video-card-description-more"
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                    >
+                      {showFullDescription ? 'less' : 'more'}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Translation Button */}
+            <button 
+              className="video-card-translation-btn"
+              onClick={handleTranslation}
+              disabled={isTranslating}
+            >
+              {isTranslating ? 'Translating...' : showTranslation ? 'See original' : 'See translation'}
+            </button>
+          </>
+        )}
+
+        {/* Music/Sound Link */}
+        {(video?.soundId || video?.musicId || song) && (
+          <div 
+            className="video-card-music-link"
+            onClick={handleMusicClick}
+          >
+            <i className="fa-solid fa-music"></i>
+            <span>
+              {song || (video as any)?.music?.name || (video as any)?.sound?.name || 'original sound'}
+              {(video as any)?.music?.artist && ` - ${(video as any).music.artist}`}
+              {(video as any)?.sound?.artist && ` - ${(video as any).sound.artist}`}
+            </span>
           </div>
         )}
       </div>

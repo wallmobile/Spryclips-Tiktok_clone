@@ -38,6 +38,24 @@
   overflow: hidden;
 }
 
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .video-feed {
+  background: #0F172A !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .video-feed::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
 
 
 

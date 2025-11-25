@@ -9,6 +9,14 @@ const SECTION_LABELS = {
   suggestions: 'Suggestions'
 };
 
+const BUSINESS_SECTION_LABELS = {
+  'business-suite': 'Business Suite',
+  'ad-manager': 'Ad Manager',
+  'promo-codes': 'Promotional Codes',
+  'partnerships': 'Brand Partnerships',
+  'analytics': 'Business Analytics'
+};
+
 const GrowthToolsHub = ({ onClose = () => {} }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +25,11 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
   const [growthData, setGrowthData] = useState(null);
 
   const activeSection = searchParams.get('section') || 'analytics';
+  const isBusinessSection = activeSection.startsWith('business-') || 
+                             activeSection === 'ad-manager' || 
+                             activeSection === 'promo-codes' || 
+                             activeSection === 'partnerships' ||
+                             (activeSection === 'analytics' && searchParams.get('type') === 'business');
 
   useEffect(() => {
     window.dispatchEvent(new Event('sidebar:close'));
@@ -93,7 +106,117 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
     setSearchParams({ section });
   };
 
+  const renderBusinessSection = () => {
+    if (activeSection === 'business-suite') {
+      return (
+        <div className="more-page__grid more-page__grid--two">
+          <div className="more-page__card">
+            <h2>Business Dashboard</h2>
+            <p>Complete overview of your business performance, content management, and audience insights.</p>
+            <p className="more-page__stat-label">Manage all aspects of your business in one place</p>
+          </div>
+          <div className="more-page__card">
+            <h2>Content Management</h2>
+            <p>Schedule posts, manage drafts, and track content performance across all your videos.</p>
+            <p className="more-page__stat-label">Optimize your content strategy</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === 'ad-manager') {
+      return (
+        <div className="more-page__grid more-page__grid--two">
+          <div className="more-page__card">
+            <h2>Create Campaign</h2>
+            <p>Set up targeted advertising campaigns to reach your ideal audience and boost engagement.</p>
+            <p className="more-page__stat-label">Start a new campaign</p>
+          </div>
+          <div className="more-page__card">
+            <h2>Campaign Performance</h2>
+            <p>Track impressions, clicks, conversions, and ROI for all your active campaigns.</p>
+            <p className="more-page__stat-label">Monitor and optimize performance</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === 'promo-codes') {
+      return (
+        <div className="more-page__list">
+          <div className="more-page__list-item">
+            <h3>Create Promotional Code</h3>
+            <p>Generate discount codes for your products or services. Track usage and redemption rates.</p>
+            <button
+              type="button"
+              className="more-page__button more-page__button--primary"
+              onClick={() => navigate('/more/shop')}
+            >
+              <i className="fa-solid fa-plus"></i>
+              Create Code
+            </button>
+          </div>
+          <div className="more-page__list-item">
+            <h3>Active Codes</h3>
+            <p>Manage existing promotional codes, view analytics, and deactivate codes when needed.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === 'partnerships') {
+      return (
+        <div className="more-page__list">
+          <div className="more-page__list-item">
+            <h3>Brand Collaborations</h3>
+            <p>Connect with brands, manage partnership proposals, and track collaboration performance.</p>
+            <button
+              type="button"
+              className="more-page__button more-page__button--primary"
+              onClick={() => navigate('/more')}
+            >
+              <i className="fa-solid fa-handshake"></i>
+              Explore Partnerships
+            </button>
+          </div>
+          <div className="more-page__list-item">
+            <h3>Active Partnerships</h3>
+            <p>View and manage your current brand partnerships and collaborations.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === 'analytics' && isBusinessSection) {
+      return (
+        <div className="more-page__grid more-page__grid--three">
+          <div className="more-page__card">
+            <h2>Business Reach</h2>
+            <p>Track total reach, impressions, and audience growth for your business account.</p>
+            <p className="more-page__stat-label">Monitor business metrics</p>
+          </div>
+          <div className="more-page__card">
+            <h2>Conversion Tracking</h2>
+            <p>Measure conversions, click-through rates, and ROI from your business content.</p>
+            <p className="more-page__stat-label">Optimize conversion rates</p>
+          </div>
+          <div className="more-page__card">
+            <h2>Audience Demographics</h2>
+            <p>Understand your business audience demographics and preferences.</p>
+            <p className="more-page__stat-label">Target the right audience</p>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderSection = () => {
+    if (isBusinessSection) {
+      return renderBusinessSection();
+    }
+
     if (loading) {
       return (
         <div className="more-page__empty" role="status">
@@ -168,10 +291,10 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
       <div className="more-page__container">
         <header className="more-page__header">
           <h1>
-            <i className="fa-solid fa-chart-simple"></i>
-            Growth Tools
+            <i className={isBusinessSection ? 'fa-solid fa-briefcase' : 'fa-solid fa-chart-simple'}></i>
+            {isBusinessSection ? BUSINESS_SECTION_LABELS[activeSection] || 'Business Tools' : 'Growth Tools'}
           </h1>
-          <button className="more-page__close" type="button" onClick={handleClose} aria-label="Close Growth Tools">
+          <button className="more-page__close" type="button" onClick={handleClose} aria-label="Close">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </header>
@@ -179,32 +302,34 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
         <div className="more-page__toolbar">
           <div className="more-page__toolbar-info">
             <span className="more-page__badge">
-              <i className="fa-solid fa-rocket"></i>
-              Grow and retain your audience
+              <i className={isBusinessSection ? 'fa-solid fa-briefcase' : 'fa-solid fa-rocket'}></i>
+              {isBusinessSection ? 'Manage your business' : 'Grow and retain your audience'}
             </span>
-            {loading ? (
+            {!isBusinessSection && (loading ? (
               <span className="more-page__toolbar-sync more-page__toolbar-sync--live">
                 <i className="fa-solid fa-spinner fa-spin"></i>
                 Fetching insights…
               </span>
             ) : (
               <span className="more-page__toolbar-sync">Updated in the last 24 hours</span>
-            )}
+            ))}
           </div>
-          <div className="more-page__toolbar-actions">
-            <div className="more-page__tabs">
-              {Object.entries(SECTION_LABELS).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`more-page__tab ${activeSection === key ? 'more-page__tab--active' : ''}`}
-                  onClick={() => setSection(key)}
-                >
-                  {label}
-                </button>
-              ))}
+          {!isBusinessSection && (
+            <div className="more-page__toolbar-actions">
+              <div className="more-page__tabs">
+                {Object.entries(SECTION_LABELS).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`more-page__tab ${activeSection === key ? 'more-page__tab--active' : ''}`}
+                    onClick={() => setSection(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {errorMessage && (

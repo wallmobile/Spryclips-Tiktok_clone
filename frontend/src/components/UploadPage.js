@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { uploadVideo, promoteVideo } from '../api/videos';
 import { saveDraft, scheduleVideo } from '../api/drafts';
+import { searchSounds } from '../api/music';
+import { searchMusic } from '../api/search';
 import faceDetection from '../utils/faceDetection';
 import './UploadPage.css';
 
@@ -17,6 +19,7 @@ const UploadPage = ({ onClose }) => {
   const voiceoverInputRef = useRef(null);
   const autoCropIntervalRef = useRef(null);
   const previousFaceBoxRef = useRef(null);
+  const feedbackRef = useRef(null);
   
   const [uploadedVideo, setUploadedVideo] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
@@ -512,6 +515,17 @@ const UploadPage = ({ onClose }) => {
 
       // Progress already set to 100% when response received
       
+      // Scroll to success message on mobile/tablet
+      setTimeout(() => {
+        if (feedbackRef.current) {
+          feedbackRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+      
       // Dispatch event to refresh feed immediately
       try {
         window.dispatchEvent(new CustomEvent('videoUploaded', {
@@ -535,6 +549,17 @@ const UploadPage = ({ onClose }) => {
       console.error('Upload error:', error);
       const errorMessage = extractUploadError(error);
       setUploadError(errorMessage);
+      
+      // Scroll to error message on mobile/tablet
+      setTimeout(() => {
+        if (feedbackRef.current) {
+          feedbackRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
       
       // Show error toast if available
       if (typeof window.showToast === 'function') {
@@ -699,7 +724,7 @@ const UploadPage = ({ onClose }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Online Music Search Function
+  // Online Music Search Function - Using Backend API
   const searchOnlineMusic = async (query) => {
     if (!query || query.length < 2) {
       setOnlineMusicResults([]);
@@ -708,39 +733,60 @@ const UploadPage = ({ onClose }) => {
 
     setSearchingMusic(true);
     try {
-      // Using YouTube Data API (free tier available)
-      // Note: You'll need to get a YouTube API key
-      const API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY';
-      
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}+music&type=video&maxResults=20&key=${API_KEY}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch music');
+      // Use backend API to search music - Try /api/music/search first
+      let response;
+      try {
+        response = await searchSounds(query, 20, 'all');
+        
+        if (response && response.success && response.sounds && response.sounds.length > 0) {
+          const musicResults = response.sounds.map((sound, index) => ({
+            id: sound._id || sound.id,
+            name: sound.name || 'Unknown',
+            artist: sound.artist || 'Unknown Artist',
+            duration: sound.formattedDuration || sound.duration || '0:00',
+            thumbnail: sound.coverImage || sound.thumbnail || '',
+            isTrending: sound.isTrending || index < 3,
+            plays: sound.plays || 0,
+            saves: sound.saves || 0,
+            genre: sound.genre || '',
+            audioUrl: sound.audioUrl || sound.url || ''
+          }));
+          
+          setOnlineMusicResults(musicResults);
+          return;
+        }
+      } catch (musicError) {
+        console.log('Music API search failed, trying search API:', musicError);
       }
       
-      const data = await response.json();
+      // If no results or error, try /api/search/music as fallback
+      try {
+        const searchResponse = await searchMusic(query, { limit: 20 });
+        
+        if (searchResponse && searchResponse.success && searchResponse.music && searchResponse.music.length > 0) {
+          const musicResults = searchResponse.music.map((music, index) => ({
+            id: music._id || music.id,
+            name: music.name || 'Unknown',
+            artist: music.artist || 'Unknown Artist',
+            duration: music.formattedDuration || music.duration || '0:00',
+            thumbnail: music.coverImage || music.thumbnail || '',
+            isTrending: music.isTrending || index < 3,
+            plays: music.plays || 0,
+            audioUrl: music.audioUrl || music.url || ''
+          }));
+          
+          setOnlineMusicResults(musicResults);
+          return;
+        }
+      } catch (searchError) {
+        console.log('Search API also failed:', searchError);
+      }
       
-      const musicResults = data.items.map((item, index) => ({
-        id: item.id.videoId,
-        name: item.snippet.title,
-        artist: item.snippet.channelTitle,
-        duration: '3:00', // YouTube doesn't provide duration in search, you'd need another API call
-        thumbnail: item.snippet.thumbnails.default.url,
-        isTrending: index < 3,
-        youtubeUrl: `https://www.youtube.com/watch?v=${item.id.videoId}`
-      }));
-      
-      setOnlineMusicResults(musicResults);
+      // If both APIs fail or return no results
+      setOnlineMusicResults([]);
     } catch (error) {
       console.error('Error searching music:', error);
-      // Fallback to mock data
-      setOnlineMusicResults([
-        { id: '1', name: `${query} - Demo Result 1`, artist: 'Artist 1', duration: '3:30', isTrending: false },
-        { id: '2', name: `${query} - Demo Result 2`, artist: 'Artist 2', duration: '2:45', isTrending: false },
-        { id: '3', name: `${query} - Demo Result 3`, artist: 'Artist 3', duration: '4:15', isTrending: false }
-      ]);
+      setOnlineMusicResults([]);
     } finally {
       setSearchingMusic(false);
     }
@@ -1397,7 +1443,10 @@ const UploadPage = ({ onClose }) => {
               )}
 
               {(uploadError || uploadSuccess) && (
-                <div className={`upload-feedback ${uploadError ? 'error' : 'success'}`}>
+                <div 
+                  ref={feedbackRef}
+                  className={`upload-feedback ${uploadError ? 'error' : 'success'}`}
+                >
                   <i className={`fa-solid ${uploadError ? 'fa-circle-exclamation' : 'fa-circle-check'}`}></i>
                   <span>{uploadError || uploadSuccess}</span>
                 </div>

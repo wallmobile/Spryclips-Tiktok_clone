@@ -384,3 +384,92 @@
   }
 }
 
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .two-factor-overlay {
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+body.dark-mode .two-factor-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .two-factor-modal::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4) !important;
+}
+
+body.dark-mode .two-factor-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .two-factor-close {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .two-factor-close:hover {
+  background: rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .two-factor-loading,
+body.dark-mode .two-factor-error {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .two-factor-error {
+  color: #FCA5A5 !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+  background: rgba(248, 113, 113, 0.12) !important;
+}
+
+body.dark-mode .two-factor-status,
+body.dark-mode .two-factor-setup,
+body.dark-mode .two-factor-manage {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .two-factor-section-title {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .two-factor-description {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .two-factor-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .two-factor-input:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .two-factor-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .two-factor-code-pill {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .two-factor-inline-error {
+  background: rgba(248, 113, 113, 0.15) !important;
+  color: #FCA5A5 !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+body.dark-mode .two-factor-inline-success {
+  background: rgba(52, 211, 153, 0.15) !important;
+  color: #6EE7B7 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+

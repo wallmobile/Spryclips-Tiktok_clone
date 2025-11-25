@@ -19,9 +19,14 @@ const CommentsModal = ({ videoId, onClose, videoOwner, onCommentCountChange }) =
   const [showReactPicker, setShowReactPicker] = useState(null); // Track which comment/reply shows picker: { type: 'comment'|'reply', id: string, parentId?: string }
   const reactButtonRefs = useRef(new Map()); // Store refs for reaction buttons
 
+  const prevCommentCountRef = useRef(comments.length);
+  
   useEffect(() => {
-    if (typeof onCommentCountChange === 'function') {
-      onCommentCountChange(comments.length);
+    if (comments.length !== prevCommentCountRef.current) {
+      prevCommentCountRef.current = comments.length;
+      if (typeof onCommentCountChange === 'function') {
+        onCommentCountChange(comments.length);
+      }
     }
   }, [comments.length, onCommentCountChange]);
 

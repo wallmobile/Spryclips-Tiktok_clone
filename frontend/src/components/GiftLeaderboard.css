@@ -360,3 +360,76 @@
     height: 48px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .gift-leaderboard-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .gift-leaderboard-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .leaderboard-header {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .leaderboard-header h2 {
+  color: #0F172A !important;
+}
+
+body.dark-mode .leaderboard-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #0F172A !important;
+}
+
+body.dark-mode .leaderboard-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body.dark-mode .leaderboard-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .leaderboard-content::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .leaderboard-content::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .leaderboard-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+body.dark-mode .leaderboard-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .leaderboard-item:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .rank-number {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .user-name {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .gift-amount {
+  color: #FFD700 !important;
+}
+
+body.dark-mode .gift-count {
+  color: #94A3B8 !important;
+}

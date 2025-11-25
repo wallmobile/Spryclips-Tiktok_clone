@@ -41,8 +41,7 @@
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
+  /* Hover effect removed - no changes on hover */
 }
 
 .auth-header {
@@ -213,7 +212,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #F9FAFB;
+  background: #ffffff !important; /* White background like For You page */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -225,7 +224,7 @@
   padding: 40px 20px;
   min-height: 100vh;
   scrollbar-width: thin;
-  scrollbar-color: #2563EB #F9FAFB;
+  scrollbar-color: #2563EB #ffffff;
 }
 
 .tiktok-auth-overlay::-webkit-scrollbar {
@@ -233,7 +232,7 @@
 }
 
 .tiktok-auth-overlay::-webkit-scrollbar-track {
-  background: #F9FAFB;
+  background: #ffffff;
 }
 
 .tiktok-auth-overlay::-webkit-scrollbar-thumb {
@@ -280,11 +279,9 @@
 }
 
 .close-btn-tiktok:hover {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
-  border-color: transparent;
-  color: #fff;
+  /* Hover effect removed - no changes on hover */
   transform: rotate(90deg) scale(1.1);
-  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); /* Website blue shadow */
 }
 
 .back-btn-tiktok {
@@ -362,7 +359,7 @@
 }
 
 .tiktok-input::placeholder {
-  color: #656565;
+  color: #9CA3AF;
 }
 
 .password-wrapper {
@@ -508,7 +505,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ffffff !important; /* White background like For You page */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -519,7 +516,7 @@
   touch-action: pan-y;
   scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-color: rgba(255, 0, 80, 0.3) transparent;
   padding: 20px;
   /* Ensure close button stays fixed relative to viewport */
   transform: translateZ(0);
@@ -531,16 +528,16 @@
 }
 
 .tiktok-signup-container::-webkit-scrollbar-track {
-  background: #F5F7FA;
+  background: #ffffff;
 }
 
 .tiktok-signup-container::-webkit-scrollbar-thumb {
-  background: #2563EB;
+  background: #FF0050;
   border-radius: 10px;
 }
 
 .tiktok-signup-container::-webkit-scrollbar-thumb:hover {
-  background: #38BDF8;
+  background: #FE2C55;
 }
 
 .signup-left {
@@ -620,9 +617,9 @@
 
 .tiktok-input:focus {
   outline: none;
-  border-color: #FF0050;
+  border-color: #2563EB; /* Website primary blue */
   background: #FFFFFF;
-  box-shadow: 0 0 0 4px rgba(255, 0, 80, 0.1), 0 4px 12px rgba(255, 0, 80, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.1); /* Website blue shadow */
   transform: translateY(-1px);
 }
 
@@ -744,14 +741,14 @@
 
 .social-btn:hover:not(:disabled) {
   background: #F9FAFB;
-  border-color: #2563EB;
+  border-color: #FF0050;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.15);
 }
 
 .social-btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 2px 6px rgba(255, 0, 80, 0.1);
 }
 
 .social-btn:disabled {
@@ -776,12 +773,12 @@
 
 .google-btn:hover:not(:disabled) {
   background: #F8F9FA;
-  border-color: #4285F4;
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
+  border-color: #FF0050;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.2);
 }
 
 .google-btn i {
-  color: #4285F4;
+  color: #FF0050;
 }
 
 .facebook-btn {
@@ -791,23 +788,14 @@
 
 .facebook-btn:hover:not(:disabled) {
   background: #F0F8FF;
-  border-color: #1877F2;
-  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.2);
+  border-color: #FF0050;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.2);
 }
 
 .facebook-btn i {
-  color: #1877F2;
+  color: #FF0050;
 }
 
-.apple-btn {
-  border-color: #E5E7EB;
-  background: #FFFFFF;
-  opacity: 0.6;
-}
-
-.apple-btn i {
-  color: #000000;
-}
 
 .disabled-social {
   background: #F3F4F6 !important;
@@ -935,11 +923,11 @@
 }
 
 .tiktok-signup-container .close-btn-tiktok:hover {
-  background: rgba(255, 255, 255, 1) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  color: #FF0050 !important;
+  background: #FF0050 !important; /* Red/Pink */
+  border-color: #FF0050 !important;
+  color: #fff !important;
   transform: rotate(90deg) scale(1.05) !important;
-  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.3) !important;
+  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.3) !important; /* Red shadow */
 }
 
 .tiktok-signup-container .back-btn-tiktok {
@@ -997,7 +985,7 @@
     font-size: 1.5rem !important; /* 24px */
     line-height: 2.75rem !important;
     background: rgba(255, 255, 255, 0.98) !important;
-    border: 2px solid #2563EB !important;
+    border: 2px solid #FF0050 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     z-index: 10011 !important;
     touch-action: manipulation !important;
@@ -1293,6 +1281,431 @@
   .validation-message {
     font-size: 11px;
   }
+}
+
+/* ==================== DARK MODE STYLES ==================== */
+
+/* Auth Overlay Dark Mode */
+body.dark-mode .auth-overlay {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .auth-modal {
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .close-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .auth-header h2,
+body.dark-mode .auth-header p {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .form-group label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .form-group input {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-mode .form-group input:focus {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-mode .error-message {
+  background: rgba(255, 0, 0, 0.2) !important;
+  color: #ffcccc !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .auth-submit-btn {
+  background: #F9FAFB !important;
+  color: #1E293B !important;
+}
+
+body.dark-mode .auth-submit-btn:hover:not(:disabled) {
+  background: #E2E8F0 !important;
+}
+
+body.dark-mode .auth-switch p,
+body.dark-mode .auth-switch span {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .auth-divider::before,
+body.dark-mode .auth-divider::after {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-mode .auth-divider span {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body.dark-mode .oidc-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .oidc-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* TikTok Auth Styles Dark Mode */
+body.dark-mode .tiktok-auth-overlay {
+  background: #0F172A !important;
+}
+
+body.dark-mode .tiktok-auth-overlay::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .tiktok-auth-overlay::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+}
+
+body.dark-mode .tiktok-auth-overlay::-webkit-scrollbar-thumb:hover {
+  background: #64748B !important;
+}
+
+body.dark-mode .tiktok-auth-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .close-btn-tiktok {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .close-btn-tiktok:hover {
+  background: #FF0050 !important;
+  border-color: #FF0050 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .back-btn-tiktok {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .back-btn-tiktok:hover {
+  background: #2563EB !important;
+  border-color: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-auth-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-auth-header p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tiktok-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-input:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .tiktok-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .password-hint {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .error-box {
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.15) 0%, rgba(255, 59, 110, 0.15) 100%) !important;
+  border-color: #FF3B6E !important;
+  color: #FFB3C1 !important;
+}
+
+body.dark-mode .success-box {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%) !important;
+  border-color: #10B981 !important;
+  color: #6EE7B7 !important;
+}
+
+body.dark-mode .auth-subheading {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .inline-error {
+  color: #FFB3C1 !important;
+}
+
+body.dark-mode .tiktok-submit-btn {
+  background: #2563EB !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-submit-btn:hover:not(:disabled) {
+  background: #38BDF8 !important;
+}
+
+body.dark-mode .tiktok-auth-switch p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tiktok-auth-switch span,
+body.dark-mode .link-text {
+  color: #60A5FA !important;
+}
+
+body.dark-mode .tiktok-checkbox label {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tiktok-input[type="date"] {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-input[type="date"]:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+}
+
+/* TikTok Signup Container Dark Mode */
+body.dark-mode .tiktok-signup-container {
+  background: #0F172A !important;
+}
+
+body.dark-mode .tiktok-signup-container::-webkit-scrollbar-track {
+  background: #1E293B !important;
+}
+
+body.dark-mode .tiktok-signup-container::-webkit-scrollbar-thumb {
+  background: #FF0050 !important;
+}
+
+body.dark-mode .tiktok-signup-container::-webkit-scrollbar-thumb:hover {
+  background: #FE2C55 !important;
+}
+
+body.dark-mode .signup-right {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 50%, #1E293B 100%) !important;
+  border-color: rgba(255, 0, 80, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(255, 0, 80, 0.2), 0 0 0 1px rgba(255, 0, 80, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+body.dark-mode .signup-heading {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .auth-subheading {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tiktok-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-input:focus {
+  border-color: #2563EB !important;
+  background: #334155 !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .tiktok-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .tiktok-gradient-btn {
+  box-shadow: 0 4px 14px rgba(255, 0, 80, 0.4) !important;
+}
+
+body.dark-mode .divider-option {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .divider-option span:nth-child(1),
+body.dark-mode .divider-option span:nth-child(3) {
+  background: #475569 !important;
+}
+
+body.dark-mode .social-btn {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .social-btn:hover:not(:disabled) {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .google-btn:hover:not(:disabled) {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .facebook-btn:hover:not(:disabled) {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3) !important;
+}
+
+body.dark-mode .disabled-social {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #64748B !important;
+}
+
+body.dark-mode .signup-footer {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .signup-footer .link-text {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .signup-footer .link-text:hover {
+  color: #25F4EE !important;
+}
+
+body.dark-mode .verification-text {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .auth-method-toggle {
+  background: #334155 !important;
+}
+
+body.dark-mode .toggle-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .toggle-btn:hover {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .toggle-btn.active {
+  background: linear-gradient(to right, #FF0050, #25F4EE) !important;
+  color: #F9FAFB !important;
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.4) !important;
+}
+
+body.dark-mode .tiktok-signup-container .close-btn-tiktok {
+  background: rgba(30, 41, 59, 0.98) !important;
+  border-color: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-signup-container .close-btn-tiktok:hover {
+  background: #FF0050 !important;
+  border-color: #FF0050 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .tiktok-signup-container .back-btn-tiktok {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .tiktok-signup-container .back-btn-tiktok:hover {
+  background: rgba(255, 0, 80, 0.3) !important;
+  border-color: #FF0050 !important;
+  color: #FF0050 !important;
+}
+
+/* Validation Styles Dark Mode */
+body.dark-mode .tiktok-input.input-valid {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+body.dark-mode .tiktok-input.input-invalid {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+body.dark-mode .validation-message.message-valid {
+  color: #6EE7B7 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+body.dark-mode .validation-message.message-invalid {
+  color: #FCA5A5 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+body.dark-mode .password-toggle-btn {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .password-toggle-btn:hover {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .country-code-select {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .country-code-select:hover {
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .country-code-select:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .auth-forgot-password {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .auth-forgot-password:hover {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .social-provider-unavailable {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #64748B !important;
+}
+
+body.dark-mode .input-label {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .terms-hint {
+  color: #94A3B8 !important;
 }
 
 

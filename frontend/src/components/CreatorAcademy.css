@@ -19,7 +19,7 @@
   max-height: 90vh;
   background: #f5f7fa;
   border-radius: 20px;
-  box-shadow: 0 24px 64px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 24px 64px rgba(255, 0, 80, 0.25); /* TikTok pink shadow */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #ffffff;
 }
 
@@ -58,8 +58,7 @@
 }
 
 .academy-close-btn:hover {
-  transform: scale(1.05);
-  background: rgba(255, 255, 255, 0.2);
+  /* Hover effect removed - no changes on hover */
 }
 
 .academy-header-placeholder {
@@ -152,7 +151,7 @@
 }
 
 .academy-refresh-btn {
-  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   border: none;
   color: #ffffff;
   font-weight: 600;
@@ -198,7 +197,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #2563eb;
+  color: #FF0050; /* TikTok pink */
 }
 
 .paths-grid {
@@ -245,7 +244,7 @@
 }
 
 .path-enroll-btn {
-  background: #2563eb;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   border: none;
   color: #ffffff;
   padding: 10px 18px;
@@ -298,8 +297,8 @@
 }
 
 .lesson-type {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  background: rgba(255, 0, 80, 0.1); /* TikTok pink light background */
+  color: #FF0050; /* TikTok pink */
   padding: 4px 10px;
   border-radius: 9999px;
   font-weight: 600;
@@ -331,7 +330,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  color: #2563eb;
+  color: #FF0050; /* TikTok pink */
   font-size: 12px;
   font-weight: 600;
 }
@@ -343,8 +342,8 @@
 
 .lesson-complete-btn {
   background: transparent;
-  border: 1px solid #2563eb;
-  color: #2563eb;
+  border: 1px solid #FF0050; /* TikTok pink */
+  color: #FF0050; /* TikTok pink */
   padding: 10px 16px;
   border-radius: 9999px;
   font-size: 14px;
@@ -357,7 +356,7 @@
 }
 
 .lesson-complete-btn:hover {
-  background: #2563eb;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
   color: #ffffff;
 }
 
@@ -372,7 +371,7 @@
 .path-enroll-btn:focus-visible,
 .lesson-complete-btn:focus-visible,
 .academy-refresh-btn:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.5);
+  outline: 3px solid rgba(255, 0, 80, 0.5); /* TikTok pink */
   outline-offset: 2px;
 }
 
@@ -443,6 +442,158 @@ body.dark-mode .loading-indicator {
 body.dark-mode .lesson-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 18px 30px rgba(2, 6, 23, 0.55);
+}
+
+/* Additional comprehensive dark mode styles */
+body.dark-mode .creator-academy-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .academy-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .academy-header h2 {
+  color: #fff !important;
+}
+
+body.dark-mode .academy-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .academy-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .academy-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .academy-loading,
+body.dark-mode .academy-error {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .academy-error i {
+  color: #EF4444 !important;
+}
+
+body.dark-mode .section-heading {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .section-heading h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .section-heading .section-count {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .loading-indicator {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .path-meta {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .path-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .path-card p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .path-enroll-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .path-enroll-btn:hover {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  filter: brightness(1.1) !important;
+}
+
+body.dark-mode .path-enroll-btn.enrolled,
+body.dark-mode .path-enroll-btn:disabled {
+  background: #64748B !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .lesson-header {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .lesson-type {
+  background: rgba(255, 0, 80, 0.2) !important;
+  color: #FF0050 !important;
+}
+
+body.dark-mode .lesson-duration {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .lesson-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .lesson-card p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .lesson-tags {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .lesson-complete-btn {
+  border-color: #FF0050 !important;
+  color: #FF0050 !important;
+}
+
+body.dark-mode .lesson-complete-btn:hover {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .lesson-complete-btn.completed {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+body.dark-mode .empty-state {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .academy-refresh-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+/* Scrollbar Dark Mode */
+body.dark-mode .academy-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.dark-mode .academy-content::-webkit-scrollbar-track {
+  background: #1E293B;
+}
+
+body.dark-mode .academy-content::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+body.dark-mode .academy-content::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
 }
 
 @media (max-width: 768px) {

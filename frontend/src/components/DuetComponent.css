@@ -306,3 +306,89 @@
     flex-direction: column;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .duet-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .duet-modal {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .duet-header {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .duet-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .duet-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .duet-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .duet-layout-section h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .layout-option {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .layout-option:hover {
+  border-color: #2563EB !important;
+  background: #475569 !important;
+}
+
+body.dark-mode .layout-option.active {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .duet-preview-container {
+  background: #0F172A !important;
+}
+
+body.dark-mode .original-video-preview,
+body.dark-mode .recorded-video-preview,
+body.dark-mode .recording-placeholder {
+  background: #1E293B !important;
+}
+
+body.dark-mode .recording-placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .recording-placeholder i {
+  color: #64748B !important;
+}
+
+body.dark-mode .recording-placeholder p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .duet-cancel-btn {
+  background: #334155 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .duet-cancel-btn:hover {
+  background: #475569 !important;
+}
+
+body.dark-mode .duet-create-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}

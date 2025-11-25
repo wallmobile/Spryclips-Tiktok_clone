@@ -591,3 +591,109 @@
     padding: 16px;
   }
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .effects-marketplace-overlay {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.dark-mode .effects-marketplace-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .effects-marketplace-header {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .effects-close-btn {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .effects-close-btn:hover {
+  background: #334155 !important;
+}
+
+body.dark-mode .effects-header h2 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .effects-tabs {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .effects-tab {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .effects-tab:hover {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .effects-tab.active {
+  color: #FF0050 !important;
+  border-bottom-color: #FF0050 !important;
+}
+
+body.dark-mode .effects-search input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .effects-search input:focus {
+  border-color: #FF0050 !important;
+  background: #334155 !important;
+}
+
+body.dark-mode .effects-search input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .effects-categories {
+  background: #1E293B !important;
+}
+
+body.dark-mode .category-btn {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .category-btn:hover {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .category-btn.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%) !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .effects-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .effect-card {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .effect-card:hover {
+  background: #475569 !important;
+  border-color: #FF0050 !important;
+}
+
+body.dark-mode .effect-card h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .effect-card p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .effect-stats {
+  color: #94A3B8 !important;
+}

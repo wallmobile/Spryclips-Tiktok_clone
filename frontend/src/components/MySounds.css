@@ -203,3 +203,80 @@
   background: #FF4757;
   color: #fff;
 }
+
+/* ==================== DARK MODE STYLES ==================== */
+
+body.dark-mode .my-sounds-overlay {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.dark-mode .my-sounds-modal {
+  background: #1E293B !important;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .my-sounds-header {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .my-sounds-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .my-sounds-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-mode .my-sounds-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .empty-sounds {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .empty-sounds p {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .empty-sounds span {
+  color: #64748B !important;
+}
+
+body.dark-mode .sound-item {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode .sound-item:hover {
+  background: #475569 !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+}
+
+body.dark-mode .sound-item-info h3 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .sound-item-info p {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .sound-plays {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .use-sound-item-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .remove-sound-btn {
+  color: #F87171 !important;
+}
+
+body.dark-mode .remove-sound-btn:hover {
+  background: #F87171 !important;
+  color: #fff !important;
+}

@@ -4,6 +4,7 @@ import { getTrendingVideos } from '../api/recommendations';
 import { videos as sampleVideos } from '../data/sampleData';
 import useOverlayPage from '../hooks/useOverlayPage';
 import './Explore.css';
+import './Profile.css'; // Import for video modal styles
 
 const DEFAULT_FILTERS = [
   { id: 'all', label: 'All', icon: 'fa-fire', contentType: 'all' },
@@ -114,6 +115,7 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
   const [activePlayback, setActivePlayback] = useState({ duration: 0, currentTime: 0 });
   const [playerError, setPlayerError] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const videoRefs = useRef({});
 
   const resetPlayerState = useCallback(() => {
@@ -397,35 +399,8 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
     if (!video) {
       return;
     }
-    const playable = video?.playbackUrl || video?.url;
-    if (!playable) {
-      setPlayerError('We could not find a playable source for this video.');
-      return;
-    }
-    const baseDuration =
-      typeof video.rawDuration === 'number' && video.rawDuration > 0
-        ? video.rawDuration
-        : toSeconds(video.duration) ?? 0;
-    setActiveVideoId(video.id);
-    setActivePlayback({
-      duration: Number.isFinite(baseDuration) ? baseDuration : 0,
-      currentTime: 0
-    });
-    setPlayerError(null);
-    
-    // Try to play video after a short delay to ensure it's mounted
-    setTimeout(() => {
-      const videoEl = videoRefs.current[video.id];
-      if (videoEl) {
-        const playPromise = videoEl.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.warn('Video autoplay failed on click:', error);
-            // Autoplay failed, user can click play button
-          });
-        }
-      }
-    }, 100);
+    // Open video in modal instead of playing inline
+    setSelectedVideo(video);
   }, []);
 
   const content = (
@@ -667,15 +642,107 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
     </div>
   );
 
+  // Video Modal Component (same as Profile.js)
+  const renderVideoModal = () => {
+    if (!selectedVideo) return null;
+    
+    // Get the best available video URL (never use thumbnail for video playback)
+    let videoSrc = null;
+    
+    // Priority 1: Check processedVideos array
+    if (selectedVideo.processedVideos && Array.isArray(selectedVideo.processedVideos) && selectedVideo.processedVideos.length > 0) {
+      const processedVideo = selectedVideo.processedVideos.find(pv => pv.url && !pv.url.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i));
+      if (processedVideo && processedVideo.url) {
+        videoSrc = processedVideo.url;
+      }
+    }
+    
+    // Priority 2: Check url field
+    if (!videoSrc && selectedVideo.url) {
+      videoSrc = selectedVideo.url;
+    }
+    
+    // Priority 3: Check videoUrl or playbackUrl field
+    if (!videoSrc && (selectedVideo.videoUrl || selectedVideo.playbackUrl)) {
+      videoSrc = selectedVideo.videoUrl || selectedVideo.playbackUrl;
+    }
+    
+    // Ensure absolute URL and verify it's a video file
+    let finalVideoSrc = null;
+    if (videoSrc) {
+      const resolved = ensureAbsoluteUrl(videoSrc);
+      // Only use if it's not an image file
+      if (resolved && !resolved.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+        finalVideoSrc = resolved;
+      }
+    }
+    
+    return (
+      <div className="video-viewer-modal" onClick={() => setSelectedVideo(null)}>
+        <div className="video-viewer-content" onClick={(e) => e.stopPropagation()}>
+          <button className="video-viewer-close" onClick={() => setSelectedVideo(null)}>
+            <i className="fa-solid fa-times"></i>
+          </button>
+          <div className="video-viewer-container">
+            {!finalVideoSrc || finalVideoSrc.trim() === '' ? (
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%', 
+                color: '#fff',
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '48px', marginBottom: '16px', color: '#FF0050' }}></i>
+                <h3>Video Not Available</h3>
+                <p>This video cannot be loaded.</p>
+              </div>
+            ) : (
+              <video 
+                src={finalVideoSrc}
+                controls
+                autoPlay
+                playsInline
+                className="video-viewer-player"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  background: '#000000',
+                  display: 'block'
+                }}
+                onError={(e) => {
+                  console.error('Video playback error:', e.target.error);
+                  console.error('Video URL attempted:', finalVideoSrc);
+                }}
+                onLoadedData={() => {
+                  console.log('Video loaded successfully:', finalVideoSrc);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isOverlay) {
     return (
       <div className="explore-overlay" onClick={onClose} role="dialog" aria-modal="true">
         {content}
+        {renderVideoModal()}
       </div>
     );
   }
 
-  return <div className="explore-page">{content}</div>;
+  return (
+    <div className="explore-page">
+      {content}
+      {renderVideoModal()}
+    </div>
+  );
 };
 
 export default Explore;

@@ -8,6 +8,55 @@
   box-sizing: border-box;
   transition: background-color 0.3s ease;
 }
+.mobile-menu-toggle {
+  background-color: rgba(255, 0, 80, 0.9) !important; /* Red background */
+}
+
+.mobile-menu-toggle:hover {
+  background-color: rgba(255, 0, 80, 1) !important; /* Red on hover */
+}
+
+/* Force hide ALL volume/music icons on mobile/tablet */
+@media (max-width: 64rem) {
+  .video-card-mute-btn,
+  .video-card-volume-control,
+  .volume-control,
+  .volume-icon-btn,
+  button[class*="volume"],
+  button[class*="mute"],
+  [class*="volume-control"],
+  [class*="mute-btn"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+/* Remove hover effects from all close buttons across the website */
+button[class*="close"]:hover,
+button[class*="close-btn"]:hover,
+button[class*="modal-close"]:hover,
+[class*="-close-btn"]:hover,
+[class*="close-btn"]:hover,
+[class*="modal-close"]:hover,
+[class*="-close"]:hover {
+  transform: none !important;
+  background: inherit !important;
+  border-color: inherit !important;
+  box-shadow: inherit !important;
+  scale: 1 !important;
+  opacity: inherit !important;
+}
 
 .app-content {
   flex: 1;
@@ -65,8 +114,11 @@ body.dark-mode .app {
   color: #F9FAFB !important;
 }
 
-/* Tablet (48rem - 64rem = 768px - 1024px) */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+/* Tablet - ALL Devices (48rem - 64rem = 768px - 1024px)
+   iPad Mini (768x1024), iPad Air (820x1180), iPad Pro (1024x1336),
+   Surface Pro (912x1368), ASUS Zenbook Fold (853x1280)
+   Same settings as iPad Mini */
+@media (min-width: 48rem) and (max-width: 64rem) {
   .app {
     min-height: 100vh;
     width: 100%;
@@ -75,21 +127,58 @@ body.dark-mode .app {
     overflow-y: visible;
     height: auto;
     max-height: none;
+    background: #000 !important; /* Black background on tablet for video feed */
+  }
+
+  /* When ForYouFeed is active, ensure black background */
+  .app:has(.for-you-feed) {
+    background: #000 !important;
+  }
+
+  .app-content {
+    background: transparent !important; /* Transparent to show feed background */
+  }
+
+  .app-outlet {
+    background: transparent !important; /* Transparent to show feed background */
+  }
+  
+  .scroll-navigation-buttons {
+    display: none !important; /* Hide scroll buttons on tablet - same as mobile/iPad Mini */
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .scroll-nav-btn,
+  .scroll-nav-btn * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 }
 
 /* Mobile (max-width: 48rem = 768px) */
 @media (max-width: 48rem) {
-  .app {
+   .app {
     min-height: 100vh;
     width: 100vw;
-    height: 100vh;
+    height: auto;          /* 100vh se auto */
     max-width: 100vw;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;      /* <-- scroll allow */
     position: relative;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+  }
+  .scroll-navigation-buttons{
+    display:none !important;
   }
 }
 
@@ -101,7 +190,7 @@ body.dark-mode .app {
     height: 100vh;
     max-width: 100vw;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;
   }
 }
 
@@ -113,7 +202,7 @@ body.dark-mode .app {
     height: 100vh;
     max-width: 100vw;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;
   }
 }
 

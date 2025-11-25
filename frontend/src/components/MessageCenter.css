@@ -24,8 +24,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow - no red */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border - no red */
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   cursor: default;
 }
 
@@ -36,7 +36,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Blue gradient background */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .message-center-header h2 {
@@ -63,9 +63,9 @@
 
 .message-center-close-btn,
 .new-message-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: #fff; /* White on blue background */
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important; /* White on TikTok gradient background */
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -74,16 +74,18 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
 }
 
-.message-center-close-btn i {
-  color: #fff !important; /* White icon on blue background */
+.message-center-close-btn i,
+.new-message-btn i {
+  color: #ffffff !important; /* White icon on TikTok gradient background */
+  font-size: 18px !important;
 }
 
 .message-center-close-btn:hover,
 .new-message-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  /* Hover effect removed - no changes on hover */
 }
 
 /* Content */
@@ -132,7 +134,7 @@
 }
 
 .conversations-loading i {
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
 }
 
 .conversations-empty i {
@@ -171,8 +173,8 @@
 
 .message-search-input:focus {
   outline: none;
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important; /* Website blue - no red */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
 }
 
 .message-search-input::placeholder {
@@ -359,8 +361,8 @@
 
 .chat-action-btn:hover {
   background: #E0F2FE !important; /* Website light blue */
-  color: #2563EB !important; /* Website primary blue - no red */
-  border-color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
+  border-color: #FF0050 !important; /* TikTok pink */
 }
 
 /* Messages */
@@ -387,7 +389,7 @@
 .chat-loading i,
 .chat-empty i {
   font-size: 24px;
-  color: #2563EB;
+  color: #FF0050; /* TikTok pink */
 }
 
 .chat-empty i {
@@ -414,7 +416,7 @@
 }
 
 .message.sent .message-content {
-  background: #2563EB !important; /* Website primary blue - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   color: #fff;
   border-bottom-right-radius: 6px;
 }
@@ -456,8 +458,8 @@
 }
 
 .message-input-container:focus-within {
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important; /* Website blue - no red */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
 }
 
 .attachment-btn,
@@ -472,7 +474,7 @@
 
 .attachment-btn:hover,
 .emoji-btn:hover {
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 .message-input {
@@ -489,7 +491,7 @@
 }
 
 .send-btn {
-  background: #2563EB !important; /* Website primary blue - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   color: #fff;
   width: 32px;
@@ -503,7 +505,7 @@
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #38BDF8 !important; /* Website secondary blue - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: scale(1.1);
 }
 
@@ -527,7 +529,7 @@
 .no-chat-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -552,7 +554,7 @@
 
 .start-new-chat-btn {
   padding: 12px 24px;
-  background: #2563EB !important; /* Website primary blue - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   border-radius: 24px;
   color: #fff;
@@ -566,7 +568,7 @@
 }
 
 .start-new-chat-btn:hover {
-  background: #38BDF8 !important; /* Website secondary blue - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: translateY(-2px);
 }
 
@@ -587,14 +589,14 @@
 }
 
 .new-message-modal {
-  background: #F5F7FA;
+  background: #ffffff;
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border */
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
 }
 
 .new-message-header {
@@ -602,20 +604,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .new-message-header h3 {
   margin: 0;
-  color: #0F172A;
+  color: #ffffff !important; /* White text on TikTok gradient background */
   font-size: 18px;
   font-weight: 600;
 }
 
 .new-message-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: #0F172A;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important; /* White on TikTok gradient background */
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -624,10 +626,16 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.new-message-close i {
+  color: #ffffff !important; /* White icon */
+  font-size: 16px !important;
 }
 
 .new-message-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  /* Hover effect removed - no changes on hover */
 }
 
 .new-message-body {
@@ -654,8 +662,8 @@
 
 .user-search-input:focus {
   outline: none;
-  border-color: #2563EB !important; /* Website primary blue */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important; /* Website blue */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
 }
 
 .suggested-users h4 {
@@ -684,8 +692,8 @@
 }
 
 .user-item:hover {
-  border-color: #2563EB !important; /* Website primary blue */
-  background: #E0F2FE !important; /* Website light blue - no black */
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.1) !important; /* Light pink background */
 }
 
 .user-avatar {
@@ -717,7 +725,7 @@
 }
 
 .verified-icon {
-  color: #2563EB !important; /* Website primary blue */
+  color: #FF0050 !important; /* TikTok pink */
   font-size: 12px;
 }
 
@@ -727,7 +735,7 @@
 }
 
 .message-user-btn {
-  background: #2563EB !important; /* Website primary blue */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border: none;
   color: #fff;
   width: 32px;
@@ -741,7 +749,7 @@
 }
 
 .message-user-btn:hover {
-  background: #38BDF8 !important; /* Website secondary blue */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: scale(1.1);
 }
 
@@ -762,7 +770,7 @@
 .conversations-list::-webkit-scrollbar-thumb,
 .chat-messages::-webkit-scrollbar-thumb,
 .new-message-body::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 2px;
 }
 
@@ -1328,7 +1336,7 @@ body.dark-mode .emoji-btn {
 
 body.dark-mode .attachment-btn:hover,
 body.dark-mode .emoji-btn:hover {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .chat-action-btn {
@@ -1336,7 +1344,7 @@ body.dark-mode .chat-action-btn {
 }
 
 body.dark-mode .chat-action-btn:hover {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .new-message-overlay {
@@ -1368,7 +1376,7 @@ body.dark-mode .user-details {
 }
 
 body.dark-mode .verified-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .no-chat-container {
@@ -1504,7 +1512,7 @@ body.dark-mode .chat-action-btn {
 body.dark-mode .chat-action-btn:hover {
   background: rgba(37, 99, 235, 0.2) !important;
   border-color: #2563EB !important;
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .message.received .message-content {
@@ -1557,7 +1565,7 @@ body.dark-mode .emoji-btn {
 
 body.dark-mode .attachment-btn:hover,
 body.dark-mode .emoji-btn:hover {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .send-btn:disabled {
@@ -1650,7 +1658,7 @@ body.dark-mode .user-details {
 }
 
 body.dark-mode .verified-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .message-user-btn {
@@ -1679,6 +1687,121 @@ body.dark-mode .conversations-list::-webkit-scrollbar-thumb:hover,
 body.dark-mode .chat-messages::-webkit-scrollbar-thumb:hover,
 body.dark-mode .new-message-body::-webkit-scrollbar-thumb:hover {
   background: #64748B !important;
+}
+
+/* Additional comprehensive dark mode styles for better visibility */
+body.dark-mode .message-center-modal * {
+  color: inherit;
+}
+
+body.dark-mode .message-center-content {
+  background: #1E293B !important;
+}
+
+body.dark-mode .message-content p {
+  color: inherit !important;
+}
+
+body.dark-mode .chat-loading,
+body.dark-mode .chat-empty {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .chat-loading i {
+  color: #FF0050 !important;
+}
+
+body.dark-mode .chat-empty i {
+  color: #64748B !important;
+}
+
+body.dark-mode .unread-badge {
+  background: #2563EB !important;
+  color: #fff !important;
+  border-color: #2563EB !important;
+}
+
+body.dark-mode .message-center-header h2 {
+  color: #fff !important;
+}
+
+body.dark-mode .message-center-close-btn,
+body.dark-mode .new-message-btn {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .message-center-close-btn:hover,
+body.dark-mode .new-message-btn:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.dark-mode .message-center-close-btn i,
+body.dark-mode .new-message-btn i {
+  color: #fff !important;
+}
+
+body.dark-mode .message-search-input {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message-search-input:focus {
+  border-color: #FF0050 !important;
+  background: #334155 !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2) !important;
+}
+
+body.dark-mode .message-search-input::placeholder {
+  color: #64748B !important;
+}
+
+body.dark-mode .search-icon {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .conversation-header h4 {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .conversation-preview p {
+  color: #CBD5E1 !important;
+}
+
+body.dark-mode .message-input-form {
+  background: #334155 !important;
+  border-top-color: #475569 !important;
+}
+
+body.dark-mode .message-input-container {
+  background: #475569 !important;
+  border-color: #64748B !important;
+}
+
+body.dark-mode .message-input {
+  color: #F9FAFB !important;
+}
+
+body.dark-mode .message-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .send-btn {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  transform: scale(1.05) !important;
+}
+
+body.dark-mode .account-settings-overlay.message-center-open .message-center-modal,
+body.dark-mode .account-settings-modal.message-center-open .message-center-modal {
+  background: #1E293B !important;
 }
 
 /* Full Screen Message Center when opened from Account Settings */
@@ -1769,9 +1892,11 @@ body.dark-mode .new-message-body::-webkit-scrollbar-thumb:hover {
 }
 
 /* Tablet: Also full page */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
   .account-settings-overlay.message-center-open .message-center-overlay,
-  .account-settings-modal.message-center-open .message-center-overlay {
+  .account-settings-modal.message-center-open .message-center-overlay,
+  body:has(.account-settings-overlay) .message-center-overlay {
     align-items: stretch !important;
     justify-content: stretch !important;
     background: rgba(0, 0, 0, 0.5) !important;
@@ -1786,7 +1911,8 @@ body.dark-mode .new-message-body::-webkit-scrollbar-thumb:hover {
   }
 
   .account-settings-overlay.message-center-open .message-center-modal,
-  .account-settings-modal.message-center-open .message-center-modal {
+  .account-settings-modal.message-center-open .message-center-modal,
+  body:has(.account-settings-overlay) .message-center-modal {
     width: 100vw !important;
     max-width: 100vw !important;
     height: 100vh !important;
@@ -1802,13 +1928,16 @@ body.dark-mode .new-message-body::-webkit-scrollbar-thumb:hover {
   }
 
   .account-settings-overlay.message-center-open .message-center-header,
-  .account-settings-modal.message-center-open .message-center-header {
+  .account-settings-modal.message-center-open .message-center-header,
+  body:has(.account-settings-overlay) .message-center-header {
     padding: 1.25rem 1.5rem !important;
     flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
   }
 
   .account-settings-overlay.message-center-open .message-center-content,
-  .account-settings-modal.message-center-open .message-center-content {
+  .account-settings-modal.message-center-open .message-center-content,
+  body:has(.account-settings-overlay) .message-center-content {
     flex: 1 !important;
     overflow: hidden !important;
     display: flex !important;

@@ -12,7 +12,7 @@ router.get('/videos', authMiddleware, async (req, res) => {
 
     // Get user's preferences
     const user = await User.findById(userId);
-
+    
     // Get videos user has liked
     const likedVideos = await Video.find({
       _id: { $in: user.likedVideos || [] }
@@ -69,7 +69,7 @@ router.get('/videos', authMiddleware, async (req, res) => {
       }
 
       // Boost if has preferred hashtags
-      const matchingHashtags = video.hashtags?.filter(tag =>
+      const matchingHashtags = video.hashtags?.filter(tag => 
         preferredHashtags.includes(tag)
       ).length || 0;
       score += matchingHashtags * 10;
@@ -135,7 +135,7 @@ router.get('/for-you', authMiddleware, async (req, res) => {
     // Get trending videos (high engagement)
     const trendingVideos = await Video.find(query)
       .populate('user', 'username profile.avatar profile.displayName profile.followers')
-      .sort({
+      .sort({ 
         views: -1,
         likes: -1,
         createdAt: -1
@@ -148,7 +148,7 @@ router.get('/for-you', authMiddleware, async (req, res) => {
     const videosWithScores = trendingVideos.map(video => {
       const engagement = (video.likes || 0) + (video.comments || 0) + (video.shares || 0);
       const engagementRate = video.views > 0 ? (engagement / video.views) * 100 : 0;
-
+      
       return {
         ...video,
         engagementRate: parseFloat(engagementRate.toFixed(2))
@@ -254,7 +254,7 @@ router.get('/trending', async (req, res) => {
 
     const videos = await Video.find(baseQuery)
       .populate('user', 'username profile.avatar profile.displayName profile.followers')
-      .sort({
+      .sort({ 
         views: -1,
         likes: -1,
         shares: -1
@@ -280,8 +280,7 @@ router.get('/trending', async (req, res) => {
         return trimmed;
       }
       // Make relative URL absolute
-      const baseUrl = "https://spryclips.com/";
-      //process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+      const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
       const normalizedBase = baseUrl.replace(/\/+$/, '');
       const normalizedPath = trimmed.replace(/^\/+/, '');
       return `${normalizedBase}/${normalizedPath}`;

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CreatorMonetization from './CreatorMonetization';
 import CreatorAnalytics from './CreatorAnalytics';
 import CreatorAcademy from './CreatorAcademy';
@@ -7,6 +8,7 @@ import { getCreatorAnalytics, getCreatorAnalyticsSummary } from '../api/analytic
 import './CreatorTools.css';
 
 const CreatorTools = ({ onClose }) => {
+  const navigate = useNavigate();
   const [showMonetization, setShowMonetization] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
@@ -157,19 +159,23 @@ const CreatorTools = ({ onClose }) => {
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'studio':
-        alert('Opening TikTok Studio - Content management dashboard');
+        onClose();
+        navigate('/more/studio');
         break;
       case 'academy':
         setShowAcademy(true);
         break;
       case 'promote':
-        alert('Opening Promote Videos - Boost your content reach');
+        // Navigate to upload page with promote mode
+        onClose();
+        navigate('/upload?mode=promote');
         break;
       case 'insights':
         setShowAnalytics(true);
         break;
       case 'live':
-        alert('Opening Live Center - Start your live stream');
+        onClose();
+        navigate('/live');
         break;
       case 'fund':
         setShowMonetization(true);
@@ -185,16 +191,21 @@ const CreatorTools = ({ onClose }) => {
   const handleQuickAction = (action) => {
     switch (action) {
       case 'upload':
-        alert('Opening video upload interface');
+        onClose();
+        navigate('/upload');
         break;
       case 'schedule':
-        alert('Opening post scheduler');
+        // Navigate to upload page with schedule mode
+        onClose();
+        navigate('/upload?mode=schedule');
         break;
       case 'drafts':
-        alert('Opening drafts folder');
+        // Navigate to upload page with drafts view
+        onClose();
+        navigate('/upload?view=drafts');
         break;
       case 'analytics':
-        alert('Opening quick analytics view');
+        setShowAnalytics(true);
         break;
       case 'academy':
         setShowAcademy(true);

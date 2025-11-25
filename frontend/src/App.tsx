@@ -143,7 +143,7 @@ const LoadingSpinner: React.FC = () => (
       height: '100vh',
       flexDirection: 'column',
       gap: '1.5rem',
-      background: 'linear-gradient(135deg, #f8faff 0%, #e0f2fe 50%, #dbeafe 100%)'
+      background: '#ffffff'
     }}
   >
     <div
@@ -151,17 +151,15 @@ const LoadingSpinner: React.FC = () => (
       style={{
         width: '50px',
         height: '50px',
-        border: '4px solid rgba(37, 99, 235, 0.1)',
-        borderTop: '4px solid #2563EB',
-        borderRight: '4px solid #3B82F6',
+        border: '4px solid rgba(0, 0, 0, 0.1)',
+        borderTop: '4px solid #656565',
         borderRadius: '50%',
-        animation: 'spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
-        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
+        animation: 'spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite'
       }}
     ></div>
     <p
       style={{
-        color: '#2563EB',
+        color: '#656565',
         fontSize: '16px',
         fontWeight: '500',
         animation: 'pulse 2s ease-in-out infinite'
@@ -277,10 +275,15 @@ const HomeFeed: React.FC = () => {
         (video as { avatar?: string }).avatar ||
         `https://ui-avatars.com/api/?name=${username}&background=ff0050&color=fff`;
 
+      // Production: Backend already returns full URLs (https://spryclips.com/uploads/...)
+      // Development: Use relative URLs, browser will use localhost:5000
+      const videoUrl = (video.url as string) || (video.videoUrl as string) || '';
+      const thumbnailUrl = video.thumbnail;
+
       return {
         id,
-        src: (video.url as string) || (video.videoUrl as string) || '',
-        poster: video.thumbnail || undefined,
+        src: videoUrl,
+        poster: thumbnailUrl || undefined,
         profileImg: avatar,
         username,
         description: video.description || '',
@@ -376,6 +379,8 @@ const SupportCenterPage: React.FC = () => {
   return <SupportCenter onClose={() => navigate('/more')} />;
 };
 
+const GoogleAuthCallback = lazy(() => import('./components/GoogleAuthCallback'));
+
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -389,7 +394,12 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, from, navigate]);
 
   const handleClose = () => {
-    navigate(from, { replace: true });
+    // If there's a previous page in history, go back, otherwise go to home
+    if (window.history.length > 1 && from !== '/') {
+      navigate(-1);
+    } else {
+      navigate('/', { replace: true });
+    }
   };
 
   return (
@@ -517,12 +527,16 @@ const AppRoutes: React.FC = () => (
         }
       />
       <Route
-        path="more"
+        path="user/:username"
         element={
           <ProtectedRoute>
-            <MorePage />
+            <ProfilePage />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="more"
+        element={<MorePage />}
       />
       <Route
         path="more/studio"
@@ -567,6 +581,7 @@ const AppRoutes: React.FC = () => (
     </Route>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/signup" element={<SignupPage />} />
+    <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

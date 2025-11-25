@@ -36,6 +36,9 @@ const Profile = ({ onClose }) => {
   const [sortOption, setSortOption] = useState('latest'); // 'latest', 'popular', 'oldest'
   const [activeVideoId, setActiveVideoId] = useState(null);
 
+  // This is always the user's own profile, so isMyProfile is always true
+  const isMyProfile = true;
+
     const [bioText, setBioText] = useState(user?.profile?.bio || 'No bio yet');   
   const [usernameText, setUsernameText] = useState(user?.username || '');       
   const [websiteLink, setWebsiteLink] = useState(user?.profile?.website || '');
@@ -730,13 +733,57 @@ const Profile = ({ onClose }) => {
           break;
         case 'delete':
           if (window.confirm('Are you sure you want to delete this video?')) {
-            await deleteVideo(videoId);
-            const updatedVideos = videos.filter(v => v.id !== videoId);
-            setVideos(updatedVideos);
-            if (pinnedVideo?.id === videoId) {
-              setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+            try {
+              await deleteVideo(videoId);
+              const updatedVideos = videos.filter(v => v.id !== videoId);
+              setVideos(updatedVideos);
+              if (pinnedVideo?.id === videoId) {
+                setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+              }
+              // Show success toast instead of alert
+              setToastMessage('Video deleted successfully!');
+              setShowToast(true);
+              setTimeout(() => {
+                setShowToast(false);
+              }, 3000);
+              // Refresh videos list
+              setTimeout(() => {
+                fetchVideos();
+              }, 500);
+            } catch (error) {
+              console.error('Error deleting video:', error);
+              // Show user-friendly error message
+              let errorMessage = 'Failed to delete video. Please try again.';
+              
+              if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+              } else if (error?.response?.status === 404) {
+                errorMessage = 'Video not found. It may have already been deleted.';
+              } else if (error?.response?.status === 401) {
+                errorMessage = 'Please login again to delete videos.';
+              } else if (error?.response?.status === 403) {
+                errorMessage = 'You do not have permission to delete this video.';
+              } else if (error?.message) {
+                // Remove localhost URLs and technical details from error messages
+                errorMessage = error.message
+                  .replace(/http:\/\/localhost:\d+/gi, 'server')
+                  .replace(/https?:\/\/[^\s]+/gi, 'server')
+                  .replace(/Network Error/gi, 'Connection error. Please check if backend server is running.')
+                  .replace(/timeout/gi, 'Request timeout. Please try again.')
+                  .replace(/ECONNREFUSED/gi, 'Cannot connect to server. Please check if backend is running.');
+              }
+              
+              // Ensure error message doesn't contain localhost
+              if (errorMessage.toLowerCase().includes('localhost')) {
+                errorMessage = 'Connection error. Please check if backend server is running.';
+              }
+              
+              setToastMessage(errorMessage);
+              setShowToast(true);
+              setTimeout(() => {
+                setShowToast(false);
+              }, 5000);
             }
-            alert('Video deleted successfully!');
           }
           break;
         case 'promote':
@@ -914,14 +961,23 @@ const Profile = ({ onClose }) => {
           {/* TikTok-Style Profile Header */}
           <div className="profile-header-new">
           {/* Buttons inside header so they scroll with content */}
+          {/* Account Settings Button (Gear Icon) - Show on tablet/mobile, hide on desktop */}
+          {!showEditModal && !showFollowers && !showFollowing && !selectedVideo && !hasAccountSettingsSubFeature && (
+            <button 
+              className="profile-account-settings-btn" 
+              onClick={() => setShowMobileSettings(!showMobileSettings)}
+              aria-label="Account Settings"
+            >
+              <i className="fa-solid fa-gear"></i>
+            </button>
+          )}
+          
           {/* Close Button - Show only on Profile page, hide when AccountSettings sub-features are open */}
           {!showEditModal && !showFollowers && !showFollowing && !selectedVideo && !hasAccountSettingsSubFeature && (
             <button className="profile-back-btn" onClick={onClose}>
               <i className="fa-solid fa-times"></i>
             </button>
           )}
-
-          {/* Mobile Settings Button - Removed */}
           
           <div className="cover-image-header">
             <div 
@@ -1166,30 +1222,13 @@ const Profile = ({ onClose }) => {
                       className={`video-thumbnail-wrapper ${activeVideoId === video.id ? 'is-playing' : ''} ${video.status !== 'ready' ? 'is-disabled' : ''}`}
                       onClick={() => {
                         if (video.status !== 'ready') return;
-                        setActiveVideoId((prev) => (prev === video.id ? null : video.id));
+                        // Open video in full modal with all details
+                        setSelectedVideo(video);
                       }}
                     >
-                      {activeVideoId === video.id && video.status === 'ready' && (video.url || video.videoUrl) ? (
-                        <video
-                          key={video.id}
-                          src={video.url || video.videoUrl}
-                          className="uploaded-video-player"
-                          controls
-                          autoPlay
-                          playsInline
-                          preload="metadata"
-                          muted={false}
-                          onClick={(e) => e.stopPropagation()}
-                          onEnded={() => setActiveVideoId(null)}
-                          onError={(e) => {
-                            console.error('Video playback error:', e, video.url, video.videoUrl);
-                            setActiveVideoId(null);
-                            alert('Failed to load video. Please try again.');
-                          }}
-                          onLoadedData={() => {
-                            console.log('Video loaded successfully:', video.url || video.videoUrl);
-                          }}
-                        />
+                      {/* Removed inline video player - videos now open in full modal */}
+                      {false && activeVideoId === video.id ? (
+                        <video />
                       ) : (
                         <>
                           {video.hasThumbnail ? (
@@ -1206,9 +1245,6 @@ const Profile = ({ onClose }) => {
                           )}
                           {video.status === 'ready' ? (
                             <>
-                              <div className="play-overlay">
-                                <i className="fa-solid fa-play"></i>
-                              </div>
                               <div className="video-duration-badge">
                                 {video.duration}
                               </div>
@@ -1218,7 +1254,8 @@ const Profile = ({ onClose }) => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (video.status === 'ready') {
-                                    setActiveVideoId(video.id);
+                                    // Open video in full modal with all details
+                                    setSelectedVideo(video);
                                   }
                                 }}
                                 disabled={video.status !== 'ready'}
@@ -1263,21 +1300,56 @@ const Profile = ({ onClose }) => {
                     </div>
                     
                     <div className="video-card-content">
-                      <h3 className="video-card-caption">{video.caption}</h3>
+                      {/* Title + Delete Button Row - SAME HORIZONTAL LINE */}
+                      <div className="video-card-title-delete-row">
+                        {/* Title - LEFT side */}
+                        <h3 className="video-card-caption">{video.caption}</h3>
+                        
+                        {/* Delete Button - RIGHT side (same line as title) - NO ICON, JUST TEXT, SMALLER HEIGHT */}
+                        {isMyProfile && (
+                          <button 
+                            className="video-card-delete-button"
+                            onClick={() => handleVideoAction(video.id, 'delete')}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0',
+                              marginTop: '0',
+                              padding: '0.25rem 0.75rem', /* REDUCED PADDING - Smaller height */
+                              borderRadius: '0.375rem', /* Smaller radius */
+                              backgroundColor: '#FF0050',
+                              background: '#FF0050',
+                              backgroundImage: 'none',
+                              color: '#ffffff',
+                              border: 'none',
+                              marginLeft: 'auto',
+                              minHeight: '1.25rem', /* Reduced minimum height */
+                              lineHeight: '1.2' /* Tighter line height */
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Stats/Icons Row - Below Title/Delete Row */}
                       <div className="video-card-stats">
-                      <span className="stat">
-                        <i className="fa-solid fa-eye"></i>
-                        {formatStat(video.views)}
-                      </span>
-                      <span className="stat">
-                        <i className="fa-solid fa-heart"></i>
-                        {formatStat(video.likes)}
-                      </span>
+                        <span className="stat">
+                          <i className="fa-solid fa-eye"></i>
+                          {formatStat(video.views)}
+                        </span>
+                        <span className="stat">
+                          <i className="fa-solid fa-heart"></i>
+                          {formatStat(video.likes)}
+                        </span>
                         <span className="stat">
                           <i className="fa-solid fa-comment"></i>
                           {video.comments}
                         </span>
                       </div>
+                      
+                      {/* Time Text - Below Stats */}
                       <div className="video-card-meta">
                         <span className="upload-date">{video.uploadDate}</span>
                         {video.status && video.status !== 'ready' && (
@@ -1297,59 +1369,6 @@ const Profile = ({ onClose }) => {
                             </span>
                           </div>
                         )}
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="video-card-actions">
-                        {video.status === 'failed' && (
-                          <button 
-                            className="action-btn-primary"
-                            onClick={() => handleVideoAction(video.id, 'retry')}
-                            title="Retry processing"
-                          >
-                            <i className="fa-solid fa-rotate"></i>
-                            Retry
-                          </button>
-                        )}
-                        {video.status === 'ready' && (
-                          <>
-                            <button 
-                              className="action-btn-primary"
-                              onClick={() => handleVideoAction(video.id, 'view')}
-                            >
-                              <i className="fa-solid fa-eye"></i>
-                              View
-                            </button>
-                            <button 
-                              className="action-btn-secondary"
-                              onClick={() => handleVideoAction(video.id, 'edit')}
-                            >
-                              <i className="fa-solid fa-edit"></i>
-                              Edit
-                            </button>
-                            <button 
-                              className="action-btn-secondary"
-                              onClick={() => handleVideoAction(video.id, 'promote')}
-                            >
-                              <i className="fa-solid fa-fire"></i>
-                              Promote
-                            </button>
-                            <button 
-                              className="action-btn-secondary"
-                              onClick={() => handleVideoAction(video.id, 'analytics')}
-                            >
-                              <i className="fa-solid fa-chart-line"></i>
-                              Analytics
-                            </button>
-                          </>
-                        )}
-                        <button 
-                          className="action-btn-danger"
-                          onClick={() => handleVideoAction(video.id, 'delete')}
-                        >
-                          <i className="fa-solid fa-trash"></i>
-                          Delete
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1776,24 +1795,143 @@ const Profile = ({ onClose }) => {
               <i className="fa-solid fa-times"></i>
             </button>
             <div className="video-viewer-container">
-              <video 
-                src={selectedVideo.url || selectedVideo.thumbnail}
-                controls
-                autoPlay
-                className="video-viewer-player"
-              />
-              <div className="video-viewer-info">
-                <h2>{selectedVideo.caption}</h2>
-                <div className="video-viewer-stats">
-                  <span><i className="fa-solid fa-eye"></i> {formatStat(selectedVideo.views)} views</span>
-                  <span><i className="fa-solid fa-heart"></i> {formatStat(selectedVideo.likes)} likes</span>
-                  <span><i className="fa-solid fa-comment"></i> {selectedVideo.comments} comments</span>
-                  <span><i className="fa-solid fa-share"></i> {selectedVideo.shares} shares</span>
-                </div>
-                <div className="video-viewer-meta">
-                  <span>Uploaded {selectedVideo.uploadDate}</span>
-                </div>
-              </div>
+              {(() => {
+                // Get the best available video URL (never use thumbnail for video playback)
+                let videoSrc = null;
+                
+                // Priority 1: Check processedVideos array
+                if (selectedVideo.processedVideos && Array.isArray(selectedVideo.processedVideos) && selectedVideo.processedVideos.length > 0) {
+                  const processedVideo = selectedVideo.processedVideos.find(pv => pv.url && !pv.url.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i));
+                  if (processedVideo && processedVideo.url) {
+                    videoSrc = processedVideo.url;
+                  }
+                }
+                
+                // Priority 2: Check url field
+                if (!videoSrc && selectedVideo.url) {
+                  videoSrc = selectedVideo.url;
+                }
+                
+                // Priority 3: Check videoUrl field
+                if (!videoSrc && selectedVideo.videoUrl) {
+                  videoSrc = selectedVideo.videoUrl;
+                }
+                
+                // Ensure absolute URL and verify it's a video file
+                let finalVideoSrc = null;
+                if (videoSrc) {
+                  const resolved = ensureAbsoluteUrl(videoSrc);
+                  // Only use if it's not an image file
+                  if (resolved && !resolved.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+                    finalVideoSrc = resolved;
+                  }
+                }
+                
+                console.log('Video Modal - selectedVideo:', selectedVideo);
+                console.log('Video Modal - videoSrc:', videoSrc);
+                console.log('Video Modal - finalVideoSrc:', finalVideoSrc);
+                
+                if (!finalVideoSrc || finalVideoSrc.trim() === '') {
+                  let errorMessage = 'This video cannot be loaded.';
+                  if (selectedVideo.status === 'processing') {
+                    errorMessage = 'Video is still processing. Please wait and try again later.';
+                  } else if (selectedVideo.status === 'failed') {
+                    errorMessage = 'Video processing failed. Please try uploading again.';
+                  } else if (selectedVideo.processingError) {
+                    errorMessage = `Video error: ${selectedVideo.processingError}`;
+                  }
+                  
+                  return (
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%', 
+                      color: '#fff',
+                      padding: '20px',
+                      textAlign: 'center'
+                    }}>
+                      <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '48px', marginBottom: '16px', color: '#FF0050' }}></i>
+                      <h3>Video Not Available</h3>
+                      <p>{errorMessage}</p>
+                      {selectedVideo.status && (
+                        <p style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }}>
+                          Status: {selectedVideo.status}
+                        </p>
+                      )}
+                      {selectedVideo.thumbnail && (
+                        <img 
+                          src={selectedVideo.thumbnail} 
+                          alt="Video thumbnail" 
+                          style={{ 
+                            maxWidth: '200px', 
+                            maxHeight: '200px', 
+                            marginTop: '20px',
+                            borderRadius: '8px',
+                            opacity: 0.5
+                          }} 
+                        />
+                      )}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <video 
+                    src={finalVideoSrc}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="video-viewer-player"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      background: '#000000',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      const videoEl = e.target;
+                      const error = videoEl.error;
+                      let errorMsg = 'Unknown error';
+                      
+                      if (error) {
+                        switch(error.code) {
+                          case error.MEDIA_ERR_ABORTED:
+                            errorMsg = 'Video playback was aborted';
+                            break;
+                          case error.MEDIA_ERR_NETWORK:
+                            errorMsg = 'Network error while loading video';
+                            break;
+                          case error.MEDIA_ERR_DECODE:
+                            errorMsg = 'Video decoding error';
+                            break;
+                          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            errorMsg = 'Video format not supported or file not found';
+                            break;
+                          default:
+                            errorMsg = `Error code: ${error.code}`;
+                        }
+                      }
+                      
+                      console.error('Video playback error:', errorMsg);
+                      console.error('Video element error:', error);
+                      console.error('Video URL attempted:', finalVideoSrc);
+                      console.error('Selected video object:', selectedVideo);
+                    }}
+                    onLoadedData={() => {
+                      console.log('Video loaded successfully:', finalVideoSrc);
+                    }}
+                    onLoadStart={() => {
+                      console.log('Video load started:', finalVideoSrc);
+                    }}
+                    onCanPlay={() => {
+                      console.log('Video can start playing:', finalVideoSrc);
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>

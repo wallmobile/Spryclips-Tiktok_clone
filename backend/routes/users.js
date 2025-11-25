@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Video = require('../models/Video');
 const authMiddleware = require('../middleware/auth');
@@ -76,6 +77,250 @@ router.put('/privacy', authMiddleware, async (req, res) => {
     res.json({ message: 'Privacy settings updated', privacy: user.privacy });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Update app settings
+router.put('/app-settings', authMiddleware, async (req, res) => {
+  try {
+    const { appSettings, preferredLanguage, preferredRegion } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (appSettings) {
+      user.appSettings = appSettings;
+    }
+
+    if (preferredLanguage) {
+      user.preferredLanguage = preferredLanguage;
+    }
+
+    if (preferredRegion) {
+      user.preferredRegion = preferredRegion;
+    }
+
+    await user.save();
+    res.json({ 
+      message: 'App settings updated', 
+      appSettings: user.appSettings,
+      preferredLanguage: user.preferredLanguage,
+      preferredRegion: user.preferredRegion
+    });
+  } catch (error) {
+    console.error('Error updating app settings:', error);
+    res.status(500).json({ message: error.message || 'Failed to update app settings' });
+  }
+});
+
+// Change password
+router.put('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({ message: 'Password change not available for social login accounts' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    // Validate new password
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ message: error.message || 'Failed to change password' });
+  }
+});
+
+// Change email
+router.put('/change-email', authMiddleware, async (req, res) => {
+  try {
+    const { newEmail, password } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    if (user.authProvider === 'local') {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Password is incorrect' });
+      }
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: newEmail.toLowerCase() });
+    if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    // Update email (will require verification)
+    user.email = newEmail.toLowerCase();
+    user.emailVerified = false;
+    await user.save();
+
+    // In production, send verification email here
+    res.json({ message: 'Verification email sent. Please check your inbox.' });
+  } catch (error) {
+    console.error('Error changing email:', error);
+    res.status(500).json({ message: error.message || 'Failed to change email' });
+  }
+});
+
+// Change phone
+router.put('/change-phone', authMiddleware, async (req, res) => {
+  try {
+    const { newPhone, verificationCode } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // In production, verify the code here
+    // For now, just update the phone
+    user.phone = newPhone;
+    await user.save();
+
+    res.json({ message: 'Phone number updated successfully' });
+  } catch (error) {
+    console.error('Error changing phone:', error);
+    res.status(500).json({ message: error.message || 'Failed to change phone number' });
+  }
+});
+
+// Send phone verification code
+router.post('/send-phone-verification', authMiddleware, async (req, res) => {
+  try {
+    const { phone } = req.body;
+    // In production, send SMS verification code here
+    res.json({ message: 'Verification code sent successfully' });
+  } catch (error) {
+    console.error('Error sending phone verification:', error);
+    res.status(500).json({ message: error.message || 'Failed to send verification code' });
+  }
+});
+
+// Request account verification
+router.post('/request-verification', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // In production, send verification email here
+    res.json({ message: 'Verification email sent. Please check your inbox.' });
+  } catch (error) {
+    console.error('Error requesting verification:', error);
+    res.status(500).json({ message: error.message || 'Failed to request verification' });
+  }
+});
+
+// Request data download
+router.post('/request-data-download', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // In production, queue data export job here
+    res.json({ message: 'Data download request submitted. You will receive an email within 24 hours.' });
+  } catch (error) {
+    console.error('Error requesting data download:', error);
+    res.status(500).json({ message: error.message || 'Failed to request data download' });
+  }
+});
+
+// Deactivate account
+router.post('/deactivate', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    user.accountStatus = 'suspended';
+    await user.save();
+    res.json({ message: 'Account deactivated successfully' });
+  } catch (error) {
+    console.error('Error deactivating account:', error);
+    res.status(500).json({ message: error.message || 'Failed to deactivate account' });
+  }
+});
+
+// Unlink social account
+router.post('/unlink-account', authMiddleware, async (req, res) => {
+  try {
+    const { platform } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // In production, unlink the social account here
+    res.json({ message: `${platform} account unlinked successfully` });
+  } catch (error) {
+    console.error('Error unlinking account:', error);
+    res.status(500).json({ message: error.message || 'Failed to unlink account' });
+  }
+});
+
+// Update notification settings
+router.put('/notifications', authMiddleware, async (req, res) => {
+  try {
+    const { notificationSettings, notificationFrequency, quietHours } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (notificationSettings) {
+      user.notificationSettings = notificationSettings;
+    }
+
+    if (notificationFrequency) {
+      user.notificationFrequency = notificationFrequency;
+    }
+
+    if (quietHours) {
+      user.quietHours = {
+        enabled: quietHours.enabled !== undefined ? quietHours.enabled : user.quietHours?.enabled || false,
+        from: quietHours.from || user.quietHours?.from || '22:00',
+        to: quietHours.to || user.quietHours?.to || '08:00'
+      };
+    }
+
+    await user.save();
+    res.json({ 
+      message: 'Notification settings updated', 
+      notificationSettings: user.notificationSettings || {},
+      notificationFrequency: user.notificationFrequency,
+      quietHours: user.quietHours
+    });
+  } catch (error) {
+    console.error('Error updating notification settings:', error);
+    res.status(500).json({ message: error.message || 'Failed to update notification settings' });
   }
 });
 

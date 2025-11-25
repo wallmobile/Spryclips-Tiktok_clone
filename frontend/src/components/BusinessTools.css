@@ -30,9 +30,61 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow - no red */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border - no red */
+  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
+  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
   cursor: default;
+}
+
+/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
+@media (max-width: 64rem) {
+  .account-settings-overlay .business-tools-overlay,
+  .account-settings-modal .business-tools-overlay,
+  body:has(.account-settings-overlay) .business-tools-overlay {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(0.5rem) !important;
+    padding: 0 !important;
+    z-index: 10020 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .account-settings-overlay .business-tools-modal,
+  .account-settings-modal .business-tools-modal,
+  body:has(.account-settings-overlay) .business-tools-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: #F5F7FA !important;
+  }
+
+  .account-settings-overlay .business-tools-header,
+  .account-settings-modal .business-tools-header,
+  body:has(.account-settings-overlay) .business-tools-header {
+    padding: 1.25rem 1.5rem !important;
+    flex-shrink: 0 !important;
+    min-height: 3.5rem !important;
+  }
+
+  .account-settings-overlay .business-tools-content,
+  .account-settings-modal .business-tools-content,
+  body:has(.account-settings-overlay) .business-tools-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 1.25rem 1.5rem !important;
+  }
 }
 
 /* Full Screen Business Tools when opened from Account Settings */
@@ -153,7 +205,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
 }
 
 .business-tools-header h2 {
@@ -182,8 +234,7 @@
 }
 
 .business-tools-close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  /* Hover effect removed - no changes on hover */
 }
 
 .business-tools-header-placeholder {
@@ -247,7 +298,7 @@
   display: block;
   font-size: 24px;
   font-weight: 700;
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
   margin-bottom: 4px;
 }
 
@@ -283,7 +334,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -294,13 +345,13 @@
 
 .business-tool-card:hover {
   transform: translateY(-4px);
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  box-shadow: 0 12px 35px rgba(37, 99, 235, 0.2) !important; /* Website blue shadow */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 12px 35px rgba(255, 0, 80, 0.2) !important; /* TikTok pink shadow */
 }
 
 .business-tool-card.featured {
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important; /* Website blue shadow */
+  border-color: #FF0050 !important; /* TikTok pink */
+  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
 }
 
 .business-tool-card.featured::before {
@@ -356,7 +407,7 @@
 }
 
 .open-business-tool {
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
   font-size: 14px;
   font-weight: 600;
   display: flex;
@@ -390,16 +441,16 @@
 
 .business-feature-card:hover {
   border-color: #2563EB !important; /* Website primary blue */
-  background: #E0F2FE !important; /* Website light blue - no black */
+  background: rgba(255, 0, 80, 0.1) !important; /* TikTok pink light background */
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important; /* Website blue shadow */
+  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
 }
 
 .business-feature-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -476,14 +527,14 @@
 }
 
 .business-tip-card:hover {
-  border-color: #2563EB !important; /* Website primary blue - no red */
-  background: #E0F2FE !important; /* Website light blue - no black */
+  border-color: #FF0050 !important; /* TikTok pink */
+  background: rgba(255, 0, 80, 0.1) !important; /* TikTok pink light background */
   transform: translateY(-2px);
 }
 
 .business-tip-card i {
   font-size: 24px;
-  color: #2563EB !important; /* Website primary blue - no red */
+  color: #FF0050 !important; /* TikTok pink */
   flex-shrink: 0;
 }
 
@@ -512,13 +563,13 @@
 }
 
 .business-tools-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .business-tools-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important; /* Website colors - no red */
+  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
 }
 
 /* Mobile Scrollbar - More Visible */
@@ -645,7 +696,7 @@ body.dark-mode .business-stats-card {
 }
 
 body.dark-mode .business-stat-number {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .business-stat-label {
@@ -672,7 +723,7 @@ body.dark-mode .business-tool-card.featured {
 }
 
 body.dark-mode .business-tool-icon {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .business-tool-stats {
@@ -692,7 +743,7 @@ body.dark-mode .business-card-footer {
 }
 
 body.dark-mode .open-business-tool {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .business-features-grid {
@@ -737,8 +788,8 @@ body.dark-mode .status-badge.setup-required {
 
 body.dark-mode .status-badge.active {
   background: rgba(56, 189, 248, 0.2) !important;
-  color: #38BDF8 !important;
-  border-color: #38BDF8 !important;
+  color: #25F4EE !important; /* TikTok cyan */
+  border-color: #25F4EE !important; /* TikTok cyan */
 }
 
 body.dark-mode .business-tips-grid {
@@ -756,7 +807,7 @@ body.dark-mode .business-tip-card:hover {
 }
 
 body.dark-mode .business-tip-card i {
-  color: #60A5FA !important;
+  color: #FF0050 !important; /* TikTok pink */
 }
 
 body.dark-mode .business-tip-content h5 {
