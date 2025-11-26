@@ -187,7 +187,7 @@ if (isTestEnv) {
             speed: Number.isFinite(videoDoc?.speed) && videoDoc.speed > 0 ? videoDoc.speed : 1
           };
 
-          const outputDir = path.join(__dirname, '../uploads/processed');
+          const outputDir = process.env.PROCESSED_DIR || path.join(__dirname, '../uploads/processed');
           if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
           }

@@ -332,7 +332,7 @@ router.post('/:id/retry-processing', authMiddleware, asyncHandler(async (req, re
   } else {
     // Queue is disabled, process directly
     const { processVideo } = require('../utils/videoProcessor');
-    const outputDir = path.join(__dirname, '../uploads/processed');
+    const outputDir = process.env.PROCESSED_DIR || path.join(__dirname, '../uploads/processed');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
