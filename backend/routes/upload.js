@@ -9,7 +9,8 @@ const authMiddleware = require('../middleware/auth');
 const { uploadLimiter } = require('../utils/rateLimiter');
 const { validateFile } = require('../utils/fileValidation');
 const videoQueue = require('../jobs/videoProcessing');
-const { processVideo } = require('../utils/videoProcessor');
+const { processVideo, generateThumbnail } = require('../utils/videoProcessor');
+const { cache, cacheKeys } = require('../utils/cache');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
 const router = express.Router();
 
@@ -260,12 +261,32 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     // Don't throw - video is saved, just log the error
   }
 
+  // Generate a basic thumbnail synchronously for immediate display (first frame)
+  let thumbnailUrl = '';
+  try {
+    const processedDir = path.join(__dirname, '..', 'processed');
+    if (!fs.existsSync(processedDir)) {
+      fs.mkdirSync(processedDir, { recursive: true });
+    }
+    
+    const thumbnailPath = path.join(processedDir, `${video._id}-thumbnail.jpg`);
+    await generateThumbnail(req.file.path, thumbnailPath, 0.01); // Use first frame (0.01s)
+    thumbnailUrl = `/processed/${path.basename(thumbnailPath)}`;
+    
+    // Update video with the thumbnail
+    await Video.findByIdAndUpdate(video._id, { thumbnail: thumbnailUrl });
+    console.log('First frame thumbnail generated for video:', video._id);
+  } catch (thumbnailError) {
+    console.warn('Failed to generate first frame thumbnail:', thumbnailError.message);
+    // Continue without thumbnail - it will be generated during full processing
+  }
+
   let statusMessage = 'Video uploaded successfully';
   let responseVideo = {
     id: video._id,
     status: video.status || 'ready', // Ensure status is 'ready'
     url: video.url,
-    thumbnail: video.thumbnail,
+    thumbnail: thumbnailUrl || video.thumbnail,
     processedVideos: video.processedVideos || []
   };
 
@@ -297,6 +318,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   }
 
   // Process video in background AFTER response is sent (non-blocking)
+  /*
   const queueDisabled = Boolean(videoQueue?.isDisabled);
   const canEnqueue = typeof videoQueue?.add === 'function' && !queueDisabled;
 
@@ -366,6 +388,12 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
             },
             { new: false }
           );
+
+          // Invalidate cache for this video and video lists
+          cache.delete(cacheKeys.video(video._id.toString()));
+          // Invalidate first page of video list to show updated thumbnails
+          cache.delete(cacheKeys.videoList({ page: 1, limit: 20, sortBy: 'createdAt', sortOrder: -1 }));
+
           console.log('Video processing completed:', video._id);
         } catch (backgroundErr) {
           // Clear timeout if error occurred
@@ -388,6 +416,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
       }
     }
   });
+  */
 }));
 
 // Get user's uploaded videos

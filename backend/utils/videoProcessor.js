@@ -207,7 +207,7 @@ const processVideo = async (videoPath, videoId, outputDir, options = {}) => {
     // Get video metadata
     const metadata = await getVideoMetadata(videoPath);
 
-    // Generate thumbnail
+    // Generate thumbnail (always generate for best quality at middle of video)
     const thumbnailPath = path.join(outputDir, `${videoId}-thumbnail.jpg`);
     await generateThumbnail(videoPath, thumbnailPath, metadata.duration / 2);
 

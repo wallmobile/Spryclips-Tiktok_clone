@@ -1,6 +1,7 @@
 const Queue = require('bull');
 const Video = require('../models/Video');
 const { processVideo } = require('../utils/videoProcessor');
+const { cache, cacheKeys } = require('../utils/cache');
 const path = require('path');
 const fs = require('fs');
 
@@ -210,6 +211,13 @@ if (isTestEnv) {
             metadata: result.metadata,
             processedVideos: result.videos
           });
+
+          /*
+          // Invalidate cache for this video and video lists
+          cache.delete(cacheKeys.video(videoId));
+          // Invalidate first page of video list to show updated thumbnails
+          cache.delete(cacheKeys.videoList({ page: 1, limit: 20, sortBy: 'createdAt', sortOrder: -1 }));
+          */
 
           return { success: true, videoId, result };
         } catch (error) {
