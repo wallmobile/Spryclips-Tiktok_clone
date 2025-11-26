@@ -229,7 +229,7 @@ const PROCESSED_DIR = process.env.PROCESSED_DIR || path.join(__dirname, 'uploads
 // Serve uploaded files and processed videos
 // NOTE: In production with Nginx, these routes won't be hit as Nginx serves files directly
 app.use('/uploads', express.static(UPLOADS_DIR));
-app.use('/processed', express.static(PROCESSED_DIR));
+app.use('/uploads/processed', express.static(PROCESSED_DIR));
 
 console.log(`📁 Serving uploads from: ${UPLOADS_DIR}`);
 

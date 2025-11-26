@@ -100,7 +100,7 @@ router.post('/apply-filters', authMiddleware, upload.single('video'), async (req
       // Save video to database
       Video.create({
         user: req.user._id,
-        url: `/processed/${outputFilename}`,
+        url: `/uploads/processed/${outputFilename}`,
         thumbnail: `/uploads/${req.file.filename}`,
         description: req.body.description || '',
         hashtags: req.body.hashtags ? req.body.hashtags.split(',').map(tag => tag.trim()) : [],

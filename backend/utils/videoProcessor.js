@@ -184,7 +184,7 @@ const transcodeVideo = async (inputPath, outputDir, videoId, options = {}) => {
           outputs.push({
             quality: quality.name,
             path: outputPath,
-            url: `/processed/${path.basename(outputPath)}`
+            url: `/uploads/processed/${path.basename(outputPath)}`
           });
           resolve();
         })
@@ -222,7 +222,7 @@ const processVideo = async (videoPath, videoId, outputDir, options = {}) => {
 
     return {
       metadata,
-      thumbnail: `/processed/${path.basename(thumbnailPath)}`,
+      thumbnail: `/uploads/processed/${path.basename(thumbnailPath)}`,
       videos: transcodedVideos
     };
   } catch (error) {
