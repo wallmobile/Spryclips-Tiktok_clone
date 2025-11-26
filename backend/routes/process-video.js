@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Create uploads and processed directories
 const uploadsDir = path.join(__dirname, '../uploads');
-const processedDir = path.join(__dirname, '../uploads/processed');
+const processedDir = path.join(__dirname, '../processed');
 [uploadsDir, processedDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -100,7 +100,7 @@ router.post('/apply-filters', authMiddleware, upload.single('video'), async (req
       // Save video to database
       Video.create({
         user: req.user._id,
-        url: `/uploads/processed/${outputFilename}`,
+        url: `/processed/${outputFilename}`,
         thumbnail: `/uploads/${req.file.filename}`,
         description: req.body.description || '',
         hashtags: req.body.hashtags ? req.body.hashtags.split(',').map(tag => tag.trim()) : [],

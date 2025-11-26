@@ -49,8 +49,7 @@ async function migrateVideoUrls() {
   const videos = await Video.find({
     $or: [
       { url: /^\/uploads\// },
-      { thumbnail: /^\/processed\// },
-      { thumbnail: /^\/uploads\/processed\// }
+      { thumbnail: /^\/processed\// }
     ]
   });
   
@@ -71,10 +70,6 @@ async function migrateVideoUrls() {
     // Update thumbnail URL
     if (video.thumbnail && video.thumbnail.startsWith('/processed/')) {
       const filename = video.thumbnail.replace('/processed/', 'processed/');
-      video.thumbnail = `${UPLOADS_BASE_URL}/${filename}`;
-      updated = true;
-    } else if (video.thumbnail && video.thumbnail.startsWith('/uploads/processed/')) {
-      const filename = video.thumbnail.replace('/uploads/', '');
       video.thumbnail = `${UPLOADS_BASE_URL}/${filename}`;
       updated = true;
     }

@@ -271,7 +271,6 @@ FRONTEND_URL="https://spryclips.com" \
 ALLOWED_ORIGINS="https://spryclips.com,https://www.spryclips.com,http://spryclips.com,http://www.spryclips.com,https://spryclip.com,https://www.spryclip.com" \
 TRUST_PROXY="true" \
 UPLOADS_DIR="/home/reactmaster/uploads" \
-PROCESSED_DIR="/home/reactmaster/uploads/processed" \
 pm2 start index.js --name $TARGET_APP --max-memory-restart 1G --update-env || print_error "PM2 start failed"
 
 print_success "Target environment started successfully on port $TARGET_PORT"
@@ -499,7 +498,7 @@ server {
     }
 
     # Processed videos (thumbnails, etc.)
-    location /uploads/processed/ {
+    location /processed/ {
         alias /home/reactmaster/uploads/processed/;
         
         # Cache control

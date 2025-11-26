@@ -264,14 +264,14 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   // Generate a basic thumbnail synchronously for immediate display (first frame)
   let thumbnailUrl = '';
   try {
-    const processedDir = path.join(__dirname, '..', 'uploads', 'processed');
+    const processedDir = path.join(__dirname, '..', 'processed');
     if (!fs.existsSync(processedDir)) {
       fs.mkdirSync(processedDir, { recursive: true });
     }
     
     const thumbnailPath = path.join(processedDir, `${video._id}-thumbnail.jpg`);
     await generateThumbnail(req.file.path, thumbnailPath, 0.01); // Use first frame (0.01s)
-    thumbnailUrl = `/uploads/processed/${path.basename(thumbnailPath)}`;
+    thumbnailUrl = `/processed/${path.basename(thumbnailPath)}`;
     
     // Update video with the thumbnail
     await Video.findByIdAndUpdate(video._id, { thumbnail: thumbnailUrl });
@@ -346,7 +346,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
         }).catch(err => console.error('Failed to update video status:', err));
       }
     } else {
-      const processedDir = path.join(__dirname, '..', 'uploads', 'processed');
+      const processedDir = path.join(__dirname, '..', 'processed');
       if (!fs.existsSync(processedDir)) {
         fs.mkdirSync(processedDir, { recursive: true });
       }
