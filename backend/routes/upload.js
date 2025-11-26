@@ -264,7 +264,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   // Generate a basic thumbnail synchronously for immediate display (first frame)
   let thumbnailUrl = '';
   try {
-    const processedDir = path.join(__dirname, '..', 'processed');
+    const processedDir = path.join(__dirname, '..', 'uploads', 'processed');
     if (!fs.existsSync(processedDir)) {
       fs.mkdirSync(processedDir, { recursive: true });
     }
@@ -346,7 +346,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
         }).catch(err => console.error('Failed to update video status:', err));
       }
     } else {
-      const processedDir = path.join(__dirname, '..', 'processed');
+      const processedDir = path.join(__dirname, '..', 'uploads', 'processed');
       if (!fs.existsSync(processedDir)) {
         fs.mkdirSync(processedDir, { recursive: true });
       }

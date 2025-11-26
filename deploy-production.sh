@@ -498,7 +498,7 @@ server {
     }
 
     # Processed videos (thumbnails, etc.)
-    location /processed/ {
+    location /uploads/processed/ {
         alias /home/reactmaster/uploads/processed/;
         
         # Cache control

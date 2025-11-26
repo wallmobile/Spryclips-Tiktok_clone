@@ -224,7 +224,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // In production, Nginx will serve files directly from /home/reactmaster/uploads
 // In development, we serve from the configured uploads directory
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
-const PROCESSED_DIR = process.env.PROCESSED_DIR || path.join(__dirname, 'processed');
+const PROCESSED_DIR = process.env.PROCESSED_DIR || path.join(__dirname, 'uploads', 'processed');
 
 // Serve uploaded files and processed videos
 // NOTE: In production with Nginx, these routes won't be hit as Nginx serves files directly
