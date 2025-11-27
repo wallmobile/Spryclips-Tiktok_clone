@@ -83,6 +83,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
+  const [videoDisplayWidth, setVideoDisplayWidth] = useState<number>(0);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -373,19 +374,59 @@ const VideoCard: React.FC<VideoCardProps> = ({
   // Calculate and store video aspect ratio
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const container = containerRef.current;
+    if (!video || !container) return;
 
     const handleLoadedMetadata = () => {
       if (video.videoWidth && video.videoHeight) {
         const aspectRatio = video.videoWidth / video.videoHeight;
         setVideoAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
+        
+        // Calculate actual display width based on container and aspect ratio
+        // The video uses object-fit: contain, so we need to calculate the visible width
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const containerAspectRatio = containerWidth / containerHeight;
+        
+        let displayWidth: number;
+        if (aspectRatio > containerAspectRatio) {
+          // Video is wider - constrained by width
+          displayWidth = containerWidth;
+        } else {
+          // Video is taller - constrained by height
+          displayWidth = containerHeight * aspectRatio;
+        }
+        
+        setVideoDisplayWidth(displayWidth);
       }
     };
 
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    // Also recalculate on window resize
+    const handleResize = () => {
+      if (video.videoWidth && video.videoHeight) {
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const containerAspectRatio = containerWidth / containerHeight;
+        
+        let displayWidth: number;
+        if (aspectRatio > containerAspectRatio) {
+          displayWidth = containerWidth;
+        } else {
+          displayWidth = containerHeight * aspectRatio;
+        }
+        
+        setVideoDisplayWidth(displayWidth);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      window.removeEventListener('resize', handleResize);
     };
   }, [src]);
 
@@ -594,7 +635,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
         )}
         
         {/* Video Progress Bar */}
-        <div className="video-progress-container">
+        <div 
+          className="video-progress-container"
+          style={{
+            width: videoDisplayWidth > 0 ? `${videoDisplayWidth}px` : 'calc(100% - 32px)',
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}
+        >
           <div 
             ref={progressBarRef}
             className="video-progress-bar"
