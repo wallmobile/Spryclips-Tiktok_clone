@@ -755,11 +755,11 @@ body.dark-mode .video-card-mute-btn i {
   }
   
   .video-card-container {
-    width: 100% !important;
+    width: auto !important; /* Let aspect ratio determine width */
     height: 90vh !important; /* Increased height */
     max-height: 90vh !important; /* Increased max height */
     box-sizing: border-box !important;
-    overflow: hidden !important; /* Hide overflow */
+    overflow: visible !important; /* Allow actions to show outside */
     margin: 0 auto !important;
     border-radius: 16px !important; /* Rounded corners */
     background: transparent !important; /* Transparent background */
@@ -793,13 +793,13 @@ body.dark-mode .video-card-mute-btn i {
   .video-card-video {
     width: 100% !important;
     height: 100% !important;
-    object-fit: contain !important;
+    object-fit: cover !important; /* Fill container */
     box-sizing: border-box !important;
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     transform: none !important;
-    border-radius: 0 !important; /* No border radius on mobile */
+    border-radius: 16px !important; /* Rounded corners */
   }
 }
 
@@ -1784,11 +1784,3 @@ body.dark-mode .video-card-mute-btn i {
   opacity: 0.8;
   text-decoration: underline;
 }
-
-
-
-
-
-
-
-
