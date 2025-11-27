@@ -100,6 +100,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain; /* Preserve video aspect ratio without cropping */
+  object-position: center; /* Center the video */
   background: transparent; /* No background - let container handle it */
   position: absolute;
   top: 0;
@@ -793,7 +794,8 @@ body.dark-mode .video-card-mute-btn i {
   .video-card-video {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important; /* Fill container */
+    object-fit: contain !important; /* Preserve aspect ratio */
+    object-position: center !important;
     box-sizing: border-box !important;
     position: absolute !important;
     top: 0 !important;
@@ -847,6 +849,8 @@ body.dark-mode .video-card-mute-btn i {
     height: 100vh !important;
     height: 100dvh !important;
     border-radius: 0 !important;
+    object-fit: contain !important; /* Preserve aspect ratio */
+    object-position: center !important;
   }
 
   .video-card-mute-btn {
@@ -1108,7 +1112,8 @@ body.dark-mode .video-card-mute-btn i {
     max-width: 100vw !important;
     position: absolute !important;
     top: 0 !important;
-    object-fit: contain !important;
+    object-fit: contain !important; /* Preserve aspect ratio */
+    object-position: center !important;
   }
 
   .video-card-mute-btn {
