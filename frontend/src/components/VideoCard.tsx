@@ -82,6 +82,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -369,6 +370,25 @@ const VideoCard: React.FC<VideoCardProps> = ({
     };
   }, [isActive, duration]);
 
+  // Calculate and store video aspect ratio
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoadedMetadata = () => {
+      if (video.videoWidth && video.videoHeight) {
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        setVideoAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [src]);
+
   // Format time helper
   const formatTime = (seconds: number): string => {
     if (isNaN(seconds)) return '0:00';
@@ -514,7 +534,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
 
   return (
-    <div className="video-card-container" ref={containerRef}>
+    <div className="video-card-container" ref={containerRef} style={{ aspectRatio: videoAspectRatio || 'auto' }}>
       <video
         ref={videoRef}
         src={src}
