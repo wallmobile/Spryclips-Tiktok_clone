@@ -1612,7 +1612,10 @@ body.dark-mode .video-card-mute-btn i {
 }
 
 .video-progress-time {
+  width: 100%;
   display: flex;
+  justify-content: flex-start;
+  padding: 8px 8px 0 12px;
   align-items: center;
   gap: 4px;
   color: #fff;
