@@ -44,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000; /* Black background by default */
+  background: transparent; /* Transparent - let video show through */
 }
 
 .video-card-container {
@@ -55,23 +55,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000; /* Black background like TikTok */
-  overflow: visible !important; /* Allow action bar to be visible outside */
+  background: transparent; /* Transparent background - only show video */
+  overflow: hidden; /* Hide overflow to maintain aspect ratio */
   box-sizing: border-box;
   z-index: 1 !important; /* Lower than navbar to stay below */
   margin: 0 !important;
   margin-left: auto !important;
   margin-right: auto !important;
-  transform: translateX(-40px) !important; /* Shift video 40px to the left */
   border-radius: 16px; /* Rounded corners */
-  /* Ensure video doesn't overlap with navbar - constrain right edge */
-  max-width: min(320px, calc(100vw - 17.5rem - 22rem - 2rem)); /* Account for sidebar, navbar space, and padding - reduced from 360px */
 }
 
 /* Responsive video container */
 @media (max-width: 1200px) {
   .video-card-container {
-    max-width: 340px;
+    width: 100%;
   }
   
   .video-card-actions {
@@ -81,7 +78,7 @@
 
 @media (max-width: 992px) {
   .video-card-container {
-    max-width: 320px;
+    width: 100%;
   }
   
   .video-card-actions {
@@ -103,7 +100,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain; /* Preserve video aspect ratio without cropping */
-  background: #000; /* Black background */
+  background: transparent; /* No background - let container handle it */
   position: absolute;
   top: 0;
   left: 0;
@@ -754,20 +751,18 @@ body.dark-mode .video-card-mute-btn i {
     max-width: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
-    background: #ffffff !important; /* White background for desktop */
+    background: transparent !important; /* Transparent background */
   }
   
   .video-card-container {
     width: 100% !important;
-    max-width: 320px !important; /* Reduced width from 360px */
     height: 90vh !important; /* Increased height */
     max-height: 90vh !important; /* Increased max height */
     box-sizing: border-box !important;
-    overflow: visible !important; /* Allow action bar to be visible outside */
+    overflow: hidden !important; /* Hide overflow */
     margin: 0 auto !important;
-    transform: translateX(-40px) !important; /* Shift video 40px to the left */
     border-radius: 16px !important; /* Rounded corners */
-    background: #ffffff !important; /* White background for desktop */
+    background: transparent !important; /* Transparent background */
   }
   
   .video-card-actions {
@@ -777,7 +772,7 @@ body.dark-mode .video-card-mute-btn i {
   /* Responsive video container for desktop */
   @media (max-width: 1200px) {
     .video-card-container {
-      max-width: 340px !important;
+      width: 100% !important;
     }
     
     .video-card-actions {
@@ -787,7 +782,7 @@ body.dark-mode .video-card-mute-btn i {
 
   @media (max-width: 992px) {
     .video-card-container {
-      max-width: 320px !important;
+      width: 100% !important;
     }
     
     .video-card-actions {
