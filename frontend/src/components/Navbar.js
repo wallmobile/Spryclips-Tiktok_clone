@@ -46,10 +46,10 @@ const Navbar = () => {
               </button>
               <div className="nav-separator"></div>
               <button 
-                className="nav-top-btn nav-top-btn--primary login-btn"
-                onClick={() => toggleOverlay('login')}
+                className="nav-top-btn nav-top-btn--primary signup-btn"
+                onClick={() => toggleOverlay('signup')}
               >
-                Log in
+                Sign up
               </button>
             </div>
           </div>

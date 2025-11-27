@@ -22,6 +22,21 @@ const CreatorAcademy = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [selectedLesson, setSelectedLesson] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const openLesson = (lesson) => {
+    setSelectedLesson(lesson);
+  };
+
+  const closeLesson = () => {
+    setSelectedLesson(null);
+  };
 
   const loadAcademyData = useCallback(async () => {
     setLoading(true);
@@ -106,10 +121,10 @@ const CreatorAcademy = ({ onClose }) => {
         ...prev,
         completed: [...(prev.completed || []), lessonId],
       }));
-      alert('Marked as completed! Great job.');
+      showToast('Marked as completed! Great job. 🎉', 'success');
     } catch (err) {
       console.error('Failed to mark lesson as completed:', err);
-      alert(err?.response?.data?.message || 'Unable to mark this lesson as completed right now.');
+      showToast(err?.response?.data?.message || 'Unable to mark this lesson as completed right now.', 'error');
     }
   };
 
@@ -121,10 +136,10 @@ const CreatorAcademy = ({ onClose }) => {
           ? prev
           : [...prev, learningPaths.find((path) => path._id === pathId)].filter(Boolean)
       );
-      alert('Enrolled successfully! You can track your progress in the academy dashboard.');
+      showToast('Enrolled successfully! 🚀', 'success');
     } catch (err) {
       console.error('Failed to enroll in learning path:', err);
-      alert(err?.response?.data?.message || 'Unable to enroll in this learning path right now.');
+      showToast(err?.response?.data?.message || 'Unable to enroll in this learning path right now.', 'error');
     }
   };
 
@@ -245,7 +260,12 @@ const CreatorAcademy = ({ onClose }) => {
                     {filteredContent.map((lesson) => {
                       const completed = progress?.completed?.includes(lesson._id);
                       return (
-                        <div key={lesson._id} className="lesson-card">
+                        <div 
+                          key={lesson._id} 
+                          className={`lesson-card ${completed ? 'lesson-card--completed' : ''}`}
+                          onClick={() => openLesson(lesson)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="lesson-header">
                             <span className="lesson-type">{lesson.type || 'Lesson'}</span>
                             {lesson.duration && (
@@ -262,23 +282,17 @@ const CreatorAcademy = ({ onClose }) => {
                             {lesson.difficulty && <span>{lesson.difficulty}</span>}
                           </div>
                           <div className="lesson-actions">
-                            <button
-                              className={`lesson-complete-btn ${completed ? 'completed' : ''}`}
-                              onClick={() => handleMarkCompleted(lesson._id)}
-                              disabled={completed}
-                            >
-                              {completed ? (
-                                <>
-                                  <i className="fa-solid fa-check"></i>
-                                  Completed
-                                </>
-                              ) : (
-                                <>
-                                  <i className="fa-solid fa-circle-play"></i>
-                                  Mark Complete
-                                </>
-                              )}
-                            </button>
+                            {completed ? (
+                              <span className="lesson-status lesson-status--completed">
+                                <i className="fa-solid fa-check-circle"></i>
+                                Completed
+                              </span>
+                            ) : (
+                              <span className="lesson-status lesson-status--start">
+                                <i className="fa-solid fa-play-circle"></i>
+                                Start Lesson
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -289,6 +303,129 @@ const CreatorAcademy = ({ onClose }) => {
             </>
           )}
         </div>
+
+        {/* Lesson Detail Modal */}
+        {selectedLesson && (
+          <div className="lesson-modal-overlay" onClick={closeLesson}>
+            <div className="lesson-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="lesson-modal-close" onClick={closeLesson}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+              
+              <div className="lesson-modal-header">
+                <span className={`lesson-type-badge lesson-type-badge--${selectedLesson.type}`}>
+                  {selectedLesson.type?.toUpperCase() || 'LESSON'}
+                </span>
+                <span className="lesson-modal-duration">
+                  <i className="fa-solid fa-clock"></i> {selectedLesson.duration || 10} min
+                </span>
+              </div>
+
+              <h2 className="lesson-modal-title">{selectedLesson.title}</h2>
+              
+              <div className="lesson-modal-meta">
+                <span className="lesson-meta-item">
+                  <i className="fa-solid fa-layer-group"></i> {selectedLesson.category}
+                </span>
+                <span className="lesson-meta-item">
+                  <i className="fa-solid fa-signal"></i> {selectedLesson.difficulty}
+                </span>
+                <span className="lesson-meta-item">
+                  <i className="fa-solid fa-eye"></i> {selectedLesson.views?.toLocaleString() || 0} views
+                </span>
+                <span className="lesson-meta-item">
+                  <i className="fa-solid fa-heart"></i> {selectedLesson.likes?.toLocaleString() || 0} likes
+                </span>
+              </div>
+
+              <div className="lesson-modal-content">
+                <div className="lesson-video-placeholder">
+                  {selectedLesson.videoUrl ? (
+                    <video controls src={selectedLesson.videoUrl} style={{ width: '100%', borderRadius: '12px' }} />
+                  ) : (
+                    <div className="video-placeholder">
+                      <i className="fa-solid fa-play-circle"></i>
+                      <p>Video content coming soon</p>
+                      <span>Read the lesson below</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="lesson-text-content">
+                  <h3>About This Lesson</h3>
+                  <p>{selectedLesson.description}</p>
+                  
+                  {selectedLesson.content && (
+                    <>
+                      <h3>Lesson Content</h3>
+                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                    </>
+                  )}
+
+                  <div className="lesson-key-points">
+                    <h3>Key Takeaways</h3>
+                    <ul>
+                      <li><i className="fa-solid fa-check"></i> Learn practical strategies you can apply immediately</li>
+                      <li><i className="fa-solid fa-check"></i> Understand the fundamentals of {selectedLesson.category?.toLowerCase()}</li>
+                      <li><i className="fa-solid fa-check"></i> Get tips from successful creators</li>
+                      <li><i className="fa-solid fa-check"></i> Improve your content quality and reach</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lesson-modal-footer">
+                {progress?.completed?.includes(selectedLesson._id) ? (
+                  <button className="lesson-complete-btn completed" disabled>
+                    <i className="fa-solid fa-check-circle"></i>
+                    Lesson Completed!
+                  </button>
+                ) : (
+                  <button 
+                    className="lesson-complete-btn"
+                    onClick={() => {
+                      handleMarkCompleted(selectedLesson._id);
+                      setTimeout(closeLesson, 1500);
+                    }}
+                  >
+                    <i className="fa-solid fa-graduation-cap"></i>
+                    Mark as Complete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toast.show && (
+          <div 
+            className={`academy-toast academy-toast--${toast.type}`}
+            style={{
+              position: 'fixed',
+              bottom: '30px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '16px 28px',
+              borderRadius: '12px',
+              background: toast.type === 'success' ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg, #EF4444, #DC2626)',
+              color: '#fff',
+              fontWeight: '600',
+              fontSize: '15px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+              zIndex: 10000,
+              animation: 'slideUp 0.3s ease-out'
+            }}
+          >
+            {toast.message}
+          </div>
+        )}
+        <style>{`
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          }
+        `}</style>
       </div>
     </div>
   );

@@ -666,6 +666,58 @@
   box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.1) !important; /* TikTok pink */
 }
 
+.user-search {
+  position: relative;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #FF0050;
+}
+
+.search-results-users h4 {
+  margin: 16px 0 12px 0;
+  color: #0F172A;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.no-users-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: #64748B;
+  text-align: center;
+}
+
+.no-users-found i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: #94A3B8;
+}
+
+.no-users-found p {
+  margin: 0;
+  font-size: 14px;
+}
+
+body.dark-mode .search-results-users h4 {
+  color: #F9FAFB;
+}
+
+body.dark-mode .no-users-found {
+  color: #94A3B8;
+}
+
+body.dark-mode .no-users-found i {
+  color: #64748B;
+}
+
 .suggested-users h4 {
   margin: 0 0 16px 0;
   color: #0F172A;

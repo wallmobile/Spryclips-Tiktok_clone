@@ -104,6 +104,20 @@ const authMiddleware = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
+      // User doesn't exist - clear all cookies to force fresh login
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      
+      // Also revoke any refresh tokens for this non-existent user
+      try {
+        await RefreshToken.updateMany(
+          { user: decoded.userId },
+          { revoked: true, revokedAt: new Date() }
+        );
+      } catch (e) {
+        // Silently ignore cleanup errors
+      }
+      
       return sendErrorResponse(res, new AppError({
         message: 'User not found',
         statusCode: 401,

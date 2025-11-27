@@ -27,7 +27,9 @@ const Search = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const inputRef = useRef(null);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     // Focus input when component mounts
@@ -89,11 +91,13 @@ const Search = ({ onClose }) => {
     try {
       if (activeTab === 'all') {
         const data = await searchAll(searchQuery);
+        // Backend returns results nested in 'results' object
+        const resultsData = data.results || data;
         setResults({
-          videos: data.videos || [],
-          users: data.users || [],
-          hashtags: data.hashtags || [],
-          music: data.music || []
+          videos: resultsData.videos || data.videos || [],
+          users: resultsData.users || data.users || [],
+          hashtags: resultsData.hashtags || data.hashtags || [],
+          music: resultsData.music || data.music || []
         });
       } else if (activeTab === 'videos') {
         const data = await searchVideos(searchQuery);
@@ -154,8 +158,15 @@ const Search = ({ onClose }) => {
   };
 
   const handleVideoClick = (video) => {
-    window.location.href = `/video/${video._id || video.id}`;
-    if (onClose) onClose();
+    // Open video in modal instead of redirecting
+    setSelectedVideo(video);
+  };
+
+  const closeVideoModal = () => {
+    setSelectedVideo(null);
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
   };
 
   const handleUserClick = (user) => {
@@ -164,7 +175,8 @@ const Search = ({ onClose }) => {
   };
 
   const handleHashtagClick = (hashtag) => {
-    window.location.href = `/tag/${hashtag.name || hashtag}`;
+    const tagName = hashtag.tag || hashtag.name || hashtag;
+    window.location.href = `/tag/${tagName}`;
     if (onClose) onClose();
   };
 
@@ -419,15 +431,15 @@ const Search = ({ onClose }) => {
                   <div className="search-results-section">
                     <h3>Hashtags</h3>
                     <div className="search-hashtags-list">
-                      {results.hashtags.map((hashtag) => (
+                      {results.hashtags.map((hashtag, index) => (
                         <div
-                          key={hashtag._id || hashtag.name}
+                          key={hashtag._id || hashtag.tag || hashtag.name || index}
                           className="search-hashtag-item"
                           onClick={() => handleHashtagClick(hashtag)}
                         >
-                          <span className="search-hashtag-name">#{hashtag.name || hashtag}</span>
+                          <span className="search-hashtag-name">#{hashtag.tag || hashtag.name || hashtag}</span>
                           <span className="search-hashtag-count">
-                            {formatCount(hashtag.videoCount || 0)} videos
+                            {formatCount(hashtag.count || hashtag.videoCount || 0)} videos
                           </span>
                         </div>
                       ))}
@@ -476,6 +488,44 @@ const Search = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <div className="search-video-modal" onClick={closeVideoModal}>
+          <div className="search-video-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="search-video-modal-close" onClick={closeVideoModal}>
+              <i className="fa-solid fa-times"></i>
+            </button>
+            <div className="search-video-player-wrapper">
+              <video
+                ref={videoRef}
+                src={selectedVideo.url || selectedVideo.videoUrl}
+                poster={selectedVideo.thumbnail || selectedVideo.poster}
+                controls
+                autoPlay
+                playsInline
+                className="search-video-player"
+              />
+            </div>
+            <div className="search-video-modal-info">
+              <div className="search-video-modal-user">
+                <img 
+                  src={selectedVideo.user?.profile?.avatar || selectedVideo.user?.avatar || `https://ui-avatars.com/api/?name=${selectedVideo.user?.username || 'User'}&background=ff0050&color=fff`} 
+                  alt={selectedVideo.user?.username || 'User'} 
+                  className="search-video-modal-avatar"
+                />
+                <span className="search-video-modal-username">@{selectedVideo.user?.username || 'user'}</span>
+              </div>
+              <p className="search-video-modal-description">{selectedVideo.description}</p>
+              <div className="search-video-modal-stats">
+                <span><i className="fa-solid fa-heart"></i> {formatCount(selectedVideo.likes || 0)}</span>
+                <span><i className="fa-solid fa-comment"></i> {formatCount(selectedVideo.comments || 0)}</span>
+                <span><i className="fa-solid fa-share"></i> {formatCount(selectedVideo.shares || 0)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -56,7 +56,7 @@ const EffectsLab = ({ onClose = () => {} }) => {
 
   const handleClose = () => {
     onClose();
-    navigate('/more');
+    navigate('/profile');
   };
 
   const difficultyFilters = [

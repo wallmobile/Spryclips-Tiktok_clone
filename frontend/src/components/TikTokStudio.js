@@ -64,7 +64,7 @@ const TikTokStudio = ({ onClose = () => {} }) => {
 
   const handleClose = () => {
     onClose();
-    navigate('/more');
+    navigate('/profile');
   };
 
   return (

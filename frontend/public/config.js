@@ -17,8 +17,8 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: '',  // Empty for Nginx proxy
+  API_URL: 'http://localhost:5000',  // Development: 'http://localhost:5000', Production: '' (empty for Nginx proxy)
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Local: 'http://localhost:5000/uploads', Production: 'https://spryclips.com/uploads'
+  UPLOADS_BASE_URL: 'http://localhost:5000/uploads'  // Local: 'http://localhost:5000/uploads', Production: 'https://spryclips.com/uploads'
 };
 

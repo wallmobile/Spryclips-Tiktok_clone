@@ -298,6 +298,7 @@ const Profile = ({ onClose }) => {
 
   const fetchVideos = useCallback(async () => {
     if (!user) {
+      setLoading(false);
       return;
     }
     try {
@@ -457,6 +458,9 @@ const Profile = ({ onClose }) => {
   useEffect(() => {
     if (user) {
       void fetchVideos();
+    } else {
+      // No user - don't leave in loading state
+      setLoading(false);
     }
   }, [user, fetchVideos]);
 

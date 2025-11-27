@@ -22,6 +22,12 @@ router.get('/conversations', authMiddleware, async (req, res) => {
         p => p._id.toString() !== req.user._id.toString()
       );
 
+      // Handle unreadCounts - when using .lean(), Map becomes plain object
+      const unreadCountsObj = conv.unreadCounts || {};
+      const unreadCount = typeof unreadCountsObj.get === 'function' 
+        ? unreadCountsObj.get(req.user._id.toString()) 
+        : unreadCountsObj[req.user._id.toString()];
+
       return {
         _id: conv._id,
         isGroup: conv.isGroup,
@@ -31,7 +37,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
         participants: conv.participants,
         lastMessage: conv.lastMessage,
         lastMessageAt: conv.lastMessageAt,
-        unreadCount: conv.unreadCounts?.get(req.user._id.toString()) || 0,
+        unreadCount: unreadCount || 0,
         isPinned: conv.pinnedBy?.includes(req.user._id) || false,
         isArchived: conv.archivedBy?.includes(req.user._id) || false,
         isMuted: conv.mutedBy?.includes(req.user._id) || false
@@ -64,7 +70,40 @@ router.post('/conversations', authMiddleware, async (req, res) => {
       });
     }
 
-    if (userId === req.user._id.toString()) {
+    // Check if userId is a valid ObjectId, if not try to find user by username
+    const mongoose = require('mongoose');
+    let targetUserId = userId;
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      // Try to find user by username
+      const targetUser = await User.findOne({ 
+        $or: [
+          { username: userId },
+          { username: userId.toLowerCase() },
+          { 'profile.displayName': userId }
+        ]
+      });
+      
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      targetUserId = targetUser._id;
+    } else {
+      // Verify the user exists
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+    }
+
+    if (targetUserId.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
         message: 'Cannot create conversation with yourself'
@@ -73,7 +112,7 @@ router.post('/conversations', authMiddleware, async (req, res) => {
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
-      participants: { $all: [req.user._id, userId] },
+      participants: { $all: [req.user._id, targetUserId] },
       isGroup: false
     })
       .populate('participants', 'username profile.avatar profile.displayName')
@@ -82,7 +121,7 @@ router.post('/conversations', authMiddleware, async (req, res) => {
     if (!conversation) {
       // Create new conversation
       const newConversation = new Conversation({
-        participants: [req.user._id, userId],
+        participants: [req.user._id, targetUserId],
         isGroup: false
       });
 
@@ -147,7 +186,10 @@ router.get('/conversations/:conversationId/messages', authMiddleware, async (req
       }
     );
 
-    // Update unread count
+    // Update unread count - ensure unreadCounts is a Map
+    if (!conversation.unreadCounts || typeof conversation.unreadCounts.set !== 'function') {
+      conversation.unreadCounts = new Map();
+    }
     conversation.unreadCounts.set(req.user._id.toString(), 0);
     await conversation.save();
 
@@ -214,7 +256,10 @@ router.post('/conversations/:conversationId/messages', authMiddleware, async (re
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
     
-    // Update unread count for receiver
+    // Update unread count for receiver - ensure unreadCounts is a Map
+    if (!conversation.unreadCounts || typeof conversation.unreadCounts.get !== 'function') {
+      conversation.unreadCounts = new Map();
+    }
     const currentUnread = conversation.unreadCounts.get(receiver.toString()) || 0;
     conversation.unreadCounts.set(receiver.toString(), currentUnread + 1);
     
@@ -267,6 +312,10 @@ router.put('/messages/:messageId/read', authMiddleware, async (req, res) => {
     // Update conversation unread count
     const conversation = await Conversation.findById(message.conversation);
     if (conversation) {
+      // Ensure unreadCounts is a Map
+      if (!conversation.unreadCounts || typeof conversation.unreadCounts.set !== 'function') {
+        conversation.unreadCounts = new Map();
+      }
       conversation.unreadCounts.set(req.user._id.toString(), 0);
       await conversation.save();
     }

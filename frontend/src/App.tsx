@@ -356,27 +356,27 @@ const MorePage: React.FC = () => {
 
 const TikTokStudioPage: React.FC = () => {
   const navigate = useNavigate();
-  return <TikTokStudio onClose={() => navigate('/more')} />;
+  return <TikTokStudio onClose={() => navigate('/profile')} />;
 };
 
 const EffectsLabPage: React.FC = () => {
   const navigate = useNavigate();
-  return <EffectsLab onClose={() => navigate('/more')} />;
+  return <EffectsLab onClose={() => navigate('/profile')} />;
 };
 
 const SellerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  return <SellerDashboard onClose={() => navigate('/more')} />;
+  return <SellerDashboard onClose={() => navigate('/profile')} />;
 };
 
 const GrowthToolsPage: React.FC = () => {
   const navigate = useNavigate();
-  return <GrowthToolsHub onClose={() => navigate('/more')} />;
+  return <GrowthToolsHub onClose={() => navigate('/profile')} />;
 };
 
 const SupportCenterPage: React.FC = () => {
   const navigate = useNavigate();
-  return <SupportCenter onClose={() => navigate('/more')} />;
+  return <SupportCenter onClose={() => navigate('/profile')} />;
 };
 
 const GoogleAuthCallback = lazy(() => import('./components/GoogleAuthCallback'));
@@ -475,110 +475,27 @@ const MainLayout: React.FC = () => {
 const AppRoutes: React.FC = () => (
   <Routes>
     <Route element={<MainLayout />}>
+      {/* Public Routes - No Login Required */}
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
-      <Route
-        path="following"
-        element={
-          <ProtectedRoute>
-            <FollowingPage />
-          </ProtectedRoute>
-        }
-      />
       <Route path="live" element={<LivePage />} />
-      <Route
-        path="watch-later"
-        element={
-          <ProtectedRoute>
-            <WatchLaterPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="playlists"
-        element={
-          <ProtectedRoute>
-            <PlaylistsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="qa"
-        element={
-          <ProtectedRoute>
-            <VideoQAPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="upload"
-        element={
-          <ProtectedRoute>
-            <UploadPageRoute />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="user/:username"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="more"
-        element={<MorePage />}
-      />
-      <Route
-        path="more/studio"
-        element={
-          <ProtectedRoute>
-            <TikTokStudioPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="more/effects"
-        element={
-          <ProtectedRoute>
-            <EffectsLabPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="more/shop"
-        element={
-          <ProtectedRoute>
-            <SellerDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="more/growth-tools"
-        element={
-          <ProtectedRoute>
-            <GrowthToolsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="more/support"
-        element={
-          <ProtectedRoute>
-            <SupportCenterPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="more" element={<MorePage />} />
+      
+      {/* Protected Routes - Login Required */}
+      <Route path="following" element={<ProtectedRoute><FollowingPage /></ProtectedRoute>} />
+      <Route path="watch-later" element={<ProtectedRoute><WatchLaterPage /></ProtectedRoute>} />
+      <Route path="playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
+      <Route path="qa" element={<ProtectedRoute><VideoQAPage /></ProtectedRoute>} />
+      <Route path="upload" element={<ProtectedRoute><UploadPageRoute /></ProtectedRoute>} />
+      <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="user/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="more/studio" element={<ProtectedRoute><TikTokStudioPage /></ProtectedRoute>} />
+      <Route path="more/effects" element={<ProtectedRoute><EffectsLabPage /></ProtectedRoute>} />
+      <Route path="more/shop" element={<ProtectedRoute><SellerDashboardPage /></ProtectedRoute>} />
+      <Route path="more/growth-tools" element={<ProtectedRoute><GrowthToolsPage /></ProtectedRoute>} />
+      <Route path="more/support" element={<ProtectedRoute><SupportCenterPage /></ProtectedRoute>} />
     </Route>
+    {/* Auth Routes */}
     <Route path="/login" element={<LoginPage />} />
     <Route path="/signup" element={<SignupPage />} />
     <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />

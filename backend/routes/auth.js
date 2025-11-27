@@ -59,6 +59,17 @@ const buildUserResponse = (user) => ({
   emailVerified: user.emailVerified
 });
 
+// Cookie configuration for better session persistence
+const getCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'strict' : 'lax',
+    path: '/'
+  };
+};
+
 const issueAuthSuccess = async ({
   user,
   req,
@@ -72,24 +83,22 @@ const issueAuthSuccess = async ({
   const refreshToken = new RefreshToken({
     user: user._id,
     token: refreshTokenValue,
-    expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     ipAddress: req.ip,
     userAgent: req.get('user-agent')
   });
   await refreshToken.save();
 
+  const cookieOptions = getCookieOptions();
+
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60 * 1000
+    ...cookieOptions,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
   });
 
   res.cookie('refreshToken', refreshTokenValue, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
   res.status(statusCode).json({
@@ -236,8 +245,11 @@ router.post('/register',
       .withMessage('Password must contain uppercase, lowercase, number, and special character (e.g., !@#$%^&*)')
   ],
   asyncHandler(async (req, res) => {
+    console.log('📝 Registration attempt:', req.body.email);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation failed:', errors.array());
       throw new AppError('Validation failed', 400, true, errors.array());
     }
 
@@ -252,6 +264,7 @@ router.post('/register',
     });
 
     if (existingUser) {
+      console.log('❌ User already exists:', normalizedEmail);
       throw new AppError('User with this email or username already exists', 400);
     }
 
@@ -271,23 +284,16 @@ router.post('/register',
     });
 
     await user.save();
+    console.log('✅ User created:', normalizedEmail);
 
-    const accessToken = generateAccessToken(user._id);
-    const refreshTokenValue = generateRefreshToken();
-    
-    const refreshToken = new RefreshToken({
-      user: user._id,
-      token: refreshTokenValue,
-      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days // 7 days
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent')
-    });
-    await refreshToken.save();
-
+    // Send verification email (non-blocking)
     const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${emailVerificationToken}`;
     const emailTemplate = emailTemplates.welcome(username, verificationLink);
-    await sendEmail(email, emailTemplate.subject, emailTemplate.html);
+    sendEmail(email, emailTemplate.subject, emailTemplate.html).catch(err => {
+      console.warn('⚠️ Email sending failed:', err.message);
+    });
 
+    // Issue auth tokens and respond
     await issueAuthSuccess({
       user,
       req,
@@ -297,6 +303,7 @@ router.post('/register',
         message: 'Account created successfully'
       }
     });
+    console.log('✅ Registration complete:', normalizedEmail);
   })
 );
 
@@ -438,11 +445,10 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   const accessToken = generateAccessToken(tokenDoc.user);
 
+  const cookieOptions = getCookieOptions();
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days - matches token expiration
+    ...cookieOptions,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
   });
 
   res.json({
@@ -451,7 +457,7 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   });
 }));
 
-// Logout
+// Logout (requires auth)
 router.post('/logout', authMiddleware, asyncHandler(async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   
@@ -468,6 +474,28 @@ router.post('/logout', authMiddleware, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: 'Logged out successfully'
+  });
+}));
+
+// Clear session - PUBLIC endpoint (no auth required) for clearing stale tokens
+router.post('/clear-session', asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  
+  // Revoke the refresh token if it exists
+  if (refreshToken) {
+    await RefreshToken.findOneAndUpdate(
+      { token: refreshToken },
+      { revoked: true, revokedAt: new Date() }
+    );
+  }
+
+  // Clear all auth cookies
+  res.clearCookie('accessToken', { path: '/' });
+  res.clearCookie('refreshToken', { path: '/' });
+
+  res.json({
+    success: true,
+    message: 'Session cleared successfully'
   });
 }));
 
@@ -491,24 +519,21 @@ router.post('/oidc/login', asyncHandler(async (req, res) => {
   const refreshToken = new RefreshToken({
     user: user._id,
     token: refreshTokenValue,
-    expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     ipAddress: req.ip,
     userAgent: req.get('user-agent')
   });
   await refreshToken.save();
 
+  const cookieOptions = getCookieOptions();
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60 * 1000
+    ...cookieOptions,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
   });
 
   res.cookie('refreshToken', refreshTokenValue, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
   res.json({

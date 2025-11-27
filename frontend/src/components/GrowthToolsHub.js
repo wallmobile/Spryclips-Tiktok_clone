@@ -99,7 +99,7 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
 
   const handleClose = () => {
     onClose();
-    navigate('/more');
+    navigate('/profile');
   };
 
   const setSection = (section) => {

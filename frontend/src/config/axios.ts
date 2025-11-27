@@ -105,7 +105,17 @@ api.interceptors.response.use(
       (isAuthRegister && !originalRequest._retry)
     );
 
+    // Suppress 404 errors to prevent noise - these are often non-critical
+    const shouldSuppress404 = status === 404;
+
     if (status === 401 && !originalRequest._retry && !isAuthRefresh && !isAuthVerify) {
+      // Check if user has any stored auth data - if not, skip refresh attempt
+      const hasStoredUser = localStorage.getItem('user');
+      if (!hasStoredUser) {
+        // No user data - don't try to refresh, just fail immediately
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({
@@ -124,6 +134,8 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
+        // Clear stored user on refresh failure
+        localStorage.removeItem('user');
         // Only broadcast refresh errors if they're not expected (e.g., user is logged out)
         if (isAxiosError(refreshError) && !hasBeenBroadcast(refreshError)) {
           const refreshStatus = refreshError.response?.status;
@@ -138,8 +150,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Don't broadcast expected 401 errors for auth endpoints
-    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401) {
+    // Don't broadcast expected 401 errors for auth endpoints or 404 errors
+    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401 && !shouldSuppress404) {
       broadcastAxiosError(error);
     }
 

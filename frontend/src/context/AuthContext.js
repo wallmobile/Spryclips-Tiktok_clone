@@ -1,13 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import api, { API_URL } from '../config/axios';
+import api from '../config/axios';
 
 const AuthContext = createContext();
-const hasExplicitApiConfig = Boolean(
-  (typeof process !== 'undefined' && process.env && typeof process.env.REACT_APP_API_URL === 'string' && process.env.REACT_APP_API_URL.trim().length > 0) ||
-  (typeof window !== 'undefined' && window.APP_CONFIG && typeof window.APP_CONFIG.API_URL === 'string' && window.APP_CONFIG.API_URL.trim().length > 0)
-);
-const assumeGuestMode = (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && API_URL === window.location.origin) || !hasExplicitApiConfig;
-let skipAuthVerify = assumeGuestMode;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -18,58 +12,72 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize user from localStorage for instant UI - no loading screen needed
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+  
+  // If we have a cached user, start with loading = false (instant UI)
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('user');
+    } catch {
+      return true;
+    }
+  });
+  
   const [authenticating, setAuthenticating] = useState(false);
   const isMountedRef = useRef(true);
 
-  const fetchCurrentUser = async () => {
-    if (skipAuthVerify) {
-      if (isMountedRef.current) {
-        setUser(null);
-        setLoading(false);
-      }
-      return;
+  const fetchCurrentUser = async (showLoading = false) => {
+    if (showLoading) {
+      setLoading(true);
     }
     
-    // Add timeout to prevent infinite loading - reduced to 3 seconds for faster UX
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('Auth verification timeout'));
-      }, 3000); // 3 second timeout for faster UX
-    });
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) {
+        console.debug('Auth check timeout - redirecting to login');
+        setUser(null);
+        setLoading(false);
+        localStorage.removeItem('user');
+      }
+    }, 5000); // 5 second timeout
     
     try {
-      const response = await Promise.race([
-        api.get('/api/auth/verify'),
-        timeoutPromise
-      ]);
+      const response = await api.get('/api/auth/verify');
+      clearTimeout(timeoutId);
       if (isMountedRef.current && response?.data?.user) {
         setUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
     } catch (error) {
-      console.debug('Auth verification failed', error);
-      if (!skipAuthVerify) {
-        console.info('Auth verification endpoint unavailable, continuing in guest mode.');
-        skipAuthVerify = true;
+      clearTimeout(timeoutId);
+      if (error?.response?.status !== 401) {
+        console.debug('Auth verification failed', error);
       }
       if (isMountedRef.current) {
         setUser(null);
+        localStorage.removeItem('user');
       }
     } finally {
-      // Always set loading to false, even if component unmounted
+      clearTimeout(timeoutId);
       if (isMountedRef.current) {
-        setLoading(false);
-      } else {
-        // If component unmounted, still try to set loading (might be needed for cleanup)
         setLoading(false);
       }
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    fetchCurrentUser();
+    // Verify in background without blocking UI
+    // If user is cached, don't show loading - verify silently
+    fetchCurrentUser(false);
+    
     return () => {
       isMountedRef.current = false;
     };
@@ -82,10 +90,9 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/api/auth/login', { email, password });
       if (response?.data?.user) {
         setUser(response.data.user);
+        // Save user to localStorage for persistence across refreshes
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-      skipAuthVerify = false;
-      setLoading(true);
-      await fetchCurrentUser();
       console.log('Login successful');
       return { success: true };
     } catch (error) {
@@ -132,10 +139,9 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/api/auth/register', { username, email, password });
       if (response?.data?.user) {
         setUser(response.data.user);
+        // Save user to localStorage for persistence across refreshes
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-      skipAuthVerify = false;
-      setLoading(true);
-      await fetchCurrentUser();
       return { success: true };
     } catch (error) {
       const message =
@@ -164,10 +170,9 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post(`/api/auth/social/${provider}`, payload);
       if (response?.data?.user) {
         setUser(response.data.user);
+        // Save user to localStorage for persistence across refreshes
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-      skipAuthVerify = false;
-      setLoading(true);
-      await fetchCurrentUser();
       return { success: true, message: response?.data?.message || `${provider} sign-in successful` };
     } catch (error) {
       const message =
@@ -188,6 +193,8 @@ export const AuthProvider = ({ children }) => {
       console.debug('Logout request failed', error);
     } finally {
       setUser(null);
+      // Clear user from localStorage
+      localStorage.removeItem('user');
     }
   };
 

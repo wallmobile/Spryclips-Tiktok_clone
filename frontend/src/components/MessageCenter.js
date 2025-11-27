@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, getOrCreateConversation, markMessageAsRead } from '../api/messages';
+import { searchUsers } from '../api/search';
 import './MessageCenter.css';
 
 const SAMPLE_CONVERSATIONS = [
@@ -94,29 +95,7 @@ const SAMPLE_CONVERSATIONS = [
   }
 ];
 
-const SUGGESTED_USERS = [
-  {
-    username: 'trending_creator',
-    displayName: 'Trending Creator',
-    avatar: 'https://ui-avatars.com/api/?name=Trending+Creator&background=E74C3C&color=fff',
-    followers: '2.5M',
-    isVerified: true
-  },
-  {
-    username: 'funny_videos',
-    displayName: 'Comedy Central',
-    avatar: 'https://ui-avatars.com/api/?name=Comedy+Central&background=2ECC71&color=fff',
-    followers: '1.8M',
-    isVerified: true
-  },
-  {
-    username: 'dance_moves',
-    displayName: 'Dance Academy',
-    avatar: 'https://ui-avatars.com/api/?name=Dance+Academy&background=F39C12&color=fff',
-    followers: '950K',
-    isVerified: false
-  }
-];
+// Suggested users will be fetched from API
 
 const getParticipant = (conversation, currentUser) => {
   if (Array.isArray(conversation?.participants) && conversation.participants.length) {
@@ -154,10 +133,19 @@ const convertMessage = (message, currentUser) => {
     : senderUsername === currentUser?.username || senderUsername === currentUser?.displayName;
   const timestamp = message.createdAt || message.timestamp || message.time;
 
+  // Extract text from content object or use direct text field
+  let messageText = '';
+  if (message.text) {
+    messageText = message.text;
+  } else if (message.content) {
+    // Backend returns content as object: { text, mediaUrl, mediaType, thumbnail }
+    messageText = typeof message.content === 'object' ? (message.content.text || '') : message.content;
+  }
+
   return {
     id: message.id || message._id || Date.now(),
     sender: isSelf ? 'me' : senderUsername || 'creator',
-    text: message.text || message.content || '',
+    text: messageText,
     time: timestamp
       ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '',
@@ -206,8 +194,75 @@ const MessageCenter = ({ onClose }) => {
   const [conversationError, setConversationError] = useState(null);
   const [sendError, setSendError] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchedUsers, setSearchedUsers] = useState([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [newChatError, setNewChatError] = useState(null);
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
-  const suggestedUsers = SUGGESTED_USERS;
+  // Search users for new message
+  const handleUserSearch = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSearchedUsers([]);
+      return;
+    }
+    
+    setIsSearchingUsers(true);
+    try {
+      const response = await searchUsers(query);
+      const users = response?.users || [];
+      // Filter out current user
+      const filteredUsers = users.filter(u => u._id !== user?._id && u.username !== user?.username);
+      setSearchedUsers(filteredUsers);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchedUsers([]);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  }, [user]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (userSearchQuery) {
+        handleUserSearch(userSearchQuery);
+      } else {
+        setSearchedUsers([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, handleUserSearch]);
+
+  // Fetch suggested users when modal opens
+  useEffect(() => {
+    if (showNewMessage && suggestedUsers.length === 0) {
+      const fetchSuggestedUsers = async () => {
+        try {
+          // Fetch some users to suggest
+          const response = await searchUsers('');
+          const users = response?.users || [];
+          // Filter out current user and take first 5
+          const filtered = users
+            .filter(u => u._id !== user?._id && u.username !== user?.username)
+            .slice(0, 5)
+            .map(u => ({
+              _id: u._id,
+              username: u.username,
+              displayName: u.profile?.displayName || u.username,
+              avatar: u.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=E74C3C&color=fff`,
+              followers: u.followersCount || 0,
+              isVerified: u.isVerified || false
+            }));
+          setSuggestedUsers(filtered);
+        } catch (error) {
+          console.error('Error fetching suggested users:', error);
+        }
+      };
+      fetchSuggestedUsers();
+    }
+  }, [showNewMessage, suggestedUsers.length, user]);
 
   useEffect(() => {
     if (!user) {
@@ -264,7 +319,8 @@ const MessageCenter = ({ onClose }) => {
     setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
-      const response = await sendMessage(activeChat.id, { text });
+      // Backend expects content object with text field
+      const response = await sendMessage(activeChat.id, { content: { text } });
       const delivered = convertMessage(response?.message || response, user) || optimisticMessage;
 
       setMessages((prev) =>
@@ -294,23 +350,33 @@ const MessageCenter = ({ onClose }) => {
 
   const handleStartNewChat = async (selectedUser) => {
     try {
-      setMessagesLoading(true);
-      const response = await getOrCreateConversation(selectedUser.id || selectedUser.userId || selectedUser.username);
+      setIsStartingChat(true);
+      setNewChatError(null);
+      
+      const userId = selectedUser._id || selectedUser.id || selectedUser.userId || selectedUser.username;
+      const response = await getOrCreateConversation(userId);
       const conversationData = response?.conversation || response;
       const normalized = convertConversation(conversationData, user);
+      
       setConversations((prev) => {
         const exists = prev.some((conv) => conv.id === normalized.id);
         return exists
           ? prev.map((conv) => (conv.id === normalized.id ? normalized : conv))
           : [normalized, ...prev];
       });
+      
       setShowNewMessage(false);
+      setUserSearchQuery('');
+      setSearchedUsers([]);
+      setNewChatError(null);
+      
       await openConversation(normalized);
     } catch (error) {
       console.error('Error starting conversation:', error);
-      setConversationError('Unable to start conversation. Please try again.');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unable to start conversation. Please try again.';
+      setNewChatError(errorMessage);
     } finally {
-      setMessagesLoading(false);
+      setIsStartingChat(false);
     }
   };
 
@@ -589,53 +655,134 @@ const MessageCenter = ({ onClose }) => {
 
         {/* New Message Modal */}
         {showNewMessage && (
-          <div className="new-message-overlay" onClick={() => setShowNewMessage(false)}>
+          <div className="new-message-overlay" onClick={() => { setShowNewMessage(false); setNewChatError(null); }}>
             <div className="new-message-modal" onClick={(e) => e.stopPropagation()}>
               <div className="new-message-header">
                 <h3>New Message</h3>
-                <button className="new-message-close" onClick={() => setShowNewMessage(false)}>
+                <button className="new-message-close" onClick={() => { setShowNewMessage(false); setNewChatError(null); }}>
                   <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <div className="new-message-body">
+                {/* Error Message */}
+                {newChatError && (
+                  <div className="message-alert error" role="alert" style={{ margin: '0 0 16px 0' }}>
+                    <i className="fa-solid fa-circle-exclamation"></i>
+                    <span>{newChatError}</span>
+                  </div>
+                )}
+
+                {/* Loading Overlay */}
+                {isStartingChat && (
+                  <div className="starting-chat-overlay">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <p>Starting conversation...</p>
+                  </div>
+                )}
+
                 <div className="user-search">
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder="Search users by username..."
                     className="user-search-input"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    autoFocus
+                    disabled={isStartingChat}
                   />
+                  {isSearchingUsers && (
+                    <i className="fa-solid fa-spinner fa-spin search-spinner"></i>
+                  )}
                 </div>
                 
-                <div className="suggested-users">
-                  <h4>Suggested</h4>
-                  <div className="users-list">
-                    {suggestedUsers.map((suggestedUser, index) => (
-                      <div
-                        key={index}
-                        className="user-item"
-                        onClick={() => handleStartNewChat(suggestedUser)}
-                      >
-                        <div className="user-avatar">
-                          <img src={suggestedUser.avatar} alt={suggestedUser.displayName} />
-                        </div>
-                        <div className="user-info">
-                          <div className="user-name">
-                            {suggestedUser.displayName}
-                            {suggestedUser.isVerified && (
-                              <i className="fa-solid fa-circle-check verified-icon"></i>
-                            )}
+                {/* Search Results */}
+                {userSearchQuery && searchedUsers.length > 0 && (
+                  <div className="search-results-users">
+                    <h4>Search Results</h4>
+                    <div className="users-list">
+                      {searchedUsers.map((searchedUser) => (
+                        <div
+                          key={searchedUser._id}
+                          className={`user-item ${isStartingChat ? 'disabled' : ''}`}
+                          onClick={() => !isStartingChat && handleStartNewChat({
+                            _id: searchedUser._id,
+                            username: searchedUser.username,
+                            displayName: searchedUser.displayName || searchedUser.profile?.displayName,
+                            avatar: searchedUser.avatar || searchedUser.profile?.avatar,
+                            isVerified: searchedUser.isVerified
+                          })}
+                        >
+                          <div className="user-avatar">
+                            <img src={searchedUser.avatar || searchedUser.profile?.avatar || `https://ui-avatars.com/api/?name=${searchedUser.username}&background=E74C3C&color=fff`} alt={searchedUser.displayName || searchedUser.username} />
                           </div>
-                          <div className="user-details">
-                            @{suggestedUser.username} • {suggestedUser.followers} followers
+                          <div className="user-info">
+                            <div className="user-name">
+                              {searchedUser.displayName || searchedUser.profile?.displayName || searchedUser.username}
+                              {searchedUser.isVerified && (
+                                <i className="fa-solid fa-circle-check verified-icon"></i>
+                              )}
+                            </div>
+                            <div className="user-details">
+                              @{searchedUser.username} • {searchedUser.followersCount?.toLocaleString() || 0} followers
+                            </div>
                           </div>
+                          <button className="message-user-btn" disabled={isStartingChat}>
+                            <i className="fa-solid fa-paper-plane"></i>
+                          </button>
                         </div>
-                        <button className="message-user-btn">
-                          <i className="fa-solid fa-paper-plane"></i>
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* No Results */}
+                {userSearchQuery && userSearchQuery.length >= 2 && !isSearchingUsers && searchedUsers.length === 0 && (
+                  <div className="no-users-found">
+                    <i className="fa-solid fa-user-slash"></i>
+                    <p>No users found for "{userSearchQuery}"</p>
+                  </div>
+                )}
+
+                {/* Suggested Users (show when not searching) */}
+                {!userSearchQuery && (
+                  <div className="suggested-users">
+                    <h4>Suggested</h4>
+                    <div className="users-list">
+                      {suggestedUsers.length === 0 ? (
+                        <div className="no-suggestions">
+                          <i className="fa-solid fa-users"></i>
+                          <p>Search for users to start a conversation</p>
+                        </div>
+                      ) : (
+                        suggestedUsers.map((suggestedUser) => (
+                          <div
+                            key={suggestedUser._id}
+                            className={`user-item ${isStartingChat ? 'disabled' : ''}`}
+                            onClick={() => !isStartingChat && handleStartNewChat(suggestedUser)}
+                          >
+                            <div className="user-avatar">
+                              <img src={suggestedUser.avatar} alt={suggestedUser.displayName} />
+                            </div>
+                            <div className="user-info">
+                              <div className="user-name">
+                                {suggestedUser.displayName}
+                                {suggestedUser.isVerified && (
+                                  <i className="fa-solid fa-circle-check verified-icon"></i>
+                                )}
+                              </div>
+                              <div className="user-details">
+                                @{suggestedUser.username} • {suggestedUser.followers?.toLocaleString() || 0} followers
+                              </div>
+                            </div>
+                            <button className="message-user-btn" disabled={isStartingChat}>
+                              <i className="fa-solid fa-paper-plane"></i>
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

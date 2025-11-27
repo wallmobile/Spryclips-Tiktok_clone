@@ -6,45 +6,31 @@ const isDevelopment = () =>
   process.env.NODE_ENV !== 'production' || process.env.SEED_SAMPLE_DATA === 'true';
 
 const upsertSampleUser = async (userPayload) => {
-  const { username, profile = {}, ...rest } = userPayload;
+  const { username, password, email, profile = {}, ...rest } = userPayload;
 
-  let user = await User.findOne({ username }).exec();
-  if (!user) {
-    user = new User({
-      username,
-      ...rest,
-      emailVerified: true,
-      accountStatus: 'active',
-      profile: {
-        displayName: profile.displayName || username,
-        avatar: profile.avatar || '',
-        bio: profile.bio || '',
-        followers: profile.followers || 0,
-        following: profile.following || 0,
-        likes: profile.likes || 0,
-        isVerified: true
-      }
-    });
-    await user.save();
-    return user;
-  }
-
-  let updated = false;
-  if (!user.profile.avatar && profile.avatar) {
-    user.profile.avatar = profile.avatar;
-    updated = true;
-  }
-  if (!user.profile.displayName && profile.displayName) {
-    user.profile.displayName = profile.displayName;
-    updated = true;
-  }
-  if (profile.bio && !user.profile.bio) {
-    user.profile.bio = profile.bio;
-    updated = true;
-  }
-  if (updated) {
-    await user.save();
-  }
+  // Delete existing sample user and recreate to ensure password is correct
+  await User.deleteOne({ username }).exec();
+  
+  const user = new User({
+    username,
+    email,
+    password,
+    ...rest,
+    authProvider: 'local',
+    emailVerified: true,
+    accountStatus: 'active',
+    profile: {
+      displayName: profile.displayName || username,
+      avatar: profile.avatar || '',
+      bio: profile.bio || '',
+      followers: profile.followers || 0,
+      following: profile.following || 0,
+      likes: profile.likes || 0,
+      isVerified: true
+    }
+  });
+  await user.save();
+  console.log(`✅ Sample user ready: ${email}`);
   return user;
 };
 
@@ -99,18 +85,42 @@ const seedSampleData = async () => {
   }
 
   try {
-    const videoCount = await Video.countDocuments().exec();
-    if (videoCount > 0) {
+    // Always ensure sample users exist with proper passwords (for login functionality)
+    console.info('🔧 Checking sample users for development...');
+    for (let index = 0; index < sampleData.length; index += 1) {
+      const entry = sampleData[index];
+      await upsertSampleUser(entry.user);
+    }
+    console.info('✅ Sample users ready. You can login with:');
+    console.info('   Email: funnycat@example.com | Password: SampleCat1!');
+
+    // Check if working sample videos exist (with external URLs like Google Cloud Storage)
+    const workingSampleVideo = await Video.findOne({ 
+      url: { $regex: /^https:\/\// } 
+    }).exec();
+    
+    if (workingSampleVideo) {
+      console.info('✅ Sample videos already exist with working URLs.');
       return;
     }
 
-    console.info('Seeding sample users and videos for development...');
+    // Delete ALL videos (they have broken local URLs) and seed fresh sample videos
+    const totalVideos = await Video.countDocuments().exec();
+    if (totalVideos > 0) {
+      console.info(`🧹 Removing ${totalVideos} videos with broken/local URLs...`);
+      await Video.deleteMany({}).exec();
+    }
+
+    console.info('🎬 Seeding sample videos for development...');
     for (let index = 0; index < sampleData.length; index += 1) {
       const entry = sampleData[index];
-      const user = await upsertSampleUser(entry.user);
-      await createSampleVideo(user, entry.video, index);
+      const user = await User.findOne({ username: entry.user.username }).exec();
+      if (user) {
+        await createSampleVideo(user, entry.video, index);
+        console.info(`   ✅ Created video: ${entry.video.description.substring(0, 30)}...`);
+      }
     }
-    console.info('Sample data ready.');
+    console.info('✅ Sample videos ready with working external URLs!');
   } catch (error) {
     console.error('Failed to seed sample data:', error);
   }
