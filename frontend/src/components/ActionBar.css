@@ -1,7 +1,7 @@
 ﻿.action-bar {
   position: absolute;
-  left: calc(100% + 2rem) !important; /* Position to the right side of video container with more gap */
-  right: auto !important;
+  right: 3rem !important; /* Position inside video on right side */
+  left: auto !important;
   bottom: 50% !important; /* Center vertically with video */
   top: auto;
   transform: translateY(50%) !important; /* Perfect vertical centering */
@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px !important; /* Reduced gap between buttons */
-  z-index: 2000 !important; /* Higher than navbar to stay on top */
+  z-index: 100 !important; /* Above video and other elements */
   /* Ensure it stays within bounds */
   max-width: calc(100% - 32px);
   box-sizing: border-box;
@@ -624,7 +624,7 @@ body.dark-mode .toggle-switch-small input:checked + .toggle-slider-small {
     transform: translateY(50%) !important; /* Perfect vertical centering */
     gap: 0.5rem !important; /* 8px gap - same as mobile/iPad Mini */
     position: absolute !important;
-    z-index: 30 !important;
+    z-index: 100 !important; /* Above video */
     max-width: none !important;
     display: flex !important; /* Visible - same as iPad Mini */
     visibility: visible !important;
