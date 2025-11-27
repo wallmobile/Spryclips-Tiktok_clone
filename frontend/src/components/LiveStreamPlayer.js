@@ -264,16 +264,17 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   };
 
   return (
-    <div className="live-stream-player">
+    <div className="live-stream-player" onClick={() => {}}>
       {/* Main Video Area */}
       <div className="stream-main">
-        <div className="stream-video-container">
+        <div className="stream-video-container" onClick={(e) => e.stopPropagation()}>
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted={isBroadcaster}
             className="stream-video"
+            onClick={(e) => e.stopPropagation()}
           />
           
           {/* Stream Overlay Info */}
@@ -383,7 +384,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
         </div>
 
         {/* Live Comments Sidebar */}
-        <div className="comments-sidebar">
+        <div className="comments-sidebar" onClick={(e) => e.stopPropagation()}>
           <div className="comments-header">
             <h4>Live Comments</h4>
             <span className="comment-count">{comments.length}</span>
