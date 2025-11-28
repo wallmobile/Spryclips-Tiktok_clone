@@ -291,6 +291,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
             {/* Stream Title - Floating Bottom Bar */}
             <div className="stream-title-container">
               <div className="stream-title-bar">
+                <span className="online-status-dot"></span>
                 <div className="stream-title-content">
                   <h3>{streamData?.title || 'Live Stream'}</h3>
                   <p>@{streamData?.username || user?.username || 'user'}</p>
