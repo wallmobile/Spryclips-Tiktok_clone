@@ -165,6 +165,58 @@ router.get('/active', async (req, res) => {
   }
 });
 
+// ==================== GET STREAM BY ROOM ID (for shareable links) ====================
+// NOTE: This route MUST be before /:streamId to avoid 'room' being matched as streamId
+router.get('/room/:roomId', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    const liveStream = await LiveStream.findOne({ roomId })
+      .populate('streamer', 'username profile')
+      .populate('guests', 'username profile');
+
+    if (!liveStream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live stream not found',
+      });
+    }
+
+    // Return formatted stream data for viewer
+    const streamData = {
+      id: liveStream._id,
+      roomId: liveStream.roomId,
+      title: liveStream.title,
+      description: liveStream.description,
+      category: liveStream.category,
+      status: liveStream.status,
+      hostId: liveStream.streamer._id,
+      hostUsername: liveStream.streamer.username,
+      hostProfile: liveStream.streamer.profile,
+      thumbnail: liveStream.thumbnail,
+      streamUrl: liveStream.streamUrl,
+      viewers: liveStream.viewers,
+      likes: liveStream.likes,
+      gifts: liveStream.gifts,
+      giftValue: liveStream.giftValue,
+      createdAt: liveStream.createdAt,
+      actualStartTime: liveStream.actualStartTime,
+    };
+
+    res.json({
+      success: true,
+      stream: streamData,
+    });
+  } catch (error) {
+    console.error('Error fetching stream by room ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch stream',
+      error: error.message,
+    });
+  }
+});
+
 // ==================== GET STREAM DETAILS ====================
 router.get('/:streamId', async (req, res) => {
   try {

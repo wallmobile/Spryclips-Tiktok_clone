@@ -787,6 +787,92 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
   color: #94A3B8;
 }
 
+/* Live Stream Watch Loading State */
+.live-stream-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  gap: 24px;
+}
+
+.loading-spinner-large {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #FF0050;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.live-stream-loading p {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Live Stream Watch Error State */
+.live-stream-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+.live-stream-error i {
+  font-size: 72px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.live-stream-error h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.live-stream-error p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  max-width: 400px;
+}
+
+.back-to-live-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 100%);
+  border: none;
+  border-radius: 30px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.back-to-live-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4);
+}
+
 
 
 

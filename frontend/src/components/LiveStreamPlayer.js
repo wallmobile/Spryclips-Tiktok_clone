@@ -231,12 +231,20 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     }
   };
 
-  // Generate share URL
+  // Generate share URL using unique roomId
   const getShareUrl = useCallback(() => {
-    const streamId = streamData?.id || streamData?._id || 'live';
-    const hostUsername = streamData?.username || streamData?.hostUsername || user?.username || 'host';
-    return `${window.location.origin}/live/${hostUsername}/${streamId}`;
-  }, [streamData, user]);
+    // Use roomId for shareable links - this is unique per stream
+    const roomId = streamData?.roomId;
+    if (roomId) {
+      return `${window.location.origin}/live/watch/${roomId}`;
+    }
+    // Fallback to stream ID if roomId not available
+    const streamId = streamData?.id || streamData?._id;
+    if (streamId) {
+      return `${window.location.origin}/live/watch/${streamId}`;
+    }
+    return `${window.location.origin}/live`;
+  }, [streamData]);
 
   // Share handlers
   const handleCopyLink = async () => {

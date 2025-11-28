@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import LiveStreamSetup from './LiveStreamSetup';
 import LiveStreamPlayer from './LiveStreamPlayer';
 import './LIVE.css';
@@ -56,10 +58,22 @@ const CATEGORIES = [
 ];
 
 const LIVE = ({ onClose = () => {} }) => {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('all');
   const [showSetup, setShowSetup] = useState(false);
   const [activeStream, setActiveStream] = useState(null);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  // Handle Go Live button - check auth first
+  const handleGoLive = () => {
+    if (!isAuthenticated || !user) {
+      // Redirect to login
+      navigate('/login', { state: { from: { pathname: '/live' } } });
+      return;
+    }
+    setShowSetup(true);
+  };
 
   useEffect(() => {
     window.dispatchEvent(new Event('sidebar:close'));
@@ -96,7 +110,7 @@ const LIVE = ({ onClose = () => {} }) => {
             <span className="live-indicator"></span>
             LIVE
           </h1>
-          <button className="live-create-btn" onClick={() => setShowSetup(true)} type="button">
+          <button className="live-create-btn" onClick={handleGoLive} type="button">
             <i className="fa-solid fa-video"></i>
             Go Live
           </button>
@@ -184,10 +198,11 @@ const LIVE = ({ onClose = () => {} }) => {
           onStartLive={(streamData) => {
             setShowSetup(false);
             setIsBroadcasting(true);
+            // streamData now contains roomId, hostUsername, etc. from backend
             setActiveStream({
               ...streamData,
-              username: 'you',
-              streamUrl: null
+              hostUsername: streamData.hostUsername || user?.username,
+              hostId: streamData.hostId || user?._id
             });
           }}
         />

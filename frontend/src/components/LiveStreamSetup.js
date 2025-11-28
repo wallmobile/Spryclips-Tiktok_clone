@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './LiveStreamSetup.css';
 
 const LiveStreamSetup = ({ onClose, onStartLive }) => {
+  const { user } = useAuth();
   const thumbnailInputRef = useRef(null);
   const videoPreviewRef = useRef(null);
   const isGoingLiveRef = useRef(false); // Use ref to track if we're going live
@@ -135,24 +137,61 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
       return;
     }
 
+    // Check if user is authenticated
+    if (!user) {
+      alert('Please sign in to start a live stream');
+      return;
+    }
+
     setIsStarting(true);
     try {
-      // Here you would connect to your streaming server (WebRTC, RTMP, etc.)
-      // For now, we'll simulate the connection
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call backend API to create stream and get unique roomId
+      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_URL}/api/live/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Use cookies for authentication
+        body: JSON.stringify({
+          title: streamTitle,
+          category: selectedCategory,
+          description: '',
+          isPrivate: false
+        })
+      });
+
+      const data = await response.json();
+
+      // Handle authentication errors specifically
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Session expired. Please sign in again.');
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to create stream');
+      }
 
       if (onStartLive) {
         isGoingLiveRef.current = true; // Mark that we're going live - don't stop the stream
         onStartLive({
+          id: data.stream._id,
+          roomId: data.roomId, // Unique shareable ID
+          streamKey: data.streamKey,
           title: streamTitle,
           category: selectedCategory,
           thumbnail: thumbnailPreview,
-          stream: streamPreview // Pass the actual stream to the player
+          stream: streamPreview, // Pass the actual stream to the player
+          hostId: user?._id,
+          hostUsername: user?.username,
+          streamUrl: data.stream.streamUrl,
+          rtmpUrl: data.rtmpUrl
         });
       }
     } catch (error) {
       console.error('Error starting live stream:', error);
-      alert('Failed to start live stream. Please try again.');
+      alert(error.message || 'Failed to start live stream. Please try again.');
       setIsStarting(false);
     }
   };
