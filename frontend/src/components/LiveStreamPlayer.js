@@ -294,7 +294,13 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                 <span className="online-status-dot"></span>
                 <div className="stream-title-content">
                   <h3>{streamData?.title || 'Live Stream'}</h3>
-                  <p>@{streamData?.username || user?.username || 'user'}</p>
+                  <p className="host-info">
+                    <span className="host-label">Host:</span>
+                    <span className="host-username">@{streamData?.username || streamData?.hostUsername || user?.username || 'host'}</span>
+                    {(streamData?.hostId || streamData?.userId || user?._id) && (
+                      <span className="host-id">#{(streamData?.hostId || streamData?.userId || user?._id || '').slice(-6)}</span>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>

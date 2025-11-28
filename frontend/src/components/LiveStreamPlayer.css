@@ -334,6 +334,33 @@
   text-overflow: ellipsis;
 }
 
+/* Host Info Styling */
+.host-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.host-label {
+  color: rgba(156, 163, 175, 0.8);
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+.host-username {
+  color: #60A5FA;
+  font-weight: 600;
+}
+
+.host-id {
+  color: rgba(156, 163, 175, 0.7);
+  font-size: 0.5625rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
 @media (min-width: 640px) {
   .stream-title-container {
     max-width: 260px;
@@ -1326,6 +1353,23 @@
     font-size: 0.5625rem;
   }
 
+  .host-info {
+    gap: 0.25rem;
+  }
+
+  .host-label {
+    font-size: 0.5rem;
+  }
+
+  .host-username {
+    font-size: 0.5625rem;
+  }
+
+  .host-id {
+    font-size: 0.5rem;
+    padding: 0.05rem 0.2rem;
+  }
+
   .online-status-dot {
     width: 6px;
     height: 6px;
@@ -1447,6 +1491,23 @@
 
   .stream-title-bar p {
     font-size: 0.5rem;
+  }
+
+  .host-info {
+    gap: 0.2rem;
+  }
+
+  .host-label {
+    display: none;
+  }
+
+  .host-username {
+    font-size: 0.5rem;
+  }
+
+  .host-id {
+    font-size: 0.4375rem;
+    padding: 0.05rem 0.15rem;
   }
 
   .stream-info-top {
