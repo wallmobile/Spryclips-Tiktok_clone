@@ -10,9 +10,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [showEffects, setShowEffects] = useState(false);
-  const [selectedEffect, setSelectedEffect] = useState(null);
   const [showGifts, setShowGifts] = useState(false);
   const [gifts, setGifts] = useState([]);
   const [totalGifts, setTotalGifts] = useState(0);
@@ -21,16 +18,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [cameraError, setCameraError] = useState(null);
-  const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
-
-  const effects = useMemo(() => [
-    { id: 'none', label: 'None', icon: '🎬' },
-    { id: 'beauty', label: 'Beauty', icon: '✨' },
-    { id: 'vintage', label: 'Vintage', icon: '📷' },
-    { id: 'cool', label: 'Cool', icon: '❄️' },
-    { id: 'warm', label: 'Warm', icon: '🔥' },
-  ], []);
 
   const giftOptions = useMemo(() => [
     { id: 'rose', name: 'Rose', emoji: '🌹', price: 1 },
@@ -157,45 +145,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
         setIsVideoLoaded(true);
       }).catch(console.error);
     }
-
-    return () => {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
-    };
   }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
-
-  const startRecording = async () => {
-    if (streamRef.current) {
-      try {
-        const recorder = new MediaRecorder(streamRef.current);
-        const chunks = [];
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data);
-        };
-
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          // In production, upload to server
-          console.log('Recording saved:', url);
-        };
-
-        recorder.start();
-        mediaRecorderRef.current = recorder;
-      } catch (error) {
-        console.error('Error starting recording:', error);
-      }
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-  };
 
   const handleSendComment = (e) => {
     e.preventDefault();
@@ -236,9 +186,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     if (window.confirm('Are you sure you want to end the stream?')) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (mediaRecorderRef.current) {
-        stopRecording();
       }
       if (onEnd) {
         onEnd();
@@ -367,29 +314,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   {isMicMuted ? 'Muted' : 'Mic On'}
                 </button>
                 <button
-                  className={`control-btn ${isRecording ? 'recording' : ''}`}
-                  onClick={() => {
-                    if (isRecording) {
-                      stopRecording();
-                    } else {
-                      startRecording();
-                    }
-                    setIsRecording(!isRecording);
-                  }}
-                  title={isRecording ? 'Stop Recording' : 'Start Recording'}    
-                >
-                  <i className="fa-solid fa-circle"></i>
-                  {isRecording ? 'Recording' : 'Record'}
-                </button>
-                <button
-                  className="control-btn"
-                  onClick={() => setShowEffects(!showEffects)}
-                  title="Effects"
-                >
-                  <i className="fa-solid fa-magic"></i>
-                  Effects
-                </button>
-                <button
                   className="control-btn end-stream-btn"
                   onClick={handleEndStream}
                   title="End Stream"
@@ -397,28 +321,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   <i className="fa-solid fa-stop"></i>
                   End
                 </button>
-              </div>
-            )}
-
-            {/* Effects Panel */}
-            {showEffects && (
-              <div className="effects-panel">
-                <h4>Effects</h4>
-                <div className="effects-grid">
-                  {effects.map(effect => (
-                    <button
-                      key={effect.id}
-                      className={`effect-btn ${selectedEffect === effect.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedEffect(effect.id);
-                        // In production, apply effect to stream
-                      }}
-                    >
-                      <span className="effect-icon">{effect.icon}</span>
-                      <span>{effect.label}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
           </div>
