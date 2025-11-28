@@ -265,27 +265,85 @@
   color: #F59E0B !important;
 }
 
-.stream-title-overlay {
+/* Stream Title - Floating Bottom Bar */
+.stream-title-container {
   position: absolute;
   bottom: 100px;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 40px 20px 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 28rem;
+  padding: 0 1rem;
   pointer-events: none;
+  z-index: 10;
 }
 
-.stream-title-overlay h3 {
-  margin: 0 0 6px 0;
-  color: #fff;
-  font-size: 20px;
-  font-weight: 700;
+.stream-title-bar {
+  background: rgba(60, 60, 60, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  padding: 0.625rem 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-.stream-title-overlay p {
+.stream-title-content {
+  flex-grow: 1;
+}
+
+.stream-title-bar h3 {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.stream-title-bar p {
+  margin: 0;
+  color: rgba(209, 213, 219, 0.9);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .stream-title-container {
+    max-width: 24rem;
+    padding: 0 1.5rem;
+  }
+  
+  .stream-title-bar {
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .stream-title-bar h3 {
+    font-size: 1rem;
+  }
+  
+  .stream-title-bar p {
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stream-title-container {
+    max-width: 28rem;
+    padding: 0 2rem;
+  }
+  
+  .stream-title-bar h3 {
+    font-size: 1.125rem;
+  }
+  
+  .stream-title-bar p {
+    font-size: 1rem;
+  }
 }
 
 /* Broadcaster Controls */
@@ -839,17 +897,21 @@
     font-size: 14px;
   }
 
-  .stream-title-overlay {
+  .stream-title-container {
     bottom: 80px;
-    padding: 30px 16px 16px;
+    max-width: 90%;
   }
 
-  .stream-title-overlay h3 {
-    font-size: 16px;
+  .stream-title-bar {
+    padding: 0.5rem 1rem;
   }
 
-  .stream-title-overlay p {
-    font-size: 12px;
+  .stream-title-bar h3 {
+    font-size: 0.875rem;
+  }
+
+  .stream-title-bar p {
+    font-size: 0.75rem;
   }
 
   .stream-info-top {
@@ -894,12 +956,17 @@ body.dark-mode .stream-duration i {
   color: #fff !important;
 }
 
-body.dark-mode .stream-title-overlay h3 {
+body.dark-mode .stream-title-bar {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-mode .stream-title-bar h3 {
   color: #fff !important;
 }
 
-body.dark-mode .stream-title-overlay p {
-  color: rgba(255, 255, 255, 0.9) !important;
+body.dark-mode .stream-title-bar p {
+  color: rgba(209, 213, 219, 0.9) !important;
 }
 
 body.dark-mode .control-btn {

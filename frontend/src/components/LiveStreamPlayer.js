@@ -288,10 +288,14 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
               )}
             </div>
 
-            {/* Stream Title */}
-            <div className="stream-title-overlay">
-              <h3>{streamData?.title || 'Live Stream'}</h3>
-              <p>@{streamData?.username || user?.username || 'user'}</p>
+            {/* Stream Title - Floating Bottom Bar */}
+            <div className="stream-title-container">
+              <div className="stream-title-bar">
+                <div className="stream-title-content">
+                  <h3>{streamData?.title || 'Live Stream'}</h3>
+                  <p>@{streamData?.username || user?.username || 'user'}</p>
+                </div>
+              </div>
             </div>
 
             {/* Broadcaster Controls */}
