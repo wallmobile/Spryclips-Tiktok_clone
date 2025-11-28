@@ -76,7 +76,10 @@ const GoLive = () => {
           height: { ideal: 720 },
           facingMode: 'user'
         },
-        audio: true
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true
+        }
       });
 
       localStreamRef.current = stream;
@@ -85,11 +88,28 @@ const GoLive = () => {
       
       if (previewVideoRef.current) {
         previewVideoRef.current.srcObject = stream;
-        previewVideoRef.current.play();
+        await previewVideoRef.current.play();
       }
+      
+      // Update initial states
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+      setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
+      setIsMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
+      
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Could not access camera. Please check permissions.');
+      let errorMessage = 'Could not access camera. ';
+      if (error.name === 'NotFoundError') {
+        errorMessage += 'No camera found.';
+      } else if (error.name === 'NotAllowedError') {
+        errorMessage += 'Permission denied. Please allow camera access.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else {
+        errorMessage += 'Please check your camera permissions.';
+      }
+      alert(errorMessage);
     }
   };
 
@@ -139,7 +159,7 @@ const GoLive = () => {
     if (localStreamRef.current) {
       const audioTracks = localStreamRef.current.getAudioTracks();
       audioTracks.forEach(track => {
-        track.enabled = isMuted;
+        track.enabled = isMuted; // Toggle the enabled state
       });
       setIsMuted(!isMuted);
     }
@@ -149,7 +169,7 @@ const GoLive = () => {
     if (localStreamRef.current) {
       const videoTracks = localStreamRef.current.getVideoTracks();
       videoTracks.forEach(track => {
-        track.enabled = !isCameraOn;
+        track.enabled = !isCameraOn; // Toggle the enabled state
       });
       setIsCameraOn(!isCameraOn);
     }
@@ -162,38 +182,39 @@ const GoLive = () => {
     }
 
     if (!localStreamRef.current) {
-      alert('Camera not ready. Please wait...');
+      alert('Camera not ready. Please start camera preview first.');
       return;
     }
 
     try {
       setIsConnecting(true);
       
-      // Use existing stream from preview
-      const stream = localStreamRef.current;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      
-      // Hide preview video
-      if (previewVideoRef.current) {
-        previewVideoRef.current.srcObject = null;
-      }
-
-      // Start live stream via API
+      // Start live stream via API first
       const response = await startLiveStream({
         title: title.trim(),
         category,
+        description: '',
         isPrivate: false
       });
 
       if (response.success) {
         setStream(response.stream);
         roomIdRef.current = response.stream.roomId || response.stream._id;
+        
+        // Move stream from preview to main video
+        if (videoRef.current && localStreamRef.current) {
+          videoRef.current.srcObject = localStreamRef.current;
+          await videoRef.current.play();
+        }
+        
+        // Clear preview video
+        if (previewVideoRef.current) {
+          previewVideoRef.current.srcObject = null;
+        }
+        
         setIsLive(true);
         setIsConnecting(false);
+        setCameraPreview(false);
 
         // Join room as host
         if (socket && isConnected) {
@@ -205,18 +226,20 @@ const GoLive = () => {
 
         // Setup WebRTC for broadcasting
         setupWebRTCBroadcast();
+      } else {
+        throw new Error(response.message || 'Failed to start stream');
       }
     } catch (error) {
       console.error('Error starting stream:', error);
       alert('Failed to start stream: ' + error.message);
       setIsConnecting(false);
-      
-      // Cleanup on error
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-        localStreamRef.current = null;
-      }
     }
+  };
+
+  const setupWebRTCBroadcast = () => {
+    console.log('Setting up WebRTC broadcast for stream:', roomIdRef.current);
+    // In a production app, this would set up RTMP publishing or WebRTC broadcasting
+    // For this demo, the stream is available locally via the video element
   };
 
   const endStream = async () => {
@@ -226,6 +249,53 @@ const GoLive = () => {
 
     try {
       if (stream?._id) {
+        await endLiveStream(stream._id);
+      }
+
+      // Cleanup WebRTC connections
+      peerConnectionsRef.current.forEach((pc) => {
+        pc.close();
+      });
+      peerConnectionsRef.current.clear();
+
+      // Stop camera stream
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+
+      // Clear video elements
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (guestVideoRef.current) {
+        guestVideoRef.current.srcObject = null;
+      }
+
+      // Leave socket room
+      if (socket) {
+        socket.emit('live:leave');
+      }
+
+      // Reset state
+      setIsLive(false);
+      setStream(null);
+      setViewerCount(0);
+      setHasGuest(false);
+      setGuestRequests([]);
+      setGuestVideo(null);
+      setCameraPreview(false);
+      setShowStartPreview(true);
+      roomIdRef.current = null;
+      
+      // Navigate back
+      navigate('/live');
+      
+    } catch (error) {
+      console.error('Error ending stream:', error);
+      alert('Error ending stream: ' + error.message);
+    }
+  };
         await endLiveStream(stream._id);
       }
 

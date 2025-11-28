@@ -124,3 +124,18 @@ export const sendGift = async (streamId, giftId) => {
   }
 };
 
+/**
+ * Get available gift types
+ */
+export const getGiftTypes = async (category = 'all') => {
+  try {
+    const response = await axios.get('/api/live/gift-types', {
+      params: { category }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching gift types:', error);
+    throw error;
+  }
+};
+

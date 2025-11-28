@@ -3,6 +3,7 @@ const LiveStream = require('../models/LiveStream');
 const LiveChat = require('../models/LiveChat');
 const User = require('../models/User');
 const Gift = require('../models/Gift');
+const GiftType = require('../models/GiftType');
 const Transaction = require('../models/Transaction');
 const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
@@ -339,36 +340,50 @@ router.post('/:streamId/gift', authMiddleware, async (req, res) => {
       });
     }
 
-    const gift = await Gift.findById(giftId);
+    const giftType = await GiftType.findById(giftId);
 
-    if (!gift || !gift.isActive) {
+    if (!giftType || !giftType.isActive) {
       return res.status(404).json({
         success: false,
-        message: 'Gift not found or inactive',
+        message: 'Gift type not found or inactive',
       });
     }
 
+    // Create the actual gift record
+    const gift = new Gift({
+      sender: userId,
+      receiver: liveStream.streamer._id,
+      liveStream: streamId,
+      giftType: giftType.name,
+      giftName: giftType.name,
+      giftImage: giftType.image,
+      value: giftType.value,
+      currency: giftType.currency
+    });
+    
+    await gift.save();
+    
     // Create chat message for gift
     const chatMessage = new LiveChat({
       stream: streamId,
       user: userId,
-      message: `sent a ${gift.name}`,
+      message: `sent a ${giftType.name}`,
       type: 'gift',
-      gift: giftId,
+      gift: gift._id,
     });
 
     await chatMessage.save();
 
     // Update stream gift stats
     liveStream.gifts += 1;
-    liveStream.giftValue += gift.value;
+    liveStream.giftValue += giftType.value;
     await liveStream.save();
 
     // Create transaction for gift
     const transaction = new Transaction({
       user: userId,
       type: 'gift_sent',
-      amount: gift.value,
+      amount: giftType.value,
       status: 'completed',
       relatedEntity: streamId,
       relatedEntityType: 'LiveStream',
@@ -381,7 +396,7 @@ router.post('/:streamId/gift', authMiddleware, async (req, res) => {
     const streamerTransaction = new Transaction({
       user: liveStream.streamer._id,
       type: 'gift_received',
-      amount: gift.value,
+      amount: giftType.value,
       status: 'completed',
       relatedEntity: streamId,
       relatedEntityType: 'LiveStream',
@@ -409,6 +424,8 @@ router.post('/:streamId/gift', authMiddleware, async (req, res) => {
     res.status(201).json({
       success: true,
       message: chatMessage,
+      gift: gift,
+      giftType: giftType,
       giftValue: liveStream.giftValue,
     });
   } catch (error) {
@@ -489,6 +506,34 @@ router.get('/user/:userId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch user streams',
+      error: error.message,
+    });
+  }
+});
+
+// ==================== GET AVAILABLE GIFT TYPES ====================
+router.get('/gift-types', async (req, res) => {
+  try {
+    const category = req.query.category || 'all';
+    
+    const query = { isActive: true };
+    if (category !== 'all') {
+      query.category = category;
+    }
+
+    const giftTypes = await GiftType.find(query)
+      .sort({ sortOrder: 1, value: 1 });
+
+    res.json({
+      success: true,
+      giftTypes,
+      count: giftTypes.length,
+    });
+  } catch (error) {
+    console.error('Error fetching gift types:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch gift types',
       error: error.message,
     });
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { refreshSession } from '../config/axios';
@@ -39,12 +39,14 @@ const API_URL = getSocketURL();
 export const useSocket = () => {
   const { user } = useAuth();
   const socketRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const establishConnection = async () => {
       if (!user) {
+        setIsConnected(false);
         return;
       }
 
@@ -53,6 +55,7 @@ export const useSocket = () => {
         const token = refreshResponse?.accessToken;
 
         if (!token || !isMounted) {
+          setIsConnected(false);
           return;
         }
 
@@ -67,18 +70,22 @@ export const useSocket = () => {
 
         socket.on('connect', () => {
           console.log('Socket connected');
+          setIsConnected(true);
           socket.emit('subscribe:notifications');
         });
 
         socket.on('disconnect', () => {
           console.log('Socket disconnected');
+          setIsConnected(false);
         });
 
         socket.on('connect_error', (error) => {
           console.error('Socket connection error:', error);
+          setIsConnected(false);
         });
       } catch (error) {
         console.error('Failed to refresh token for socket connection:', error);
+        setIsConnected(false);
       }
     };
 
@@ -86,6 +93,7 @@ export const useSocket = () => {
 
     return () => {
       isMounted = false;
+      setIsConnected(false);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -93,11 +101,14 @@ export const useSocket = () => {
     };
   }, [user]);
 
-  return socketRef.current;
+  return { 
+    socket: socketRef.current, 
+    isConnected 
+  };
 };
 
 export const useNotifications = (onNotification) => {
-  const socket = useSocket();
+  const { socket } = useSocket();
 
   useEffect(() => {
     if (!socket) return;
@@ -117,7 +128,7 @@ export const useNotifications = (onNotification) => {
 };
 
 export const useLiveStream = (streamId, onMessage) => {
-  const socket = useSocket();
+  const { socket } = useSocket();
 
   useEffect(() => {
     if (!socket || !streamId) return;
