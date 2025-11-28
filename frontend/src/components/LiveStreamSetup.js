@@ -4,6 +4,7 @@ import './LiveStreamSetup.css';
 const LiveStreamSetup = ({ onClose, onStartLive }) => {
   const thumbnailInputRef = useRef(null);
   const videoPreviewRef = useRef(null);
+  const isGoingLiveRef = useRef(false); // Use ref to track if we're going live
 
   const [streamTitle, setStreamTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('entertainment');
@@ -94,6 +95,14 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     }
   }, [streamPreview]);
 
+  const handleClose = useCallback(() => {
+    // Stop the stream when closing (not going live)
+    if (streamPreview) {
+      streamPreview.getTracks().forEach(track => track.stop());
+    }
+    onClose();
+  }, [streamPreview, onClose]);
+
   const toggleCamera = () => {
     if (streamPreview) {
       const videoTracks = streamPreview.getVideoTracks();
@@ -133,11 +142,12 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       if (onStartLive) {
+        isGoingLiveRef.current = true; // Mark that we're going live - don't stop the stream
         onStartLive({
           title: streamTitle,
           category: selectedCategory,
           thumbnail: thumbnailPreview,
-          stream: streamPreview // In production, this would be the actual stream
+          stream: streamPreview // Pass the actual stream to the player
         });
       }
     } catch (error) {
@@ -150,15 +160,19 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   React.useEffect(() => {
     // Camera will start when user clicks "Start Preview" button
     return () => {
-      stopPreview();
+      // Only stop the stream if we're NOT going live
+      // If we're going live, the LiveStreamPlayer will use this stream
+      if (!isGoingLiveRef.current && streamPreview) {
+        streamPreview.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [stopPreview]);
+  }, [streamPreview]);
 
   return (
-    <div className="live-stream-setup-overlay" onClick={onClose}>
+    <div className="live-stream-setup-overlay" onClick={handleClose}>
       <div className="live-stream-setup-modal" onClick={(e) => e.stopPropagation()}>
         <div className="setup-header">
-          <button className="setup-close-btn" onClick={onClose}>
+          <button className="setup-close-btn" onClick={handleClose}>
             <i className="fa-solid fa-times"></i>
           </button>
           <h2>Go Live</h2>
@@ -329,7 +343,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
 
           {/* Action Buttons */}
           <div className="setup-actions">
-            <button className="cancel-btn" onClick={onClose}>
+            <button className="cancel-btn" onClick={handleClose}>
               Cancel
             </button>
             <button
