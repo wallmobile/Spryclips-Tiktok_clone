@@ -13,6 +13,8 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   const [streamPreview, setStreamPreview] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(false);
 
   const categories = [
     { id: 'entertainment', label: 'Entertainment', icon: '🎭' },
@@ -40,20 +42,43 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   };
 
   const startPreview = async () => {
+    setIsLoadingCamera(true);
+    setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280, min: 640 }, 
+          height: { ideal: 720, min: 480 } 
+        },
         audio: true
       });
+      
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
+        // Ensure video plays
+        await videoPreviewRef.current.play().catch(e => {
+          console.log('Autoplay prevented, user interaction needed:', e);
+        });
         setStreamPreview(stream);
         setIsCameraOn(true);
         setIsMicMuted(false);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
+      let errorMessage = 'Unable to access camera.';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please connect a camera and try again.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is being used by another application. Please close other apps using the camera.';
+      }
+      
+      setCameraError(errorMessage);
+    } finally {
+      setIsLoadingCamera(false);
     }
   };
 
@@ -143,7 +168,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
         <div className="setup-content">
           {/* Preview Section */}
           <div className="preview-section">
-            <div className="video-preview-container">
+            <div className={`video-preview-container ${streamPreview ? 'has-stream' : ''}`}>
               <video
                 ref={videoPreviewRef}
                 autoPlay
@@ -151,6 +176,35 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
                 playsInline
                 className="preview-video"
               />
+              
+              {/* Camera Loading State */}
+              {isLoadingCamera && (
+                <div className="preview-loading">
+                  <div className="preview-loading-spinner"></div>
+                  <p>Accessing camera...</p>
+                </div>
+              )}
+              
+              {/* Camera Error State */}
+              {cameraError && !isLoadingCamera && (
+                <div className="preview-error">
+                  <i className="fa-solid fa-video-slash"></i>
+                  <p>{cameraError}</p>
+                  <button className="retry-btn" onClick={startPreview}>
+                    <i className="fa-solid fa-refresh"></i>
+                    Try Again
+                  </button>
+                </div>
+              )}
+              
+              {/* No Camera State */}
+              {!streamPreview && !isLoadingCamera && !cameraError && (
+                <div className="preview-placeholder">
+                  <i className="fa-solid fa-video"></i>
+                  <p>Click "Start Preview" to enable camera</p>
+                </div>
+              )}
+              
               <div className="preview-overlay">
               </div>
               {streamPreview && (
@@ -173,9 +227,22 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
               )}
             </div>
             {!streamPreview ? (
-              <button className="start-preview-btn" onClick={startPreview}>
-                <i className="fa-solid fa-play"></i>
-                Start Preview
+              <button 
+                className="start-preview-btn" 
+                onClick={startPreview}
+                disabled={isLoadingCamera}
+              >
+                {isLoadingCamera ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    Accessing Camera...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-video"></i>
+                    Start Preview
+                  </>
+                )}
               </button>
             ) : (
               <button className="stop-preview-btn" onClick={stopPreview}>

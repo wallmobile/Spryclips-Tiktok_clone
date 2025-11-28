@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './LiveStreamPlayer.css';
 
@@ -19,6 +19,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [streamDuration, setStreamDuration] = useState(0);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
 
@@ -98,45 +100,62 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
+  // Initialize camera for broadcaster
+  const initializeCamera = useCallback(async () => {
+    if (!isBroadcaster) return;
+    
+    try {
+      setCameraError(null);
+      
+      // If we have a stream from setup, use it
+      if (streamData?.stream) {
+        streamRef.current = streamData.stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = streamData.stream;
+          await videoRef.current.play().catch(console.error);
+          setIsVideoLoaded(true);
+          
+          const videoTracks = streamData.stream.getVideoTracks();
+          const audioTracks = streamData.stream.getAudioTracks();
+          setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
+          setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
+        }
+      } else {
+        // Request new camera access if no stream provided
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'user', 
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 } 
+          },
+          audio: true
+        });
+        
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(console.error);
+          setIsVideoLoaded(true);
+          setIsCameraOn(true);
+          setIsMicMuted(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setCameraError(error.message || 'Failed to access camera');
+    }
+  }, [isBroadcaster, streamData?.stream]);
+
   // Initialize stream
   useEffect(() => {
-    if (isBroadcaster && streamData?.stream) {
-      // In production, this would connect to WebRTC/RTMP server
-      if (videoRef.current) {
-        videoRef.current.srcObject = streamData.stream;
-        streamRef.current = streamData.stream;
-        // Set initial states
-        const videoTracks = streamData.stream.getVideoTracks();
-        const audioTracks = streamData.stream.getAudioTracks();
-        setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
-        setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
-        
-        // Add class when video is loaded
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          if (videoRef.current?.parentElement) {
-            videoRef.current.parentElement.classList.add('video-loaded');
-          }
-        });
-      }
-
-      // Start recording if enabled
-      if (isRecording) {
-        startRecording();
-      }
-    } else {
+    if (isBroadcaster) {
+      initializeCamera();
+    } else if (streamData?.streamUrl && videoRef.current) {
       // For viewers, connect to stream URL
-      // In production, this would be a WebRTC connection or HLS stream
-      if (videoRef.current && streamData?.streamUrl) {
-        videoRef.current.src = streamData.streamUrl;
-        videoRef.current.play();
-        
-        // Add class when video is loaded
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          if (videoRef.current?.parentElement) {
-            videoRef.current.parentElement.classList.add('video-loaded');
-          }
-        });
-      }
+      videoRef.current.src = streamData.streamUrl;
+      videoRef.current.play().then(() => {
+        setIsVideoLoaded(true);
+      }).catch(console.error);
     }
 
     return () => {
@@ -144,7 +163,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
         mediaRecorderRef.current.stop();
       }
     };
-  }, [isBroadcaster, streamData, isRecording]);
+  }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
 
   const startRecording = async () => {
     if (streamRef.current) {
@@ -267,7 +286,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     <div className="live-stream-player" onClick={() => {}}>
       {/* Main Video Area */}
       <div className="stream-main">
-        <div className="stream-video-container" onClick={(e) => e.stopPropagation()}>
+        <div className={`stream-video-container ${isVideoLoaded ? 'video-loaded' : ''}`} onClick={(e) => e.stopPropagation()}>
           <video
             ref={videoRef}
             autoPlay
@@ -275,7 +294,29 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
             muted={isBroadcaster}
             className="stream-video"
             onClick={(e) => e.stopPropagation()}
+            onLoadedMetadata={() => setIsVideoLoaded(true)}
           />
+          
+          {/* Camera Error State */}
+          {cameraError && isBroadcaster && (
+            <div className="camera-error-overlay">
+              <i className="fa-solid fa-video-slash"></i>
+              <h4>Camera Error</h4>
+              <p>{cameraError}</p>
+              <button className="retry-camera-btn" onClick={initializeCamera}>
+                <i className="fa-solid fa-refresh"></i>
+                Retry Camera Access
+              </button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {!isVideoLoaded && !cameraError && isBroadcaster && (
+            <div className="camera-loading-overlay">
+              <div className="camera-loading-spinner"></div>
+              <p>Initializing camera...</p>
+            </div>
+          )}
           
           {/* Stream Overlay Info */}
           <div className="stream-overlay">

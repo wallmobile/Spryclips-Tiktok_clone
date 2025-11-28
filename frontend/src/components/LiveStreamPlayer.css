@@ -28,9 +28,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
-/* Video Error State */
+/* Video Placeholder */
 .stream-video-container::before {
   content: '';
   position: absolute;
@@ -66,10 +67,11 @@
 .stream-video {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: transparent;
+  object-fit: cover;
+  background: #000;
   position: relative;
   z-index: 2;
+  transform: scaleX(-1); /* Mirror the camera for broadcaster */
 }
 
 /* When video has source, show black background */
@@ -83,8 +85,104 @@
   display: none;
 }
 
+.stream-video-container.video-loaded::before {
+  display: none;
+}
+
 .stream-video-container.video-loaded {
   background: #000;
+}
+
+/* Camera Error Overlay */
+.camera-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 10;
+  color: #fff;
+}
+
+.camera-error-overlay i {
+  font-size: 64px;
+  color: #EF4444;
+}
+
+.camera-error-overlay h4 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.camera-error-overlay p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  text-align: center;
+  max-width: 300px;
+}
+
+.retry-camera-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  border: none;
+  border-radius: 24px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.retry-camera-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+/* Camera Loading Overlay */
+.camera-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 10;
+  color: #fff;
+}
+
+.camera-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.camera-loading-overlay p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
 }
 
 /* Stream Overlay */
@@ -97,8 +195,9 @@
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 20px;
+  z-index: 5;
 }
 
 .stream-info-top {
@@ -106,27 +205,30 @@
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  pointer-events: auto;
 }
 
 .live-badge-stream {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: rgba(255, 0, 0, 0.9);
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #FF0050 0%, #DC2626 100%);
   border-radius: 20px;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.4);
 }
 
 .live-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #fff;
   border-radius: 50%;
   animation: pulse-dot 1.5s infinite;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
 }
 
 @keyframes pulse-dot {
@@ -139,25 +241,38 @@
 }
 
 .viewer-count,
-.stream-duration {
+.stream-duration,
+.gift-total {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.7);
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.75);
   border-radius: 20px;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gift-total {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.3) 0%, rgba(245, 158, 11, 0.3) 100%);
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.gift-total i {
+  color: #F59E0B !important;
 }
 
 .stream-title-overlay {
-  align-self: flex-start;
+  position: absolute;
+  bottom: 100px;
+  left: 0;
+  right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 20px;
-  padding-top: 60px;
-  width: 100%;
+  padding: 40px 20px 20px;
+  pointer-events: none;
 }
 
 .stream-title-overlay h3 {
@@ -180,15 +295,20 @@
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   flex-wrap: wrap;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .control-btn {
-  padding: 10px 20px;
-  background: rgba(0, 0, 0, 0.7);
-  border: none;
-  border-radius: 24px;
+  padding: 14px 24px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -196,18 +316,23 @@
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   backdrop-filter: blur(10px);
   white-space: nowrap;
+  min-width: 120px;
+  justify-content: center;
 }
 
 .control-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
-  transform: translateY(-2px);
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .control-btn i {
   color: #ffffff !important;
+  font-size: 16px;
   transition: none !important;
 }
 
@@ -216,11 +341,14 @@
 }
 
 .control-btn.active {
-  background: rgba(37, 99, 235, 0.9);
+  background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
 }
 
 .control-btn.active:hover {
-  background: rgba(37, 99, 235, 1);
+  background: linear-gradient(135deg, #1D4ED8 0%, #0EA5E9 100%);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5);
 }
 
 .control-btn.active i {
@@ -232,11 +360,14 @@
 }
 
 .control-btn.inactive {
-  background: rgba(239, 68, 68, 0.9);
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
 .control-btn.inactive:hover {
-  background: rgba(220, 38, 38, 1);
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.5);
 }
 
 .control-btn.inactive i {
@@ -248,19 +379,33 @@
 }
 
 .control-btn.recording {
-  background: rgba(255, 0, 0, 0.8);
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+  border-color: transparent;
+  animation: pulse-recording 2s infinite;
 }
 
 .control-btn.recording i {
   animation: pulse-dot 1s infinite;
 }
 
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(220, 38, 38, 0.7);
+  }
+}
+
 .control-btn.end-stream-btn {
-  background: rgba(255, 71, 87, 0.8);
+  background: linear-gradient(135deg, #FF0050 0%, #DC2626 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(255, 0, 80, 0.4);
 }
 
 .control-btn.end-stream-btn:hover {
-  background: rgba(255, 71, 87, 1);
+  background: linear-gradient(135deg, #E6004A 0%, #B91C1C 100%);
+  box-shadow: 0 6px 24px rgba(255, 0, 80, 0.5);
 }
 
 /* Effects Panel */
@@ -630,10 +775,17 @@
 @media (max-width: 1024px) {
   .comments-sidebar {
     width: 320px;
+    min-width: 320px;
   }
 
   .gifts-panel {
     right: 340px;
+  }
+
+  .control-btn {
+    padding: 12px 18px;
+    font-size: 13px;
+    min-width: 100px;
   }
 }
 
@@ -642,14 +794,24 @@
     flex-direction: column;
   }
 
+  .stream-video-container {
+    flex: none;
+    height: 50vh;
+    min-height: 300px;
+  }
+
   .comments-sidebar {
     width: 100%;
-    max-height: 300px;
+    min-width: 100%;
+    max-height: 50vh;
+    flex: 1;
   }
 
   .gifts-panel {
     right: 20px;
-    bottom: 320px;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .effects-panel {
@@ -662,17 +824,44 @@
 
   .broadcaster-controls {
     gap: 8px;
-    margin-bottom: 12px;
+    padding: 12px;
   }
 
   .control-btn {
-    padding: 8px 16px;
+    padding: 10px 14px;
     font-size: 12px;
     gap: 6px;
+    min-width: 80px;
+    border-radius: 24px;
   }
 
   .control-btn i {
     font-size: 14px;
+  }
+
+  .stream-title-overlay {
+    bottom: 80px;
+    padding: 30px 16px 16px;
+  }
+
+  .stream-title-overlay h3 {
+    font-size: 16px;
+  }
+
+  .stream-title-overlay p {
+    font-size: 12px;
+  }
+
+  .stream-info-top {
+    gap: 8px;
+  }
+
+  .live-badge-stream,
+  .viewer-count,
+  .stream-duration,
+  .gift-total {
+    padding: 6px 12px;
+    font-size: 11px;
   }
 }
 
