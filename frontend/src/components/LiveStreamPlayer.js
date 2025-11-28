@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../hooks/useSocket';
 import './LiveStreamPlayer.css';
+
+// STUN servers for WebRTC NAT traversal
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
+};
 
 const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const videoRef = useRef(null);
   const commentsEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -21,6 +31,9 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const streamRef = useRef(null);
+  
+  // WebRTC refs for broadcasting
+  const peerConnectionsRef = useRef(new Map()); // viewerSocketId -> RTCPeerConnection
 
   const giftOptions = useMemo(() => [
     { id: 'rose', name: 'Rose', emoji: '🌹', price: 1 },
@@ -191,8 +204,166 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
         currentVideo.srcObject = null;
         currentVideo.src = '';
       }
+      // Close all WebRTC connections
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      peerConnectionsRef.current.forEach(pc => pc.close());
+      peerConnectionsRef.current.clear();
     };
   }, []);
+
+  // ==================== WebRTC Broadcasting Logic ====================
+  
+  // Create peer connection for a viewer
+  const createPeerConnectionForViewer = useCallback(async (viewerSocketId) => {
+    if (!streamRef.current) {
+      console.error('[WebRTC] No local stream available');
+      return;
+    }
+
+    console.log('[WebRTC] Creating peer connection for viewer:', viewerSocketId);
+    
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    
+    // Add local stream tracks to the connection
+    streamRef.current.getTracks().forEach(track => {
+      console.log('[WebRTC] Adding track to peer connection:', track.kind);
+      pc.addTrack(track, streamRef.current);
+    });
+
+    // Handle ICE candidates - send to viewer
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socket) {
+        console.log('[WebRTC] Sending ICE candidate to viewer');
+        socket.emit('webrtc:ice-candidate', {
+          roomId: streamData?.id || streamData?._id,
+          candidate: event.candidate,
+          targetId: viewerSocketId
+        });
+      }
+    };
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log('[WebRTC] Connection state:', pc.connectionState);
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+        peerConnectionsRef.current.delete(viewerSocketId);
+      }
+    };
+
+    // Store peer connection
+    peerConnectionsRef.current.set(viewerSocketId, pc);
+
+    try {
+      // Create and send offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      socket.emit('webrtc:offer', {
+        roomId: streamData?.id || streamData?._id,
+        offer: pc.localDescription,
+        targetId: viewerSocketId
+      });
+
+      console.log('[WebRTC] Sent offer to viewer:', viewerSocketId);
+    } catch (error) {
+      console.error('[WebRTC] Error creating offer:', error);
+      peerConnectionsRef.current.delete(viewerSocketId);
+    }
+  }, [socket, streamData]);
+
+  // Handle answer from viewer
+  const handleWebRTCAnswer = useCallback(async (viewerSocketId, answer) => {
+    const pc = peerConnectionsRef.current.get(viewerSocketId);
+    if (!pc) {
+      console.error('[WebRTC] No peer connection for viewer:', viewerSocketId);
+      return;
+    }
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log('[WebRTC] Set remote description for viewer:', viewerSocketId);
+    } catch (error) {
+      console.error('[WebRTC] Error setting remote description:', error);
+    }
+  }, []);
+
+  // Handle ICE candidate from viewer
+  const handleWebRTCIceCandidate = useCallback(async (viewerSocketId, candidate) => {
+    const pc = peerConnectionsRef.current.get(viewerSocketId);
+    if (!pc) return;
+
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log('[WebRTC] Added ICE candidate from viewer');
+    } catch (error) {
+      console.error('[WebRTC] Error adding ICE candidate:', error);
+    }
+  }, []);
+
+  // Join room as host and set up WebRTC event listeners
+  useEffect(() => {
+    if (!socket || !isBroadcaster || !isConnected) return;
+    
+    const roomId = streamData?.id || streamData?._id;
+    if (!roomId) return;
+
+    console.log('[WebRTC] Joining room as host:', roomId);
+    
+    // Join the room as host
+    socket.emit('live:join', { roomId, role: 'host' });
+
+    // Handle new viewer requesting to connect
+    const handleViewerRequest = ({ viewerId, viewerSocketId }) => {
+      console.log('[WebRTC] Viewer requesting connection:', viewerId);
+      // Wait a bit for stream to be ready
+      setTimeout(() => {
+        if (streamRef.current) {
+          createPeerConnectionForViewer(viewerSocketId);
+        }
+      }, 500);
+    };
+
+    // Handle answer from viewer
+    const handleAnswer = ({ answer, fromId }) => {
+      handleWebRTCAnswer(fromId, answer);
+    };
+
+    // Handle ICE candidate from viewer
+    const handleIceCandidate = ({ candidate, fromId }) => {
+      handleWebRTCIceCandidate(fromId, candidate);
+    };
+
+    // Handle viewer count updates
+    const handleViewerCount = ({ count }) => {
+      setViewerCount(count);
+    };
+
+    // Handle viewer leaving
+    const handleViewerLeft = ({ viewerId, viewerSocketId }) => {
+      const pc = peerConnectionsRef.current.get(viewerSocketId);
+      if (pc) {
+        pc.close();
+        peerConnectionsRef.current.delete(viewerSocketId);
+      }
+    };
+
+    socket.on('live:viewer-request', handleViewerRequest);
+    socket.on('webrtc:answer', handleAnswer);
+    socket.on('webrtc:ice-candidate', handleIceCandidate);
+    socket.on('live:viewer-count', handleViewerCount);
+    socket.on('live:viewer-left', handleViewerLeft);
+
+    return () => {
+      socket.off('live:viewer-request', handleViewerRequest);
+      socket.off('webrtc:answer', handleAnswer);
+      socket.off('webrtc:ice-candidate', handleIceCandidate);
+      socket.off('live:viewer-count', handleViewerCount);
+      socket.off('live:viewer-left', handleViewerLeft);
+      
+      // Leave room when component unmounts
+      socket.emit('live:leave', { roomId });
+    };
+  }, [socket, isBroadcaster, isConnected, streamData, createPeerConnectionForViewer, handleWebRTCAnswer, handleWebRTCIceCandidate]);
 
   const handleSendComment = (e) => {
     e.preventDefault();

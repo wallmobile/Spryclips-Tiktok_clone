@@ -75,13 +75,25 @@ const initializeLiveStreamHandlers = (io) => {
           socket.emit('live:joined', { 
             roomId, 
             role: 'viewer',
-            viewerCount: liveStream.viewers 
+            viewerCount: liveStream.viewers,
+            hostSocketId: room.host // Send host socket ID to viewer
           });
           
-          // Broadcast updated viewer count
+          // Broadcast updated viewer count to host
           ioInstance.to(`live:${roomId}:host`).emit('live:viewer-count', { 
             count: liveStream.viewers 
           });
+
+          // Notify host that a new viewer wants to connect (for WebRTC)
+          if (room.host) {
+            const hostSocket = ioInstance.sockets.sockets.get(room.host);
+            if (hostSocket) {
+              hostSocket.emit('live:viewer-request', {
+                viewerId: socket.userId,
+                viewerSocketId: socket.id
+              });
+            }
+          }
         } else if (role === 'guest') {
           // Guest connections are handled separately via guest:request
           return socket.emit('live:error', { message: 'Use guest:request to join as guest' });
@@ -114,6 +126,17 @@ const initializeLiveStreamHandlers = (io) => {
           ioInstance.to(`live:${roomId}:viewers`).emit('live:host-offline', { roomId });
         } else if (role === 'viewer') {
           room.viewers.delete(socket.id);
+          
+          // Notify host that viewer left (for WebRTC cleanup)
+          if (room.host) {
+            const hostSocket = ioInstance.sockets.sockets.get(room.host);
+            if (hostSocket) {
+              hostSocket.emit('live:viewer-left', {
+                viewerId: socket.userId,
+                viewerSocketId: socket.id
+              });
+            }
+          }
           
           // Update viewer count
           const liveStream = await LiveStream.findById(roomId);
