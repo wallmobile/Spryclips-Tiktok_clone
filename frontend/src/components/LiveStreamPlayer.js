@@ -18,6 +18,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const streamRef = useRef(null);
 
   const giftOptions = useMemo(() => [
@@ -229,6 +231,61 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     }
   };
 
+  // Generate share URL
+  const getShareUrl = useCallback(() => {
+    const streamId = streamData?.id || streamData?._id || 'live';
+    const hostUsername = streamData?.username || streamData?.hostUsername || user?.username || 'host';
+    return `${window.location.origin}/live/${hostUsername}/${streamId}`;
+  }, [streamData, user]);
+
+  // Share handlers
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const url = getShareUrl();
+    const text = `Watch this live stream: ${streamData?.title || 'Live Stream'}`;
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleShareFacebook = () => {
+    const url = getShareUrl();
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = getShareUrl();
+    const text = `Watch this live stream: ${streamData?.title || 'Live Stream'}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: streamData?.title || 'Live Stream',
+          text: `Watch this live stream by @${streamData?.username || streamData?.hostUsername || user?.username || 'host'}`,
+          url: getShareUrl(),
+        });
+        setShowShareMenu(false);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    }
+  };
+
   return (
     <div className="live-stream-player" onClick={() => {}}>
       {/* Main Video Area */}
@@ -286,6 +343,64 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   {formatTime(streamDuration)}
                 </div>
               )}
+              
+              {/* Share Button */}
+              <div className="share-button-container">
+                <button
+                  className="share-stream-btn"
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  title="Share Stream"
+                >
+                  <i className="fa-solid fa-share-nodes"></i>
+                  Share
+                </button>
+
+                {/* Share Menu Popup */}
+                {showShareMenu && (
+                  <div className="share-menu-popup">
+                    <div className="share-menu-header">
+                      <h4>Share Stream</h4>
+                      <button className="close-share-btn" onClick={() => setShowShareMenu(false)}>
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="share-link-section">
+                      <input
+                        type="text"
+                        value={getShareUrl()}
+                        readOnly
+                        className="share-link-input"
+                      />
+                      <button className={`copy-link-btn ${copySuccess ? 'copied' : ''}`} onClick={handleCopyLink}>
+                        <i className={`fa-solid ${copySuccess ? 'fa-check' : 'fa-copy'}`}></i>
+                        {copySuccess ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+
+                    <div className="share-options">
+                      {navigator.share && (
+                        <button className="share-option-btn native-share" onClick={handleNativeShare}>
+                          <i className="fa-solid fa-share-from-square"></i>
+                          <span>Share</span>
+                        </button>
+                      )}
+                      <button className="share-option-btn twitter" onClick={handleShareTwitter}>
+                        <i className="fa-brands fa-twitter"></i>
+                        <span>Twitter</span>
+                      </button>
+                      <button className="share-option-btn facebook" onClick={handleShareFacebook}>
+                        <i className="fa-brands fa-facebook-f"></i>
+                        <span>Facebook</span>
+                      </button>
+                      <button className="share-option-btn whatsapp" onClick={handleShareWhatsApp}>
+                        <i className="fa-brands fa-whatsapp"></i>
+                        <span>WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Stream Title - Floating Bottom Bar */}
