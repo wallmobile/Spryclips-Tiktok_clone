@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './LiveStreamPlayer.css';
 
@@ -10,25 +10,17 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [showEffects, setShowEffects] = useState(false);
-  const [selectedEffect, setSelectedEffect] = useState(null);
   const [showGifts, setShowGifts] = useState(false);
   const [gifts, setGifts] = useState([]);
   const [totalGifts, setTotalGifts] = useState(0);
   const [streamDuration, setStreamDuration] = useState(0);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicMuted, setIsMicMuted] = useState(false);
-  const mediaRecorderRef = useRef(null);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const streamRef = useRef(null);
-
-  const effects = useMemo(() => [
-    { id: 'none', label: 'None', icon: '🎬' },
-    { id: 'beauty', label: 'Beauty', icon: '✨' },
-    { id: 'vintage', label: 'Vintage', icon: '📷' },
-    { id: 'cool', label: 'Cool', icon: '❄️' },
-    { id: 'warm', label: 'Warm', icon: '🔥' },
-  ], []);
 
   const giftOptions = useMemo(() => [
     { id: 'rose', name: 'Rose', emoji: '🌹', price: 1 },
@@ -98,85 +90,109 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
+  // Initialize camera for broadcaster
+  const initializeCamera = useCallback(async () => {
+    console.log('initializeCamera called, isBroadcaster:', isBroadcaster);
+    console.log('streamData?.stream:', streamData?.stream);
+    
+    if (!isBroadcaster) {
+      console.log('Not broadcaster, skipping camera init');
+      return;
+    }
+    
+    try {
+      setCameraError(null);
+      
+      // If we have a stream from setup, check if it's still active
+      if (streamData?.stream) {
+        const tracks = streamData.stream.getTracks();
+        const activeTracks = tracks.filter(t => t.readyState === 'live');
+        console.log('Stream has', tracks.length, 'tracks,', activeTracks.length, 'are live');
+        
+        // If stream tracks are stopped, request new camera access
+        if (activeTracks.length === 0) {
+          console.log('Stream tracks are stopped, requesting new camera');
+        } else {
+          console.log('Using existing stream from setup');
+          streamRef.current = streamData.stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = streamData.stream;
+            await videoRef.current.play().catch(console.error);
+            setIsVideoLoaded(true);
+            
+            const videoTracks = streamData.stream.getVideoTracks();
+            const audioTracks = streamData.stream.getAudioTracks();
+            console.log('Video tracks:', videoTracks.length, 'Audio tracks:', audioTracks.length);
+            console.log('Video track state:', videoTracks[0]?.readyState, 'enabled:', videoTracks[0]?.enabled);
+            setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
+            setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
+            return; // Successfully used existing stream
+          }
+        }
+      }
+      
+      // Request new camera access if no stream provided or tracks are stopped
+      console.log('Requesting new camera access');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        },
+        audio: true
+      });
+      
+      console.log('Got new stream:', stream);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(console.error);
+        setIsVideoLoaded(true);
+        setIsCameraOn(true);
+        setIsMicMuted(false);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setCameraError(error.message || 'Failed to access camera');
+    }
+  }, [isBroadcaster, streamData?.stream]);
+
   // Initialize stream
   useEffect(() => {
-    if (isBroadcaster && streamData?.stream) {
-      // In production, this would connect to WebRTC/RTMP server
-      if (videoRef.current) {
-        videoRef.current.srcObject = streamData.stream;
-        streamRef.current = streamData.stream;
-        // Set initial states
-        const videoTracks = streamData.stream.getVideoTracks();
-        const audioTracks = streamData.stream.getAudioTracks();
-        setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
-        setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
-        
-        // Add class when video is loaded
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          if (videoRef.current?.parentElement) {
-            videoRef.current.parentElement.classList.add('video-loaded');
-          }
-        });
-      }
-
-      // Start recording if enabled
-      if (isRecording) {
-        startRecording();
-      }
-    } else {
+    if (isBroadcaster) {
+      initializeCamera();
+    } else if (streamData?.streamUrl && videoRef.current) {
       // For viewers, connect to stream URL
-      // In production, this would be a WebRTC connection or HLS stream
-      if (videoRef.current && streamData?.streamUrl) {
-        videoRef.current.src = streamData.streamUrl;
-        videoRef.current.play();
-        
-        // Add class when video is loaded
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          if (videoRef.current?.parentElement) {
-            videoRef.current.parentElement.classList.add('video-loaded');
-          }
-        });
-      }
+      videoRef.current.src = streamData.streamUrl;
+      videoRef.current.play().then(() => {
+        setIsVideoLoaded(true);
+      }).catch(console.error);
     }
+  }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
+
+  // Cleanup effect - stop stream when component unmounts
+  useEffect(() => {
+    // Capture video ref at effect time (it doesn't change after mount)
+    const currentVideo = videoRef.current;
 
     return () => {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
+      // Stop all media tracks when component unmounts
+      // streamRef.current must be accessed directly since it's set asynchronously
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('Stopped track:', track.kind);
+        });
+        streamRef.current = null;
+      }
+      // Clear video element
+      if (currentVideo) {
+        currentVideo.srcObject = null;
+        currentVideo.src = '';
       }
     };
-  }, [isBroadcaster, streamData, isRecording]);
-
-  const startRecording = async () => {
-    if (streamRef.current) {
-      try {
-        const recorder = new MediaRecorder(streamRef.current);
-        const chunks = [];
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data);
-        };
-
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          // In production, upload to server
-          console.log('Recording saved:', url);
-        };
-
-        recorder.start();
-        mediaRecorderRef.current = recorder;
-      } catch (error) {
-        console.error('Error starting recording:', error);
-      }
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-  };
+  }, []);
 
   const handleSendComment = (e) => {
     e.preventDefault();
@@ -195,15 +211,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   };
 
   const handleSendGift = (gift) => {
-    const giftComment = {
-      id: Date.now(),
-      username: user?.username || 'viewer',
-      text: `sent ${gift.emoji} ${gift.name}`,
-      timestamp: new Date(),
-      gift: gift,
-    };
-
-    setComments(prev => [...prev.slice(-49), giftComment]);
     setTotalGifts(prev => prev + gift.price);
     setGifts(prev => [...prev, {
       id: Date.now(),
@@ -213,16 +220,45 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     setShowGifts(false);
   };
 
-  const handleEndStream = () => {
+  const handleEndStream = async () => {
     if (window.confirm('Are you sure you want to end the stream?')) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (mediaRecorderRef.current) {
-        stopRecording();
-      }
-      if (onEnd) {
-        onEnd();
+      try {
+        // Stop the camera/media tracks first
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+
+        // Call backend API to end the stream
+        const streamId = streamData?.id || streamData?._id;
+        if (streamId) {
+          const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+          const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include' // Use cookies for authentication
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            console.error('Failed to end stream on server:', data.message);
+          } else {
+            console.log('Stream ended successfully on server');
+          }
+        }
+
+        // Call the onEnd callback to update parent state
+        if (onEnd) {
+          onEnd();
+        }
+      } catch (error) {
+        console.error('Error ending stream:', error);
+        // Still call onEnd to clean up UI even if API call fails
+        if (onEnd) {
+          onEnd();
+        }
       }
     }
   };
@@ -263,11 +299,74 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     }
   };
 
+  // Generate share URL using unique roomId
+  const getShareUrl = useCallback(() => {
+    // Use roomId for shareable links - this is unique per stream
+    const roomId = streamData?.roomId;
+    if (roomId) {
+      return `${window.location.origin}/live/watch/${roomId}`;
+    }
+    // Fallback to stream ID if roomId not available
+    const streamId = streamData?.id || streamData?._id;
+    if (streamId) {
+      return `${window.location.origin}/live/watch/${streamId}`;
+    }
+    return `${window.location.origin}/live`;
+  }, [streamData]);
+
+  // Share handlers
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const url = getShareUrl();
+    const text = `Watch this live stream: ${streamData?.title || 'Live Stream'}`;
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleShareFacebook = () => {
+    const url = getShareUrl();
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = getShareUrl();
+    const text = `Watch this live stream: ${streamData?.title || 'Live Stream'}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: streamData?.title || 'Live Stream',
+          text: `Watch this live stream by @${streamData?.username || streamData?.hostUsername || user?.username || 'host'}`,
+          url: getShareUrl(),
+        });
+        setShowShareMenu(false);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    }
+  };
+
   return (
     <div className="live-stream-player" onClick={() => {}}>
       {/* Main Video Area */}
       <div className="stream-main">
-        <div className="stream-video-container" onClick={(e) => e.stopPropagation()}>
+        <div className={`stream-video-container ${isVideoLoaded ? 'video-loaded' : ''}`} onClick={(e) => e.stopPropagation()}>
           <video
             ref={videoRef}
             autoPlay
@@ -275,7 +374,29 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
             muted={isBroadcaster}
             className="stream-video"
             onClick={(e) => e.stopPropagation()}
+            onLoadedMetadata={() => setIsVideoLoaded(true)}
           />
+          
+          {/* Camera Error State */}
+          {cameraError && isBroadcaster && (
+            <div className="camera-error-overlay">
+              <i className="fa-solid fa-video-slash"></i>
+              <h4>Camera Error</h4>
+              <p>{cameraError}</p>
+              <button className="retry-camera-btn" onClick={initializeCamera}>
+                <i className="fa-solid fa-refresh"></i>
+                Retry Camera Access
+              </button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {!isVideoLoaded && !cameraError && isBroadcaster && (
+            <div className="camera-loading-overlay">
+              <div className="camera-loading-spinner"></div>
+              <p>Initializing camera...</p>
+            </div>
+          )}
           
           {/* Stream Overlay Info */}
           <div className="stream-overlay">
@@ -298,12 +419,81 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   {formatTime(streamDuration)}
                 </div>
               )}
+              
+              {/* Share Button */}
+              <div className="share-button-container">
+                <button
+                  className="share-stream-btn"
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  title="Share Stream"
+                >
+                  <i className="fa-solid fa-share-nodes"></i>
+                  Share
+                </button>
+
+                {/* Share Menu Popup */}
+                {showShareMenu && (
+                  <div className="share-menu-popup">
+                    <div className="share-menu-header">
+                      <h4>Share Stream</h4>
+                      <button className="close-share-btn" onClick={() => setShowShareMenu(false)}>
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="share-link-section">
+                      <input
+                        type="text"
+                        value={getShareUrl()}
+                        readOnly
+                        className="share-link-input"
+                      />
+                      <button className={`copy-link-btn ${copySuccess ? 'copied' : ''}`} onClick={handleCopyLink}>
+                        <i className={`fa-solid ${copySuccess ? 'fa-check' : 'fa-copy'}`}></i>
+                        {copySuccess ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+
+                    <div className="share-options">
+                      {navigator.share && (
+                        <button className="share-option-btn native-share" onClick={handleNativeShare}>
+                          <i className="fa-solid fa-share-from-square"></i>
+                          <span>Share</span>
+                        </button>
+                      )}
+                      <button className="share-option-btn twitter" onClick={handleShareTwitter}>
+                        <i className="fa-brands fa-twitter"></i>
+                        <span>Twitter</span>
+                      </button>
+                      <button className="share-option-btn facebook" onClick={handleShareFacebook}>
+                        <i className="fa-brands fa-facebook-f"></i>
+                        <span>Facebook</span>
+                      </button>
+                      <button className="share-option-btn whatsapp" onClick={handleShareWhatsApp}>
+                        <i className="fa-brands fa-whatsapp"></i>
+                        <span>WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Stream Title */}
-            <div className="stream-title-overlay">
-              <h3>{streamData?.title || 'Live Stream'}</h3>
-              <p>@{streamData?.username || user?.username || 'user'}</p>
+            {/* Stream Title - Floating Bottom Bar */}
+            <div className="stream-title-container">
+              <div className="stream-title-bar">
+                <span className="online-status-dot"></span>
+                <div className="stream-title-content">
+                  <h3>{streamData?.title || 'Live Stream'}</h3>
+                  <p className="host-info">
+                    <span className="host-label">Host:</span>
+                    <span className="host-username">@{streamData?.username || streamData?.hostUsername || user?.username || 'host'}</span>
+                    {(streamData?.hostId || streamData?.userId || user?._id) && (
+                      <span className="host-id">#{(streamData?.hostId || streamData?.userId || user?._id || '').slice(-6)}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Broadcaster Controls */}
@@ -326,29 +516,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   {isMicMuted ? 'Muted' : 'Mic On'}
                 </button>
                 <button
-                  className={`control-btn ${isRecording ? 'recording' : ''}`}
-                  onClick={() => {
-                    if (isRecording) {
-                      stopRecording();
-                    } else {
-                      startRecording();
-                    }
-                    setIsRecording(!isRecording);
-                  }}
-                  title={isRecording ? 'Stop Recording' : 'Start Recording'}    
-                >
-                  <i className="fa-solid fa-circle"></i>
-                  {isRecording ? 'Recording' : 'Record'}
-                </button>
-                <button
-                  className="control-btn"
-                  onClick={() => setShowEffects(!showEffects)}
-                  title="Effects"
-                >
-                  <i className="fa-solid fa-magic"></i>
-                  Effects
-                </button>
-                <button
                   className="control-btn end-stream-btn"
                   onClick={handleEndStream}
                   title="End Stream"
@@ -356,28 +523,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   <i className="fa-solid fa-stop"></i>
                   End
                 </button>
-              </div>
-            )}
-
-            {/* Effects Panel */}
-            {showEffects && (
-              <div className="effects-panel">
-                <h4>Effects</h4>
-                <div className="effects-grid">
-                  {effects.map(effect => (
-                    <button
-                      key={effect.id}
-                      className={`effect-btn ${selectedEffect === effect.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedEffect(effect.id);
-                        // In production, apply effect to stream
-                      }}
-                    >
-                      <span className="effect-icon">{effect.icon}</span>
-                      <span>{effect.label}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
           </div>

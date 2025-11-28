@@ -1,9 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './LiveStreamSetup.css';
 
 const LiveStreamSetup = ({ onClose, onStartLive }) => {
+  const { user } = useAuth();
   const thumbnailInputRef = useRef(null);
   const videoPreviewRef = useRef(null);
+  const isGoingLiveRef = useRef(false); // Use ref to track if we're going live
 
   const [streamTitle, setStreamTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('entertainment');
@@ -13,6 +16,8 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   const [streamPreview, setStreamPreview] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(false);
 
   const categories = [
     { id: 'entertainment', label: 'Entertainment', icon: '🎭' },
@@ -40,20 +45,43 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   };
 
   const startPreview = async () => {
+    setIsLoadingCamera(true);
+    setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280, min: 640 }, 
+          height: { ideal: 720, min: 480 } 
+        },
         audio: true
       });
+      
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
+        // Ensure video plays
+        await videoPreviewRef.current.play().catch(e => {
+          console.log('Autoplay prevented, user interaction needed:', e);
+        });
         setStreamPreview(stream);
         setIsCameraOn(true);
         setIsMicMuted(false);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
+      let errorMessage = 'Unable to access camera.';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please connect a camera and try again.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is being used by another application. Please close other apps using the camera.';
+      }
+      
+      setCameraError(errorMessage);
+    } finally {
+      setIsLoadingCamera(false);
     }
   };
 
@@ -68,6 +96,14 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
       setIsMicMuted(false);
     }
   }, [streamPreview]);
+
+  const handleClose = useCallback(() => {
+    // Stop the stream when closing (not going live)
+    if (streamPreview) {
+      streamPreview.getTracks().forEach(track => track.stop());
+    }
+    onClose();
+  }, [streamPreview, onClose]);
 
   const toggleCamera = () => {
     if (streamPreview) {
@@ -101,23 +137,61 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
       return;
     }
 
+    // Check if user is authenticated
+    if (!user) {
+      alert('Please sign in to start a live stream');
+      return;
+    }
+
     setIsStarting(true);
     try {
-      // Here you would connect to your streaming server (WebRTC, RTMP, etc.)
-      // For now, we'll simulate the connection
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call backend API to create stream and get unique roomId
+      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_URL}/api/live/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Use cookies for authentication
+        body: JSON.stringify({
+          title: streamTitle,
+          category: selectedCategory,
+          description: '',
+          isPrivate: false
+        })
+      });
+
+      const data = await response.json();
+
+      // Handle authentication errors specifically
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Session expired. Please sign in again.');
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to create stream');
+      }
 
       if (onStartLive) {
+        isGoingLiveRef.current = true; // Mark that we're going live - don't stop the stream
         onStartLive({
+          id: data.stream._id,
+          roomId: data.roomId, // Unique shareable ID
+          streamKey: data.streamKey,
           title: streamTitle,
           category: selectedCategory,
           thumbnail: thumbnailPreview,
-          stream: streamPreview // In production, this would be the actual stream
+          stream: streamPreview, // Pass the actual stream to the player
+          hostId: user?._id,
+          hostUsername: user?.username,
+          streamUrl: data.stream.streamUrl,
+          rtmpUrl: data.rtmpUrl
         });
       }
     } catch (error) {
       console.error('Error starting live stream:', error);
-      alert('Failed to start live stream. Please try again.');
+      alert(error.message || 'Failed to start live stream. Please try again.');
       setIsStarting(false);
     }
   };
@@ -125,15 +199,19 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   React.useEffect(() => {
     // Camera will start when user clicks "Start Preview" button
     return () => {
-      stopPreview();
+      // Only stop the stream if we're NOT going live
+      // If we're going live, the LiveStreamPlayer will use this stream
+      if (!isGoingLiveRef.current && streamPreview) {
+        streamPreview.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [stopPreview]);
+  }, [streamPreview]);
 
   return (
-    <div className="live-stream-setup-overlay" onClick={onClose}>
+    <div className="live-stream-setup-overlay" onClick={handleClose}>
       <div className="live-stream-setup-modal" onClick={(e) => e.stopPropagation()}>
         <div className="setup-header">
-          <button className="setup-close-btn" onClick={onClose}>
+          <button className="setup-close-btn" onClick={handleClose}>
             <i className="fa-solid fa-times"></i>
           </button>
           <h2>Go Live</h2>
@@ -143,7 +221,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
         <div className="setup-content">
           {/* Preview Section */}
           <div className="preview-section">
-            <div className="video-preview-container">
+            <div className={`video-preview-container ${streamPreview ? 'has-stream' : ''}`}>
               <video
                 ref={videoPreviewRef}
                 autoPlay
@@ -151,6 +229,35 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
                 playsInline
                 className="preview-video"
               />
+              
+              {/* Camera Loading State */}
+              {isLoadingCamera && (
+                <div className="preview-loading">
+                  <div className="preview-loading-spinner"></div>
+                  <p>Accessing camera...</p>
+                </div>
+              )}
+              
+              {/* Camera Error State */}
+              {cameraError && !isLoadingCamera && (
+                <div className="preview-error">
+                  <i className="fa-solid fa-video-slash"></i>
+                  <p>{cameraError}</p>
+                  <button className="retry-btn" onClick={startPreview}>
+                    <i className="fa-solid fa-refresh"></i>
+                    Try Again
+                  </button>
+                </div>
+              )}
+              
+              {/* No Camera State */}
+              {!streamPreview && !isLoadingCamera && !cameraError && (
+                <div className="preview-placeholder">
+                  <i className="fa-solid fa-video"></i>
+                  <p>Click "Start Preview" to enable camera</p>
+                </div>
+              )}
+              
               <div className="preview-overlay">
               </div>
               {streamPreview && (
@@ -173,9 +280,22 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
               )}
             </div>
             {!streamPreview ? (
-              <button className="start-preview-btn" onClick={startPreview}>
-                <i className="fa-solid fa-play"></i>
-                Start Preview
+              <button 
+                className="start-preview-btn" 
+                onClick={startPreview}
+                disabled={isLoadingCamera}
+              >
+                {isLoadingCamera ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    Accessing Camera...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-video"></i>
+                    Start Preview
+                  </>
+                )}
               </button>
             ) : (
               <button className="stop-preview-btn" onClick={stopPreview}>
@@ -262,7 +382,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
 
           {/* Action Buttons */}
           <div className="setup-actions">
-            <button className="cancel-btn" onClick={onClose}>
+            <button className="cancel-btn" onClick={handleClose}>
               Cancel
             </button>
             <button

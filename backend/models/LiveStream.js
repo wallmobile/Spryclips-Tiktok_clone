@@ -19,7 +19,7 @@ const liveStreamSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['all', 'dance', 'gaming', 'food', 'comedy', 'music', 'talk', 'beauty', 'fitness', 'fashion'],
+    enum: ['all', 'entertainment', 'dance', 'gaming', 'food', 'comedy', 'music', 'talk', 'beauty', 'fitness', 'fashion', 'education', 'lifestyle', 'travel'],
     default: 'all',
   },
   streamUrl: {

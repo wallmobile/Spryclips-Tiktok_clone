@@ -787,6 +787,368 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
   color: #94A3B8;
 }
 
+/* Live Stream Watch Loading State */
+.live-stream-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  gap: 24px;
+}
+
+.loading-spinner-large {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #FF0050;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.live-stream-loading p {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Live Stream Watch Error State */
+.live-stream-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+.live-stream-error i {
+  font-size: 72px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.live-stream-error h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.live-stream-error p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  max-width: 400px;
+}
+
+.back-to-live-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 100%);
+  border: none;
+  border-radius: 30px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.back-to-live-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4);
+}
+
+/* ==================== My Active Stream Section ==================== */
+.my-active-stream-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.my-stream-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px 0;
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.my-stream-header i {
+  color: #FF0050;
+  font-size: 20px;
+}
+
+.my-stream-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid transparent;
+}
+
+.my-stream-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(255, 0, 80, 0.25);
+  border-color: #FF0050;
+}
+
+.my-stream-preview {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.my-stream-thumbnail {
+  position: relative;
+  width: 180px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.my-stream-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-stream-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 100%);
+}
+
+.my-stream-placeholder i {
+  font-size: 40px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.my-stream-live-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #FF0050;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  animation: pulse-animation 1.5s infinite;
+}
+
+@keyframes pulse-animation {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
+}
+
+.my-stream-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.my-stream-info h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.my-stream-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.my-stream-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+}
+
+.my-stream-stat i {
+  color: #25F4EE;
+  font-size: 14px;
+}
+
+.my-stream-category {
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.my-stream-room-id {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.my-stream-room-id code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.my-stream-actions {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.resume-stream-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resume-stream-btn:hover {
+  background: linear-gradient(135deg, #E5004A 0%, #E02850 100%);
+}
+
+.resume-stream-btn i {
+  font-size: 14px;
+}
+
+.end-stream-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.end-stream-card-btn:hover {
+  background: rgba(255, 59, 48, 0.2);
+  border-color: #FF3B30;
+  color: #FF3B30;
+}
+
+.end-stream-card-btn i {
+  font-size: 14px;
+}
+
+/* Responsive styles for My Active Stream */
+@media (max-width: 768px) {
+  .my-stream-preview {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .my-stream-thumbnail {
+    width: 100%;
+    height: 160px;
+  }
+
+  .my-stream-info h3 {
+    font-size: 18px;
+  }
+
+  .my-stream-stats {
+    gap: 12px;
+  }
+
+  .my-stream-stat {
+    font-size: 12px;
+  }
+
+  .my-stream-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-stream-header {
+    font-size: 16px;
+  }
+
+  .my-stream-thumbnail {
+    height: 140px;
+  }
+
+  .my-stream-info h3 {
+    font-size: 16px;
+  }
+
+  .resume-stream-btn,
+  .end-stream-card-btn {
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
 
 
 

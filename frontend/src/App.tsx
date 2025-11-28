@@ -27,6 +27,7 @@ const SystemNotificationBanner = lazy(() => import('./components/SystemNotificat
 const Explore = lazy(() => import('./components/Explore'));
 const Following = lazy(() => import('./components/Following'));
 const Live = lazy(() => import('./components/LIVE'));
+const LiveStreamWatch = lazy(() => import('./components/LiveStreamWatch'));
 const WatchLater = lazy(() => import('./components/WatchLater'));
 const PlaylistsManager = lazy(() => import('./components/PlaylistsManager'));
 const VideoQAInbox = lazy(() => import('./components/VideoQAInbox'));
@@ -334,6 +335,10 @@ const LivePage: React.FC = () => {
   return <Live onClose={() => navigate('/')} />;
 };
 
+const LiveStreamWatchPage: React.FC = () => {
+  return <LiveStreamWatch />;
+};
+
 const WatchLaterPage: React.FC = () => {
   return <WatchLater />;
 };
@@ -555,6 +560,7 @@ const AppRoutes: React.FC = () => (
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
       <Route path="live" element={<LivePage />} />
+      <Route path="live/watch/:roomId" element={<LiveStreamWatchPage />} />
       <Route path="more" element={<MorePage />} />
       
       {/* Protected Routes - Login Required */}
