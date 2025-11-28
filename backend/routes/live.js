@@ -217,6 +217,38 @@ router.get('/room/:roomId', async (req, res) => {
   }
 });
 
+// ==================== GET USER'S LIVE STREAMS ====================
+// NOTE: This route MUST be before /:streamId to avoid 'user' being matched as streamId
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const status = req.query.status || 'all';
+
+    const query = { streamer: userId };
+    if (status !== 'all') {
+      query.status = status;
+    }
+
+    const streams = await LiveStream.find(query)
+      .populate('streamer', 'username profile')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json({
+      success: true,
+      streams,
+      count: streams.length,
+    });
+  } catch (error) {
+    console.error('Error fetching user streams:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user streams',
+      error: error.message,
+    });
+  }
+});
+
 // ==================== GET STREAM DETAILS ====================
 router.get('/:streamId', async (req, res) => {
   try {
@@ -527,37 +559,6 @@ router.post('/:streamId/like', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to like stream',
-      error: error.message,
-    });
-  }
-});
-
-// ==================== GET USER'S LIVE STREAMS ====================
-router.get('/user/:userId', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const status = req.query.status || 'all';
-
-    const query = { streamer: userId };
-    if (status !== 'all') {
-      query.status = status;
-    }
-
-    const streams = await LiveStream.find(query)
-      .populate('streamer', 'username profile')
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    res.json({
-      success: true,
-      streams,
-      count: streams.length,
-    });
-  } catch (error) {
-    console.error('Error fetching user streams:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user streams',
       error: error.message,
     });
   }

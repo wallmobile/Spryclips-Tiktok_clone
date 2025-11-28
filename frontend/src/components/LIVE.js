@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LiveStreamSetup from './LiveStreamSetup';
@@ -64,6 +64,59 @@ const LIVE = ({ onClose = () => {} }) => {
   const [showSetup, setShowSetup] = useState(false);
   const [activeStream, setActiveStream] = useState(null);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [myActiveStream, setMyActiveStream] = useState(null);
+  const [loadingMyStream, setLoadingMyStream] = useState(false);
+
+  // Fetch user's active stream
+  const fetchMyActiveStream = useCallback(async () => {
+    const userId = user?._id || user?.id;
+    if (!isAuthenticated || !userId) {
+      console.log('Not fetching stream - not authenticated or no user ID', { isAuthenticated, userId });
+      return;
+    }
+    
+    setLoadingMyStream(true);
+    try {
+      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      console.log('Fetching active stream for user:', userId);
+      const response = await fetch(`${API_URL}/api/live/user/${userId}?status=live`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      console.log('Active stream response:', data);
+      
+      if (data.success && data.streams && data.streams.length > 0) {
+        // User has an active stream
+        const stream = data.streams[0];
+        console.log('Found active stream:', stream);
+        setMyActiveStream({
+          id: stream._id,
+          roomId: stream.roomId,
+          title: stream.title,
+          category: stream.category,
+          thumbnail: stream.thumbnail || user?.profile?.profilePicture,
+          viewers: stream.viewers || 0,
+          hostUsername: stream.streamer?.username || user?.username,
+          hostId: stream.streamer?._id || userId,
+          streamUrl: stream.streamUrl,
+          createdAt: stream.actualStartTime || stream.createdAt
+        });
+      } else {
+        console.log('No active streams found');
+        setMyActiveStream(null);
+      }
+    } catch (error) {
+      console.error('Error fetching active stream:', error);
+      setMyActiveStream(null);
+    } finally {
+      setLoadingMyStream(false);
+    }
+  }, [isAuthenticated, user]);
+
+  // Fetch user's active stream on mount and when user changes
+  useEffect(() => {
+    fetchMyActiveStream();
+  }, [fetchMyActiveStream]);
 
   // Handle Go Live button - check auth first
   const handleGoLive = () => {
@@ -72,7 +125,26 @@ const LIVE = ({ onClose = () => {} }) => {
       navigate('/login', { state: { from: { pathname: '/live' } } });
       return;
     }
+    
+    // If user already has an active stream, resume it
+    if (myActiveStream) {
+      setActiveStream(myActiveStream);
+      setIsBroadcasting(true);
+      return;
+    }
+    
     setShowSetup(true);
+  };
+
+  // Resume my active stream
+  const handleResumeStream = () => {
+    if (myActiveStream) {
+      setActiveStream({
+        ...myActiveStream,
+        isResuming: true
+      });
+      setIsBroadcasting(true);
+    }
   };
 
   useEffect(() => {
@@ -99,6 +171,21 @@ const LIVE = ({ onClose = () => {} }) => {
     return count.toString();
   };
 
+  // Format stream duration
+  const formatDuration = (startTime) => {
+    if (!startTime) return '';
+    const start = new Date(startTime);
+    const now = new Date();
+    const diffMs = now - start;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    
+    if (diffHours > 0) {
+      return `${diffHours}h ${diffMins % 60}m`;
+    }
+    return `${diffMins}m`;
+  };
+
   return (
     <div className="live-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="live-container" onClick={(e) => e.stopPropagation()}>
@@ -112,7 +199,7 @@ const LIVE = ({ onClose = () => {} }) => {
           </h1>
           <button className="live-create-btn" onClick={handleGoLive} type="button">
             <i className="fa-solid fa-video"></i>
-            Go Live
+            {myActiveStream ? 'Resume Stream' : 'Go Live'}
           </button>
         </div>
 
@@ -130,7 +217,55 @@ const LIVE = ({ onClose = () => {} }) => {
         </div>
 
         <div className="live-content">
-          {filteredStreams.length === 0 ? (
+          {/* My Active Stream Card */}
+          {myActiveStream && !loadingMyStream && (
+            <div className="my-active-stream-section">
+              <h2 className="my-stream-header">
+                <i className="fa-solid fa-broadcast-tower"></i>
+                Your Active Stream
+              </h2>
+              <div className="my-stream-card" onClick={handleResumeStream}>
+                <div className="my-stream-preview">
+                  <div className="my-stream-thumbnail">
+                    {myActiveStream.thumbnail ? (
+                      <img src={myActiveStream.thumbnail} alt="Stream thumbnail" />
+                    ) : (
+                      <div className="my-stream-placeholder">
+                        <i className="fa-solid fa-video"></i>
+                      </div>
+                    )}
+                    <div className="my-stream-live-badge">
+                      <span className="pulse-dot"></span>
+                      LIVE
+                    </div>
+                  </div>
+                  <div className="my-stream-info">
+                    <h3>{myActiveStream.title}</h3>
+                    <div className="my-stream-stats">
+                      <span className="my-stream-stat">
+                        <i className="fa-solid fa-users"></i>
+                        {formatViewerCount(myActiveStream.viewers)} watching
+                      </span>
+                      <span className="my-stream-stat">
+                        <i className="fa-solid fa-clock"></i>
+                        {formatDuration(myActiveStream.createdAt)}
+                      </span>
+                      <span className="my-stream-category">{myActiveStream.category}</span>
+                    </div>
+                    <p className="my-stream-room-id">
+                      Room ID: <code>{myActiveStream.roomId?.slice(0, 8)}...</code>
+                    </p>
+                  </div>
+                </div>
+                <button className="resume-stream-btn">
+                  <i className="fa-solid fa-play"></i>
+                  Resume Broadcasting
+                </button>
+              </div>
+            </div>
+          )}
+
+          {filteredStreams.length === 0 && !myActiveStream ? (
             <div className="live-empty">
               <i className="fa-solid fa-satellite-dish"></i>
               <h3>No live streams right now</h3>
@@ -204,6 +339,8 @@ const LIVE = ({ onClose = () => {} }) => {
               hostUsername: streamData.hostUsername || user?.username,
               hostId: streamData.hostId || user?._id
             });
+            // Refresh my active stream
+            fetchMyActiveStream();
           }}
         />
       )}
@@ -215,6 +352,8 @@ const LIVE = ({ onClose = () => {} }) => {
           onEnd={() => {
             setIsBroadcasting(false);
             setActiveStream(null);
+            // Refresh to check if stream ended
+            fetchMyActiveStream();
           }}
         />
       )}
