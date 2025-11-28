@@ -147,6 +147,47 @@ const LIVE = ({ onClose = () => {} }) => {
     }
   };
 
+  // End stream from card without resuming
+  const handleEndStreamFromCard = async (e) => {
+    e.stopPropagation(); // Prevent card click (resuming)
+    
+    if (!window.confirm('Are you sure you want to end your stream?')) {
+      return;
+    }
+
+    try {
+      const streamId = myActiveStream?.id || myActiveStream?._id;
+      if (!streamId) {
+        console.error('No stream ID found');
+        return;
+      }
+
+      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to end stream:', data.message);
+        alert('Failed to end stream: ' + (data.message || 'Unknown error'));
+        return;
+      }
+
+      console.log('Stream ended successfully');
+      setMyActiveStream(null);
+      fetchMyActiveStream(); // Refresh to confirm
+    } catch (error) {
+      console.error('Error ending stream:', error);
+      alert('Error ending stream. Please try again.');
+    }
+  };
+
   useEffect(() => {
     window.dispatchEvent(new Event('sidebar:close'));
     const sidebar = document.querySelector('.sidebar');
@@ -224,7 +265,7 @@ const LIVE = ({ onClose = () => {} }) => {
                 <i className="fa-solid fa-broadcast-tower"></i>
                 Your Active Stream
               </h2>
-              <div className="my-stream-card" onClick={handleResumeStream}>
+              <div className="my-stream-card">
                 <div className="my-stream-preview">
                   <div className="my-stream-thumbnail">
                     {myActiveStream.thumbnail ? (
@@ -257,10 +298,16 @@ const LIVE = ({ onClose = () => {} }) => {
                     </p>
                   </div>
                 </div>
-                <button className="resume-stream-btn">
-                  <i className="fa-solid fa-play"></i>
-                  Resume Broadcasting
-                </button>
+                <div className="my-stream-actions">
+                  <button className="resume-stream-btn" onClick={handleResumeStream}>
+                    <i className="fa-solid fa-play"></i>
+                    Resume Broadcasting
+                  </button>
+                  <button className="end-stream-card-btn" onClick={handleEndStreamFromCard}>
+                    <i className="fa-solid fa-stop"></i>
+                    End Stream
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -331,14 +378,19 @@ const LIVE = ({ onClose = () => {} }) => {
         <LiveStreamSetup
           onClose={() => setShowSetup(false)}
           onStartLive={(streamData) => {
-            setShowSetup(false);
-            setIsBroadcasting(true);
-            // streamData now contains roomId, hostUsername, etc. from backend
+            console.log('onStartLive called with streamData:', streamData);
+            console.log('streamData.stream:', streamData.stream);
+            console.log('stream tracks:', streamData.stream?.getTracks?.());
+            
+            // Set active stream FIRST before closing setup
+            // This ensures the stream reference is captured before setup unmounts
             setActiveStream({
               ...streamData,
               hostUsername: streamData.hostUsername || user?.username,
               hostId: streamData.hostId || user?._id
             });
+            setIsBroadcasting(true);
+            setShowSetup(false);
             // Refresh my active stream
             fetchMyActiveStream();
           }}

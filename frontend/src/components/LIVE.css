@@ -1041,17 +1041,24 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.my-stream-actions {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
 .resume-stream-btn {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 16px;
+  padding: 14px 16px;
   background: linear-gradient(135deg, #FF0050 0%, #FE2C55 100%);
   border: none;
+  border-radius: 8px;
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1062,7 +1069,33 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
 }
 
 .resume-stream-btn i {
-  font-size: 16px;
+  font-size: 14px;
+}
+
+.end-stream-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.end-stream-card-btn:hover {
+  background: rgba(255, 59, 48, 0.2);
+  border-color: #FF3B30;
+  color: #FF3B30;
+}
+
+.end-stream-card-btn i {
+  font-size: 14px;
 }
 
 /* Responsive styles for My Active Stream */
@@ -1089,6 +1122,11 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
   .my-stream-stat {
     font-size: 12px;
   }
+
+  .my-stream-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1104,9 +1142,10 @@ body.dark-mode .live-content::-webkit-scrollbar-thumb:hover {
     font-size: 16px;
   }
 
-  .resume-stream-btn {
-    padding: 14px;
-    font-size: 14px;
+  .resume-stream-btn,
+  .end-stream-card-btn {
+    padding: 12px;
+    font-size: 13px;
   }
 }
 

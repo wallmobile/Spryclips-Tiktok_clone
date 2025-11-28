@@ -92,43 +92,64 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
 
   // Initialize camera for broadcaster
   const initializeCamera = useCallback(async () => {
-    if (!isBroadcaster) return;
+    console.log('initializeCamera called, isBroadcaster:', isBroadcaster);
+    console.log('streamData?.stream:', streamData?.stream);
+    
+    if (!isBroadcaster) {
+      console.log('Not broadcaster, skipping camera init');
+      return;
+    }
     
     try {
       setCameraError(null);
       
-      // If we have a stream from setup, use it
+      // If we have a stream from setup, check if it's still active
       if (streamData?.stream) {
-        streamRef.current = streamData.stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = streamData.stream;
-          await videoRef.current.play().catch(console.error);
-          setIsVideoLoaded(true);
-          
-          const videoTracks = streamData.stream.getVideoTracks();
-          const audioTracks = streamData.stream.getAudioTracks();
-          setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
-          setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
-        }
-      } else {
-        // Request new camera access if no stream provided
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'user', 
-            width: { ideal: 1280 }, 
-            height: { ideal: 720 } 
-          },
-          audio: true
-        });
+        const tracks = streamData.stream.getTracks();
+        const activeTracks = tracks.filter(t => t.readyState === 'live');
+        console.log('Stream has', tracks.length, 'tracks,', activeTracks.length, 'are live');
         
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(console.error);
-          setIsVideoLoaded(true);
-          setIsCameraOn(true);
-          setIsMicMuted(false);
+        // If stream tracks are stopped, request new camera access
+        if (activeTracks.length === 0) {
+          console.log('Stream tracks are stopped, requesting new camera');
+        } else {
+          console.log('Using existing stream from setup');
+          streamRef.current = streamData.stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = streamData.stream;
+            await videoRef.current.play().catch(console.error);
+            setIsVideoLoaded(true);
+            
+            const videoTracks = streamData.stream.getVideoTracks();
+            const audioTracks = streamData.stream.getAudioTracks();
+            console.log('Video tracks:', videoTracks.length, 'Audio tracks:', audioTracks.length);
+            console.log('Video track state:', videoTracks[0]?.readyState, 'enabled:', videoTracks[0]?.enabled);
+            setIsCameraOn(videoTracks.length > 0 && videoTracks[0].enabled);
+            setIsMicMuted(audioTracks.length > 0 && !audioTracks[0].enabled);
+            return; // Successfully used existing stream
+          }
         }
+      }
+      
+      // Request new camera access if no stream provided or tracks are stopped
+      console.log('Requesting new camera access');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        },
+        audio: true
+      });
+      
+      console.log('Got new stream:', stream);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(console.error);
+        setIsVideoLoaded(true);
+        setIsCameraOn(true);
+        setIsMicMuted(false);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -149,6 +170,30 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     }
   }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
 
+  // Cleanup effect - stop stream when component unmounts
+  useEffect(() => {
+    // Capture video ref at effect time (it doesn't change after mount)
+    const currentVideo = videoRef.current;
+
+    return () => {
+      // Stop all media tracks when component unmounts
+      // streamRef.current must be accessed directly since it's set asynchronously
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('Stopped track:', track.kind);
+        });
+        streamRef.current = null;
+      }
+      // Clear video element
+      if (currentVideo) {
+        currentVideo.srcObject = null;
+        currentVideo.src = '';
+      }
+    };
+  }, []);
+
   const handleSendComment = (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -166,15 +211,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   };
 
   const handleSendGift = (gift) => {
-    const giftComment = {
-      id: Date.now(),
-      username: user?.username || 'viewer',
-      text: `sent ${gift.emoji} ${gift.name}`,
-      timestamp: new Date(),
-      gift: gift,
-    };
-
-    setComments(prev => [...prev.slice(-49), giftComment]);
     setTotalGifts(prev => prev + gift.price);
     setGifts(prev => [...prev, {
       id: Date.now(),
@@ -184,13 +220,45 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     setShowGifts(false);
   };
 
-  const handleEndStream = () => {
+  const handleEndStream = async () => {
     if (window.confirm('Are you sure you want to end the stream?')) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (onEnd) {
-        onEnd();
+      try {
+        // Stop the camera/media tracks first
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+
+        // Call backend API to end the stream
+        const streamId = streamData?.id || streamData?._id;
+        if (streamId) {
+          const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+          const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include' // Use cookies for authentication
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            console.error('Failed to end stream on server:', data.message);
+          } else {
+            console.log('Stream ended successfully on server');
+          }
+        }
+
+        // Call the onEnd callback to update parent state
+        if (onEnd) {
+          onEnd();
+        }
+      } catch (error) {
+        console.error('Error ending stream:', error);
+        // Still call onEnd to clean up UI even if API call fails
+        if (onEnd) {
+          onEnd();
+        }
       }
     }
   };
