@@ -5,11 +5,36 @@ const fs = require('fs');
 const Video = require('../models/Video');
 const User = require('../models/User');
 const Comment = require('../models/Comment');
+const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
 const { cache, cacheKeys } = require('../utils/cache');
 const { sendSuccess, sendPaginated } = require('../utils/apiResponse');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
 const router = express.Router();
+
+// Helper function to create notification
+const createNotification = async (data) => {
+  try {
+    // Don't create notification if user is notifying themselves
+    if (data.userId.toString() === data.relatedUserId?.toString()) return;
+    
+    const notification = new Notification({
+      user: data.userId,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      relatedUser: data.relatedUserId || null,
+      relatedVideo: data.relatedVideoId || null,
+      relatedComment: data.relatedCommentId || null,
+      metadata: data.metadata || {}
+    });
+    await notification.save();
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
 
 const ensureObjectId = (id, label, code) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -87,7 +112,7 @@ router.post(
     const videoId = req.params.id;
     ensureObjectId(videoId, 'video', 'VIDEO_INVALID_ID');
 
-    const video = await Video.findById(videoId);
+    const video = await Video.findById(videoId).populate('user', 'username');
     if (!video) {
       throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
     }
@@ -101,6 +126,19 @@ router.post(
     } else {
       video.likedBy.push(req.user._id);
       video.likes += 1;
+      
+      // Create notification for video owner (only for likes, not unlikes)
+      if (video.user && video.user._id.toString() !== userId) {
+        await createNotification({
+          userId: video.user._id,
+          type: 'likes',
+          title: 'New Like',
+          message: 'liked your video',
+          relatedUserId: req.user._id,
+          relatedVideoId: video._id,
+          metadata: { videoTitle: video.description?.substring(0, 50) }
+        });
+      }
     }
 
     await video.save();

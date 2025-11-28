@@ -56,19 +56,37 @@ const NotificationSettings = ({ onClose }) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await api.get('/api/auth/verify');
-        const userData = response.data.user;
-        if (userData?.notificationSettings && Object.keys(userData.notificationSettings).length > 0) {
-          setNotificationSettings(userData.notificationSettings);
+        // Add cache buster to prevent 304 cached response
+        const response = await api.get('/api/users/notification-settings', {
+          headers: { 'Cache-Control': 'no-cache' },
+          params: { _t: Date.now() }
+        });
+        
+        console.log('Loaded notification settings:', response.data);
+        
+        if (response.data.success && response.data.notificationSettings) {
+          // Deep merge each category
+          setNotificationSettings(prev => {
+            const merged = { ...prev };
+            Object.keys(response.data.notificationSettings).forEach(category => {
+              if (merged[category] && response.data.notificationSettings[category]) {
+                merged[category] = {
+                  ...merged[category],
+                  ...response.data.notificationSettings[category]
+                };
+              }
+            });
+            return merged;
+          });
         }
-        if (userData?.notificationFrequency) {
-          setFrequency(userData.notificationFrequency);
+        if (response.data.notificationFrequency) {
+          setFrequency(response.data.notificationFrequency);
         }
-        if (userData?.quietHours) {
+        if (response.data.quietHours) {
           setQuietHours({
-            enabled: userData.quietHours.enabled || false,
-            from: userData.quietHours.from || '22:00',
-            to: userData.quietHours.to || '08:00'
+            enabled: response.data.quietHours.enabled || false,
+            from: response.data.quietHours.from || '22:00',
+            to: response.data.quietHours.to || '08:00'
           });
         }
       } catch (error) {
@@ -151,14 +169,16 @@ const NotificationSettings = ({ onClose }) => {
     }
   ];
 
-  const saveSettings = async () => {
+  const saveSettings = async (settingsToSave, freq, qh) => {
     try {
       setSaving(true);
-      await api.put('/api/users/notifications', {
-        notificationSettings,
-        notificationFrequency: frequency,
-        quietHours
-      });
+      const dataToSave = {
+        notificationSettings: settingsToSave || notificationSettings,
+        notificationFrequency: freq || frequency,
+        quietHours: qh || quietHours
+      };
+      console.log('Saving settings:', dataToSave);
+      await api.put('/api/users/notifications', dataToSave);
       setSaveMessage('Settings saved successfully');
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
@@ -172,58 +192,49 @@ const NotificationSettings = ({ onClose }) => {
 
   const handleToggle = async (category, type) => {
     const newValue = !notificationSettings[category][type];
-    setNotificationSettings(prev => ({
-      ...prev,
+    const newSettings = {
+      ...notificationSettings,
       [category]: {
-        ...prev[category],
+        ...notificationSettings[category],
         [type]: newValue
       }
-    }));
+    };
+    setNotificationSettings(newSettings);
     
-    // Auto-save after toggle
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
+    // Save with new settings immediately
+    await saveSettings(newSettings, frequency, quietHours);
   };
 
   const handleMasterToggle = async (type, enabled) => {
     const updatedSettings = { ...notificationSettings };
     Object.keys(updatedSettings).forEach(category => {
-      updatedSettings[category][type] = enabled;
+      updatedSettings[category] = { ...updatedSettings[category], [type]: enabled };
     });
     setNotificationSettings(updatedSettings);
-    
-    // Auto-save after master toggle
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
+    await saveSettings(updatedSettings, frequency, quietHours);
   };
 
   const handleFrequencyChange = async (value) => {
     setFrequency(value);
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
+    await saveSettings(notificationSettings, value, quietHours);
   };
 
   const handleQuietHoursToggle = async () => {
-    setQuietHours(prev => ({
-      ...prev,
-      enabled: !prev.enabled
-    }));
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
+    const newQuietHours = {
+      ...quietHours,
+      enabled: !quietHours.enabled
+    };
+    setQuietHours(newQuietHours);
+    await saveSettings(notificationSettings, frequency, newQuietHours);
   };
 
   const handleQuietHoursTimeChange = async (field, value) => {
-    setQuietHours(prev => ({
-      ...prev,
+    const newQuietHours = {
+      ...quietHours,
       [field]: value
-    }));
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
+    };
+    setQuietHours(newQuietHours);
+    await saveSettings(notificationSettings, frequency, newQuietHours);
   };
 
   return (

@@ -99,14 +99,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 6px;
   border: none;
-  border-radius: 999px;
-  padding: 0.6rem 1.35rem;
-  font-size: 0.95rem;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .watchlater-button:disabled {
@@ -115,25 +115,21 @@
 }
 
 .watchlater-button--primary {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  background: #FE2C55;
   color: #fff;
-  box-shadow: 0 4px 16px rgba(255, 0, 80, 0.3);
 }
 
 .watchlater-button--primary:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.4);
-  filter: brightness(1.05);
+  background: #e91e4e;
 }
 
 .watchlater-button--ghost {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
+  background: #252525;
+  color: #fff;
 }
 
 .watchlater-button--ghost:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.18);
-  transform: translateY(-1px);
+  background: #333;
 }
 
 .watchlater-button--danger {
@@ -200,44 +196,53 @@
 
 .watchlater-status,
 .watchlater-empty {
-  padding: 3rem 1.5rem;
+  padding: 80px 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: #1f2937;
-  gap: 1rem;
+  gap: 16px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 2px dashed #E5E7EB;
+  margin: 20px;
+}
+
+.watchlater-empty h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0;
 }
 
 .watchlater-empty span {
-  font-size: 0.95rem;
-  color: #64748b;
+  font-size: 15px;
+  color: #6B7280;
+  max-width: 300px;
+  line-height: 1.5;
 }
 
 .watchlater-empty-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: 16px;
 }
 
 .watchlater-status i {
-  font-size: 2.5rem;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 56px;
+  color: #FF0050;
+  opacity: 0.8;
 }
 
 .watchlater-empty i {
-  font-size: 2.75rem;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 64px;
+  color: #FF0050;
+  opacity: 0.7;
 }
 
 .watchlater-banner {
@@ -282,26 +287,40 @@
 
 .watchlater-card {
   background: #ffffff;
-  border-radius: 18px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  border: 1px solid #E5E7EB;
 }
 
 .watchlater-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.2);
-  filter: brightness(1.02);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(255, 0, 80, 0.2);
+  border-color: #FF0050;
 }
 
 .watchlater-thumbnail-wrapper {
   position: relative;
   aspect-ratio: 9 / 16;
-  background: #0f172a;
+  background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watchlater-thumbnail-wrapper::before {
+  content: '\f03d';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.2);
+  position: absolute;
+  z-index: 0;
 }
 
 .watchlater-thumbnail {
@@ -309,6 +328,8 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .watchlater-card:hover .watchlater-thumbnail {
@@ -332,9 +353,10 @@
   right: 0.75rem;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: none;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   color: #fff;
   display: flex;
   align-items: center;
@@ -412,19 +434,20 @@
 }
 
 .watchlater-card-body {
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
+  background: #FFFFFF;
 }
 
 .watchlater-card-body h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
-  line-height: 1.4;
-  min-height: 2.5rem;
+  color: #1F2937;
+  line-height: 1.5;
+  min-height: 42px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -435,13 +458,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  color: #64748b;
-  gap: 0.75rem;
+  font-size: 12px;
+  color: #6B7280;
+  gap: 8px;
+}
+
+.watchlater-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .watchlater-meta span:last-child {
   white-space: nowrap;
+  color: #9CA3AF;
 }
 
 @media (max-width: 1024px) {
@@ -545,7 +575,18 @@ body.dark-mode .watchlater-button--ghost:hover:not(:disabled) {
 }
 
 body.dark-mode .watchlater-button--primary {
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 8px rgba(254, 44, 85, 0.35);
+}
+
+body.dark-mode .watchlater-button--ghost {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+body.dark-mode .watchlater-button--ghost:hover:not(:disabled) {
+  background: #334155;
+  border-color: #475569;
 }
 
 body.dark-mode .watchlater-content {

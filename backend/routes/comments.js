@@ -2,8 +2,33 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Comment = require('../models/Comment');
 const Video = require('../models/Video');
+const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
 const router = express.Router();
+
+// Helper function to create notification
+const createNotification = async (data) => {
+  try {
+    // Don't create notification if user is notifying themselves
+    if (data.userId.toString() === data.relatedUserId?.toString()) return;
+    
+    const notification = new Notification({
+      user: data.userId,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      relatedUser: data.relatedUserId || null,
+      relatedVideo: data.relatedVideoId || null,
+      relatedComment: data.relatedCommentId || null,
+      metadata: data.metadata || {}
+    });
+    await notification.save();
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
 
 // Get comments for a video
 router.get('/video/:videoId', async (req, res) => {
@@ -100,6 +125,37 @@ router.post('/video/:videoId', authMiddleware, async (req, res) => {
     // Update video comment count
     video.comments += 1;
     await video.save();
+
+    // Create notification for video owner
+    if (video.user && video.user.toString() !== req.user._id.toString()) {
+      await createNotification({
+        userId: video.user,
+        type: 'comments',
+        title: 'New Comment',
+        message: `commented: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`,
+        relatedUserId: req.user._id,
+        relatedVideoId: video._id,
+        relatedCommentId: comment._id,
+        metadata: { commentText: text.substring(0, 100) }
+      });
+    }
+    
+    // If it's a reply, notify the parent comment owner
+    if (parentId) {
+      const parentComment = await Comment.findById(parentId);
+      if (parentComment && parentComment.user.toString() !== req.user._id.toString()) {
+        await createNotification({
+          userId: parentComment.user,
+          type: 'mentions',
+          title: 'New Reply',
+          message: `replied to your comment: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`,
+          relatedUserId: req.user._id,
+          relatedVideoId: video._id,
+          relatedCommentId: comment._id,
+          metadata: { commentText: text.substring(0, 100) }
+        });
+      }
+    }
 
     // Populate user info before sending
     await comment.populate('user', 'username profile');

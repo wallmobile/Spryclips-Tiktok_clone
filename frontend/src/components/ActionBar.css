@@ -2,19 +2,19 @@
   position: absolute;
   right: 3rem !important; /* Position inside video on right side */
   left: auto !important;
-  bottom: 50% !important; /* Center vertically with video */
-  top: auto;
-  transform: translateY(50%) !important; /* Perfect vertical centering */
+  bottom: 100px !important; /* Position from bottom to avoid navbar overlap */
+  top: auto !important; /* Don't use top positioning */
+  transform: none !important; /* No transform needed */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px !important; /* Reduced gap between buttons */
-  z-index: 100 !important; /* Above video and other elements */
+  z-index: 100 !important; /* Above video but below navbar (10000) */
   /* Ensure it stays within bounds */
   max-width: calc(100% - 32px);
+  max-height: calc(100% - 180px); /* Limit height to prevent navbar overlap */
   box-sizing: border-box;
   pointer-events: auto;
-  /* Ensure it's below navbar - start from at least 80px from top */
   min-height: auto;
   animation: slideInRight 0.5s ease-out;
 }
@@ -619,13 +619,14 @@ body.dark-mode .toggle-switch-small input:checked + .toggle-slider-small {
   .action-bar {
     left: auto !important;
     right: 0.75rem !important; /* 12px - same as mobile/iPad Mini */
-    bottom: 50% !important; /* Center vertically with video */
+    bottom: 100px !important; /* Position from bottom to avoid navbar overlap */
     top: auto !important;
-    transform: translateY(50%) !important; /* Perfect vertical centering */
+    transform: none !important; /* No transform needed */
     gap: 0.5rem !important; /* 8px gap - same as mobile/iPad Mini */
     position: absolute !important;
-    z-index: 100 !important; /* Above video */
+    z-index: 100 !important; /* Above video but below navbar */
     max-width: none !important;
+    max-height: calc(100% - 180px); /* Limit height to prevent navbar overlap */
     display: flex !important; /* Visible - same as iPad Mini */
     visibility: visible !important;
     opacity: 1 !important;
@@ -701,13 +702,14 @@ body.dark-mode .toggle-switch-small input:checked + .toggle-slider-small {
   .action-bar {
     left: auto !important;
     right: 0.75rem !important; /* Position inside video on right side */
-    bottom: 50% !important; /* Center vertically with video */
+    bottom: 80px !important; /* Position from bottom to avoid navbar overlap */
     top: auto !important;
-    transform: translateY(50%) !important; /* Perfect vertical centering */
+    transform: none !important; /* No transform needed */
     gap: 0.5rem !important; /* 8px gap on mobile */
     position: absolute !important;
     z-index: 30 !important;
     max-width: none !important;
+    max-height: calc(100% - 160px); /* Limit height to prevent navbar overlap */
   }
 
   .action-button {

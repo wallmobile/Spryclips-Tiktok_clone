@@ -74,13 +74,30 @@ export const NotificationProvider = ({ children }) => {
         getNotifications(),
         getUnreadCount()
       ]);
-      const entries = Array.isArray(listResponse?.notifications)
+      
+      const rawEntries = Array.isArray(listResponse?.notifications)
         ? listResponse.notifications
         : Array.isArray(listResponse)
         ? listResponse
         : [];
+      
+      // Transform backend data to frontend format
+      const entries = rawEntries.map(notif => ({
+        id: notif._id || notif.id,
+        type: notif.type || 'likes',
+        title: notif.title || '',
+        message: notif.message || '',
+        username: notif.relatedUser?.username || notif.relatedUser?.profile?.displayName || 'Someone',
+        avatar: notif.relatedUser?.profile?.avatar || notif.relatedUser?.avatar || null,
+        thumbnail: notif.relatedVideo?.thumbnail || null,
+        videoUrl: notif.relatedVideo?.url || null,
+        read: notif.isRead || notif.read || false,
+        timestamp: notif.createdAt || notif.timestamp || new Date().toISOString(),
+        metadata: notif.metadata || {}
+      }));
+      
       setNotifications(entries);
-      const unread = unreadResponse?.count ?? entries.filter((n) => !n.read).length;
+      const unread = unreadResponse?.unreadCount ?? entries.filter((n) => !n.read).length;
       setUnreadCount(unread);
       persistNotifications(entries);
     } catch (error) {
@@ -178,6 +195,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = useCallback(
     async (notificationId) => {
+      // Optimistic update
       setNotifications((prev) => {
         const updated = prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n));
         persistNotifications(updated);
@@ -189,6 +207,7 @@ export const NotificationProvider = ({ children }) => {
         await apiMarkNotificationAsRead(notificationId);
       } catch (error) {
         console.error('Failed to mark notification as read:', error);
+        // Revert on error if needed
       }
     },
     [persistNotifications, updateUnreadCount]

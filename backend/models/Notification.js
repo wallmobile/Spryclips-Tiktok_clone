@@ -10,9 +10,13 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     enum: [
       'like',
+      'likes',
       'comment',
+      'comments',
       'follow',
+      'follows',
       'mention',
+      'mentions',
       'video_upload',
       'comment_reply',
       'video_shared',
@@ -21,7 +25,9 @@ const notificationSchema = new mongoose.Schema({
       'follow_request_accepted',
       'video_comment',
       'system',
-      'message'
+      'message',
+      'live',
+      'shares'
     ],
     required: true
   },

@@ -1,43 +1,24 @@
-﻿/* Support Center Overlay */
+﻿/* Support Center Overlay - FULL PAGE */
 .support-center-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  background: #F8FAFC;
+  z-index: 10020;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10020; /* Higher z-index to ensure it's on top */
-  padding: 0; /* Changed to 0 for mobile */
-  cursor: pointer;
-  box-sizing: border-box;
-  overflow-x: hidden !important;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 100vw;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .support-center-modal {
-  background: #F5F7FA;
-  border-radius: 20px;
+  background: #FFFFFF;
   width: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.3) !important; /* Website blue shadow - no red */
-  border: 1px solid rgba(37, 99, 235, 0.2) !important; /* Website blue border - no red */
-  cursor: default;
-  box-sizing: border-box;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
 }
 
 /* Full Screen Support Center when opened from Account Settings */

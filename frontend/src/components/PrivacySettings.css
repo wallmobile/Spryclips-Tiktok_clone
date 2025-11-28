@@ -434,46 +434,55 @@
 }
 
 .privacy-toggle-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  padding: 0;
+  margin: 0;
+  background: none !important;
 }
 
 /* Toggle Switch */
 .privacy-toggle-switch {
-  width: 52px;
-  height: 30px;
-  background: #E0F2FE;
-  border-radius: 15px;
+  width: 36px;
+  height: 18px;
+  min-width: 36px;
+  max-width: 36px;
+  background: #e5e7eb;
+  border-radius: 9px;
   border: none;
   position: relative;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease;
   padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  outline: none;
+  box-shadow: none;
 }
 
 .privacy-toggle-switch:focus-visible {
-  outline: 2px solid #FF0050; /* TikTok pink */
+  outline: 2px solid #FF0050;
   outline-offset: 2px;
 }
 
 .privacy-toggle-switch.active {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */ /* Website colors - no red */
+  background: #FE2C55 !important;
 }
 
 .privacy-toggle-slider {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 24px;
-  height: 24px;
-  background: #F9FAFB;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
   border-radius: 50%;
-  transition: transform 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .privacy-toggle-switch.active .privacy-toggle-slider {
-  transform: translateX(22px);
+  transform: translateX(18px);
 }
 
 .privacy-arrow {

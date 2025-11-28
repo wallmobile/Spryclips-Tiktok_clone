@@ -104,8 +104,8 @@ const NotificationCenter = ({ onClose }) => {
   };
 
   return (
-    <div className="notification-center-overlay" onClick={onClose}>
-      <div className="notification-center-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="notification-center-overlay">
+      <div className="notification-center-modal">
         {/* Header */}
         <div className="notification-center-header">
           <button className="notification-center-close-btn" onClick={onClose}>

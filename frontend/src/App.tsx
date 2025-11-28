@@ -40,6 +40,14 @@ const EffectsLab = lazy(() => import('./components/EffectsLab'));
 const SellerDashboard = lazy(() => import('./components/SellerDashboard'));
 const GrowthToolsHub = lazy(() => import('./components/GrowthToolsHub'));
 const SupportCenter = lazy(() => import('./components/SupportCenter'));
+const BusinessSuite = lazy(() => import('./components/BusinessSuite'));
+const AdManager = lazy(() => import('./components/AdManager'));
+const ProductCatalog = lazy(() => import('./components/ProductCatalog'));
+const BusinessMessaging = lazy(() => import('./components/BusinessMessaging'));
+const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
+const NotificationSettings = lazy(() => import('./components/NotificationSettings'));
+const PrivacySettings = lazy(() => import('./components/PrivacySettings'));
+const AppSettings = lazy(() => import('./components/AppSettings'));
 
 interface VideoUserProfile {
   avatar?: string;
@@ -374,6 +382,74 @@ const GrowthToolsPage: React.FC = () => {
   return <GrowthToolsHub onClose={() => navigate('/profile')} />;
 };
 
+const BusinessSuitePage: React.FC = () => {
+  const navigate = useNavigate();
+  return <BusinessSuite onClose={() => navigate('/profile')} />;
+};
+
+const AdManagerPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <AdManager onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const ProductCatalogPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <ProductCatalog onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const BusinessMessagingPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <BusinessMessaging onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const ActivityCenterPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <NotificationCenter onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const NotificationSettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <NotificationSettings onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const PrivacySettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <PrivacySettings onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
+const AppSettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <AppSettings onClose={() => navigate('/profile')} />
+    </Suspense>
+  );
+};
+
 const SupportCenterPage: React.FC = () => {
   const navigate = useNavigate();
   return <SupportCenter onClose={() => navigate('/profile')} />;
@@ -495,6 +571,33 @@ const AppRoutes: React.FC = () => (
       <Route path="more/growth-tools" element={<ProtectedRoute><GrowthToolsPage /></ProtectedRoute>} />
       <Route path="more/support" element={<ProtectedRoute><SupportCenterPage /></ProtectedRoute>} />
     </Route>
+    {/* Full Screen Routes - No Sidebar */}
+    <Route path="/more/business-suite" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <ProtectedRoute><BusinessSuitePage /></ProtectedRoute>
+      </Suspense>
+    } />
+    <Route path="/more/ad-manager" element={
+      <ProtectedRoute><AdManagerPage /></ProtectedRoute>
+    } />
+    <Route path="/more/product-catalog" element={
+      <ProtectedRoute><ProductCatalogPage /></ProtectedRoute>
+    } />
+    <Route path="/more/business-messaging" element={
+      <ProtectedRoute><BusinessMessagingPage /></ProtectedRoute>
+    } />
+    <Route path="/more/activity-center" element={
+      <ProtectedRoute><ActivityCenterPage /></ProtectedRoute>
+    } />
+    <Route path="/more/notification-settings" element={
+      <ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>
+    } />
+    <Route path="/more/privacy-settings" element={
+      <ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>
+    } />
+    <Route path="/more/app-settings" element={
+      <ProtectedRoute><AppSettingsPage /></ProtectedRoute>
+    } />
     {/* Auth Routes */}
     <Route path="/login" element={<LoginPage />} />
     <Route path="/signup" element={<SignupPage />} />

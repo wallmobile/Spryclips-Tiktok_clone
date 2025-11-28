@@ -339,38 +339,31 @@ const CreatorAcademy = ({ onClose }) => {
               </div>
 
               <div className="lesson-modal-content">
-                <div className="lesson-video-placeholder">
-                  {selectedLesson.videoUrl ? (
+                {selectedLesson.videoUrl && (
+                  <div className="lesson-video-section">
                     <video controls src={selectedLesson.videoUrl} style={{ width: '100%', borderRadius: '12px' }} />
-                  ) : (
-                    <div className="video-placeholder">
-                      <i className="fa-solid fa-play-circle"></i>
-                      <p>Video content coming soon</p>
-                      <span>Read the lesson below</span>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <div className="lesson-text-content">
-                  <h3>About This Lesson</h3>
-                  <p>{selectedLesson.description}</p>
-                  
-                  {selectedLesson.content && (
-                    <>
-                      <h3>Lesson Content</h3>
-                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
-                    </>
-                  )}
-
-                  <div className="lesson-key-points">
-                    <h3>Key Takeaways</h3>
-                    <ul>
-                      <li><i className="fa-solid fa-check"></i> Learn practical strategies you can apply immediately</li>
-                      <li><i className="fa-solid fa-check"></i> Understand the fundamentals of {selectedLesson.category?.toLowerCase()}</li>
-                      <li><i className="fa-solid fa-check"></i> Get tips from successful creators</li>
-                      <li><i className="fa-solid fa-check"></i> Improve your content quality and reach</li>
-                    </ul>
+                  <div className="lesson-intro">
+                    <h3>📚 About This Lesson</h3>
+                    <p className="lesson-description">{selectedLesson.description}</p>
                   </div>
+                  
+                  {selectedLesson.content ? (
+                    <div className="lesson-main-content" dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                  ) : (
+                    <div className="lesson-key-points">
+                      <h3>📝 Key Takeaways</h3>
+                      <ul>
+                        <li><i className="fa-solid fa-check"></i> Learn practical strategies you can apply immediately</li>
+                        <li><i className="fa-solid fa-check"></i> Understand the fundamentals of {selectedLesson.category?.toLowerCase()}</li>
+                        <li><i className="fa-solid fa-check"></i> Get tips from successful creators</li>
+                        <li><i className="fa-solid fa-check"></i> Improve your content quality and reach</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
 

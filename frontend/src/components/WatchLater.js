@@ -456,7 +456,6 @@ const WatchLater = () => {
                 className="watchlater-button watchlater-button--primary"
                 onClick={() => navigate('/login')}
               >
-                <i className="fa-solid fa-sign-in-alt"></i>
                 Sign In
               </button>
               <button
@@ -484,7 +483,6 @@ const WatchLater = () => {
                 className="watchlater-button watchlater-button--primary"
                 onClick={handleExplore}
               >
-                <i className="fa-solid fa-compass"></i>
                 Explore videos
               </button>
               <button

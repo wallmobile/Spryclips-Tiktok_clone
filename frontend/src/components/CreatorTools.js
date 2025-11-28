@@ -320,33 +320,6 @@ const CreatorTools = ({ onClose }) => {
             ))}
           </div>
 
-          {/* Creator Tips */}
-          <div className="creator-tips-section">
-            <h3>Creator Tips</h3>
-            <div className="tips-grid">
-              <div className="tip-card">
-                <i className="fa-solid fa-lightbulb" aria-hidden="true"></i>
-                <div className="tip-content">
-                  <h5>Optimal Posting Time</h5>
-                  <p>Post between 6-10 PM for maximum engagement</p>
-                </div>
-              </div>
-              <div className="tip-card">
-                <i className="fa-solid fa-hashtag" aria-hidden="true"></i>
-                <div className="tip-content">
-                  <h5>Trending Hashtags</h5>
-                  <p>Use 3-5 relevant hashtags per video</p>
-                </div>
-              </div>
-              <div className="tip-card">
-                <i className="fa-solid fa-clock" aria-hidden="true"></i>
-                <div className="tip-content">
-                  <h5>Video Length</h5>
-                  <p>15-30 seconds get the best engagement</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

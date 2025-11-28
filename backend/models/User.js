@@ -52,6 +52,22 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'suspended', 'banned'],
     default: 'active'
   },
+  linkedAccounts: [{
+    platform: { type: String, required: true },
+    email: { type: String },
+    username: { type: String },
+    providerId: { type: String },
+    connected: { type: Boolean, default: true },
+    connectedAt: { type: Date, default: Date.now }
+  }],
+  accountActivity: [{
+    action: { type: String, required: true },
+    device: { type: String, default: 'Unknown Device' },
+    location: { type: String, default: 'Unknown Location' },
+    ip: { type: String },
+    time: { type: Date, default: Date.now },
+    status: { type: String, enum: ['success', 'blocked', 'failed'], default: 'success' }
+  }],
   failedLoginAttempts: {
     type: Number,
     default: 0
@@ -112,6 +128,14 @@ const userSchema = new mongoose.Schema({
     isVerified: {
       type: Boolean,
       default: false
+    },
+    qrScans: {
+      type: Number,
+      default: 0
+    },
+    profileViews: {
+      type: Number,
+      default: 0
     }
   },
   privacy: {
@@ -128,7 +152,45 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['everyone', 'following', 'none'],
       default: 'everyone'
-    }
+    },
+    commentFilter: {
+      type: Boolean,
+      default: false
+    },
+    downloadEnabled: {
+      type: Boolean,
+      default: true
+    },
+    mentionsEnabled: {
+      type: Boolean,
+      default: true
+    },
+    tagsEnabled: {
+      type: Boolean,
+      default: true
+    },
+    duetEnabled: {
+      type: Boolean,
+      default: true
+    },
+    stitchEnabled: {
+      type: Boolean,
+      default: true
+    },
+    filteredKeywords: [{
+      type: String,
+      trim: true
+    }],
+    blockedUsers: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      blockedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
   },
   notificationSettings: {
     type: mongoose.Schema.Types.Mixed,
@@ -237,6 +299,36 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['light', 'dark'],
       default: 'light'
+    }
+  },
+  // Wallet for monetization
+  wallet: {
+    balance: {
+      type: Number,
+      default: 0
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    pendingPayout: {
+      type: Number,
+      default: 0
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    }
+  },
+  // Stats for creator fund eligibility
+  stats: {
+    followers: {
+      type: Number,
+      default: 0
+    },
+    totalViews: {
+      type: Number,
+      default: 0
     }
   }
 }, {

@@ -23,20 +23,47 @@ const PrivacySettings = ({ onClose }) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await api.get('/api/auth/verify');
-        const userData = response.data.user;
-        if (userData?.privacy) {
-          setSettings(prev => ({
-            ...prev,
-            privateAccount: userData.privacy.accountType === 'private',
-            activityStatus: userData.privacy.showActivityStatus !== false,
-          }));
+        const response = await api.get('/api/users/privacy');
+        if (response.data.success && response.data.privacy) {
+          const privacy = response.data.privacy;
+          setSettings({
+            privateAccount: privacy.accountType === 'private',
+            commentFilter: privacy.commentFilter || false,
+            downloadEnabled: privacy.downloadEnabled !== false,
+            mentionsEnabled: privacy.mentionsEnabled !== false,
+            tagsEnabled: privacy.tagsEnabled !== false,
+            duetEnabled: privacy.duetEnabled !== false,
+            stitchEnabled: privacy.stitchEnabled !== false,
+            activityStatus: privacy.showActivityStatus !== false,
+          });
+          if (privacy.filteredKeywords?.length > 0) {
+            setCommentKeywords(privacy.filteredKeywords);
+          }
         }
       } catch (error) {
         console.error('Failed to load privacy settings:', error);
       }
     };
     loadSettings();
+  }, []);
+
+  // Load blocked users from backend
+  useEffect(() => {
+    const loadBlockedUsers = async () => {
+      try {
+        const response = await api.get('/api/users/blocked');
+        if (response.data.success && response.data.blockedUsers) {
+          setBlockedUsers(response.data.blockedUsers.map(u => ({
+            id: u.id,
+            username: u.username,
+            blockedDate: new Date(u.blockedDate).toISOString().split('T')[0]
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load blocked users:', error);
+      }
+    };
+    loadBlockedUsers();
   }, []);
 
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
@@ -75,13 +102,23 @@ const PrivacySettings = ({ onClose }) => {
         updateData.accountType = newValue ? 'private' : 'public';
       } else if (key === 'activityStatus') {
         updateData.showActivityStatus = newValue;
+      } else if (key === 'commentFilter') {
+        updateData.commentFilter = newValue;
+      } else if (key === 'downloadEnabled') {
+        updateData.downloadEnabled = newValue;
+      } else if (key === 'mentionsEnabled') {
+        updateData.mentionsEnabled = newValue;
+      } else if (key === 'tagsEnabled') {
+        updateData.tagsEnabled = newValue;
+      } else if (key === 'duetEnabled') {
+        updateData.duetEnabled = newValue;
+      } else if (key === 'stitchEnabled') {
+        updateData.stitchEnabled = newValue;
       }
       
-      if (Object.keys(updateData).length > 0) {
-        await api.put('/api/users/privacy', updateData);
-        setSaveMessage('Settings saved');
-        setTimeout(() => setSaveMessage(''), 2000);
-      }
+      await api.put('/api/users/privacy', updateData);
+      setSaveMessage('Settings saved');
+      setTimeout(() => setSaveMessage(''), 2000);
     } catch (error) {
       console.error('Failed to save privacy settings:', error);
       // Revert on error
@@ -96,31 +133,54 @@ const PrivacySettings = ({ onClose }) => {
     }
   };
 
-  const [blockedUsers, setBlockedUsers] = useState([
-    { id: 1, username: 'spammer123', blockedDate: '2024-01-15' },
-    { id: 2, username: 'fake_account', blockedDate: '2024-01-10' }
-  ]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
 
-  const handleBlockUser = () => {
+  const handleBlockUser = async () => {
     if (blockUserInput.trim()) {
-      const newBlockedUser = {
-        id: Date.now(),
-        username: blockUserInput.trim(),
-        blockedDate: new Date().toISOString().split('T')[0]
-      };
-      setBlockedUsers([...blockedUsers, newBlockedUser]);
-      const username = blockUserInput.trim();
-      setBlockUserInput('');
-      setSaveMessage(`User @${username} has been blocked`);
-      setTimeout(() => setSaveMessage(''), 3000);
+      try {
+        // First search for user by username
+        const searchResponse = await api.get(`/api/users/search?q=${blockUserInput.trim()}`);
+        const foundUser = searchResponse.data.users?.find(
+          u => u.username.toLowerCase() === blockUserInput.trim().toLowerCase()
+        );
+        
+        if (!foundUser) {
+          setSaveMessage('User not found');
+          setTimeout(() => setSaveMessage(''), 3000);
+          return;
+        }
+
+        await api.post(`/api/users/block/${foundUser._id}`);
+        
+        const newBlockedUser = {
+          id: foundUser._id,
+          username: foundUser.username,
+          blockedDate: new Date().toISOString().split('T')[0]
+        };
+        setBlockedUsers([...blockedUsers, newBlockedUser]);
+        setBlockUserInput('');
+        setSaveMessage(`User @${foundUser.username} has been blocked`);
+        setTimeout(() => setSaveMessage(''), 3000);
+      } catch (error) {
+        console.error('Failed to block user:', error);
+        setSaveMessage(error.response?.data?.message || 'Failed to block user');
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
     }
   };
 
-  const handleUnblockUser = (userId) => {
+  const handleUnblockUser = async (userId) => {
     const userToUnblock = blockedUsers.find(u => u.id === userId);
-    setBlockedUsers(blockedUsers.filter(user => user.id !== userId));
-    if (userToUnblock) {
-      setSaveMessage(`User @${userToUnblock.username} has been unblocked`);
+    try {
+      await api.delete(`/api/users/block/${userId}`);
+      setBlockedUsers(blockedUsers.filter(user => user.id !== userId));
+      if (userToUnblock) {
+        setSaveMessage(`User @${userToUnblock.username} has been unblocked`);
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to unblock user:', error);
+      setSaveMessage('Failed to unblock user');
       setTimeout(() => setSaveMessage(''), 3000);
     }
   };
@@ -137,7 +197,7 @@ const PrivacySettings = ({ onClose }) => {
   const handleSaveCommentFilters = async () => {
     try {
       setSaving(true);
-      // Save comment filter keywords to backend (if API exists)
+      await api.put('/api/users/privacy', { filteredKeywords: commentKeywords });
       setSaveMessage('Comment filters saved');
       setTimeout(() => {
         setSaveMessage('');
