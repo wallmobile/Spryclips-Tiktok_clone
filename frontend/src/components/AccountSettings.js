@@ -1,35 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/axios';
 import PrivacySettings from './PrivacySettings';
 import Balance from './Balance';
 import CreatorTools from './CreatorTools';
 import BusinessTools from './BusinessTools';
 import PersonalTools from './PersonalTools';
 import NotificationSettings from './NotificationSettings';
-import AppSettings from './AppSettings';
 import ManageAccount from './ManageAccount';
 import MessageCenter from './MessageCenter';
 import './AccountSettings.css';
 
 const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, displayNamePreview, onSubFeatureToggle }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [showCreatorTools, setShowCreatorTools] = useState(false);
   const [showBusinessTools, setShowBusinessTools] = useState(false);
   const [showPersonalTools, setShowPersonalTools] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showAppSettings, setShowAppSettings] = useState(false);
   const [showManageAccount, setShowManageAccount] = useState(false);
   const [showMessageCenter, setShowMessageCenter] = useState(false);
 
   // Check if any sub-feature is open
   const hasOpenSubFeature = showPrivacySettings || showBalance || showCreatorTools || 
     showBusinessTools || showPersonalTools || showNotificationSettings || 
-    showAppSettings || showManageAccount || 
-    showMessageCenter || showDeleteConfirm;
+    showManageAccount || showMessageCenter || showDeleteConfirm;
 
   // Notify parent component when sub-feature state changes
   useEffect(() => {
@@ -43,10 +44,23 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
-    // Here you would call an API to delete the account
-    logout();
-    onClose();
+  const confirmDelete = async () => {
+    try {
+      setDeleting(true);
+      const response = await api.delete('/api/users/delete');
+      if (response.data.message) {
+        // Account deleted successfully
+        setShowDeleteConfirm(false);
+        logout();
+        onClose();
+        // Navigate to home page
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert(error.response?.data?.message || 'Failed to delete account. Please try again.');
+      setDeleting(false);
+    }
   };
 
   const settingsSections = [
@@ -168,7 +182,8 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
               className={`settings-item ${section.danger ? 'danger' : ''}`}
               onClick={() => {
                 if (section.id === 'privacy') {
-                  setShowPrivacySettings(true);
+                  onClose();
+                  navigate('/more/privacy-settings');
                 } else if (section.id === 'balance') {
                   setShowBalance(true);
                 } else if (section.id === 'creator') {
@@ -178,9 +193,10 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                 } else if (section.id === 'personal') {
                   setShowPersonalTools(true);
                 } else if (section.id === 'notifications') {
-                  setShowNotificationSettings(true);
+                  onClose();
+                  navigate('/more/notification-settings');
                 } else if (section.id === 'app') {
-                  setShowAppSettings(true);
+                  navigate('/more/app-settings');
                 } else if (section.id === 'manage') {
                   setShowManageAccount(true);
                 } else if (section.id === 'delete') {
@@ -249,8 +265,12 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                 <button className="cancel-delete-btn" onClick={() => setShowDeleteConfirm(false)}>
                   Cancel
                 </button>
-                <button className="confirm-delete-btn" onClick={confirmDelete}>
-                  Delete Forever
+                <button 
+                  className="confirm-delete-btn" 
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Forever'}
                 </button>
               </div>
             </div>
@@ -288,11 +308,6 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
           <NotificationSettings onClose={() => setShowNotificationSettings(false)} />
         )}
 
-
-        {/* App Settings Modal */}
-        {showAppSettings && (
-          <AppSettings onClose={() => setShowAppSettings(false)} />
-        )}
 
         {/* Manage Account Modal */}
         {showManageAccount && (

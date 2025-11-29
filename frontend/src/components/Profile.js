@@ -222,7 +222,7 @@ const Profile = ({ onClose }) => {
       if (error.message?.includes('Backend server not reachable') || error.message?.includes('Network Error')) {
         const savedProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
         localStorage.setItem('userProfile', JSON.stringify({ ...savedProfile, ...profileData }));
-        updateUser({ ...user, profile: { ...user?.profile, ...profileData } });
+        updateUser({ ...user, username: profileData.username, profile: { ...user?.profile, ...profileData } });
         setToastMessage('Profile saved locally (Backend offline)');
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -1709,6 +1709,7 @@ const Profile = ({ onClose }) => {
                     try {
                       // Prepare profile data
                       const profileData = {
+                        username: usernameText || user?.username,
                         displayName: usernameText || user?.username,
                         bio: bioText,
                         website: websiteLink

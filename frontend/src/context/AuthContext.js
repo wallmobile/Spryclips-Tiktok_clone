@@ -16,8 +16,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('user');
-      return savedUser ? JSON.parse(savedUser) : null;
+      if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
+        const parsed = JSON.parse(savedUser);
+        return parsed && parsed._id ? parsed : null;
+      }
+      return null;
     } catch {
+      localStorage.removeItem('user');
       return null;
     }
   });
@@ -25,7 +30,13 @@ export const AuthProvider = ({ children }) => {
   // If we have a cached user, start with loading = false (instant UI)
   const [loading, setLoading] = useState(() => {
     try {
-      return !localStorage.getItem('user');
+      const savedUser = localStorage.getItem('user');
+      // If user exists and is valid, don't show loading
+      if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
+        const parsed = JSON.parse(savedUser);
+        return !(parsed && parsed._id);
+      }
+      return true;
     } catch {
       return true;
     }
@@ -42,10 +53,9 @@ export const AuthProvider = ({ children }) => {
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (isMountedRef.current) {
-        console.debug('Auth check timeout - redirecting to login');
-        setUser(null);
+        console.debug('Auth check timeout - keeping cached user');
+        // DON'T remove user on timeout - keep cached user
         setLoading(false);
-        localStorage.removeItem('user');
       }
     }, 5000); // 5 second timeout
     
@@ -61,10 +71,13 @@ export const AuthProvider = ({ children }) => {
       if (error?.response?.status !== 401) {
         console.debug('Auth verification failed', error);
       }
-      if (isMountedRef.current) {
+      // Only clear user if it's a 401 (unauthorized)
+      if (isMountedRef.current && error?.response?.status === 401) {
         setUser(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
+      // For other errors (network, timeout), keep cached user
     } finally {
       clearTimeout(timeoutId);
       if (isMountedRef.current) {

@@ -1,33 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/axios';
 import './PersonalTools.css';
 
 const PersonalTools = ({ onClose }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const qrRef = useRef(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   
-  const [personalStats] = useState({
-    notifications: 24,
-    offlineVideos: 12,
-    qrScans: 156,
-    activityToday: 8
+  // Generate unique profile URL for QR code
+  const profileUrl = `${window.location.origin}/@${user?.username || 'user'}`;
+  
+  const [personalStats, setPersonalStats] = useState({
+    notifications: 0,
+    qrScans: 0,
+    activityToday: 0
   });
 
-  const [activities] = useState([
-    { id: 1, type: 'like', user: 'user123', time: '2 min ago', video: 'Dancing video' },
-    { id: 2, type: 'comment', user: 'tiktoker456', time: '5 min ago', video: 'Cooking tutorial' },
-    { id: 3, type: 'follow', user: 'fan789', time: '10 min ago', video: null },
-    { id: 4, type: 'share', user: 'friend321', time: '15 min ago', video: 'Comedy skit' },
-    { id: 5, type: 'mention', user: 'creator999', time: '1 hour ago', video: 'Challenge video' }
-  ]);
+  // Fetch real QR stats from backend
+  useEffect(() => {
+    const fetchQRStats = async () => {
+      try {
+        const response = await api.get('/api/users/qr-stats');
+        if (response.data.success) {
+          setPersonalStats(prev => ({
+            ...prev,
+            qrScans: response.data.qrScans || 0
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching QR stats:', error);
+      }
+    };
+    
+    fetchQRStats();
+  }, []);
 
-  const [offlineVideos] = useState([
-    { id: 1, title: 'Morning Routine', duration: '0:45', size: '12.5 MB', thumbnail: '' },
-    { id: 2, title: 'Recipe Tutorial', duration: '1:20', size: '18.2 MB', thumbnail: '' },
-    { id: 3, title: 'Dance Challenge', duration: '0:30', size: '8.7 MB', thumbnail: '' },
-    { id: 4, title: 'Travel Vlog', duration: '2:15', size: '32.1 MB', thumbnail: '' }
-  ]);
+  const [activities, setActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
+
+  // Fetch real notifications/activities from backend
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setLoadingActivities(true);
+        const response = await api.get('/api/notifications');
+        if (response.data.notifications) {
+          const formattedActivities = response.data.notifications.slice(0, 5).map(notif => ({
+            id: notif._id,
+            type: notif.type === 'likes' ? 'like' : 
+                  notif.type === 'comments' ? 'comment' : 
+                  notif.type === 'follows' ? 'follow' : 
+                  notif.type === 'comment_reply' ? 'comment' :
+                  notif.type,
+            user: notif.relatedUser?.username || 'Unknown',
+            userId: notif.relatedUser?._id,
+            time: getTimeAgo(notif.createdAt),
+            video: notif.relatedVideo?.description || null,
+            videoId: notif.relatedVideo?._id
+          }));
+          setActivities(formattedActivities);
+          setPersonalStats(prev => ({
+            ...prev,
+            notifications: response.data.notifications.filter(n => !n.isRead).length
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+    
+    fetchActivities();
+  }, []);
+
+  // Helper function to format time ago
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
+  };
 
   const personalSections = [
     {
@@ -38,14 +100,6 @@ const PersonalTools = ({ onClose }) => {
       color: 'personal-primary',
       stats: `${personalStats.notifications} New`,
       featured: true
-    },
-    {
-      id: 'offline',
-      title: 'Offline Videos',
-      description: 'Access your downloaded videos for offline viewing',
-      icon: 'fa-solid fa-download',
-      color: 'personal-secondary',
-      stats: `${personalStats.offlineVideos} Videos`
     },
     {
       id: 'qrcode',
@@ -60,20 +114,18 @@ const PersonalTools = ({ onClose }) => {
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'activity':
-        // Navigate to notifications/activity center
+        // Navigate to Activity Center / Notifications
         onClose();
-        navigate('/more?section=notifications');
-        break;
-      case 'offline':
-        // Navigate to watch later (offline videos)
-        onClose();
-        navigate('/watch-later');
+        navigate('/more/activity-center');
         break;
       case 'qrcode':
-        // Show QR code modal or navigate to profile
-        // For now, navigate to profile
-        onClose();
-        navigate('/profile');
+        // Scroll to QR code section
+        const qrSection = document.querySelector('.qr-code-preview');
+        if (qrSection) {
+          qrSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          qrSection.classList.add('highlight-section');
+          setTimeout(() => qrSection.classList.remove('highlight-section'), 2000);
+        }
         break;
       default:
         break;
@@ -81,41 +133,110 @@ const PersonalTools = ({ onClose }) => {
   };
 
   const handleActivityClick = (activity) => {
-    if (activity.video) {
-      // Navigate to video or user profile
-      navigate(`/@${activity.user}`);
-    } else {
-      // Navigate to user profile
-      navigate(`/@${activity.user}`);
+    onClose();
+    // Navigate to Activity Center to see all notifications
+    navigate('/more/activity-center');
+  };
+
+  // Download QR Code as PNG image
+  const handleQRDownload = useCallback(() => {
+    const svg = qrRef.current?.querySelector('svg');
+    if (!svg) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    
+    // Add padding and background
+    const padding = 40;
+    const size = 256 + padding * 2;
+    canvas.width = size;
+    canvas.height = size + 60; // Extra space for username
+    
+    img.onload = () => {
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw QR code
+      ctx.drawImage(img, padding, padding, 256, 256);
+      
+      // Add username text
+      ctx.fillStyle = '#161823';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`@${user?.username || 'user'}`, canvas.width / 2, canvas.height - 20);
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `${user?.username || 'user'}-qrcode.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }, [user?.username]);
+
+  // Share QR Code
+  const handleQRShare = useCallback(async () => {
+    setShowShareModal(true);
+  }, []);
+
+  // Share to specific platform
+  const shareToplatform = useCallback(async (platform) => {
+    const shareText = `Follow me on TikTok! Scan my QR code or visit my profile: ${profileUrl}`;
+    const encodedText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(profileUrl);
+    
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodedText}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodedText}`;
+        break;
+      case 'telegram':
+        shareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(`Follow me on TikTok! @${user?.username}`)}`;
+        break;
+      case 'email':
+        shareUrl = `mailto:?subject=${encodeURIComponent(`Follow @${user?.username} on TikTok`)}&body=${encodedText}`;
+        break;
+      case 'copy':
+        try {
+          await navigator.clipboard.writeText(profileUrl);
+          alert('Profile link copied to clipboard!');
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+        setShowShareModal(false);
+        return;
+      case 'native':
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `Follow @${user?.username} on TikTok`,
+              text: `Scan my QR code to follow me!`,
+              url: profileUrl
+            });
+          } catch (err) {
+            console.log('Share cancelled');
+          }
+        }
+        setShowShareModal(false);
+        return;
+      default:
+        return;
     }
-  };
-
-  const handleOfflineVideoClick = (video) => {
-    // Navigate to watch later to play the video
-    navigate('/watch-later');
-  };
-
-  const handleQRDownload = () => {
-    // In a real app, this would download the QR code image
-    // For now, we can show a message or trigger download
-    alert('QR Code download feature will be implemented');
-  };
-
-  const handleQRShare = () => {
-    // In a real app, this would share the QR code
-    // For now, we can use Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: `Follow @${user?.username} on TikTok`,
-        text: `Scan this QR code to follow @${user?.username}`,
-        url: window.location.origin + `/@${user?.username}`
-      }).catch(err => console.log('Error sharing:', err));
-    } else {
-      // Fallback: copy link to clipboard
-      navigator.clipboard.writeText(window.location.origin + `/@${user?.username}`);
-      alert('Profile link copied to clipboard!');
-    }
-  };
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+    setShowShareModal(false);
+  }, [profileUrl, user?.username]);
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -159,10 +280,6 @@ const PersonalTools = ({ onClose }) => {
               <div className="personal-stat-item">
                 <span className="personal-stat-number">{personalStats.notifications}</span>
                 <span className="personal-stat-label">Notifications</span>
-              </div>
-              <div className="personal-stat-item">
-                <span className="personal-stat-number">{personalStats.offlineVideos}</span>
-                <span className="personal-stat-label">Offline Videos</span>
               </div>
               <div className="personal-stat-item">
                 <span className="personal-stat-number">{personalStats.qrScans}</span>
@@ -209,66 +326,54 @@ const PersonalTools = ({ onClose }) => {
           <div className="personal-section">
             <h3>Recent Activity</h3>
             <div className="activity-preview-list">
-              {activities.slice(0, 5).map(activity => (
-                <div 
-                  key={activity.id} 
-                  className="activity-preview-item"
-                  onClick={() => handleActivityClick(activity)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div
-                    className="activity-icon"
-                    style={{
-                      backgroundColor: getActivityColor(activity.type),
-                      color: '#fff'
-                    }}
+              {loadingActivities ? (
+                <div className="activity-loading">
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  <span>Loading activities...</span>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="activity-empty">
+                  <i className="fa-solid fa-bell-slash"></i>
+                  <span>No recent activity</span>
+                </div>
+              ) : (
+                activities.map(activity => (
+                  <div 
+                    key={activity.id} 
+                    className="activity-preview-item"
+                    onClick={() => handleActivityClick(activity)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <i className={getActivityIcon(activity.type)}></i>
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-main">
-                      <span className="activity-user">@{activity.user}</span>
-                      <span className="activity-action">
-                        {activity.type === 'like' && 'liked your video'}
-                        {activity.type === 'comment' && 'commented on your video'}
-                        {activity.type === 'follow' && 'started following you'}
-                        {activity.type === 'share' && 'shared your video'}
-                        {activity.type === 'mention' && 'mentioned you'}
-                      </span>
+                    <div
+                      className="activity-icon"
+                      style={{
+                        backgroundColor: getActivityColor(activity.type),
+                        color: '#fff'
+                      }}
+                    >
+                      <i className={getActivityIcon(activity.type)}></i>
                     </div>
-                    {activity.video && (
-                      <div className="activity-video">"{activity.video}"</div>
-                    )}
+                    <div className="activity-content">
+                      <div className="activity-main">
+                        <span className="activity-user">@{activity.user}</span>
+                        <span className="activity-action">
+                          {activity.type === 'like' && 'liked your video'}
+                          {activity.type === 'comment' && 'commented on your video'}
+                          {activity.type === 'follow' && 'started following you'}
+                          {activity.type === 'share' && 'shared your video'}
+                          {activity.type === 'mention' && 'mentioned you'}
+                        </span>
+                      </div>
+                      {activity.video && (
+                        <div className="activity-video">"{activity.video}"</div>
+                      )}
+                    </div>
+                    <div className="activity-time">
+                      {activity.time}
+                    </div>
                   </div>
-                  <div className="activity-time">
-                    {activity.time}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Offline Videos Preview */}
-          <div className="personal-section">
-            <h3>Offline Videos</h3>
-            <div className="offline-videos-grid">
-              {offlineVideos.slice(0, 4).map(video => (
-                <div 
-                  key={video.id} 
-                  className="offline-video-card"
-                  onClick={() => handleOfflineVideoClick(video)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="offline-video-thumbnail">
-                    <i className="fa-solid fa-play"></i>
-                    <div className="video-duration">{video.duration}</div>
-                  </div>
-                  <div className="offline-video-info">
-                    <h5>{video.title}</h5>
-                    <p>{video.size}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -277,9 +382,24 @@ const PersonalTools = ({ onClose }) => {
             <h3>Your QR Code</h3>
             <div className="qr-code-preview">
               <div className="qr-code-container">
-                <div className="qr-code-placeholder">
-                  <i className="fa-solid fa-qrcode"></i>
-                  <p>@{user?.username}</p>
+                <div className="qr-code-actual" ref={qrRef}>
+                  <QRCodeSVG
+                    value={profileUrl}
+                    size={140}
+                    level="H"
+                    includeMargin={true}
+                    bgColor="#ffffff"
+                    fgColor="#161823"
+                    imageSettings={{
+                      src: user?.profile?.avatar || '/default-avatar.png',
+                      x: undefined,
+                      y: undefined,
+                      height: 30,
+                      width: 30,
+                      excavate: true,
+                    }}
+                  />
+                  <p className="qr-username">@{user?.username}</p>
                 </div>
                 <div className="qr-code-info">
                   <h4>Share Your Profile</h4>
@@ -300,6 +420,63 @@ const PersonalTools = ({ onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <h3>Share Your QR Code</h3>
+              <button className="share-modal-close" onClick={() => setShowShareModal(false)}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            <div className="share-modal-qr">
+              <QRCodeSVG
+                value={profileUrl}
+                size={180}
+                level="H"
+                includeMargin={true}
+                bgColor="#ffffff"
+                fgColor="#161823"
+              />
+              <p>@{user?.username}</p>
+            </div>
+            <div className="share-modal-platforms">
+              <button className="share-platform whatsapp" onClick={() => shareToplatform('whatsapp')}>
+                <i className="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp</span>
+              </button>
+              <button className="share-platform facebook" onClick={() => shareToplatform('facebook')}>
+                <i className="fa-brands fa-facebook"></i>
+                <span>Facebook</span>
+              </button>
+              <button className="share-platform twitter" onClick={() => shareToplatform('twitter')}>
+                <i className="fa-brands fa-twitter"></i>
+                <span>Twitter</span>
+              </button>
+              <button className="share-platform telegram" onClick={() => shareToplatform('telegram')}>
+                <i className="fa-brands fa-telegram"></i>
+                <span>Telegram</span>
+              </button>
+              <button className="share-platform email" onClick={() => shareToplatform('email')}>
+                <i className="fa-solid fa-envelope"></i>
+                <span>Email</span>
+              </button>
+              <button className="share-platform copy" onClick={() => shareToplatform('copy')}>
+                <i className="fa-solid fa-copy"></i>
+                <span>Copy Link</span>
+              </button>
+            </div>
+            {navigator.share && (
+              <button className="share-native-btn" onClick={() => shareToplatform('native')}>
+                <i className="fa-solid fa-share-nodes"></i>
+                More Options
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

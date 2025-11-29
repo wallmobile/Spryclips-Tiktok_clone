@@ -17,10 +17,6 @@ const AppSettings = ({ onClose }) => {
     analytics: true
   });
 
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [selectedRegion, setSelectedRegion] = useState('United States');
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [showRegionModal, setShowRegionModal] = useState(false);
   const [showClearCacheModal, setShowClearCacheModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cacheSize] = useState('245 MB');
@@ -31,22 +27,13 @@ const AppSettings = ({ onClose }) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await api.get('/api/auth/verify');
-        const userData = response.data.user;
-        if (userData?.appSettings) {
-          setSettings(prev => ({
-            ...prev,
-            ...userData.appSettings
-          }));
-          if (userData.appSettings.darkMode !== undefined) {
-            setDarkMode(userData.appSettings.darkMode);
+        const response = await api.get('/api/users/app-settings');
+        console.log('Loaded app settings:', response.data);
+        if (response.data.success && response.data.appSettings) {
+          setSettings(response.data.appSettings);
+          if (response.data.appSettings.darkMode !== undefined) {
+            setDarkMode(response.data.appSettings.darkMode);
           }
-        }
-        if (userData?.preferredLanguage) {
-          setSelectedLanguage(userData.preferredLanguage);
-        }
-        if (userData?.preferredRegion) {
-          setSelectedRegion(userData.preferredRegion);
         }
       } catch (error) {
         console.error('Failed to load app settings:', error);
@@ -55,35 +42,15 @@ const AppSettings = ({ onClose }) => {
     loadSettings();
   }, [setDarkMode]);
 
-  const languages = [
-    { code: 'en', name: 'English', native: 'English' },
-    { code: 'es', name: 'Spanish', native: 'Español' },
-    { code: 'fr', name: 'French', native: 'Français' },
-    { code: 'de', name: 'German', native: 'Deutsch' },
-    { code: 'it', name: 'Italian', native: 'Italiano' },
-    { code: 'pt', name: 'Portuguese', native: 'Português' },
-    { code: 'ru', name: 'Russian', native: 'Русский' },
-    { code: 'ja', name: 'Japanese', native: '日本語' },
-    { code: 'ko', name: 'Korean', native: '한국어' },
-    { code: 'zh', name: 'Chinese', native: '中文' },
-    { code: 'ar', name: 'Arabic', native: 'العربية' },
-    { code: 'hi', name: 'Hindi', native: 'हिन्दी' }
-  ];
 
-  const regions = [
-    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
-    'France', 'Spain', 'Italy', 'Japan', 'South Korea', 'Brazil', 'Mexico',
-    'India', 'China', 'Russia', 'Netherlands', 'Sweden', 'Norway'
-  ];
-
-  const saveSettings = async () => {
+  const saveSettings = async (settingsToSave) => {
     try {
       setSaving(true);
-      await api.put('/api/users/app-settings', {
-        appSettings: settings,
-        preferredLanguage: selectedLanguage,
-        preferredRegion: selectedRegion
-      });
+      const dataToSave = {
+        appSettings: settingsToSave || settings
+      };
+      console.log('Saving app settings:', dataToSave);
+      await api.put('/api/users/app-settings', dataToSave);
       setSaveMessage('Settings saved successfully');
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
@@ -97,40 +64,19 @@ const AppSettings = ({ onClose }) => {
 
   const handleToggle = async (key) => {
     const newValue = !settings[key];
-    setSettings(prev => ({
-      ...prev,
+    const newSettings = {
+      ...settings,
       [key]: newValue
-    }));
+    };
+    setSettings(newSettings);
     
     // Apply dark mode immediately if toggled
     if (key === 'darkMode') {
       setDarkMode(newValue);
     }
     
-    // Auto-save after toggle
-    setTimeout(() => {
-      saveSettings();
-    }, 500);
-  };
-
-  const handleLanguageSelect = async (language) => {
-    setSelectedLanguage(language.name);
-    setShowLanguageModal(false);
-    setSaveMessage(`Language changed to ${language.native}`);
-    setTimeout(() => {
-      setSaveMessage('');
-      saveSettings();
-    }, 2000);
-  };
-
-  const handleRegionSelect = async (region) => {
-    setSelectedRegion(region);
-    setShowRegionModal(false);
-    setSaveMessage(`Region changed to ${region}`);
-    setTimeout(() => {
-      setSaveMessage('');
-      saveSettings();
-    }, 2000);
+    // Save with new settings immediately
+    await saveSettings(newSettings);
   };
 
   const handleClearCache = () => {
@@ -171,28 +117,6 @@ const AppSettings = ({ onClose }) => {
           icon: 'fa-solid fa-moon',
           type: 'toggle',
           value: settings.darkMode
-        }
-      ]
-    },
-    {
-      id: 'localization',
-      title: 'Language & Region',
-      items: [
-        {
-          id: 'language',
-          title: 'Language',
-          description: selectedLanguage,
-          icon: 'fa-solid fa-language',
-          type: 'select',
-          action: () => setShowLanguageModal(true)
-        },
-        {
-          id: 'region',
-          title: 'Region',
-          description: selectedRegion,
-          icon: 'fa-solid fa-globe',
-          type: 'select',
-          action: () => setShowRegionModal(true)
         }
       ]
     },
@@ -322,7 +246,8 @@ const AppSettings = ({ onClose }) => {
                   <div 
                     key={item.id} 
                     className={`app-settings-item ${item.danger ? 'danger' : ''} ${item.type === 'action' ? 'clickable' : ''}`}
-                    onClick={item.action}
+                    onClick={item.type === 'action' && item.action ? item.action : undefined}
+                    style={item.type === 'action' ? { cursor: 'pointer' } : {}}
                   >
                     <div className="settings-item-icon">
                       <i className={item.icon}></i>
@@ -362,73 +287,6 @@ const AppSettings = ({ onClose }) => {
             </div>
           ))}
         </div>
-
-        {/* Language Selection Modal */}
-        {showLanguageModal && (
-          <div className="app-modal-overlay" onClick={() => setShowLanguageModal(false)}>
-            <div className="app-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="app-modal-header">
-                <h3>Select Language</h3>
-                <button className="app-modal-close" onClick={() => setShowLanguageModal(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="app-modal-body">
-                <div className="language-list">
-                  {languages.map((language) => (
-                    <div 
-                      key={language.code}
-                      className={`language-item ${selectedLanguage === language.name ? 'selected' : ''}`}
-                      onClick={() => handleLanguageSelect(language)}
-                    >
-                      <div className="language-info">
-                        <span className="language-name">{language.name}</span>
-                        <span className="language-native">{language.native}</span>
-                      </div>
-                      {selectedLanguage === language.name && (
-                        <div className="language-check">
-                          <i className="fa-solid fa-check"></i>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Region Selection Modal */}
-        {showRegionModal && (
-          <div className="app-modal-overlay" onClick={() => setShowRegionModal(false)}>
-            <div className="app-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="app-modal-header">
-                <h3>Select Region</h3>
-                <button className="app-modal-close" onClick={() => setShowRegionModal(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="app-modal-body">
-                <div className="region-list">
-                  {regions.map((region) => (
-                    <div 
-                      key={region}
-                      className={`region-item ${selectedRegion === region ? 'selected' : ''}`}
-                      onClick={() => handleRegionSelect(region)}
-                    >
-                      <span className="region-name">{region}</span>
-                      {selectedRegion === region && (
-                        <div className="region-check">
-                          <i className="fa-solid fa-check"></i>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Clear Cache Confirmation Modal */}
         {showClearCacheModal && (

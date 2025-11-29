@@ -595,13 +595,15 @@
   position: absolute;
   right: -4rem; /* Proper spacing from video edge like TikTok */
   bottom: 5rem; /* 80px - above user info */
+  top: 100px !important; /* Start below navbar area - prevent overlap */
+  max-height: calc(100% - 200px); /* Limit height to prevent overflow */
   display: flex;
   flex-direction: column;
   gap: 1.25rem; /* 20px - proper spacing between icons like TikTok */
   align-items: center;
+  justify-content: flex-end; /* Align items to bottom */
   pointer-events: auto;
-  z-index: 100 !important; /* High z-index - above video */
-  top: auto; /* Ensure it doesn't overlap with top navbar */
+  z-index: 100 !important; /* High z-index - above video but below navbar */
 }
 
 .video-card-action-item {

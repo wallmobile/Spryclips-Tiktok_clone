@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,25 +10,27 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = '/login' }) => {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
-  const [timedOut, setTimedOut] = useState(false);
 
-  // Timeout after 3 seconds - don't wait forever
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) {
-        setTimedOut(true);
-      }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [loading]);
+  // Check if there's a cached user in localStorage for instant access
+  const hasCachedUser = React.useMemo(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      // User is considered cached if we have both user data and token
+      return (!!savedUser && savedUser !== 'null' && savedUser !== 'undefined') || !!token;
+    } catch {
+      return false;
+    }
+  }, []);
 
-  // If timed out and still loading, redirect to login
-  if (timedOut && loading) {
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  // PRIORITY 1: If we have a cached user OR a user from context, render children immediately
+  // This ensures page stays on refresh
+  if (hasCachedUser || user || isAuthenticated) {
+    return children;
   }
 
-  // Show brief loading (max 3 sec)
-  if (loading && !timedOut) {
+  // PRIORITY 2: Still loading - show brief loading spinner
+  if (loading) {
     return (
       <div style={{
         display: 'flex',
@@ -54,13 +56,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
     );
   }
 
-  // Not authenticated - redirect to login
-  if (!isAuthenticated && !user) {
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
-  }
-
-  return children;
+  // PRIORITY 3: Not authenticated and no cached user - redirect to login
+  return <Navigate to={redirectTo} state={{ from: location }} replace />;
 };
 
 export default ProtectedRoute;
-

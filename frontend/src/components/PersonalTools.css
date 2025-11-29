@@ -445,6 +445,32 @@ body.dark-mode .personal-section h3 {
   height: auto !important;
 }
 
+.activity-loading,
+.activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+}
+
+.activity-loading i,
+.activity-empty i {
+  font-size: 32px;
+  color: #FE2C55;
+}
+
+.activity-loading span,
+.activity-empty span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .activity-preview-item {
   display: flex;
   align-items: center;
@@ -586,6 +612,13 @@ body.dark-mode .personal-section h3 {
   overflow: visible !important;
   max-height: none !important;
   height: auto !important;
+  transition: all 0.3s ease;
+}
+
+.qr-code-preview.highlight-section {
+  border-color: #FE2C55;
+  box-shadow: 0 0 20px rgba(254, 44, 85, 0.4);
+  transform: scale(1.02);
 }
 
 .qr-code-container {
@@ -597,7 +630,7 @@ body.dark-mode .personal-section h3 {
 .qr-code-placeholder {
   width: 120px;
   height: 120px;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -616,6 +649,246 @@ body.dark-mode .personal-section h3 {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
+}
+
+/* Real QR Code Styling */
+.qr-code-actual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  padding: 16px;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.qr-code-actual svg {
+  border-radius: 8px;
+}
+
+.qr-code-actual .qr-username {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Share Modal */
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10100;
+  padding: 20px;
+}
+
+.share-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  animation: modalSlideUp 0.3s ease;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #161823;
+}
+
+.share-modal-close {
+  background: #f1f5f9;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-modal-close:hover {
+  background: #e2e8f0;
+}
+
+.share-modal-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.share-modal-qr svg {
+  border-radius: 12px;
+}
+
+.share-modal-qr p {
+  margin: 12px 0 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.share-modal-platforms {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.share-platform {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-platform i {
+  font-size: 24px;
+}
+
+.share-platform span {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.share-platform.whatsapp {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.share-platform.whatsapp:hover {
+  background: #bbf7d0;
+}
+
+.share-platform.facebook {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.share-platform.facebook:hover {
+  background: #bfdbfe;
+}
+
+.share-platform.twitter {
+  background: #e0f2fe;
+  color: #0ea5e9;
+}
+
+.share-platform.twitter:hover {
+  background: #bae6fd;
+}
+
+.share-platform.telegram {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.share-platform.telegram:hover {
+  background: #bae6fd;
+}
+
+.share-platform.email {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.share-platform.email:hover {
+  background: #fde68a;
+}
+
+.share-platform.copy {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.share-platform.copy:hover {
+  background: #e2e8f0;
+}
+
+.share-native-btn {
+  width: 100%;
+  padding: 14px;
+  background: #FE2C55;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.share-native-btn:hover {
+  background: #e91e4e;
+}
+
+/* Dark mode for share modal */
+body.dark-mode .share-modal {
+  background: #1e293b;
+}
+
+body.dark-mode .share-modal-header h3 {
+  color: #f9fafb;
+}
+
+body.dark-mode .share-modal-close {
+  background: #334155;
+  color: #f9fafb;
+}
+
+body.dark-mode .share-modal-close:hover {
+  background: #475569;
+}
+
+body.dark-mode .share-platform.copy {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-mode .share-platform.copy:hover {
+  background: #475569;
 }
 
 .qr-code-info {

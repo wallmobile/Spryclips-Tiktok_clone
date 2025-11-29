@@ -341,6 +341,8 @@ app.use('/api/drafts', require('./routes/drafts'));
 app.use('/api/video-interactions', require('./routes/video-interactions'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/monetization', require('./routes/monetization'));
+app.use('/api/partnerships', require('./routes/partnerships'));
+app.use('/api/business', require('./routes/business'));
 app.use('/api/live', require('./routes/live'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/hashtags', require('./routes/hashtags'));

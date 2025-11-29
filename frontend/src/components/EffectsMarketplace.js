@@ -1,148 +1,88 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getEffects, toggleFavoriteEffect, getFavoriteEffects } from '../api/effects';
 import './EffectsMarketplace.css';
 
 const EffectsMarketplace = ({ onClose, onSelectEffect }) => {
   const [activeCategory, setActiveCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('browse'); // 'browse', 'trending', 'favorites'
+  const [activeTab, setActiveTab] = useState('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewEffect, setPreviewEffect] = useState(null);
   const [favoriteEffects, setFavoriteEffects] = useState([]);
+  const [effects, setEffects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const videoPreviewRef = React.useRef(null);
   const [streamPreview, setStreamPreview] = useState(null);
 
   const categories = [
     { id: 'all', label: 'All', icon: 'fa-solid fa-layer-group' },
     { id: 'face', label: 'Face', icon: 'fa-solid fa-face-smile' },
-    { id: 'beauty', label: 'Beauty', icon: 'fa-solid fa-sparkles' },
-    { id: 'funny', label: 'Funny', icon: 'fa-solid fa-face-laugh' },
-    { id: 'animal', label: 'Animal', icon: 'fa-solid fa-paw' },
-    { id: 'trending', label: 'Trending', icon: 'fa-solid fa-fire' },
+    { id: 'filter', label: 'Filter', icon: 'fa-solid fa-wand-magic-sparkles' },
     { id: 'ar', label: 'AR', icon: 'fa-solid fa-cube' },
     { id: 'background', label: 'Background', icon: 'fa-solid fa-image' },
+    { id: 'sound', label: 'Sound', icon: 'fa-solid fa-music' },
   ];
 
-  const [effects] = useState([
-    {
-      id: 1,
-      name: 'Glowing Beauty',
-      category: 'beauty',
-      icon: '✨',
-      preview: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
-      description: 'Adds a subtle glow to your skin',
-      creator: '@beautycreator',
-      uses: '2.5M',
-      isTrending: true,
-      isAR: true
-    },
-    {
-      id: 2,
-      name: 'Cartoon Face',
-      category: 'face',
-      icon: '🎨',
-      preview: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-      description: 'Transforms your face into a cartoon',
-      creator: '@funcreator',
-      uses: '5.8M',
-      isTrending: true,
-      isAR: true
-    },
-    {
-      id: 3,
-      name: 'Cat Ears',
-      category: 'animal',
-      icon: '🐱',
-      preview: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400',
-      description: 'Cute cat ears and whiskers',
-      creator: '@petlover',
-      uses: '12.3M',
-      isTrending: false,
-      isAR: true
-    },
-    {
-      id: 4,
-      name: 'Vintage Film',
-      category: 'background',
-      icon: '📷',
-      preview: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400',
-      description: 'Classic vintage film look',
-      creator: '@vintage',
-      uses: '8.9M',
-      isTrending: true,
-      isAR: false
-    },
-    {
-      id: 5,
-      name: 'Rainbow Hair',
-      category: 'beauty',
-      icon: '🌈',
-      preview: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
-      description: 'Colorful rainbow hair effect',
-      creator: '@colorcreator',
-      uses: '3.2M',
-      isTrending: false,
-      isAR: true
-    },
-    {
-      id: 6,
-      name: 'Big Eyes',
-      category: 'face',
-      icon: '👀',
-      preview: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-      description: 'Makes your eyes bigger',
-      creator: '@beautycreator',
-      uses: '15.7M',
-      isTrending: true,
-      isAR: true
-    },
-    {
-      id: 7,
-      name: 'Dancing Penguin',
-      category: 'funny',
-      icon: '🐧',
-      preview: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400',
-      description: 'Dancing penguin companion',
-      creator: '@funcreator',
-      uses: '6.4M',
-      isTrending: false,
-      isAR: true
-    },
-    {
-      id: 8,
-      name: 'Space Background',
-      category: 'background',
-      icon: '🚀',
-      preview: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400',
-      description: 'Starry space background',
-      creator: '@space',
-      uses: '4.1M',
-      isTrending: true,
-      isAR: false
-    },
-    {
-      id: 9,
-      name: 'Slim Face',
-      category: 'beauty',
-      icon: '💎',
-      preview: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
-      description: 'Subtle face slimming effect',
-      creator: '@beautycreator',
-      uses: '9.6M',
-      isTrending: false,
-      isAR: true
-    },
-    {
-      id: 10,
-      name: 'Virtual Glasses',
-      category: 'face',
-      icon: '🥽',
-      preview: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-      description: 'Try on virtual glasses',
-      creator: '@fashion',
-      uses: '7.3M',
-      isTrending: true,
-      isAR: true
-    },
-  ]);
+  // Fetch effects from backend
+  useEffect(() => {
+    const fetchEffects = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (activeCategory !== 'all') {
+          params.category = activeCategory;
+        }
+        if (activeTab === 'trending') {
+          params.sort = 'popular';
+        }
+        
+        const response = await getEffects(params);
+        if (response.success) {
+          setEffects(response.effects.map(effect => ({
+            id: effect._id,
+            name: effect.name,
+            category: effect.category,
+            icon: effect.iconUrl || '✨',
+            preview: effect.thumbnailUrl || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
+            description: effect.description,
+            creator: effect.creator?.username ? `@${effect.creator.username}` : '@tiktok',
+            uses: formatNumber(effect.usageCount || 0),
+            isTrending: effect.isFeatured || effect.usageCount > 50000,
+            isAR: effect.category === 'ar',
+            favoritesCount: effect.favoritesCount || 0
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch effects:', err);
+        setError('Failed to load effects');
+        // Use fallback data if API fails
+        setEffects(fallbackEffects);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEffects();
+  }, [activeCategory, activeTab]);
+
+  // Format number helper
+  const formatNumber = (num) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  // Fallback effects if API fails
+  const fallbackEffects = [
+    { id: 1, name: 'Glow Up', category: 'face', icon: '✨', preview: 'https://images.unsplash.com/photo-1526510747491-58f928ec870f?w=300', description: 'Smooth skin with a natural glow', creator: '@beauty', uses: '125K', isTrending: true, isAR: false },
+    { id: 2, name: 'Cat Face', category: 'face', icon: '🐱', preview: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300', description: 'Cute cat ears and whiskers', creator: '@funfilters', uses: '98K', isTrending: true, isAR: true },
+    { id: 3, name: 'Golden Hour', category: 'filter', icon: '🌅', preview: 'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=300', description: 'Warm golden light effect', creator: '@aesthetic', uses: '87K', isTrending: true, isAR: false },
+    { id: 4, name: 'Rainbow Trail', category: 'ar', icon: '🌈', preview: 'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=300', description: 'Colorful rainbow trailing effect', creator: '@armaster', uses: '156K', isTrending: true, isAR: true },
+    { id: 5, name: 'Beach Vibes', category: 'background', icon: '🏖️', preview: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300', description: 'Virtual beach background', creator: '@travel', uses: '82K', isTrending: false, isAR: false },
+    { id: 6, name: 'Vintage Film', category: 'filter', icon: '📷', preview: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=300', description: 'Classic vintage film look', creator: '@retro', uses: '91K', isTrending: true, isAR: false },
+    { id: 7, name: 'Heart Particles', category: 'ar', icon: '💕', preview: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=300', description: 'Floating heart particles', creator: '@love', uses: '134K', isTrending: true, isAR: true },
+    { id: 8, name: 'Voice Changer', category: 'sound', icon: '🎤', preview: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=300', description: 'Change your voice style', creator: '@audio', uses: '78K', isTrending: false, isAR: false },
+  ];
 
   useEffect(() => {
     // Load favorites from localStorage

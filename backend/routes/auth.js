@@ -361,8 +361,9 @@ router.post('/login',
       throw new AppError(`Account is temporarily locked due to too many failed login attempts. Please try again in ${lockTime} minutes.`, 423);
     }
 
-    if (user.accountStatus !== 'active') {
-      throw new AppError('Account is suspended or banned. Please contact support.', 403);
+    // Block banned accounts only - allow suspended (deactivated) accounts to login for reactivation
+    if (user.accountStatus === 'banned') {
+      throw new AppError('Account is banned. Please contact support.', 403);
     }
 
     // Compare password - ensure no extra whitespace
@@ -393,7 +394,33 @@ router.post('/login',
 
     await user.resetLoginAttempts();
     
+    // Reactivate account if it was suspended (deactivated)
+    const wasSuspended = user.accountStatus === 'suspended';
+    if (wasSuspended) {
+      user.accountStatus = 'active';
+      if (user.deactivatedAt !== undefined) {
+        user.deactivatedAt = null;
+      }
+    }
+    
     user.lastLogin = new Date();
+    
+    // Log login activity
+    if (!user.accountActivity) {
+      user.accountActivity = [];
+    }
+    user.accountActivity.unshift({
+      action: wasSuspended ? 'Account Reactivated' : 'Login',
+      device: req.get('user-agent') || 'Unknown Device',
+      location: 'Unknown Location',
+      ip: req.ip,
+      status: 'success'
+    });
+    // Keep only last 50 activities
+    if (user.accountActivity.length > 50) {
+      user.accountActivity = user.accountActivity.slice(0, 50);
+    }
+    
     await user.save();
 
     const accessToken = generateAccessToken(user._id);

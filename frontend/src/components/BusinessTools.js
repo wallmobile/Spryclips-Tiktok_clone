@@ -1,19 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getBusinessDashboard } from '../api/business';
 import './BusinessTools.css';
 
 const BusinessTools = ({ onClose }) => {
   const navigate = useNavigate();
-  useAuth(); // Get auth context but don't need to destructure user
+  useAuth(); // Auth check
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
   
-  const [businessStats] = useState({
-    totalReach: 850000,
-    adSpend: 1250.50,
-    conversions: 342,
-    partnerships: 8,
-    promoCodesUsed: 156
+  const [businessStats, setBusinessStats] = useState({
+    totalReach: 0,
+    adSpend: 0,
+    conversions: 0,
+    partnerships: 0,
+    promoCodesUsed: 0
   });
+  
+  // Feature statuses from backend
+  const [featureStatuses, setFeatureStatuses] = useState({
+    verification: { status: 'Loading...', type: 'pending' },
+    catalog: { status: 'Loading...', type: 'pending' },
+    messaging: { status: 'Loading...', type: 'pending' },
+    insights: { status: 'Loading...', type: 'pending' }
+  });
+
+  // Fetch business dashboard data
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const response = await getBusinessDashboard();
+        if (response.success) {
+          const dashboard = response.dashboard;
+          
+          setBusinessStats({
+            totalReach: dashboard.stats?.totalReach || 0,
+            adSpend: dashboard.stats?.adSpend || 0,
+            conversions: dashboard.stats?.totalConversions || 0,
+            partnerships: dashboard.campaigns?.active || 0,
+            promoCodesUsed: dashboard.promoCodes?.totalUses || 0
+          });
+          
+          // Set real feature statuses based on backend data
+          setFeatureStatuses({
+            verification: {
+              status: dashboard.profile?.verificationStatus === 'approved' ? 'Verified' :
+                      dashboard.profile?.verificationStatus === 'pending' ? 'Pending' :
+                      dashboard.profile?.verificationStatus === 'rejected' ? 'Rejected' : 'Available',
+              type: dashboard.profile?.verificationStatus === 'approved' ? 'success' :
+                    dashboard.profile?.verificationStatus === 'pending' ? 'warning' :
+                    dashboard.profile?.verificationStatus === 'rejected' ? 'error' : 'info'
+            },
+            catalog: {
+              status: dashboard.products?.count > 0 ? `${dashboard.products?.count} Products` : 'Setup Required',
+              type: dashboard.products?.count > 0 ? 'success' : 'warning'
+            },
+            messaging: {
+              status: dashboard.messaging?.unread > 0 ? `${dashboard.messaging?.unread} Unread` : 
+                      dashboard.messaging?.enabled ? 'Active' : 'Setup Required',
+              type: dashboard.messaging?.unread > 0 ? 'alert' : 
+                    dashboard.messaging?.enabled ? 'success' : 'warning'
+            },
+            insights: {
+              status: dashboard.stats?.totalReach > 0 ? 'Data Available' : 'Available',
+              type: dashboard.stats?.totalReach > 0 ? 'success' : 'info'
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch business dashboard:', error);
+        setToast({ type: 'error', message: 'Failed to load business data' });
+        setTimeout(() => setToast(null), 3000);
+        
+        // Set default statuses on error
+        setFeatureStatuses({
+          verification: { status: 'Available', type: 'info' },
+          catalog: { status: 'Setup Required', type: 'warning' },
+          messaging: { status: 'Available', type: 'info' },
+          insights: { status: 'Available', type: 'info' }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
 
   const businessSections = [
     {
@@ -73,62 +147,66 @@ const BusinessTools = ({ onClose }) => {
       title: 'Business Verification',
       description: 'Get verified business badge',
       icon: 'fa-solid fa-certificate',
-      status: 'Available'
+      status: featureStatuses.verification.status,
+      statusType: featureStatuses.verification.type
     },
     {
       id: 'catalog',
       title: 'Product Catalog',
       description: 'Showcase your products',
       icon: 'fa-solid fa-store',
-      status: 'Setup Required'
+      status: featureStatuses.catalog.status,
+      statusType: featureStatuses.catalog.type
     },
     {
       id: 'messaging',
       title: 'Business Messaging',
       description: 'Professional customer support',
       icon: 'fa-solid fa-comments-dollar',
-      status: 'Active'
+      status: featureStatuses.messaging.status,
+      statusType: featureStatuses.messaging.type
     },
     {
       id: 'insights',
       title: 'Audience Insights',
       description: 'Understand your audience',
       icon: 'fa-solid fa-users-viewfinder',
-      status: 'Available'
+      status: featureStatuses.insights.status,
+      statusType: featureStatuses.insights.type
     }
   ];
 
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'suite':
-        // Navigate to business suite or show business dashboard
+        // Navigate to business suite
         onClose();
-        navigate('/more/growth-tools?section=business-suite');
+        navigate('/more/business-suite');
         break;
       case 'ads':
         // Navigate to ad manager
         onClose();
-        navigate('/more/growth-tools?section=ad-manager');
+        navigate('/more/ad-manager');
         break;
       case 'biolink':
-        // Navigate to profile settings for bio link
+        // Navigate to Business Suite bio link tab
         onClose();
-        navigate('/profile?tab=bio-link');
+        navigate('/more/business-suite?tab=biolink');
         break;
       case 'promo':
-        // Navigate to promotional codes
+        // Navigate to Business Suite promo codes tab
         onClose();
-        navigate('/more/growth-tools?section=promo-codes');
+        navigate('/more/business-suite?tab=promo');
         break;
       case 'partnerships':
-        // Navigate to brand partnerships
+        // Navigate to Business Suite partnerships tab
         onClose();
-        navigate('/more/growth-tools?section=partnerships');
+        navigate('/more/business-suite?tab=partnerships');
         break;
       case 'analytics':
-        // Navigate to business analytics
+        // Navigate to Business Suite analytics tab
         onClose();
-        navigate('/more/growth-tools?section=analytics');
+        navigate('/more/business-suite?tab=analytics');
         break;
       default:
         break;
@@ -138,28 +216,34 @@ const BusinessTools = ({ onClose }) => {
   const handleFeatureClick = (featureId) => {
     switch (featureId) {
       case 'verification':
-        // Navigate to verification page
+        // Navigate to Business Suite settings for verification
         onClose();
-        navigate('/profile?tab=verification');
+        navigate('/more/business-suite?tab=settings');
         break;
       case 'catalog':
-        // Navigate to product catalog setup
+        // Navigate to Product Catalog page
         onClose();
-        navigate('/more/shop?setup=catalog');
+        navigate('/more/product-catalog');
         break;
       case 'messaging':
-        // Navigate to business messaging (message center)
+        // Navigate to Business Messaging page
         onClose();
-        navigate('/more?section=messaging');
+        navigate('/more/business-messaging');
         break;
       case 'insights':
-        // Navigate to audience insights
+        // Navigate to Audience Insights (analytics tab)
         onClose();
-        navigate('/more/growth-tools?section=insights');
+        navigate('/more/business-suite?tab=analytics');
         break;
       default:
         break;
     }
+  };
+
+  const formatNumber = (num) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
   };
 
   return (
@@ -174,13 +258,27 @@ const BusinessTools = ({ onClose }) => {
           <div className="business-tools-header-placeholder"></div>
         </div>
 
-        {/* Full Page Scrollable Content */}
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`business-toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="business-loading">
+            <i className="fa-solid fa-spinner"></i>
+            <p>Loading business data...</p>
+          </div>
+        ) : (
+        /* Full Page Scrollable Content */
         <div className="business-tools-content">
           {/* Business Stats Overview */}
           <div className="business-stats-overview">
             <div className="business-stats-card">
               <div className="business-stat-item">
-                <span className="business-stat-number">{(businessStats.totalReach / 1000).toFixed(0)}K</span>
+                <span className="business-stat-number">{formatNumber(businessStats.totalReach)}</span>
                 <span className="business-stat-label">Total Reach</span>
               </div>
               <div className="business-stat-item">
@@ -192,8 +290,8 @@ const BusinessTools = ({ onClose }) => {
                 <span className="business-stat-label">Conversions</span>
               </div>
               <div className="business-stat-item">
-                <span className="business-stat-number">{businessStats.partnerships}</span>
-                <span className="business-stat-label">Partnerships</span>
+                <span className="business-stat-number">{businessStats.promoCodesUsed}</span>
+                <span className="business-stat-label">Promo Uses</span>
               </div>
             </div>
           </div>
@@ -247,7 +345,7 @@ const BusinessTools = ({ onClose }) => {
                     <p>{feature.description}</p>
                   </div>
                   <div className="business-feature-status">
-                    <span className={`status-badge ${feature.status.toLowerCase().replace(' ', '-')}`}>
+                    <span className={`status-badge ${feature.statusType || 'info'}`}>
                       {feature.status}
                     </span>
                   </div>
@@ -284,6 +382,7 @@ const BusinessTools = ({ onClose }) => {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

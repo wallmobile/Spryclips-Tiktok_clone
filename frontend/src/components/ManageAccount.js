@@ -52,7 +52,7 @@ const ManageAccount = ({ onClose }) => {
         if (userData) {
           setAccountInfo({
             email: userData.email || 'user@example.com',
-            phone: userData.phone || '+1 (555) 123-4567',
+            phone: userData.phone || 'Not set',
             joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
             lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
             accountStatus: userData.accountStatus || 'Active',
@@ -63,24 +63,46 @@ const ManageAccount = ({ onClose }) => {
         console.error('Failed to load account info:', error);
       }
     };
+
+    const loadLinkedAccounts = async () => {
+      try {
+        const response = await api.get('/api/users/linked-accounts');
+        if (response.data.success) {
+          setLinkedAccounts(response.data.linkedAccounts);
+        }
+      } catch (error) {
+        console.error('Failed to load linked accounts:', error);
+      }
+    };
+
+    const loadAccountActivity = async () => {
+      try {
+        const response = await api.get('/api/users/account-activity');
+        if (response.data.success) {
+          setAccountActivity(response.data.activities.map(activity => ({
+            ...activity,
+            time: new Date(activity.time).toLocaleString()
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load account activity:', error);
+      }
+    };
+
     loadAccountInfo();
+    loadLinkedAccounts();
+    loadAccountActivity();
   }, [user]);
 
-  const [linkedAccounts] = useState([
-    { platform: 'Google', email: 'user@gmail.com', connected: true, icon: 'fa-brands fa-google' },
-    { platform: 'Facebook', email: 'user@facebook.com', connected: true, icon: 'fa-brands fa-facebook' },
-    { platform: 'Instagram', username: '@username', connected: false, icon: 'fa-brands fa-instagram' },
-    { platform: 'Twitter', username: '@username', connected: false, icon: 'fa-brands fa-twitter' },
-    { platform: 'Apple', email: 'user@icloud.com', connected: false, icon: 'fa-brands fa-apple' }
+  const [linkedAccounts, setLinkedAccounts] = useState([
+    { platform: 'Google', icon: 'fa-brands fa-google', connected: false },
+    { platform: 'Facebook', icon: 'fa-brands fa-facebook', connected: false },
+    { platform: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
+    { platform: 'Twitter', icon: 'fa-brands fa-twitter', connected: false },
+    { platform: 'Apple', icon: 'fa-brands fa-apple', connected: false }
   ]);
 
-  const [accountActivity] = useState([
-    { action: 'Login', device: 'iPhone 14 Pro', location: 'New York, US', time: '2024-10-28 14:30', status: 'success' },
-    { action: 'Password Changed', device: 'MacBook Pro', location: 'New York, US', time: '2024-10-25 09:15', status: 'success' },
-    { action: 'Login Attempt', device: 'Unknown Device', location: 'London, UK', time: '2024-10-24 22:45', status: 'blocked' },
-    { action: 'Profile Updated', device: 'iPhone 14 Pro', location: 'New York, US', time: '2024-10-23 16:20', status: 'success' },
-    { action: 'Email Verified', device: 'MacBook Pro', location: 'New York, US', time: '2024-10-20 11:30', status: 'success' }
-  ]);
+  const [accountActivity, setAccountActivity] = useState([]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -195,8 +217,10 @@ const ManageAccount = ({ onClose }) => {
         break;
       case 'deactivate':
         try {
-          await api.post('/api/users/deactivate');
-          setSaveMessage('Account deactivated successfully. You have 30 days to reactivate.');
+          setSaving(true);
+          const response = await api.post('/api/users/deactivate');
+          setSaveMessage(response.data.message || 'Account deactivated successfully. You have 30 days to reactivate.');
+          setShowDeactivateAccount(false);
           setTimeout(() => {
             setSaveMessage('');
             logout();
@@ -205,6 +229,8 @@ const ManageAccount = ({ onClose }) => {
         } catch (error) {
           setSaveMessage(error.response?.data?.message || 'Failed to deactivate account');
           setTimeout(() => setSaveMessage(''), 3000);
+        } finally {
+          setSaving(false);
         }
         break;
       default:
@@ -215,8 +241,31 @@ const ManageAccount = ({ onClose }) => {
   const handleLinkAccount = async (platform) => {
     try {
       // In a real app, this would redirect to OAuth flow
+      // For demo, we'll simulate linking
       setSaveMessage(`Redirecting to ${platform} for account linking...`);
-      setTimeout(() => setSaveMessage(''), 2000);
+      
+      // Simulate OAuth callback
+      setTimeout(async () => {
+        try {
+          await api.post('/api/users/link-account', { 
+            platform, 
+            email: `user@${platform.toLowerCase()}.com`,
+            username: `@${user?.username || 'user'}`
+          });
+          
+          // Refresh linked accounts
+          const response = await api.get('/api/users/linked-accounts');
+          if (response.data.success) {
+            setLinkedAccounts(response.data.linkedAccounts);
+          }
+          
+          setSaveMessage(`${platform} account linked successfully!`);
+          setTimeout(() => setSaveMessage(''), 3000);
+        } catch (error) {
+          setSaveMessage(error.response?.data?.message || `Failed to link ${platform} account`);
+          setTimeout(() => setSaveMessage(''), 3000);
+        }
+      }, 1500);
     } catch (error) {
       setSaveMessage(`Failed to link ${platform} account`);
       setTimeout(() => setSaveMessage(''), 3000);
@@ -226,6 +275,13 @@ const ManageAccount = ({ onClose }) => {
   const handleUnlinkAccount = async (platform) => {
     try {
       await api.post('/api/users/unlink-account', { platform });
+      
+      // Refresh linked accounts
+      const response = await api.get('/api/users/linked-accounts');
+      if (response.data.success) {
+        setLinkedAccounts(response.data.linkedAccounts);
+      }
+      
       setSaveMessage(`${platform} account unlinked successfully!`);
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
@@ -351,40 +407,39 @@ const ManageAccount = ({ onClose }) => {
           </div>
         )}
 
-        {/* Account Info */}
-        <div className="account-info-section">
-          <div className="account-info-card">
-            <div className="account-avatar">
-              <img
-                src={user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
-                alt={user?.username}
-              />
-            </div>
-            <div className="account-details">
-              <h3>{user?.profile?.displayName || user?.username}</h3>
-              <p>@{user?.username}</p>
-              <div className="account-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Member since</span>
-                  <span className="stat-value">{accountInfo.joinDate}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Last login</span>
-                  <span className="stat-value">{accountInfo.lastLogin}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Status</span>
-                  <span className={`stat-value status ${accountInfo.accountStatus.toLowerCase()}`}>
-                    {accountInfo.accountStatus}
-                  </span>
+        {/* Settings Content */}
+        <div className="manage-account-content">
+          {/* Account Info */}
+          <div className="account-info-section">
+            <div className="account-info-card">
+              <div className="account-avatar">
+                <img
+                  src={user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
+                  alt={user?.username}
+                />
+              </div>
+              <div className="account-details">
+                <h3>{user?.profile?.displayName || user?.username}</h3>
+                <p>@{user?.username}</p>
+                <div className="account-stats">
+                  <div className="stat-item">
+                    <span className="stat-label">Member since</span>
+                    <span className="stat-value">{accountInfo.joinDate}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Last login</span>
+                    <span className="stat-value">{accountInfo.lastLogin}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Status</span>
+                    <span className={`stat-value status ${accountInfo.accountStatus.toLowerCase()}`}>
+                      {accountInfo.accountStatus}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Settings Content */}
-        <div className="manage-account-content">
           {manageAccountSections.map((section) => (
             <div key={section.id} className="manage-account-section">
               <h3 className="section-title">{section.title}</h3>
@@ -643,14 +698,13 @@ const ManageAccount = ({ onClose }) => {
               </div>
               <div className="account-modal-body">
                 <p>
-                  We will prepare a downloadable archive with your videos, comments, messages, and account information.
-                  You will receive an email with a secure download link within 24 hours.
+                  Download your account data including profile information, settings, and activity history.
                 </p>
                 <ul className="download-details">
-                  <li><i className="fa-solid fa-video"></i> Videos & drafts</li>
-                  <li><i className="fa-solid fa-comments"></i> Comments & interactions</li>
-                  <li><i className="fa-solid fa-user-shield"></i> Account settings</li>
-                  <li><i className="fa-solid fa-file-alt"></i> Profile details</li>
+                  <li><i className="fa-solid fa-user"></i> Profile details</li>
+                  <li><i className="fa-solid fa-cog"></i> Account settings</li>
+                  <li><i className="fa-solid fa-clock-rotate-left"></i> Activity history</li>
+                  <li><i className="fa-solid fa-shield"></i> Privacy settings</li>
                 </ul>
                 <div className="form-actions">
                   <button type="button" className="cancel-btn" onClick={() => setShowDownloadData(false)}>
@@ -659,12 +713,109 @@ const ManageAccount = ({ onClose }) => {
                   <button
                     type="button"
                     className="submit-btn"
-                    onClick={() => {
-                      handleAccountAction('download');
-                      setShowDownloadData(false);
+                    onClick={async () => {
+                      try {
+                        setSaving(true);
+                        const response = await api.get('/api/users/download-data');
+                        const data = response.data;
+                        
+                        // Create PDF-ready HTML content
+                        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My TikTok Data</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #FE2C55; text-align: center; border-bottom: 3px solid #FE2C55; padding-bottom: 15px; }
+    h2 { color: #333; margin-top: 30px; border-left: 4px solid #FE2C55; padding-left: 15px; }
+    .info-row { display: flex; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .label { font-weight: bold; width: 150px; color: #666; }
+    .value { color: #333; }
+    .section { background: #f9f9f9; padding: 20px; border-radius: 10px; margin: 15px 0; }
+    .activity-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+    .footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>🎵 My TikTok Data</h1>
+  <p style="text-align: center; color: #666;">Downloaded on: ${new Date().toLocaleDateString()}</p>
+  
+  <h2>👤 Profile Information</h2>
+  <div class="section">
+    <div class="info-row"><span class="label">Username:</span><span class="value">@${data.profile.username}</span></div>
+    <div class="info-row"><span class="label">Display Name:</span><span class="value">${data.profile.displayName || 'Not set'}</span></div>
+    <div class="info-row"><span class="label">Email:</span><span class="value">${data.profile.email}</span></div>
+    <div class="info-row"><span class="label">Bio:</span><span class="value">${data.profile.bio || 'Not set'}</span></div>
+    <div class="info-row"><span class="label">Website:</span><span class="value">${data.profile.website || 'Not set'}</span></div>
+    <div class="info-row"><span class="label">Verified:</span><span class="value">${data.profile.isVerified ? '✅ Yes' : '❌ No'}</span></div>
+    <div class="info-row"><span class="label">Followers:</span><span class="value">${data.profile.followers}</span></div>
+    <div class="info-row"><span class="label">Following:</span><span class="value">${data.profile.following}</span></div>
+    <div class="info-row"><span class="label">Total Likes:</span><span class="value">${data.profile.likes}</span></div>
+  </div>
+  
+  <h2>📊 Account Information</h2>
+  <div class="section">
+    <div class="info-row"><span class="label">Member Since:</span><span class="value">${data.accountInfo.createdAt ? new Date(data.accountInfo.createdAt).toLocaleDateString() : 'Unknown'}</span></div>
+    <div class="info-row"><span class="label">Last Login:</span><span class="value">${data.accountInfo.lastLogin ? new Date(data.accountInfo.lastLogin).toLocaleString() : 'Never'}</span></div>
+    <div class="info-row"><span class="label">Status:</span><span class="value">${data.accountInfo.accountStatus || 'Active'}</span></div>
+    <div class="info-row"><span class="label">Email Verified:</span><span class="value">${data.accountInfo.emailVerified ? '✅ Yes' : '❌ No'}</span></div>
+  </div>
+  
+  <h2>⚙️ Settings</h2>
+  <div class="section">
+    <div class="info-row"><span class="label">Dark Mode:</span><span class="value">${data.settings.appSettings?.darkMode ? 'Enabled' : 'Disabled'}</span></div>
+    <div class="info-row"><span class="label">Auto-play:</span><span class="value">${data.settings.appSettings?.autoPlay !== false ? 'Enabled' : 'Disabled'}</span></div>
+    <div class="info-row"><span class="label">Data Saver:</span><span class="value">${data.settings.appSettings?.dataSaver ? 'Enabled' : 'Disabled'}</span></div>
+  </div>
+  
+  <h2>🔗 Linked Accounts</h2>
+  <div class="section">
+    ${(data.linkedAccounts || []).filter(a => a.connected).length > 0 
+      ? (data.linkedAccounts || []).filter(a => a.connected).map(a => `<div class="info-row"><span class="label">${a.platform}:</span><span class="value">${a.email || a.username || 'Connected'}</span></div>`).join('')
+      : '<p>No linked accounts</p>'
+    }
+  </div>
+  
+  <h2>📜 Recent Activity</h2>
+  <div class="section">
+    ${(data.activityHistory || []).slice(0, 10).length > 0
+      ? (data.activityHistory || []).slice(0, 10).map(a => `<div class="activity-item">• ${a.action} - ${new Date(a.time).toLocaleString()}</div>`).join('')
+      : '<p>No activity recorded</p>'
+    }
+  </div>
+  
+  <div class="footer">
+    <p>This document was generated from TikTok Clone App</p>
+    <p>© ${new Date().getFullYear()} TikTok Clone</p>
+  </div>
+</body>
+</html>`;
+                        
+                        // Open in new window and trigger print (Save as PDF)
+                        const printWindow = window.open('', '_blank');
+                        printWindow.document.write(htmlContent);
+                        printWindow.document.close();
+                        
+                        // Wait for content to load then print
+                        printWindow.onload = () => {
+                          printWindow.print();
+                        };
+                        
+                        setSaveMessage('PDF ready! Select "Save as PDF" in print dialog.');
+                        setShowDownloadData(false);
+                        setTimeout(() => setSaveMessage(''), 5000);
+                      } catch (error) {
+                        setSaveMessage('Failed to generate PDF');
+                        setTimeout(() => setSaveMessage(''), 3000);
+                      } finally {
+                        setSaving(false);
+                      }
                     }}
+                    disabled={saving}
                   >
-                    Request Download
+                    {saving ? 'Generating...' : 'Download PDF'}
                   </button>
                 </div>
               </div>
@@ -698,12 +849,10 @@ const ManageAccount = ({ onClose }) => {
                   <button
                     type="button"
                     className="submit-btn danger"
-                    onClick={() => {
-                      handleAccountAction('deactivate');
-                      setShowDeactivateAccount(false);
-                    }}
+                    onClick={() => handleAccountAction('deactivate')}
+                    disabled={saving}
                   >
-                    Deactivate
+                    {saving ? 'Deactivating...' : 'Deactivate'}
                   </button>
                 </div>
               </div>

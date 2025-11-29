@@ -1,480 +1,293 @@
-﻿/* Business Tools Overlay */
+﻿/* ==================== BUSINESS TOOLS - FULL PAGE ==================== */
+
 .business-tools-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  background: #F8FAFC;
+  z-index: 10000;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10020; /* Higher z-index to ensure it's on top */
-  padding: 0;
-  cursor: pointer;
-  box-sizing: border-box;
-  overflow-x: hidden !important;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 100vw;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .business-tools-modal {
-  background: #F5F7FA;
-  border-radius: 20px;
+  background: #FFFFFF;
   width: 100%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow: hidden;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
-  border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
-  cursor: default;
+  overflow: hidden;
 }
 
-/* Mobile/Tablet: Full-screen when opened from Account Settings (≤ 1024px) */
-@media (max-width: 64rem) {
-  .account-settings-overlay .business-tools-overlay,
-  .account-settings-modal .business-tools-overlay,
-  body:has(.account-settings-overlay) .business-tools-overlay {
-    align-items: stretch !important;
-    justify-content: stretch !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(0.5rem) !important;
-    padding: 0 !important;
-    z-index: 10020 !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-  }
-
-  .account-settings-overlay .business-tools-modal,
-  .account-settings-modal .business-tools-modal,
-  body:has(.account-settings-overlay) .business-tools-modal {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    background: #F5F7FA !important;
-  }
-
-  .account-settings-overlay .business-tools-header,
-  .account-settings-modal .business-tools-header,
-  body:has(.account-settings-overlay) .business-tools-header {
-    padding: 1.25rem 1.5rem !important;
-    flex-shrink: 0 !important;
-    min-height: 3.5rem !important;
-  }
-
-  .account-settings-overlay .business-tools-content,
-  .account-settings-modal .business-tools-content,
-  body:has(.account-settings-overlay) .business-tools-content {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 1.25rem 1.5rem !important;
-  }
-}
-
-/* Full Screen Business Tools when opened from Account Settings */
-/* Desktop/Laptop: Full page Business Tools modal when Account Settings is open */
-@media (min-width: 64.0625rem) {
-  /* When Business Tools is opened from Account Settings context */
-  .account-settings-overlay .business-tools-overlay,
-  .account-settings-modal .business-tools-overlay,
-  body:has(.account-settings-overlay) .business-tools-overlay {
-    align-items: stretch !important;
-    justify-content: stretch !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(0.5rem) !important;
-    padding: 0 !important;
-    z-index: 10020 !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-  }
-
-  .account-settings-overlay .business-tools-modal,
-  .account-settings-modal .business-tools-modal,
-  body:has(.account-settings-overlay) .business-tools-modal {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    background: #F5F7FA !important;
-  }
-
-  .account-settings-overlay .business-tools-header,
-  .account-settings-modal .business-tools-header,
-  body:has(.account-settings-overlay) .business-tools-header {
-    padding: 1.5rem 2rem !important;
-    min-height: 4rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  .account-settings-overlay .business-tools-header h2,
-  .account-settings-modal .business-tools-header h2,
-  body:has(.account-settings-overlay) .business-tools-header h2 {
-    font-size: 1.75rem !important;
-  }
-
-  .account-settings-overlay .business-tools-content,
-  .account-settings-modal .business-tools-content,
-  body:has(.account-settings-overlay) .business-tools-content {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 1.5rem 2rem !important;
-  }
-}
-
-/* Tablet: Also full page */
-@media (min-width: 48.0625rem) and (max-width: 64rem) {
-  .account-settings-overlay .business-tools-overlay,
-  .account-settings-modal .business-tools-overlay,
-  body:has(.account-settings-overlay) .business-tools-overlay {
-    align-items: stretch !important;
-    justify-content: stretch !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(0.5rem) !important;
-    padding: 0 !important;
-    z-index: 10020 !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-  }
-
-  .account-settings-overlay .business-tools-modal,
-  .account-settings-modal .business-tools-modal,
-  body:has(.account-settings-overlay) .business-tools-modal {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    background: #F5F7FA !important;
-  }
-
-  .account-settings-overlay .business-tools-header,
-  .account-settings-modal .business-tools-header,
-  body:has(.account-settings-overlay) .business-tools-header {
-    padding: 1.25rem 1.5rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  .account-settings-overlay .business-tools-content,
-  .account-settings-modal .business-tools-content,
-  body:has(.account-settings-overlay) .business-tools-content {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 1.25rem 1.5rem !important;
-  }
-}
-
-/* Header - Website Colors */
+/* Header */
 .business-tools-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #FF0050 0%, #00F2EA 100%);
+  flex-shrink: 0;
+  min-height: 60px;
 }
 
 .business-tools-header h2 {
-  margin: 0;
-  color: #fff !important; /* White text on blue background */
+  color: #FFFFFF;
   font-size: 22px;
   font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .business-tools-close-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: #0F172A;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 18px;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.business-tools-close-btn i {
-  color: #fff !important; /* White back arrow icon */
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
 .business-tools-close-btn:hover {
-  /* Hover effect removed - no changes on hover */
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .business-tools-header-placeholder {
-  width: 40px;
+  width: 44px;
 }
 
 /* Content */
 .business-tools-content {
+  flex: 1;
+  overflow-y: auto;
   padding: 24px;
-  padding-bottom: 2.5rem; /* 40px */
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
-  height: 0 !important;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch !important;
-  box-sizing: border-box;
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  max-height: 100%;
+  background: #F8FAFC;
 }
 
+.business-tools-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.business-tools-content::-webkit-scrollbar-track {
+  background: #F3F4F6;
+}
+
+.business-tools-content::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+
+/* Stats Overview */
+.business-stats-overview {
+  margin-bottom: 24px;
+}
+
+.business-stats-card {
+  background: linear-gradient(135deg, #FF0050 0%, #FF4081 50%, #00F2EA 100%);
+  border-radius: 20px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  box-shadow: 0 8px 24px rgba(255, 0, 80, 0.2);
+}
+
+.business-stat-item {
+  text-align: center;
+  color: #FFFFFF;
+}
+
+.business-stat-number {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.business-stat-label {
+  font-size: 13px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Sections */
 .business-section {
   margin-bottom: 32px;
 }
 
 .business-section h3 {
-  margin: 0 0 20px 0;
-  color: #0F172A;
   font-size: 18px;
-  font-weight: 600;
-}
-
-/* Business Stats Overview */
-.business-stats-overview {
-  padding: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.business-stats-card {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 20px;
-  padding: 20px;
-  background: #F9FAFB;
-  border-radius: 12px;
-  border: 1px solid #E0F2FE;
-}
-
-.business-stat-item {
-  text-align: center;
-}
-
-.business-stat-number {
-  display: block;
-  font-size: 24px;
   font-weight: 700;
-  color: #FF0050 !important; /* TikTok pink */
-  margin-bottom: 4px;
+  color: #1F2937;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.business-stat-label {
-  font-size: 12px;
-  color: #A8A8A8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* Business Tools Grid */
+/* Tools Grid */
 .business-tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
 .business-tool-card {
-  background: #F9FAFB;
-  border: 1px solid #E0F2FE;
-  border-radius: 12px;
-  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.business-tool-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.business-tool-card:hover::before {
-  opacity: 1;
+  border: 2px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .business-tool-card:hover {
   transform: translateY(-4px);
-  border-color: #FF0050 !important; /* TikTok pink */
-  box-shadow: 0 12px 35px rgba(255, 0, 80, 0.2) !important; /* TikTok pink shadow */
+  box-shadow: 0 12px 30px rgba(255, 0, 80, 0.15);
+  border-color: #FF0050;
 }
 
 .business-tool-card.featured {
-  border-color: #FF0050 !important; /* TikTok pink */
-  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
+  background: linear-gradient(135deg, #FFF5F7 0%, #FFFFFF 100%);
+  border-color: #FF0050;
 }
 
-.business-tool-card.featured::before {
-  opacity: 1;
-}
-
-/* Business Card Components */
 .business-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
 }
 
 .business-tool-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: transparent; /* Original icon - no background */
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0F172A;
   font-size: 20px;
+  color: #FFFFFF;
 }
+
+.business-primary .business-tool-icon { background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%); }
+.business-secondary .business-tool-icon { background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); }
+.business-tertiary .business-tool-icon { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+.business-quaternary .business-tool-icon { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+.business-quinary .business-tool-icon { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); }
 
 .business-tool-stats {
   font-size: 12px;
-  color: #A8A8A8;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-weight: 600;
+  color: #FF0050;
+  background: #FEE2E2;
+  padding: 4px 10px;
+  border-radius: 20px;
 }
 
 .business-card-content h4 {
-  margin: 0 0 8px 0;
-  color: #0F172A;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 6px 0;
 }
 
 .business-card-content p {
+  font-size: 13px;
+  color: #6B7280;
   margin: 0;
-  color: #A8A8A8;
-  font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .business-card-footer {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #F3F4F6;
 }
 
 .open-business-tool {
-  color: #FF0050 !important; /* TikTok pink */
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  color: #FF0050;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
+  gap: 6px;
 }
 
-.business-tool-card:hover .open-business-tool {
+.open-business-tool i {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.business-tool-card:hover .open-business-tool i {
   transform: translateX(4px);
 }
 
-/* Business Features Grid */
+/* Features Grid */
 .business-features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
 .business-feature-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px;
-  background: #F9FAFB;
-  border: 1px solid #E0F2FE;
-  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  border: 1px solid #E5E7EB;
 }
 
 .business-feature-card:hover {
-  border-color: #2563EB !important; /* Website primary blue */
-  background: rgba(255, 0, 80, 0.1) !important; /* TikTok pink light background */
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 0, 80, 0.15) !important; /* TikTok pink shadow */
+  border-color: #FF0050;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.1);
 }
 
 .business-feature-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0F172A;
   font-size: 18px;
+  color: #FF0050;
   flex-shrink: 0;
 }
 
 .business-feature-content {
   flex: 1;
+  min-width: 0;
 }
 
 .business-feature-content h5 {
-  margin: 0 0 4px 0;
-  color: #0F172A;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 4px 0;
 }
 
 .business-feature-content p {
+  font-size: 12px;
+  color: #9CA3AF;
   margin: 0;
-  color: #A8A8A8;
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .business-feature-status {
@@ -482,373 +295,358 @@
 }
 
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 20px;
 }
 
-.status-badge.available {
-  background: rgba(46, 204, 113, 0.2);
-  color: #2ECC71;
-  border: 1px solid #2ECC71;
+.status-badge.available,
+.status-badge.info {
+  background: #D1FAE5;
+  color: #065F46;
 }
 
-.status-badge.setup-required {
-  background: rgba(241, 196, 15, 0.2);
-  color: #F1C40F;
-  border: 1px solid #F1C40F;
+.status-badge.active,
+.status-badge.success {
+  background: #DBEAFE;
+  color: #1E40AF;
 }
 
-.status-badge.active {
-  background: rgba(236, 72, 153, 0.2);
-  color: #00D9FF;
-  border: 1px solid #00D9FF;
+.status-badge.setup-required,
+.status-badge.warning {
+  background: #FEF3C7;
+  color: #92400E;
 }
 
-/* Business Tips Grid */
+.status-badge.error,
+.status-badge.rejected {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.status-badge.alert {
+  background: #FF0050;
+  color: #FFFFFF;
+}
+
+.status-badge.pending {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+/* Tips Grid */
 .business-tips-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
 .business-tip-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: #F9FAFB;
-  border: 1px solid #E0F2FE;
+  background: #FFFFFF;
   border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.business-tip-card:hover {
-  border-color: #FF0050 !important; /* TikTok pink */
-  background: rgba(255, 0, 80, 0.1) !important; /* TikTok pink light background */
-  transform: translateY(-2px);
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid #E5E7EB;
 }
 
 .business-tip-card i {
   font-size: 24px;
-  color: #FF0050 !important; /* TikTok pink */
+  color: #FF0050;
   flex-shrink: 0;
 }
 
 .business-tip-content h5 {
-  margin: 0 0 4px 0;
-  color: #0F172A;
   font-size: 14px;
   font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 6px 0;
 }
 
 .business-tip-content p {
-  margin: 0;
-  color: #A8A8A8;
   font-size: 12px;
+  color: #6B7280;
+  margin: 0;
   line-height: 1.4;
 }
 
-/* Scrollbar */
-.business-tools-content::-webkit-scrollbar {
-  width: 8px;
+/* Loading State */
+.business-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #9CA3AF;
 }
 
-.business-tools-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+.business-loading i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: spin 1s linear infinite;
 }
 
-.business-tools-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.business-tools-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
+/* Toast */
+.business-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10001;
+  animation: slideUp 0.3s ease;
 }
 
-/* Mobile Scrollbar - More Visible */
-@media (max-width: 48rem) {
-  .business-tools-content::-webkit-scrollbar {
-    width: 10px !important;
-  }
+.business-toast.success {
+  background: #10B981;
+  color: #FFFFFF;
+}
 
-  .business-tools-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.15) !important;
-    border-radius: 5px !important;
-  }
+.business-toast.error {
+  background: #EF4444;
+  color: #FFFFFF;
+}
 
-  .business-tools-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%) !important;
-    border-radius: 5px !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
   }
-
-  .business-tools-content::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .business-tools-overlay {
-    padding: 0;
-  }
+/* ==================== RESPONSIVE ==================== */
 
-  .business-tools-modal {
-    border-radius: 0;
-    max-height: 100vh;
-  }
-
+/* Tablet */
+@media (max-width: 1024px) {
   .business-tools-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
-
+  
   .business-stats-card {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .business-features-grid {
-    grid-template-columns: 1fr;
-  }
-
+  
   .business-tips-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
-  .business-tools-content,
-  .business-stats-overview {
+/* Tablet Portrait */
+@media (max-width: 768px) {
+  .business-tools-header {
+    padding: 12px 16px;
+    min-height: 56px;
+  }
+  
+  .business-tools-header h2 {
+    font-size: 18px;
+  }
+  
+  .business-tools-close-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .business-tools-content {
     padding: 16px;
   }
-
+  
   .business-stats-card {
-    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 12px;
   }
-
-  .business-feature-card,
-  .business-tip-card {
-    flex-direction: column;
-    text-align: center;
+  
+  .business-stat-number {
+    font-size: 22px;
+  }
+  
+  .business-stat-label {
+    font-size: 11px;
+  }
+  
+  .business-tools-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .business-features-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .business-tips-grid {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 }
 
-/* Dark Mode Styles */
-body.dark-mode .business-tools-modal {
-  background: #1E293B !important;
+/* Mobile */
+@media (max-width: 576px) {
+  .business-tools-header {
+    padding: 10px 12px;
+    min-height: 50px;
+  }
+  
+  .business-tools-header h2 {
+    font-size: 16px;
+  }
+  
+  .business-tools-close-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  
+  .business-tools-content {
+    padding: 12px;
+  }
+  
+  .business-stats-card {
+    border-radius: 12px;
+    padding: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .business-stat-number {
+    font-size: 20px;
+  }
+  
+  .business-stat-label {
+    font-size: 10px;
+  }
+  
+  .business-section {
+    margin-bottom: 20px;
+  }
+  
+  .business-section h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .business-tool-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+  
+  .business-tool-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .business-card-content h4 {
+    font-size: 14px;
+  }
+  
+  .business-card-content p {
+    font-size: 12px;
+  }
+  
+  .business-feature-card {
+    padding: 12px;
+  }
+  
+  .business-feature-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .business-tip-card {
+    padding: 14px;
+    gap: 10px;
+  }
+  
+  .business-tip-card i {
+    font-size: 20px;
+  }
 }
 
-body.dark-mode .business-tools-content {
-  background: #1E293B !important;
-}
+/* ==================== DARK MODE ==================== */
 
-body.dark-mode .business-tool-card {
-  background: #334155 !important;
-  border-color: #475569 !important;
-}
-
-body.dark-mode .business-tool-card:hover {
-  border-color: #2563EB !important;
-}
-
-body.dark-mode .business-tool-title,
-body.dark-mode .business-tool-description {
-  color: #F9FAFB !important;
-}
-
-/* Additional Dark Mode Styles */
 body.dark-mode .business-tools-overlay {
-  background: rgba(0, 0, 0, 0.95) !important;
+  background: #0F172A;
 }
 
 body.dark-mode .business-tools-modal {
-  background: #1E293B !important;
-  border-color: #334155 !important;
-}
-
-body.dark-mode .business-tools-header {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
-  border-bottom-color: #334155 !important;
+  background: #1E293B;
 }
 
 body.dark-mode .business-tools-content {
-  background: #1E293B !important;
+  background: #0F172A;
 }
 
 body.dark-mode .business-section h3 {
-  color: #F9FAFB !important;
-}
-
-body.dark-mode .business-stats-overview {
-  border-bottom-color: #334155 !important;
-}
-
-body.dark-mode .business-stats-card {
-  background: #334155 !important;
-  border-color: #475569 !important;
-}
-
-body.dark-mode .business-stat-number {
-  color: #FF0050 !important; /* TikTok pink */
-}
-
-body.dark-mode .business-stat-label {
-  color: #94A3B8 !important;
-}
-
-body.dark-mode .business-tools-grid {
-  background: transparent !important;
+  color: #F9FAFB;
 }
 
 body.dark-mode .business-tool-card {
-  background: #334155 !important;
-  border-color: #475569 !important;
+  background: #1E293B;
+  border-color: #334155;
 }
 
 body.dark-mode .business-tool-card:hover {
-  border-color: #2563EB !important;
-  box-shadow: 0 12px 35px rgba(37, 99, 235, 0.2) !important;
+  border-color: #FF0050;
 }
 
 body.dark-mode .business-tool-card.featured {
-  border-color: #2563EB !important;
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important;
-}
-
-body.dark-mode .business-tool-icon {
-  color: #FF0050 !important; /* TikTok pink */
-}
-
-body.dark-mode .business-tool-stats {
-  color: #94A3B8 !important;
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
 }
 
 body.dark-mode .business-card-content h4 {
-  color: #F9FAFB !important;
+  color: #F9FAFB;
 }
 
 body.dark-mode .business-card-content p {
-  color: #CBD5E1 !important;
+  color: #94A3B8;
 }
 
 body.dark-mode .business-card-footer {
-  border-top-color: #475569 !important;
-}
-
-body.dark-mode .open-business-tool {
-  color: #FF0050 !important; /* TikTok pink */
-}
-
-body.dark-mode .business-features-grid {
-  background: transparent !important;
+  border-top-color: #334155;
 }
 
 body.dark-mode .business-feature-card {
-  background: #334155 !important;
-  border-color: #475569 !important;
-}
-
-body.dark-mode .business-feature-card:hover {
-  background: #475569 !important;
-  border-color: #2563EB !important;
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15) !important;
+  background: #1E293B;
+  border-color: #334155;
 }
 
 body.dark-mode .business-feature-icon {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%) !important;
-  color: #fff !important;
+  background: #334155;
 }
 
 body.dark-mode .business-feature-content h5 {
-  color: #F9FAFB !important;
+  color: #F9FAFB;
 }
 
 body.dark-mode .business-feature-content p {
-  color: #94A3B8 !important;
-}
-
-body.dark-mode .status-badge.available {
-  background: rgba(46, 204, 113, 0.2) !important;
-  color: #2ECC71 !important;
-  border-color: #2ECC71 !important;
-}
-
-body.dark-mode .status-badge.setup-required {
-  background: rgba(241, 196, 15, 0.2) !important;
-  color: #F1C40F !important;
-  border-color: #F1C40F !important;
-}
-
-body.dark-mode .status-badge.active {
-  background: rgba(56, 189, 248, 0.2) !important;
-  color: #25F4EE !important; /* TikTok cyan */
-  border-color: #25F4EE !important; /* TikTok cyan */
-}
-
-body.dark-mode .business-tips-grid {
-  background: transparent !important;
+  color: #64748B;
 }
 
 body.dark-mode .business-tip-card {
-  background: #334155 !important;
-  border-color: #475569 !important;
-}
-
-body.dark-mode .business-tip-card:hover {
-  background: #475569 !important;
-  border-color: #2563EB !important;
-}
-
-body.dark-mode .business-tip-card i {
-  color: #FF0050 !important; /* TikTok pink */
+  background: #1E293B;
+  border-color: #334155;
 }
 
 body.dark-mode .business-tip-content h5 {
-  color: #F9FAFB !important;
+  color: #F9FAFB;
 }
 
 body.dark-mode .business-tip-content p {
-  color: #94A3B8 !important;
+  color: #94A3B8;
 }
-
-/* Scrollbar Dark Mode */
-body.dark-mode .business-tools-content::-webkit-scrollbar-track {
-  background: #334155 !important;
-}
-
-body.dark-mode .business-tools-content::-webkit-scrollbar-thumb {
-  background: #475569 !important;
-}
-
-body.dark-mode .business-tools-content::-webkit-scrollbar-thumb:hover {
-  background: #64748B !important;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
