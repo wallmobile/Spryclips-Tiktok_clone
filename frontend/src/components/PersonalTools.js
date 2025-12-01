@@ -116,7 +116,7 @@ const PersonalTools = ({ onClose }) => {
       case 'activity':
         // Navigate to Activity Center / Notifications
         onClose();
-        navigate('/more/activity-center');
+        navigate('/more/activity-center', { state: { from: 'personal-tools' } });
         break;
       case 'qrcode':
         // Scroll to QR code section
@@ -135,7 +135,7 @@ const PersonalTools = ({ onClose }) => {
   const handleActivityClick = (activity) => {
     onClose();
     // Navigate to Activity Center to see all notifications
-    navigate('/more/activity-center');
+    navigate('/more/activity-center', { state: { from: 'personal-tools' } });
   };
 
   // Download QR Code as PNG image
@@ -185,16 +185,29 @@ const PersonalTools = ({ onClose }) => {
 
   // Share to specific platform
   const shareToplatform = useCallback(async (platform) => {
-    const shareText = `Follow me on TikTok! Scan my QR code or visit my profile: ${profileUrl}`;
-    const encodedText = encodeURIComponent(shareText);
-    const encodedUrl = encodeURIComponent(profileUrl);
-    
-    let shareUrl = '';
-    
-    switch (platform) {
-      case 'whatsapp':
-        shareUrl = `https://wa.me/?text=${encodedText}`;
-        break;
+    try {
+      const shareText = `Follow me on TikTok! Scan my QR code or visit my profile: ${profileUrl}`;
+      const encodedText = encodeURIComponent(shareText);
+      const encodedUrl = encodeURIComponent(profileUrl);
+      
+      let shareUrl = '';
+      
+      switch (platform) {
+        case 'whatsapp':
+          // Use WhatsApp Web API with proper encoding
+          shareUrl = `https://wa.me/?text=${encodedText}`;
+          // Use window.location for better compatibility, fallback to window.open
+          try {
+            window.location.href = shareUrl;
+          } catch (err) {
+            // Fallback if location.href fails
+            const win = window.open(shareUrl, '_blank');
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+              // Popup blocked, try alternative
+              alert('Please allow popups or copy this link: ' + profileUrl);
+            }
+          }
+          return;
       case 'facebook':
         shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
         break;
@@ -234,8 +247,36 @@ const PersonalTools = ({ onClose }) => {
         return;
     }
     
-    window.open(shareUrl, '_blank', 'width=600,height=400');
+    if (shareUrl) {
+      try {
+        // Use window.location for WhatsApp and Telegram (better mobile compatibility)
+        if (platform === 'whatsapp' || platform === 'telegram') {
+          window.location.href = shareUrl;
+        } else {
+          const win = window.open(shareUrl, '_blank', 'noopener,noreferrer');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            // Popup blocked, try using location.href as fallback
+            window.location.href = shareUrl;
+          }
+        }
+      } catch (err) {
+        console.error('Share error:', err);
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(profileUrl);
+          alert('Link copied to clipboard! You can paste it in ' + platform);
+        } catch (clipboardErr) {
+          alert('Failed to share. Please copy this link manually: ' + profileUrl);
+        }
+      }
+    }
+    
     setShowShareModal(false);
+    } catch (error) {
+      console.error('Share platform error:', error);
+      alert('Failed to share. Please try again.');
+      setShowShareModal(false);
+    }
   }, [profileUrl, user?.username]);
 
   const getActivityIcon = (type) => {

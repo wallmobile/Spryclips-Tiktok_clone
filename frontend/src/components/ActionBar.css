@@ -2,7 +2,7 @@
   position: absolute;
   right: 3rem !important; /* Position inside video on right side */
   left: auto !important;
-  bottom: 100px !important; /* Position from bottom to avoid navbar overlap */
+  bottom: 130px !important; /* Moved up - position from bottom to avoid navbar overlap */
   top: auto !important; /* Don't use top positioning */
   transform: none !important; /* No transform needed */
   display: flex;

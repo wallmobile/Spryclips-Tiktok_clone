@@ -338,7 +338,6 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
-
 .quick-action-btn {
   padding: 16px;
   background: #F9FAFB;
@@ -1120,6 +1119,7 @@ body.dark-mode .account-settings-modal .creator-tools-content,
 body.dark-mode body:has(.account-settings-overlay) .creator-tools-content {
   background: #1E293B !important;
 }
+
 
 
 

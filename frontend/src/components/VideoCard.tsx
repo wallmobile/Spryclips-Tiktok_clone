@@ -377,10 +377,16 @@ const VideoCard: React.FC<VideoCardProps> = ({
     const container = containerRef.current;
     if (!video || !container) return;
 
-    const handleLoadedMetadata = () => {
+    const updateAspectRatio = () => {
       if (video.videoWidth && video.videoHeight) {
         const aspectRatio = video.videoWidth / video.videoHeight;
-        setVideoAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
+        const aspectRatioString = `${video.videoWidth} / ${video.videoHeight}`;
+        setVideoAspectRatio(aspectRatioString);
+        
+        // Apply aspect ratio to container via CSS custom property for dynamic sizing
+        container.style.setProperty('--video-aspect-ratio', aspectRatio.toString());
+        container.style.setProperty('--video-width', `${video.videoWidth}px`);
+        container.style.setProperty('--video-height', `${video.videoHeight}px`);
         
         // Calculate actual display width based on container and aspect ratio
         // The video uses object-fit: contain, so we need to calculate the visible width
@@ -401,25 +407,21 @@ const VideoCard: React.FC<VideoCardProps> = ({
       }
     };
 
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    const handleLoadedMetadata = () => {
+      updateAspectRatio();
+    };
+
+    // Check if metadata is already loaded
+    if (video.readyState >= 1) {
+      // Metadata already loaded
+      updateAspectRatio();
+    } else {
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    }
     
     // Also recalculate on window resize
     const handleResize = () => {
-      if (video.videoWidth && video.videoHeight) {
-        const aspectRatio = video.videoWidth / video.videoHeight;
-        const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
-        const containerAspectRatio = containerWidth / containerHeight;
-        
-        let displayWidth: number;
-        if (aspectRatio > containerAspectRatio) {
-          displayWidth = containerWidth;
-        } else {
-          displayWidth = containerHeight * aspectRatio;
-        }
-        
-        setVideoDisplayWidth(displayWidth);
-      }
+      updateAspectRatio();
     };
 
     window.addEventListener('resize', handleResize);
@@ -428,7 +430,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       window.removeEventListener('resize', handleResize);
     };
-  }, [src]);
+  }, [src, isActive]);
 
   // Format time helper
   const formatTime = (seconds: number): string => {
@@ -575,7 +577,20 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
 
   return (
-    <div className="video-card-container" ref={containerRef} style={{ aspectRatio: videoAspectRatio || 'auto' }}>
+    <div 
+      className="video-card-container" 
+      ref={containerRef} 
+      style={{ 
+        aspectRatio: videoAspectRatio ? (() => {
+          const match = videoAspectRatio.match(/(\d+)\s*\/\s*(\d+)/);
+          if (match) {
+            const ratio = parseInt(match[1]) / parseInt(match[2]);
+            return ratio.toString();
+          }
+          return 'auto';
+        })() : 'auto'
+      } as React.CSSProperties}
+    >
       <video
         ref={videoRef}
         src={src}

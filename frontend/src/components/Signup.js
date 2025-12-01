@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import useSocialAuth from '../hooks/useSocialAuth';
+import { verifyEmail, sendSignupVerificationCode, verifySignupCode } from '../api/auth';
 import './Auth.css';
 
 const initialFormState = {
@@ -12,38 +12,48 @@ const initialFormState = {
 
 const Signup = ({ onClose, onSwitchToLogin }) => {
   useEffect(() => {
+    // Check if we're on a standalone route (not a modal)
+    const isStandaloneRoute = window.location.pathname === '/login' || window.location.pathname === '/signup';
+    
     const sidebar = document.querySelector('.sidebar');
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow || '';
+    const previousHtmlOverflow = document.documentElement.style.overflow || '';
 
-    document.body.classList.add('signup-page-open');
-    document.documentElement.classList.add('signup-page-open');
-    if (sidebar) {
-      sidebar.classList.add('page-open');
+    // Only manipulate DOM if NOT on standalone route (i.e., if it's a modal)
+    if (!isStandaloneRoute) {
+      document.body.classList.add('signup-page-open');
+      document.documentElement.classList.add('signup-page-open');
+      if (sidebar) {
+        sidebar.classList.add('page-open');
+      }
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     }
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && onClose) {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.classList.remove('signup-page-open');
-      document.documentElement.classList.remove('signup-page-open');
-      if (sidebar) {
-        sidebar.classList.remove('page-open');
+      if (!isStandaloneRoute) {
+        document.body.classList.remove('signup-page-open');
+        document.documentElement.classList.remove('signup-page-open');
+        if (sidebar) {
+          sidebar.classList.remove('page-open');
+        }
+        document.body.style.overflow = previousBodyOverflow;
+        document.documentElement.style.overflow = previousHtmlOverflow;
       }
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
 
   const isMountedRef = useRef(true);
+  const sendCodeButtonRef = useRef(null);
+  
   useEffect(
     () => () => {
       isMountedRef.current = false;
@@ -51,32 +61,30 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
     []
   );
 
+
   const { register } = useAuth();
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const { googleReady, facebookReady, startGoogleLogin, startFacebookLogin } = useSocialAuth({
-    onSuccess: () => {
-      if (isMountedRef.current) {
-        setError('');
-        setSuccess('Account connected! Redirecting…');
-        setSocialLoading(false);
-      }
-      onClose();
-    },
-    onError: (message) => {
-      if (isMountedRef.current) {
-        setSocialLoading(false);
-        setError(message);
-      }
-    }
-  });
+  
+  // Email verification states (before signup)
+  const [emailVerificationCode, setEmailVerificationCode] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [codeSent, setCodeSent] = useState(false);
+  const [codeSendSuccess, setCodeSendSuccess] = useState(false);
+  
+  // Post-signup verification step states (after account creation)
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const validate = () => {
     const validationErrors = {};
@@ -124,6 +132,37 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
     return validationErrors;
   };
 
+  // Function to clean error messages and make them user-friendly
+  const cleanErrorMessage = (errorMsg) => {
+    if (!errorMsg) return '';
+    
+    let cleaned = errorMsg;
+    
+    // Remove technical reference codes (Ref #...)
+    cleaned = cleaned.replace(/Ref\s*#[\w\d]+/gi, '');
+    
+    // Remove BAD_REQUEST, INTERNAL_SERVER_ERROR, etc.
+    cleaned = cleaned.replace(/\b(BAD_REQUEST|INTERNAL_SERVER_ERROR|UNAUTHORIZED|FORBIDDEN|NOT_FOUND)\b/gi, '');
+    
+    // Remove extra spaces
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // User-friendly error message mapping
+    if (cleaned.toLowerCase().includes('already exists') || cleaned.toLowerCase().includes('duplicate')) {
+      if (cleaned.toLowerCase().includes('email') && cleaned.toLowerCase().includes('username')) {
+        return 'This email or username is already taken. Please use a different one.';
+      } else if (cleaned.toLowerCase().includes('email')) {
+        return 'This email is already registered. Please use a different email or try logging in.';
+      } else if (cleaned.toLowerCase().includes('username')) {
+        return 'This username is already taken. Please choose a different one.';
+      }
+      return 'This account already exists. Please use a different email or username.';
+    }
+    
+    // Return cleaned message or default
+    return cleaned || 'Something went wrong. Please try again.';
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -136,15 +175,45 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
       return;
     }
 
+    // Verify OTP code before signup
+    if (!emailVerificationCode || emailVerificationCode.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code before signing up.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await register(formData.username.trim(), formData.email.trim(), formData.password);
+      // Step 1: Verify the OTP code first (before signup)
+      const email = formData.email.trim();
+      const code = emailVerificationCode.trim();
+      
+      console.log('🔐 Verifying signup code before registration...');
+      try {
+        await verifySignupCode(email, code);
+        console.log('✅ Code verified successfully!');
+        // Mark email as verified after successful verification
+        setEmailVerified(true);
+      } catch (verifyError) {
+        // Handle verification errors
+        const errorMsg = verifyError?.response?.data?.message || 'Invalid or expired verification code. Please try again.';
+        setError(cleanErrorMessage(errorMsg));
+        setLoading(false);
+        return; // Stop here if verification fails
+      }
+      
+      // Step 2: If code is verified, proceed with registration
+      const result = await register(formData.username.trim(), email, formData.password);
+      console.log('📧 Register result:', result);
 
       if (result.success) {
+        // Email already verified before signup, so no need for post-signup verification
+        // Complete signup directly
         if (isMountedRef.current) {
           setSuccess('Welcome aboard! Redirecting you to TikTok…');
           setFormData(initialFormState);
           setErrors({});
+          setEmailVerificationCode('');
+          setEmailVerified(false);
         }
         setTimeout(() => {
           onClose();
@@ -163,7 +232,7 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
                 'password': 'password'
               };
               const frontendField = fieldMap[detail.param] || detail.param;
-              backendErrors[frontendField] = detail.msg || detail.message;
+              backendErrors[frontendField] = cleanErrorMessage(detail.msg || detail.message);
             }
           });
         }
@@ -174,11 +243,12 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
         
         // Set general error message
         const errorMessage = result.message || 'Registration failed. Please try again.';
-        setError(errorMessage);
+        setError(cleanErrorMessage(errorMessage));
       }
     } catch (err) {
       if (isMountedRef.current) {
-        setError(err.message || 'An unexpected error occurred. Please try again.');
+        const errorMsg = err?.response?.data?.message || err?.message || 'An unexpected error occurred. Please try again.';
+        setError(cleanErrorMessage(errorMsg));
       }
     } finally {
       if (isMountedRef.current) {
@@ -187,32 +257,127 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
     }
   };
 
-  const handleSocialAction = async (provider) => {
+  // Timer effect for 90 seconds countdown
+  useEffect(() => {
+    let interval = null;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0 && codeSent) {
+      setCodeSent(false);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timer, codeSent]);
+
+  // Handle send verification code (before signup)
+  const handleSendVerificationCode = async () => {
+    console.log("Send code button clicked");
+    
+    const email = formData.email.trim();
+    
+    if (!email) {
+      setError('Please enter your email address first.');
+      setSuccess('');
+      return;
+    }
+
+    setSendingCode(true);
     setError('');
     setSuccess('');
-    setSocialLoading(true);
+
     try {
-      if (provider === 'google') {
-        await startGoogleLogin();
-      } else if (provider === 'facebook') {
-        await startFacebookLogin();
+      const response = await sendSignupVerificationCode(email);
+      console.log("OTP API call finished", response);
+      
+      if (response?.success) {
+        setSuccess('✅ Verification code sent successfully! Please check your email.');
+        setError('');
+        // Show code in console if available (for development)
+        if (response?.code) {
+          console.log('📧 Verification Code:', response.code);
+        }
+      } else {
+        setError(response?.message || 'Failed to send verification code. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error sending code", error);
+      const errorMsg = error?.response?.data?.message || 'Failed to send verification code. Please try again.';
+      setError(cleanErrorMessage(errorMsg));
+      setSuccess('');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // Handle verify email code (before signup)
+  const handleVerifyEmailCode = async () => {
+    const email = formData.email.trim();
+    const code = emailVerificationCode.trim();
+    
+    if (!code || code.length !== 6) {
+      setError('Please enter a 6-digit verification code.');
+      return;
+    }
+
+    setVerifyingEmail(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await verifySignupCode(email, code);
+      if (isMountedRef.current) {
+        setEmailVerified(true);
+        setSuccess('Email verified successfully! You can now continue with signup.');
+        setEmailVerificationCode('');
       }
     } catch (err) {
       if (isMountedRef.current) {
-        setError(err.message || 'Social sign up failed. Please try again.');
+        const errorMsg = err?.response?.data?.message || 'Invalid or expired verification code. Please check and try again.';
+        setError(cleanErrorMessage(errorMsg));
+        setEmailVerificationCode('');
       }
     } finally {
       if (isMountedRef.current) {
-        setSocialLoading(false);
+        setVerifyingEmail(false);
       }
     }
   };
-  const googleButtonTitle = !googleReady
-    ? 'Google sign up requires REACT_APP_GOOGLE_CLIENT_ID environment variable'
-    : 'Sign up with Google';
-  const facebookButtonTitle = !facebookReady
-    ? 'Facebook sign up requires REACT_APP_FACEBOOK_APP_ID environment variable'
-    : 'Sign up with Facebook';
+
+  // Post-signup verification handler (after account creation)
+  const handleVerifyCode = async (event) => {
+    event.preventDefault();
+    if (verificationCode.trim().length !== 6) {
+      setError('Please enter a 6-digit verification code.');
+      return;
+    }
+
+    setVerifying(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await verifyEmail(null, verificationCode.trim(), userEmail);
+      if (isMountedRef.current) {
+        setSuccess('Email verified successfully! Welcome to TikTok…');
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
+    } catch (err) {
+      if (isMountedRef.current) {
+        const errorMsg = err?.response?.data?.message || 'Invalid or expired verification code. Please check and try again.';
+        setError(cleanErrorMessage(errorMsg));
+        setVerificationCode('');
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setVerifying(false);
+      }
+    }
+  };
 
   return (
     <div className="tiktok-signup-container">
@@ -236,9 +401,13 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
           <div className="tiktok-logo-text">TikTok</div>
         </div>
 
-        <h2 className="signup-heading">Create your TikTok account</h2>
+        <h2 className="signup-heading">
+          {showVerification ? 'Verify your email' : 'Create your TikTok account'}
+        </h2>
         <p className="auth-subheading">
-          Pick a username, add your email, and secure your account. You can always update details later from your profile.
+          {showVerification 
+            ? `Enter the 6-digit verification code sent to ${userEmail}. Codes expire after 24 hours.`
+            : 'Pick a username, add your email, and secure your account. You can always update details later from your profile.'}
         </p>
 
         {error && (
@@ -252,7 +421,62 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="tiktok-auth-form" noValidate>
+        {showVerification ? (
+          <form onSubmit={handleVerifyCode} className="tiktok-auth-form" noValidate>
+            <div className="form-group-tiktok">
+              <label htmlFor="verification-code" className="input-label">
+                Verification code
+              </label>
+              <input
+                id="verification-code"
+                type="text"
+                value={verificationCode}
+                onChange={(e) => {
+                  // Only allow numbers, max 6 digits
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setVerificationCode(value);
+                  setError('');
+                }}
+                placeholder="000000"
+                className="tiktok-input"
+                style={{
+                  textAlign: 'center',
+                  fontSize: '24px',
+                  letterSpacing: '8px',
+                  fontFamily: 'monospace',
+                  fontWeight: 'bold'
+                }}
+                required
+                maxLength={6}
+                autoComplete="off"
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="tiktok-gradient-btn"
+              disabled={verifying || verificationCode.trim().length !== 6}
+            >
+              {verifying ? 'Verifying…' : 'Verify email'}
+            </button>
+
+            <button
+              type="button"
+              className="link-text"
+              onClick={() => {
+                setShowVerification(false);
+                setVerificationCode('');
+                setError('');
+                setSuccess('');
+              }}
+              style={{ marginTop: '16px', textAlign: 'center', display: 'block' }}
+            >
+              ← Back to signup form
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="tiktok-auth-form" noValidate>
           <div className="form-group-tiktok">
             <label htmlFor="signup-username" className="input-label">
               Username
@@ -289,12 +513,110 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
                   setErrors((prev) => ({ ...prev, email: '' }));
                 }
                 setError('');
+                // Reset email verification when email changes
+                setEmailVerified(false);
+                setCodeSent(false);
+                setCodeSendSuccess(false);
+                setTimer(0);
+                setEmailVerificationCode('');
               }}
               placeholder="you@example.com"
               className={`tiktok-input ${errors.email ? 'input-invalid' : ''}`}
               required
             />
             {errors.email && <div className="inline-error">{errors.email}</div>}
+            
+            {/* Email Verification Code Input */}
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="email-verification-code" className="input-label" style={{ fontSize: '14px', marginBottom: '4px' }}>
+                    Verification code
+                  </label>
+                  <input
+                    id="email-verification-code"
+                    type="text"
+                    value={emailVerificationCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setEmailVerificationCode(value);
+                      setError('');
+                    }}
+                    placeholder="------"
+                    className="tiktok-input"
+                    style={{
+                      textAlign: 'center',
+                      fontSize: '20px',
+                      letterSpacing: '6px',
+                      fontFamily: 'monospace',
+                      fontWeight: 'bold',
+                      width: '100%'
+                    }}
+                    maxLength={6}
+                    autoComplete="off"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    disabled={sendingCode}
+                    style={{
+                      padding: '10px 16px',
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: sendingCode
+                        ? '#ccc'
+                        : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
+                      color: sendingCode ? '#999' : '#fff',
+                      cursor: sendingCode ? 'not-allowed' : 'pointer',
+                      fontWeight: '500',
+                      minWidth: '100px'
+                    }}
+                  >
+                    {sendingCode ? "Sending..." : "Send code"}
+                  </button>
+                  {codeSent && !emailVerified && (
+                    <button
+                      type="button"
+                      onClick={handleVerifyEmailCode}
+                      disabled={verifyingEmail || emailVerificationCode.trim().length !== 6}
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '12px',
+                        whiteSpace: 'nowrap',
+                        borderRadius: '4px',
+                        border: 'none',
+                        background: verifyingEmail || emailVerificationCode.trim().length !== 6
+                          ? '#f0f0f0'
+                          : 'linear-gradient(135deg, #25F4EE 0%, #FE2C55 100%)',
+                        color: verifyingEmail || emailVerificationCode.trim().length !== 6 ? '#999' : '#fff',
+                        cursor: verifyingEmail || emailVerificationCode.trim().length !== 6 ? 'not-allowed' : 'pointer',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {verifyingEmail ? 'Verifying...' : 'Verify'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {codeSent && !emailVerified && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginBottom: 0 }}>
+                  {timer > 0 
+                    ? `Enter the code sent to ${formData.email}. Time remaining: ${timer}s` 
+                    : 'Code expired. Please request a new code.'}
+                </p>
+              )}
+              {emailVerified && (
+                <p style={{ fontSize: '12px', color: '#25F4EE', marginTop: '4px', marginBottom: 0, fontWeight: '500' }}>
+                  ✓ Email verified successfully!
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="form-group-tiktok">
@@ -372,52 +694,35 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               !formData.username.trim() ||
               !formData.email.trim() ||
               !formData.password ||
-              !formData.confirmPassword
+              !formData.confirmPassword ||
+              !emailVerificationCode || 
+              emailVerificationCode.trim().length !== 6
             }
           >
             {loading ? 'Creating account…' : 'Sign Up'}
           </button>
+          {formData.email.trim() && (!emailVerificationCode || emailVerificationCode.trim().length !== 6) && (
+            <p style={{ fontSize: '12px', color: '#FF0050', marginTop: '8px', textAlign: 'center' }}>
+              Please enter the 6-digit verification code to continue
+            </p>
+          )}
         </form>
+        )}
 
-        <div className="divider-option" aria-hidden="true">
-          <span />
-          <span>OR</span>
-          <span />
-        </div>
+        {!showVerification && (
+          <>
+            <p className="terms-hint">
+              By continuing, you agree to the TikTok Terms of Service and confirm that you have read our Privacy Policy.
+            </p>
 
-        <div className="social-login-buttons">
-          <button
-            type="button"
-            className="social-btn google-btn"
-            disabled={socialLoading}
-            onClick={() => handleSocialAction('google')}
-            title={googleButtonTitle}
-          >
-            <i className="fa-brands fa-google" aria-hidden="true" />
-            {socialLoading ? 'Connecting…' : 'Sign up with Google'}
-          </button>
-          <button
-            type="button"
-            className="social-btn facebook-btn"
-            disabled={socialLoading}
-            onClick={() => handleSocialAction('facebook')}
-            title={facebookButtonTitle}
-          >
-            <i className="fa-brands fa-facebook" aria-hidden="true" />
-            {socialLoading ? 'Connecting…' : 'Sign up with Facebook'}
-          </button>
-        </div>
-
-        <p className="terms-hint">
-          By continuing, you agree to the TikTok Terms of Service and confirm that you have read our Privacy Policy.
-        </p>
-
-        <p className="signup-footer">
-          Already have an account?{' '}
-          <span className="link-text" onClick={onSwitchToLogin}>
-            Log in
-          </span>
-        </p>
+            <p className="signup-footer">
+              Already have an account?{' '}
+              <span className="link-text" onClick={onSwitchToLogin}>
+                Log in
+              </span>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

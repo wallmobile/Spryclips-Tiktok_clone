@@ -107,6 +107,17 @@ api.interceptors.response.use(
 
     // Suppress 404 errors to prevent noise - these are often non-critical
     const shouldSuppress404 = status === 404;
+    
+    // Suppress 408 timeout errors for analytics endpoints - handled locally
+    const isAnalyticsEndpoint = originalRequest?.url?.includes('/api/analytics');
+    const shouldSuppress408 = status === 408 && isAnalyticsEndpoint;
+    
+    // Suppress 400 "Invalid user ID" errors for follow endpoint - handled locally with validation
+    const isFollowEndpoint = originalRequest?.url?.includes('/api/users/') && originalRequest?.url?.includes('/follow');
+    const isInvalidUserIdError = status === 400 && isFollowEndpoint && 
+      (error?.response?.data?.message?.toLowerCase().includes('invalid user id') ||
+       error?.response?.data?.message?.toLowerCase().includes('invalid user'));
+    const shouldSuppress400Follow = isInvalidUserIdError;
 
     if (status === 401 && !originalRequest._retry && !isAuthRefresh && !isAuthVerify) {
       // Check if user has any stored auth data - if not, skip refresh attempt
@@ -150,8 +161,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Don't broadcast expected 401 errors for auth endpoints or 404 errors
-    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401 && !shouldSuppress404) {
+    // Don't broadcast expected 401 errors for auth endpoints, 404 errors, 408 analytics timeouts, or 400 invalid user ID for follow
+    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401 && !shouldSuppress404 && !shouldSuppress408 && !shouldSuppress400Follow) {
       broadcastAxiosError(error);
     }
 

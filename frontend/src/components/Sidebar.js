@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import SearchPage from './SearchPage';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -9,7 +8,6 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchPageOpen, setIsSearchPageOpen] = useState(false);
 
   const navItems = useMemo(
     () => [
@@ -17,7 +15,6 @@ const Sidebar = () => {
       { id: 'explore', icon: 'fa-compass', label: 'Explore', path: '/explore' },
       { id: 'following', icon: 'fa-user-plus', label: 'Following', path: '/following', auth: true },
       { id: 'live', icon: 'fa-tv', label: 'LIVE', path: '/live' },
-      { id: 'search', icon: 'fa-search', label: 'Search', action: 'search' },
       { id: 'upload', icon: 'fa-square-plus', label: 'Upload', path: '/upload', auth: true },
       { id: 'profile', icon: 'fa-user', label: 'Profile', path: '/profile', auth: true },
       { id: 'more', icon: 'fa-ellipsis', label: 'More', path: '/more' }
@@ -44,8 +41,8 @@ const Sidebar = () => {
   // Check if we're on the For You page (home page only)
   // Show hamburger only on For You page (/), hide on all other pages
   const isForYouPage = useMemo(() => {
-    return location.pathname === '/' && !isSearchPageOpen;
-  }, [location.pathname, isSearchPageOpen]);
+    return location.pathname === '/';
+  }, [location.pathname]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -137,10 +134,7 @@ const Sidebar = () => {
               key={item.id}
               className={`nav-item ${activeNav === item.id ? 'active' : ''}`}
               onClick={() => {
-                if (item.action === 'search') {
-                  setIsSearchPageOpen(true);
-                  setIsMobileMenuOpen(false);
-                } else if (item.auth && !isAuthenticated) {
+                if (item.auth && !isAuthenticated) {
                   navigate('/login', { state: { from: location } });
                 } else if (item.path) {
                   navigate(item.path);
@@ -173,11 +167,6 @@ const Sidebar = () => {
           )}
         </div>
       </div>
-
-      {/* Search Page Modal */}
-      {isSearchPageOpen && (
-        <SearchPage onClose={() => setIsSearchPageOpen(false)} />
-      )}
     </>
   );
 };

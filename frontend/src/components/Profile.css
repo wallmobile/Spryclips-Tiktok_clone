@@ -1558,6 +1558,7 @@
   flex-shrink: 0;
   z-index: 10;
   margin-left: 1.875rem; /* 30px - left alignment */
+  overflow: visible !important; /* Allow story ring to show outside */
 }
 
 .avatar-container:hover {
@@ -1576,14 +1577,15 @@
   max-width: 7.5rem !important;
   max-height: 7.5rem !important;
   border-radius: 50% !important;
-  border: 0.25rem solid #F5F7FA; /* 4px border */
+  border: 3px solid #fff !important; /* White border inside ring */
   margin-top: 0; /* No negative margin */
-  z-index: 10;
+  z-index: 10 !important;
   background: transparent;
   object-fit: cover !important;
   aspect-ratio: 1 / 1 !important;
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1); /* Shadow for depth */
   display: block;
+  position: relative;
 }
 
 .camera-icon-overlay {
@@ -1621,6 +1623,106 @@
 
 .avatar-container:hover .profile-avatar-new {
   filter: brightness(0.9);
+}
+
+/* Story Ring Indicator - TikTok style colored ring around profile picture */
+.profile-story-ring-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.profile-story-ring-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.profile-story-ring {
+  width: 8rem; /* 128px - larger to accommodate ring */
+  height: 8rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: storyPulse 2s infinite;
+  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2);
+  position: relative;
+}
+
+@keyframes storyPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+.profile-story-ring-wrapper:hover .profile-story-ring {
+  animation: none;
+  box-shadow: 0 0 0 4px rgba(255, 0, 80, 0.4);
+}
+
+.profile-avatar-with-ring {
+  width: calc(8rem - 6px) !important; /* Account for padding */
+  height: calc(8rem - 6px) !important;
+  min-width: calc(8rem - 6px) !important;
+  min-height: calc(8rem - 6px) !important;
+  max-width: calc(8rem - 6px) !important;
+  max-height: calc(8rem - 6px) !important;
+  border-radius: 50% !important;
+  border: none !important; /* No border when inside ring */
+  background: transparent;
+  object-fit: cover !important;
+  display: block;
+}
+
+.story-ring-camera-overlay {
+  z-index: 13 !important;
+}
+
+.avatar-wrapper-no-story {
+  position: relative;
+  display: inline-block;
+}
+
+/* Mobile responsive for story ring */
+@media (max-width: 768px) {
+  .profile-story-ring {
+    width: 6.5rem; /* 104px */
+    height: 6.5rem;
+    padding: 2.5px;
+  }
+
+  .profile-avatar-with-ring {
+    width: calc(6.5rem - 5px) !important;
+    height: calc(6.5rem - 5px) !important;
+    min-width: calc(6.5rem - 5px) !important;
+    min-height: calc(6.5rem - 5px) !important;
+    max-width: calc(6.5rem - 5px) !important;
+    max-height: calc(6.5rem - 5px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-story-ring {
+    width: 6rem; /* 96px */
+    height: 6rem;
+    padding: 2px;
+  }
+
+  .profile-avatar-with-ring {
+    width: calc(6rem - 4px) !important;
+    height: calc(6rem - 4px) !important;
+    min-width: calc(6rem - 4px) !important;
+    min-height: calc(6rem - 4px) !important;
+    max-width: calc(6rem - 4px) !important;
+    max-height: calc(6rem - 4px) !important;
+  }
 }
 
 /* Mobile/Tablet: Camera icon overlay always visible (no hover needed) */

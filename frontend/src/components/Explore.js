@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getTrendingHashtags } from '../api/hashtags';
 import { getTrendingVideos } from '../api/recommendations';
 import { videos as sampleVideos } from '../data/sampleData';
 import useOverlayPage from '../hooks/useOverlayPage';
+import SearchPage from './SearchPage';
 import './Explore.css';
 import './Profile.css'; // Import for video modal styles
 
@@ -104,8 +106,10 @@ const SAMPLE_HASHTAGS = SAMPLE_EXPLORE_VIDEOS.slice(0, 12).map((video) => ({
 }));
 
 const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
+  const navigate = useNavigate();
   const isOverlay = mode === 'overlay';
   const [activeFilter, setActiveFilter] = useState('all');
+  const [showSearch, setShowSearch] = useState(false);
   const [videos, setVideos] = useState([]);
   const [hashtags, setHashtags] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -217,7 +221,7 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
       const avatar =
         video.avatar ||
         userInfo.profile?.avatar ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(username.replace(/^@/, ''))}&background=2563EB&color=fff`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(username.replace(/^@/, ''))}&background=FF0050&color=fff`;
 
       const normalizedCategory =
         typeof video.category === 'string' && video.category.trim().length > 0
@@ -303,14 +307,31 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
           : Array.isArray(response)
           ? response
           : [];
-        if (list.length === 0) {
-          setHashtags(SAMPLE_HASHTAGS);
+        
+        if (list && list.length > 0) {
+          // Map backend hashtag format to frontend format
+          const formattedHashtags = list.map(tag => ({
+            id: tag.hashtag || tag._id || tag.id || tag.name,
+            name: tag.hashtag || tag.name || tag.tag || '',
+            count: tag.count || tag.videoCount || 0,
+            views: tag.totalViews || 0,
+            engagement: tag.engagement || 0
+          })).filter(tag => tag.name && tag.name.trim().length > 0);
+          
+          if (formattedHashtags.length > 0) {
+            setHashtags(formattedHashtags);
+          } else {
+            // No hashtags found - show empty
+            setHashtags([]);
+          }
         } else {
-          setHashtags(list);
+          // No hashtags found - show empty
+          setHashtags([]);
         }
       } catch (err) {
-        console.warn('Falling back to sample hashtags:', err);
-        setHashtags(SAMPLE_HASHTAGS);
+        console.error('Error loading trending hashtags:', err);
+        // On error, show empty instead of sample
+        setHashtags([]);
       } finally {
         setLoadingHashtags(false);
       }
@@ -347,16 +368,27 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
           : Array.isArray(response)
           ? response
           : response?.data || [];
-        const normalized = list.map(normalizeVideo).filter(Boolean);
-        const finalVideos = normalized.length > 0 ? normalized : SAMPLE_EXPLORE_VIDEOS;
-        setVideos(finalVideos);
-        updateFiltersFromVideos(finalVideos);
-      } catch (err) {
-        console.warn('Falling back to curated explore videos:', err);
-        setError('Showing popular picks while we reconnect.');
-        setVideos(SAMPLE_EXPLORE_VIDEOS);
+        
+        if (list && list.length > 0) {
+          const normalized = list.map(normalizeVideo).filter(Boolean);
+          if (normalized.length > 0) {
+            setVideos(normalized);
+            updateFiltersFromVideos(normalized);
+            return;
+          }
+        }
+        
+        // No videos found - show empty state
+        console.log('No videos found from backend');
+        setVideos([]);
         resetPlayerState();
-        updateFiltersFromVideos(SAMPLE_EXPLORE_VIDEOS);
+        updateFiltersFromVideos([]);
+      } catch (err) {
+        console.error('Error loading explore videos:', err);
+        // On error, show empty state instead of sample videos
+        setVideos([]);
+        resetPlayerState();
+        updateFiltersFromVideos([]);
       } finally {
         setLoadingVideos(false);
       }
@@ -421,7 +453,12 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
         <h1>
           <i className="fa-solid fa-compass"></i> Explore
         </h1>
-        <button className="explore-search-btn" type="button" aria-label="Search">
+        <button 
+          className="explore-search-btn" 
+          type="button" 
+          aria-label="Search"
+          onClick={() => setShowSearch(true)}
+        >
           <i className="fa-solid fa-search"></i>
         </button>
       </div>
@@ -733,6 +770,9 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
       <div className="explore-overlay" onClick={onClose} role="dialog" aria-modal="true">
         {content}
         {renderVideoModal()}
+        {showSearch && (
+          <SearchPage onClose={() => setShowSearch(false)} />
+        )}
       </div>
     );
   }
@@ -741,6 +781,9 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
     <div className="explore-page">
       {content}
       {renderVideoModal()}
+      {showSearch && (
+        <SearchPage onClose={() => setShowSearch(false)} />
+      )}
     </div>
   );
 };

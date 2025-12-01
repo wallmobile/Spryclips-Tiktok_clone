@@ -67,7 +67,6 @@ const PrivacySettings = ({ onClose }) => {
   }, []);
 
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
-  const [showDataAccess, setShowDataAccess] = useState(false);
   const [showCommentFilters, setShowCommentFilters] = useState(false);
   const [showDownloadSettings, setShowDownloadSettings] = useState(false);
   const [showActivitySettings, setShowActivitySettings] = useState(false);
@@ -216,37 +215,6 @@ const PrivacySettings = ({ onClose }) => {
     setCommentKeywords(commentKeywords.filter(k => k !== keyword));
   };
 
-  const handleRequestDownload = async () => {
-    try {
-      setSaveMessage('Data download request submitted. You will receive an email when ready.');
-      setTimeout(() => {
-        setSaveMessage('');
-        setShowDataAccess(false);
-      }, 3000);
-    } catch (error) {
-      setSaveMessage('Failed to request data download');
-      setTimeout(() => setSaveMessage(''), 3000);
-    }
-  };
-
-  const handleRequestDeletion = () => {
-    const confirmDelete = window.confirm('Are you sure you want to delete your account? This action cannot be undone.');
-    if (confirmDelete) {
-      setSaveMessage('Account deletion request submitted. You will receive a confirmation email.');
-      setTimeout(() => {
-        setSaveMessage('');
-        setShowDataAccess(false);
-      }, 3000);
-    }
-  };
-
-  const handleViewReport = () => {
-    setSaveMessage('Privacy report is being generated...');
-    setTimeout(() => {
-      setSaveMessage('');
-      setShowDataAccess(false);
-    }, 2000);
-  };
 
   const handleSaveDownloadPreferences = async () => {
     try {
@@ -454,25 +422,6 @@ const PrivacySettings = ({ onClose }) => {
             </div>
           </div>
 
-          {/* Data Access Section */}
-          <div className="privacy-section">
-            <h3 className="privacy-section-title">Data</h3>
-            <div 
-              className="privacy-settings-item clickable"
-              onClick={() => setShowDataAccess(true)}
-            >
-              <div className="privacy-item-icon">
-                <i className="fa-solid fa-database"></i>
-              </div>
-              <div className="privacy-item-content">
-                <h4>Data Access</h4>
-                <p>Request or download your data</p>
-              </div>
-              <div className="privacy-arrow">
-                <i className="fa-solid fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Blocked Users Modal */}
@@ -616,65 +565,6 @@ const PrivacySettings = ({ onClose }) => {
           </div>
         )}
 
-        {/* Data Access Modal */}
-        {showDataAccess && (
-          <div className="privacy-modal-overlay" onClick={() => setShowDataAccess(false)}>
-            <div className="privacy-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="privacy-modal-header">
-                <h3>Data & Privacy</h3>
-                <button className="privacy-modal-close" onClick={() => setShowDataAccess(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="privacy-modal-body">
-                <div className="data-actions">
-                  <div className="data-action-item">
-                    <div className="data-action-icon">
-                      <i className="fa-solid fa-download"></i>
-                    </div>
-                    <div className="data-action-content">
-                      <h4>Download My Data</h4>
-                      <p>Get a copy of all your TikTok data</p>
-                      <button className="data-action-btn primary" onClick={handleRequestDownload}>Request Download</button>
-                    </div>
-                  </div>
-                  
-                  <div className="data-action-item">
-                    <div className="data-action-icon">
-                      <i className="fa-solid fa-trash"></i>
-                    </div>
-                    <div className="data-action-content">
-                      <h4>Delete My Data</h4>
-                      <p>Permanently delete your account and data</p>
-                      <button className="data-action-btn danger" onClick={handleRequestDeletion}>Request Deletion</button>
-                    </div>
-                  </div>
-                  
-                  <div className="data-action-item">
-                    <div className="data-action-icon">
-                      <i className="fa-solid fa-eye"></i>
-                    </div>
-                    <div className="data-action-content">
-                      <h4>Privacy Report</h4>
-                      <p>See how your data is being used</p>
-                      <button className="data-action-btn secondary" onClick={handleViewReport}>View Report</button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="data-info">
-                  <h4>Your Data Rights</h4>
-                  <ul>
-                    <li>Right to access your personal data</li>
-                    <li>Right to correct inaccurate data</li>
-                    <li>Right to delete your data</li>
-                    <li>Right to data portability</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Download Settings Modal */}
         {showDownloadSettings && (

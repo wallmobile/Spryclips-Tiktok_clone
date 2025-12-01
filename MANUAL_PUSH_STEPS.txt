@@ -1,0 +1,29 @@
+Testing Branch par Code Push Karne ke Steps:
+==============================================
+
+Commit Message: "Verification done"
+
+Steps:
+------
+1. Testing branch par switch karo:
+   git checkout Testing
+
+2. Sab files add karo:
+   git add .
+
+3. .md files ko unstage karo:
+   git reset -- "*.md"
+
+4. Commit karo:
+   git commit -m "Verification done"
+
+5. Push karo:
+   git push origin Testing
+
+-------------------------------------------
+
+Ya Batch File Run Karo:
+   push_to_testing.bat
+
+Ya PowerShell Script:
+   powershell -ExecutionPolicy Bypass -File push_to_testing.ps1

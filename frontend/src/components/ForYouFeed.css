@@ -8,8 +8,10 @@
   -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
   padding: 0px 0px 0px 25px;
   margin: 0;
-  padding-bottom: 0 !important; /* Remove bottom padding to prevent empty space */
-  margin-bottom: 0 !important; /* Remove bottom margin to prevent empty space */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* Mobile padding removed in main mobile media query below */
@@ -63,6 +65,10 @@
   margin-left: auto !important;
   margin-right: auto !important;
   border-radius: 16px; /* Rounded corners */
+  /* Dynamic aspect ratio support */
+  aspect-ratio: var(--video-aspect-ratio, auto);
+  max-width: 100%;
+  max-height: 90vh;
 }
 
 /* Responsive video container */
@@ -595,7 +601,7 @@
   position: absolute;
   right: -4rem; /* Proper spacing from video edge like TikTok */
   bottom: 5rem; /* 80px - above user info */
-  top: 100px !important; /* Start below navbar area - prevent overlap */
+  top: 60px !important; /* Moved up more - start below navbar area */
   max-height: calc(100% - 200px); /* Limit height to prevent overflow */
   display: flex;
   flex-direction: column;
@@ -738,8 +744,8 @@ body.dark-mode .video-card-mute-btn i {
     margin-left: 17.5rem !important; /* 280px = 17.5rem - sidebar width */
     width: calc(100% - 17.5rem - 4.5rem) !important; /* Account for sidebar and right navbar */
     max-width: calc(100vw - 17.5rem - 4.5rem) !important;
-    height: 100vh !important; /* Full height - navbar is on right */
-    margin-top: 0 !important; /* No top margin */
+    height: 100vh !important; /* Full height */
+    margin-top: 0 !important; /* No margin */
     padding: 0 !important;
     background: #ffffff !important; /* White background */
     box-sizing: border-box !important;
@@ -815,16 +821,16 @@ body.dark-mode .video-card-mute-btn i {
     width: 100% !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    margin-top: 0 !important;
+    height: calc(100vh - 73px) !important;
+    height: calc(100dvh - 73px) !important;
+    margin-top: 73px !important; /* Start below navbar */
     padding: 0 !important;
     overflow-x: hidden !important;
   }
 
   .for-you-feed-card {
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: calc(100vh - 73px) !important;
+    height: calc(100dvh - 73px) !important;
     width: 100% !important;
     max-width: 100vw !important;
   }
@@ -882,15 +888,25 @@ body.dark-mode .video-card-mute-btn i {
     width: 100% !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    max-height: 100vh !important;
-    max-height: 100dvh !important;
-    margin-top: 0 !important;
+    height: calc(100vh - 73px) !important;
+    height: calc(100dvh - 73px) !important;
+    min-height: calc(100vh - 73px) !important;
+    min-height: calc(100dvh - 73px) !important;
+    max-height: calc(100vh - 73px) !important;
+    max-height: calc(100dvh - 73px) !important;
+    margin-top: 73px !important; /* Start below navbar */
     margin-right: 0 !important;
     margin-bottom: 0 !important;
+  }
+
+  /* Remove margin-top when user is authenticated (no navbar) */
+  .user-authenticated .for-you-feed-card {
+    margin-top: 0 !important;
+  }
+
+  /* Remove margin-top when user is authenticated (no navbar) */
+  .user-authenticated .for-you-feed-card {
+    margin-top: 0 !important;
     padding: 0 !important; /* Remove all padding on tablet */
     padding-left: 0 !important;
     padding-right: 0 !important;
@@ -912,12 +928,12 @@ body.dark-mode .video-card-mute-btn i {
   }
 
   .for-you-feed-card {
-    height: 100vh !important;
-    height: 100dvh !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    max-height: 100vh !important;
-    max-height: 100dvh !important;
+    height: calc(100vh - 73px) !important;
+    height: calc(100dvh - 73px) !important;
+    min-height: calc(100vh - 73px) !important;
+    min-height: calc(100dvh - 73px) !important;
+    max-height: calc(100vh - 73px) !important;
+    max-height: calc(100dvh - 73px) !important;
     width: 100% !important;
     max-width: 100vw !important;
     scroll-snap-align: start !important; /* Snap each card to start */

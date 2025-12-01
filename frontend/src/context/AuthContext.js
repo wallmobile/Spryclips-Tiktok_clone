@@ -44,8 +44,36 @@ export const AuthProvider = ({ children }) => {
   
   const [authenticating, setAuthenticating] = useState(false);
   const isMountedRef = useRef(true);
+  const isVerifyingRef = useRef(false); // Prevent duplicate verify calls
+  const hasInitializedRef = useRef(false); // Prevent double initialization in StrictMode
 
   const fetchCurrentUser = async (showLoading = false) => {
+    // Don't call verify on signup/login pages
+    const currentPath = window.location.pathname;
+    const isAuthPage = currentPath === '/login' || currentPath === '/signup';
+    
+    if (isAuthPage) {
+      setLoading(false);
+      return;
+    }
+    
+    // Only call verify if user exists in localStorage (has JWT token in cookies from previous login)
+    const hasCachedUser = localStorage.getItem('user') && 
+                          localStorage.getItem('user') !== 'null' && 
+                          localStorage.getItem('user') !== 'undefined';
+    
+    if (!hasCachedUser) {
+      setLoading(false);
+      return;
+    }
+    
+    // Prevent duplicate calls (React StrictMode double renders)
+    if (isVerifyingRef.current) {
+      return;
+    }
+    
+    isVerifyingRef.current = true;
+    
     if (showLoading) {
       setLoading(true);
     }
@@ -53,10 +81,12 @@ export const AuthProvider = ({ children }) => {
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (isMountedRef.current) {
-        console.debug('Auth check timeout - keeping cached user');
-        // DON'T remove user on timeout - keep cached user
+        console.debug('Auth check timeout - redirecting to login');
+        setUser(null);
         setLoading(false);
+        localStorage.removeItem('user');
       }
+      isVerifyingRef.current = false;
     }, 5000); // 5 second timeout
     
     try {
@@ -68,18 +98,20 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error?.response?.status !== 401) {
+      // Silently handle 401 - it's expected when user is not logged in
+      if (error?.response?.status === 401) {
+        // Expected behavior - user is not authenticated
+        // Don't log or show any errors
+      } else if (error?.response?.status !== 401) {
         console.debug('Auth verification failed', error);
       }
-      // Only clear user if it's a 401 (unauthorized)
-      if (isMountedRef.current && error?.response?.status === 401) {
+      if (isMountedRef.current) {
         setUser(null);
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
       }
-      // For other errors (network, timeout), keep cached user
     } finally {
       clearTimeout(timeoutId);
+      isVerifyingRef.current = false;
       if (isMountedRef.current) {
         setLoading(false);
       }
@@ -87,12 +119,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Verify in background without blocking UI
-    // If user is cached, don't show loading - verify silently
-    fetchCurrentUser(false);
+    // Prevent double calls in React StrictMode
+    if (hasInitializedRef.current) {
+      return;
+    }
+    
+    // Check if we're on signup/login page - don't call verify on these pages
+    const currentPath = window.location.pathname;
+    const isAuthPage = currentPath === '/login' || currentPath === '/signup';
+    
+    // Mark as initialized immediately to prevent duplicate calls
+    hasInitializedRef.current = true;
+    
+    // Only call verify if:
+    // 1. We have a cached user in localStorage (meaning user logged in before)
+    // 2. We're NOT on auth pages (login/signup)
+    const hasCachedUser = localStorage.getItem('user') && 
+                          localStorage.getItem('user') !== 'null' && 
+                          localStorage.getItem('user') !== 'undefined';
+    
+    if (hasCachedUser && !isAuthPage) {
+      // Verify in background without blocking UI
+      // If user is cached, don't show loading - verify silently
+      fetchCurrentUser(false);
+    } else {
+      // No cached user or on auth page - don't call verify
+      setLoading(false);
+    }
     
     return () => {
       isMountedRef.current = false;
+      hasInitializedRef.current = false; // Reset on unmount for testing
     };
   }, []);
 
@@ -118,7 +175,16 @@ export const AuthProvider = ({ children }) => {
       // Extract error message from various possible locations
       let message = 'Login failed';
       
-      if (error?.response?.data) {
+      // Check for network errors first
+      if (!error.response) {
+        if (error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
+          message = 'Network error. Please check your internet connection and ensure the backend server is running.';
+        } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+          message = 'Request timed out. Please check if the backend server is running and try again.';
+        } else {
+          message = error?.message || 'Unable to connect to server. Please try again later.';
+        }
+      } else if (error?.response?.data) {
         // Check for userMessage first (custom error format)
         message = error.response.data.userMessage || 
                   error.response.data.message || 
@@ -133,6 +199,15 @@ export const AuthProvider = ({ children }) => {
           } else if (firstError?.message) {
             message = firstError.message;
           }
+        }
+        
+        // Handle specific HTTP status codes
+        if (error.response.status === 401 || error.response.status === 400) {
+          // Already handled by message extraction above
+        } else if (error.response.status === 500) {
+          message = 'Server error. Please try again later or contact support.';
+        } else if (error.response.status === 503) {
+          message = 'Service temporarily unavailable. Please try again later.';
         }
       } else if (error?.userMessage) {
         message = error.userMessage;
@@ -150,12 +225,24 @@ export const AuthProvider = ({ children }) => {
     try {
       setAuthenticating(true);
       const response = await api.post('/api/auth/register', { username, email, password });
-      if (response?.data?.user) {
+      
+      // Return full response data including verification flags
+      const result = {
+        success: true,
+        requiresEmailVerification: response?.data?.requiresEmailVerification,
+        emailVerificationCodeSent: response?.data?.emailVerificationCodeSent,
+        message: response?.data?.message
+      };
+      
+      // Only set user if email is already verified (no verification needed)
+      // If verification is required, don't set user yet
+      if (response?.data?.user && !response?.data?.requiresEmailVerification) {
         setUser(response.data.user);
         // Save user to localStorage for persistence across refreshes
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-      return { success: true };
+      
+      return result;
     } catch (error) {
       const message =
         (typeof error?.userMessage === 'string' && error.userMessage) ||

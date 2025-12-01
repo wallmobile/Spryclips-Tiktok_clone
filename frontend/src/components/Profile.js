@@ -2,12 +2,16 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import AccountSettings from './AccountSettings';
 import { getMyVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../api/videos';
-import { updateProfile, pinVideo } from '../api/users';
+import { updateProfile, pinVideo, followUser } from '../api/users';
+import { getUserStories } from '../api/stories';
+import StoryViewer from './StoryViewer';
 import api, { API_URL } from '../config/axios';
 import './Profile.css';
 
-const Profile = ({ onClose }) => {
+const Profile = ({ onClose, username: viewUsername }) => {
   const { user, updateUser } = useAuth();
+  // If viewUsername is provided, we're viewing another user's profile
+  const isViewingOtherProfile = viewUsername && viewUsername !== user?.username;
   const [activeTab, setActiveTab] = useState('videos');
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null); // Store actual file for upload
@@ -36,8 +40,8 @@ const Profile = ({ onClose }) => {
   const [sortOption, setSortOption] = useState('latest'); // 'latest', 'popular', 'oldest'
   const [activeVideoId, setActiveVideoId] = useState(null);
 
-  // This is always the user's own profile, so isMyProfile is always true
-  const isMyProfile = true;
+  // Check if viewing own profile or other user's profile
+  const isMyProfile = !isViewingOtherProfile;
 
     const [bioText, setBioText] = useState(user?.profile?.bio || 'No bio yet');   
   const [usernameText, setUsernameText] = useState(user?.username || '');       
@@ -55,6 +59,13 @@ const Profile = ({ onClose }) => {
   const [loadingLiked, setLoadingLiked] = useState(false);
   const [loadingReposts, setLoadingReposts] = useState(false);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [userStories, setUserStories] = useState([]);
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
+  const [loadingStories, setLoadingStories] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowPending, setIsFollowPending] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [viewedUser, setViewedUser] = useState(null); // Store the user being viewed
 
   useEffect(() => {
     const sidebar = document.querySelector('.sidebar');
@@ -86,6 +97,412 @@ const Profile = ({ onClose }) => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  // Fetch user stories (for own profile or other user's profile)
+  useEffect(() => {
+    // Handle both _id and id formats
+    const userId = user?._id || user?.id;
+    console.log('🔄 Profile useEffect triggered');
+    console.log('🔄 Profile: User object:', user);
+    console.log('🔄 Profile: user._id:', user?._id);
+    console.log('🔄 Profile: user.id:', user?.id);
+    console.log('🔄 Profile: Resolved userId:', userId);
+    
+    const fetchStories = async () => {
+      // Try both _id and id formats
+      let targetUserId = user?._id || user?.id;
+      
+      console.log('📚 Profile: Starting fetchStories');
+      console.log('📚 Profile: targetUserId:', targetUserId);
+      console.log('📚 Profile: User object keys:', user ? Object.keys(user) : 'No user');
+      
+      // If viewing another user's profile, fetch their user data first
+      if (isViewingOtherProfile && viewUsername) {
+        try {
+          const response = await api.get(`/api/users/${viewUsername}`);
+          const userData = response.data?.user || response.data;
+          const isFollowingUser = response.data?.isFollowing || false;
+          const isPendingUser = response.data?.isPending || false;
+          
+          if (userData?._id) {
+            targetUserId = userData._id;
+            setViewedUser(userData);
+            
+            // Set follow status from backend response
+            setIsFollowing(isFollowingUser);
+            setIsFollowPending(isPendingUser);
+            
+            // Also update stats from userData
+            if (userData.profile) {
+              setStats(prev => ({
+                ...prev,
+                followers: userData.profile.followers || 0,
+                following: userData.profile.following || 0
+              }));
+            }
+          } else if (response.data?._id) {
+            targetUserId = response.data._id;
+            setViewedUser(response.data);
+            setIsFollowing(response.data?.isFollowing || false);
+            setIsFollowPending(response.data?.isPending || false);
+          } else {
+            console.warn('⚠️ Profile: User not found for username:', viewUsername);
+            return; // User not found
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          return;
+        }
+      }
+      
+      if (!targetUserId) {
+        console.warn('⚠️ Profile: No targetUserId, skipping story fetch');
+        console.warn('⚠️ Profile: User object:', user);
+        console.warn('⚠️ Profile: Will retry when user is available...');
+        // Don't return - wait a bit and retry
+        setTimeout(() => {
+          if (user?._id || user?.id) {
+            console.log('🔄 Profile: Retrying fetch after user available...');
+            fetchStories();
+          }
+        }, 1000);
+        return;
+      }
+      
+      try {
+        setLoadingStories(true);
+        console.log('📚 Profile: Calling getUserStories API for userId:', targetUserId);
+        const response = await getUserStories(targetUserId);
+        
+        console.log('📚 Profile: Full API response:', JSON.stringify(response, null, 2));
+        
+        // Filter expired stories (24-hour expiration)
+        const now = new Date();
+        const storiesArray = response?.stories || response?.data?.stories || [];
+        console.log('📚 Profile: Raw stories array length:', storiesArray.length);
+        console.log('📚 Profile: Raw stories:', storiesArray);
+        
+        const validStories = storiesArray.filter(story => {
+          if (!story) {
+            console.warn('⚠️ Profile: Null story found in array');
+            return false;
+          }
+          if (!story.expiresAt) {
+            console.warn('⚠️ Profile: Story missing expiresAt:', story._id, story);
+            return false;
+          }
+          const expiresAt = new Date(story.expiresAt);
+          const isValid = expiresAt > now;
+          if (!isValid) {
+            console.log('⏰ Profile: Story expired:', story._id, 'expiresAt:', expiresAt, 'now:', now);
+          }
+          return isValid;
+        });
+        
+        console.log('✅ Profile: Valid stories count:', validStories.length);
+        console.log('✅ Profile: Valid stories:', validStories.map(s => ({ id: s._id, type: s.type, expiresAt: s.expiresAt })));
+        console.log('✅ Profile: Setting userStories state with', validStories.length, 'stories');
+        console.log('✅ Profile: Full validStories array:', validStories);
+        
+        // IMPORTANT: Always set the state, even if empty
+        setUserStories(validStories);
+        
+        // Force re-render by logging state update
+        setTimeout(() => {
+          console.log('🔍 Profile: State updated, userStories should now have', validStories.length, 'stories');
+          console.log('🔍 Profile: Current userStories state after update:', validStories);
+        }, 100);
+      } catch (error) {
+        console.error('❌ Error fetching user stories:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        console.error('Error stack:', error.stack);
+        setUserStories([]);
+      } finally {
+        setLoadingStories(false);
+      }
+    };
+
+    // Initial fetch
+    fetchStories();
+    
+    // Refresh stories every 5 minutes
+    const interval = setInterval(fetchStories, 5 * 60 * 1000);
+    
+    // Listen for story creation events - with multiple refreshes
+    const handleStoryRefresh = () => {
+      console.log('🔄 Profile: Stories refresh event received, fetching stories...');
+      console.log('🔄 Profile: Current user._id:', user?._id);
+      // Refresh immediately
+      fetchStories();
+      // Also refresh after delays to ensure backend has processed
+      setTimeout(() => {
+        console.log('🔄 Profile: Delayed refresh after 500ms...');
+        fetchStories();
+      }, 500);
+      setTimeout(() => {
+        console.log('🔄 Profile: Delayed refresh after 1000ms...');
+        fetchStories();
+      }, 1000);
+      setTimeout(() => {
+        console.log('🔄 Profile: Delayed refresh after 2000ms...');
+        fetchStories();
+      }, 2000);
+      setTimeout(() => {
+        console.log('🔄 Profile: Final refresh after 3000ms...');
+        fetchStories();
+      }, 3000);
+    };
+    window.addEventListener('stories:refresh', handleStoryRefresh);
+    
+    // Also expose fetchStories globally for manual testing
+    if (typeof window !== 'undefined') {
+      window.debugFetchProfileStories = fetchStories;
+      window.debugProfileUserStories = () => {
+        console.log('🔍 DEBUG: Current userStories state:', userStories);
+        console.log('🔍 DEBUG: User ID:', user?._id);
+        console.log('🔍 DEBUG: Will fetch stories...');
+        fetchStories();
+      };
+    }
+    
+    return () => {
+      console.log('🧹 Profile: Cleaning up useEffect, removing event listeners');
+      clearInterval(interval);
+      window.removeEventListener('stories:refresh', handleStoryRefresh);
+    };
+  }, [user?._id || user?.id, isViewingOtherProfile, viewUsername]); // Use user._id or user.id
+
+  // Check follow status when viewing other user's profile (refetch on refresh)
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      // Don't check if we just did a follow action (let handleFollow handle it)
+      if (justFollowedRef.current) {
+        console.log('⏭️ Skipping checkFollowStatus - just followed/unfollowed');
+        return;
+      }
+
+      if (!isViewingOtherProfile || !viewUsername) return;
+
+      try {
+        console.log('🔄 checkFollowStatus: Fetching profile...');
+        // Refetch user profile to get latest follow status from backend
+        const response = await api.get(`/api/users/${viewUsername}`);
+        const userData = response.data?.user || response.data;
+        const isFollowingUser = response.data?.isFollowing === true; // Strict check
+        const isPendingUser = response.data?.isPending === true; // Strict check
+        
+        console.log('✅ checkFollowStatus response:', {
+          isFollowingUser,
+          isPendingUser,
+          responseIsFollowing: response.data?.isFollowing,
+          responseIsPending: response.data?.isPending
+        });
+        
+        if (userData) {
+          setViewedUser(userData);
+          setIsFollowing(isFollowingUser);
+          setIsFollowPending(isPendingUser);
+          
+          // Update stats
+          if (userData.profile) {
+            setStats(prev => ({
+              ...prev,
+              followers: userData.profile.followers || prev.followers,
+              following: userData.profile.following || prev.following
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error checking follow status:', error);
+      }
+    };
+
+    // Only check if we're viewing another user's profile
+    if (isViewingOtherProfile && viewUsername) {
+      checkFollowStatus();
+    }
+  }, [isViewingOtherProfile, viewUsername]); // Remove user dependency to avoid re-runs
+
+  // Handle follow/unfollow
+  const handleFollow = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if (!viewedUser) {
+      console.error('❌ No viewedUser to follow');
+      alert('User not loaded. Please refresh the page.');
+      return;
+    }
+
+    const userId = viewedUser._id || viewedUser.id;
+    if (!userId) {
+      console.error('❌ No user ID found:', viewedUser);
+      alert('User ID not found. Please refresh the page.');
+      return;
+    }
+
+    if (followLoading) {
+      console.log('⏳ Already processing follow/unfollow...');
+      return;
+    }
+
+    const previousIsFollowing = isFollowing;
+
+    try {
+      setFollowLoading(true);
+      
+      console.log('🔘 Follow button clicked:', {
+        userId: userId.toString(),
+        userIdType: typeof userId,
+        previousIsFollowing,
+        viewedUsername: viewedUser.username,
+        viewedUserId: viewedUser._id
+      });
+      
+      // Call API directly to see what happens
+      const response = await followUser(userId.toString());
+      
+      console.log('✅ API Response:', response);
+      console.log('📊 Response data:', JSON.stringify(response, null, 2));
+      
+      // Update state based on response
+      const newIsFollowing = response?.isFollowing === true;
+      const newIsPending = response?.isPending === true;
+      
+      console.log('🔄 Updating state:', {
+        newIsFollowing,
+        newIsPending,
+        previousIsFollowing,
+        responseIsFollowing: response?.isFollowing,
+        responseIsPending: response?.isPending
+      });
+      
+      // Mark that we just did a follow action to prevent useEffect from overriding
+      justFollowedRef.current = true;
+      
+      setIsFollowing(newIsFollowing);
+      setIsFollowPending(newIsPending);
+      
+      // Update stats immediately - both followers (of viewed user) and following (of current user)
+      if (viewedUser.profile) {
+        setStats(prev => ({
+          ...prev,
+          followers: newIsFollowing 
+            ? (prev.followers + 1) 
+            : Math.max(0, prev.followers - 1)
+        }));
+      }
+      
+      // Update current user's own following count (if viewing own profile)
+      if (!isViewingOtherProfile && user) {
+        setStats(prev => ({
+          ...prev,
+          following: newIsFollowing 
+            ? (prev.following + 1) 
+            : Math.max(0, prev.following - 1)
+        }));
+      }
+      
+      // Update current user context immediately - this will trigger Following page refresh
+      if (user && updateUser) {
+        try {
+          console.log('🔄 Fetching updated user context...');
+          const verifyResponse = await api.get('/api/auth/verify');
+          const updatedUser = verifyResponse.data?.user;
+          if (updatedUser) {
+            console.log('✅ Updating user context:', {
+              oldFollowingCount: user.followedUsers?.length || 0,
+              newFollowingCount: updatedUser.followedUsers?.length || 0,
+              oldProfileFollowing: user.profile?.following || 0,
+              newProfileFollowing: updatedUser.profile?.following || 0
+            });
+            updateUser(updatedUser);
+            
+            // Update own profile stats if viewing own profile
+            if (!isViewingOtherProfile) {
+              setStats(prev => ({
+                ...prev,
+                following: updatedUser.profile?.following || prev.following
+              }));
+            }
+            console.log('✅ Updated user context with latest following list');
+          }
+        } catch (verifyError) {
+          console.error('Error updating user context:', verifyError);
+        }
+      }
+      
+      // Dispatch event to refresh Following page
+      console.log('📢 Dispatching follow:refresh event');
+      window.dispatchEvent(new Event('follow:refresh'));
+      
+      // Dispatch multiple times with delays to ensure Following page updates
+      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 300);
+      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 600);
+      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 1000);
+      
+      // Refresh profile after a delay to ensure backend has saved
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Refreshing profile after follow/unfollow...');
+          const profileResponse = await api.get(`/api/users/${viewUsername || userId}`);
+          const userData = profileResponse.data?.user || profileResponse.data;
+          const verifiedIsFollowing = profileResponse.data?.isFollowing === true;
+          
+          console.log('✅ Verified status:', verifiedIsFollowing);
+          
+          if (userData) {
+            setViewedUser(userData);
+            setIsFollowing(verifiedIsFollowing);
+            
+            // Update stats from backend (actual count)
+            if (userData.profile) {
+              setStats(prev => ({
+                ...prev,
+                followers: userData.profile.followers || prev.followers
+              }));
+            }
+          }
+          
+          // Dispatch one more refresh event after backend confirms
+          window.dispatchEvent(new Event('follow:refresh'));
+        } catch (refreshError) {
+          console.error('Error refreshing:', refreshError);
+        } finally {
+          // Re-enable useEffect checks after 3 seconds
+          setTimeout(() => {
+            justFollowedRef.current = false;
+            console.log('✅ Re-enabled checkFollowStatus useEffect');
+          }, 3000);
+        }
+      }, 800);
+      
+    } catch (error) {
+      console.error('❌ Follow/Unfollow Error:', error);
+      console.error('Error full details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
+      
+      // Revert state
+      setIsFollowing(previousIsFollowing);
+      
+      let errorMessage = 'Failed to follow user. ';
+      if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.message) {
+        errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current.click();
@@ -1002,15 +1419,65 @@ const Profile = ({ onClose }) => {
             />
           </div>
           <div className="profile-info-section">
-            <div className="avatar-container" onClick={handleAvatarClick}>
-              <img
-                src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
-                alt={user?.username}
-                className="profile-avatar-new"
-              />
-              <div className="camera-icon-overlay visible">
-                <i className="fa-solid fa-camera"></i>
-              </div>
+            <div className="avatar-container">
+              {/* Story ring indicator - TikTok style colored ring around profile picture */}
+              {(() => {
+                const hasStories = userStories && Array.isArray(userStories) && userStories.length > 0;
+                
+                // Debug logging every render
+                if (userStories && userStories.length > 0) {
+                  console.log('✅ Profile RENDER: Stories found!', {
+                    count: userStories.length,
+                    stories: userStories.map(s => ({
+                      id: s._id || s.id,
+                      type: s.type,
+                      expiresAt: s.expiresAt
+                    }))
+                  });
+                } else {
+                  console.log('❌ Profile RENDER: No stories found', {
+                    userStories,
+                    isArray: Array.isArray(userStories),
+                    length: userStories?.length,
+                    user_id: user?._id
+                  });
+                }
+                
+                return hasStories ? (
+                <div 
+                  className="profile-story-ring-wrapper"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (userStories.length > 0) {
+                      setShowStoryViewer(true);
+                    }
+                  }}
+                  title="View Story"
+                >
+                  <div className="profile-story-ring">
+                    <img
+                      src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
+                      alt={user?.username}
+                      className="profile-avatar-new profile-avatar-with-ring"
+                    />
+                  </div>
+                  <div className="camera-icon-overlay visible story-ring-camera-overlay" onClick={(e) => { e.stopPropagation(); handleAvatarClick(); }}>
+                    <i className="fa-solid fa-camera"></i>
+                  </div>
+                </div>
+              ) : (
+                <div className="avatar-wrapper-no-story" onClick={handleAvatarClick}>
+                  <img
+                    src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
+                    alt={user?.username}
+                    className="profile-avatar-new"
+                  />
+                  <div className="camera-icon-overlay visible">
+                    <i className="fa-solid fa-camera"></i>
+                  </div>
+                </div>
+              );
+              })()}
             </div>
             <input
               ref={fileInputRef}
@@ -1020,10 +1487,75 @@ const Profile = ({ onClose }) => {
               style={{ display: 'none' }}
             />
             <div className="profile-header-right">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
                 <h2>{user?.profile?.displayName || usernameText}</h2>
                 {user?.profile?.isVerified && (
                   <i className="fa-solid fa-check-circle" style={{ color: '#2563EB', fontSize: '20px' }}></i>
+                )}
+                {/* Follow Button - Show only when viewing other user's profile */}
+                {isViewingOtherProfile && viewedUser && (
+                  <button
+                    className={`profile-follow-btn ${isFollowing ? 'profile-follow-btn--following' : 'profile-follow-btn--follow'}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('🔘 Follow button onClick triggered');
+                      handleFollow(e);
+                    }}
+                    disabled={followLoading}
+                    type="button"
+                    style={{
+                      marginLeft: 'auto',
+                      padding: '8px 20px',
+                      borderRadius: '20px',
+                      border: isFollowing ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
+                      background: isFollowing 
+                        ? 'rgba(255, 255, 255, 0.1)' 
+                        : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: followLoading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      minWidth: '100px',
+                      justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isFollowing && !followLoading) {
+                        e.currentTarget.style.background = 'rgba(255, 0, 0, 0.2)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isFollowing && !followLoading) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      }
+                    }}
+                  >
+                    {followLoading ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>...</span>
+                      </>
+                    ) : isFollowPending ? (
+                      <>
+                        <i className="fa-solid fa-clock"></i>
+                        <span>Pending</span>
+                      </>
+                    ) : isFollowing ? (
+                      <>
+                        <i className="fa-solid fa-check"></i>
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-plus"></i>
+                        <span>Follow</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
               <p className="username-text">@{usernameText}</p>
@@ -2022,6 +2554,18 @@ const Profile = ({ onClose }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Story Viewer Modal - Popup format (not swipe) */}
+      {showStoryViewer && userStories.length > 0 && (
+        <StoryViewer
+          storiesByUser={[{
+            user: user,
+            stories: userStories
+          }]}
+          startIndex={0}
+          onClose={() => setShowStoryViewer(false)}
+        />
       )}
     </div>
   );

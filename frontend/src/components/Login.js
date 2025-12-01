@@ -1,38 +1,45 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import useSocialAuth from '../hooks/useSocialAuth';
 import './Auth.css';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const Login = ({ onClose, onSwitchToSignup }) => {
   useEffect(() => {
+    // Check if we're on a standalone route (not a modal)
+    const isStandaloneRoute = window.location.pathname === '/login' || window.location.pathname === '/signup';
+    
     const sidebar = document.querySelector('.sidebar');
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow || '';
+    const previousHtmlOverflow = document.documentElement.style.overflow || '';
 
-    document.body.classList.add('signup-page-open');
-    document.documentElement.classList.add('signup-page-open');
-    if (sidebar) {
-      sidebar.classList.add('page-open');
+    // Only manipulate DOM if NOT on standalone route (i.e., if it's a modal)
+    if (!isStandaloneRoute) {
+      document.body.classList.add('signup-page-open');
+      document.documentElement.classList.add('signup-page-open');
+      if (sidebar) {
+        sidebar.classList.add('page-open');
+      }
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     }
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && onClose) {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.classList.remove('signup-page-open');
-      document.documentElement.classList.remove('signup-page-open');
-      if (sidebar) {
-        sidebar.classList.remove('page-open');
+      if (!isStandaloneRoute) {
+        document.body.classList.remove('signup-page-open');
+        document.documentElement.classList.remove('signup-page-open');
+        if (sidebar) {
+          sidebar.classList.remove('page-open');
+        }
+        document.body.style.overflow = previousBodyOverflow;
+        document.documentElement.style.overflow = previousHtmlOverflow;
       }
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
@@ -46,7 +53,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
   const [formState, setFormState] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Sync DOM values to React state (for browser automation compatibility)
@@ -84,22 +90,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
     }
   }, []); // Empty dependency array - only run on mount
 
-  const { googleReady, facebookReady, startGoogleLogin, startFacebookLogin } = useSocialAuth({
-    onSuccess: () => {
-      if (isMountedRef.current) {
-        setError('');
-        setSocialLoading(false);
-      }
-      onClose();
-    },
-    onError: (message) => {
-      if (isMountedRef.current) {
-        setSocialLoading(false);
-        setError(message);
-      }
-    }
-  });
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -127,18 +117,21 @@ const Login = ({ onClose, onSwitchToSignup }) => {
       }
 
       // Call login function - it handles errors internally and returns { success, message }
+      console.log('Attempting login for email:', email);
       const result = await login(email, password);
+      console.log('Login result:', result);
 
       // Always reset loading state
       setLoading(false);
 
       if (result && result.success) {
+        console.log('Login successful, closing modal');
         onClose();
       } else {
         // Show the error message from backend
         const errorMsg = result?.message || 'Login failed. Please check your credentials and try again.';
         setError(errorMsg);
-        console.error('Login failed:', errorMsg);
+        console.error('Login failed:', errorMsg, result);
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -162,32 +155,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
       setError(errorMsg);
     }
   };
-
-  const handleSocialAction = async (provider) => {
-    setError('');
-    setSocialLoading(true);
-    try {
-      if (provider === 'google') {
-        await startGoogleLogin();
-      } else if (provider === 'facebook') {
-        await startFacebookLogin();
-      }
-    } catch (err) {
-      if (isMountedRef.current) {
-        setError(err.message || 'Social login failed. Please try again.');
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setSocialLoading(false);
-      }
-    }
-  };
-  const googleButtonTitle = !googleReady
-    ? 'Google login requires REACT_APP_GOOGLE_CLIENT_ID environment variable'
-    : 'Continue with Google';
-  const facebookButtonTitle = !facebookReady
-    ? 'Facebook login requires REACT_APP_FACEBOOK_APP_ID environment variable'
-    : 'Continue with Facebook';
 
   return (
     <div className="tiktok-signup-container">
@@ -286,35 +253,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             {loading ? 'Signing in…' : 'Log In'}
           </button>
         </form>
-
-        <div className="divider-option" aria-hidden="true">
-          <span />
-          <span>OR</span>
-          <span />
-        </div>
-
-        <div className="social-login-buttons">
-          <button
-            type="button"
-            className="social-btn google-btn"
-            disabled={socialLoading}
-            onClick={() => handleSocialAction('google')}
-            title={googleButtonTitle}
-          >
-            <i className="fa-brands fa-google" aria-hidden="true" />
-            {socialLoading ? 'Connecting…' : 'Continue with Google'}
-          </button>
-          <button
-            type="button"
-            className="social-btn facebook-btn"
-            disabled={socialLoading}
-            onClick={() => handleSocialAction('facebook')}
-            title={facebookButtonTitle}
-          >
-            <i className="fa-brands fa-facebook" aria-hidden="true" />
-            {socialLoading ? 'Connecting…' : 'Continue with Facebook'}
-          </button>
-        </div>
 
       </div>
 

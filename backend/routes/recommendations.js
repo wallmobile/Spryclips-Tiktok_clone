@@ -193,10 +193,10 @@ router.get('/following', authMiddleware, async (req, res) => {
       status: 'ready',
       isPrivate: false
     })
-      .populate('user', 'username profile.avatar profile.displayName profile.followers')
+      .populate('user', 'username profile.avatar profile.displayName profile.followers _id')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('url thumbnail description hashtags likes comments shares views createdAt user music')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music _id')
       .lean();
 
     res.json({
@@ -221,6 +221,7 @@ router.get('/trending', async (req, res) => {
     const timeRange = req.query.range || '24h'; // 24h, 7d, 30d
     const categoryFilter = typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : null;
     const contentType = typeof req.query.contentType === 'string' ? req.query.contentType.trim().toLowerCase() : 'video';
+    const sortBy = typeof req.query.sort === 'string' ? req.query.sort.trim().toLowerCase() : null;
 
     let dateFilter = {};
     const now = new Date();
@@ -252,13 +253,27 @@ router.get('/trending', async (req, res) => {
       ];
     }
 
-    const videos = await Video.find(baseQuery)
-      .populate('user', 'username profile.avatar profile.displayName profile.followers')
-      .sort({ 
+    // Determine sort order based on sort parameter
+    let sortOrder = { 
+      views: -1,
+      likes: -1,
+      shares: -1,
+      createdAt: -1
+    };
+    
+    if (sortBy === 'trending') {
+      // For trending, we'll calculate score and sort by it after
+      sortOrder = {
         views: -1,
         likes: -1,
-        shares: -1
-      })
+        shares: -1,
+        createdAt: -1
+      };
+    }
+
+    const videos = await Video.find(baseQuery)
+      .populate('user', 'username profile.avatar profile.displayName profile.followers')
+      .sort(sortOrder)
       .limit(limit)
       .select('url thumbnail description hashtags likes comments shares views createdAt user music category')
       .lean();

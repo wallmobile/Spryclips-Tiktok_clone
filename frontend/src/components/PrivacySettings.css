@@ -5,35 +5,34 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.5) !important; /* Lighter background for full page */
   backdrop-filter: blur(0.5rem); /* 8px */
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch !important; /* Stretch to fill */
+  justify-content: stretch !important; /* Stretch to fill */
   z-index: 10020; /* Higher z-index to ensure it's on top */
-  padding: 0; /* Changed to 0 for mobile */
+  padding: 0 !important; /* No padding for full page */
   cursor: pointer;
   box-sizing: border-box;
   overflow-x: hidden !important;
-  overflow-y: auto;
+  overflow-y: hidden !important; /* No scroll on overlay */
   -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 100vw;
+  width: 100vw !important;
+  max-width: 100vw !important;
 }
 
 .privacy-settings-modal {
   background: #ffffff; /* White background */
-  border-radius: 1.25rem; /* 20px */
-  width: 100%;
-  max-width: 42rem; /* 672px - slightly wider */
-  max-width: calc(100vw - 2.5rem);
-  max-height: 90vh;
-  height: 90vh;
+  border-radius: 0 !important; /* No border radius for full page */
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1.25rem 3.75rem rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
-  border: 0.0625rem solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  box-shadow: none !important; /* No shadow for full page */
+  border: none !important; /* No border for full page */
   cursor: default;
   box-sizing: border-box;
   min-height: 0;

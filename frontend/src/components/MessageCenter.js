@@ -4,98 +4,7 @@ import { getConversations, getMessages, sendMessage, getOrCreateConversation, ma
 import { searchUsers } from '../api/search';
 import './MessageCenter.css';
 
-const SAMPLE_CONVERSATIONS = [
-  {
-    id: 1,
-    user: {
-      username: 'sarah_creator',
-      displayName: 'Sarah Johnson',
-      avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson&background=E50914&color=fff',
-      isOnline: true,
-      lastSeen: 'Online'
-    },
-    lastMessage: {
-      text: 'Hey! Loved your latest video 🔥',
-      time: '2 min ago',
-      isRead: false,
-      sender: 'sarah_creator'
-    },
-    unreadCount: 2,
-    messages: [
-      { id: 1, sender: 'sarah_creator', text: 'Hey! How are you?', time: '10:30 AM', isRead: true },
-      { id: 2, sender: 'me', text: "Hi Sarah! I'm doing great, thanks!", time: '10:32 AM', isRead: true },
-      { id: 3, sender: 'sarah_creator', text: 'Hey! Loved your latest video 🔥', time: '2:45 PM', isRead: false }
-    ]
-  },
-  {
-    id: 2,
-    user: {
-      username: 'mike_dancer',
-      displayName: 'Mike Chen',
-      avatar: 'https://ui-avatars.com/api/?name=Mike+Chen&background=C50812&color=000',
-      isOnline: false,
-      lastSeen: '1 hour ago'
-    },
-    lastMessage: {
-      text: 'Want to collaborate on a dance video?',
-      time: '1 hour ago',
-      isRead: true,
-      sender: 'mike_dancer'
-    },
-    unreadCount: 0,
-    messages: [
-      { id: 1, sender: 'mike_dancer', text: 'Hey! I saw your dance moves', time: '9:15 AM', isRead: true },
-      { id: 2, sender: 'me', text: "Thanks! I've been practicing a lot", time: '9:20 AM', isRead: true },
-      { id: 3, sender: 'mike_dancer', text: 'Want to collaborate on a dance video?', time: '1:30 PM', isRead: true }
-    ]
-  },
-  {
-    id: 3,
-    user: {
-      username: 'emma_artist',
-      displayName: 'Emma Wilson',
-      avatar: 'https://ui-avatars.com/api/?name=Emma+Wilson&background=9B59B6&color=fff',
-      isOnline: true,
-      lastSeen: 'Online'
-    },
-    lastMessage: {
-      text: 'Check out my new art tutorial!',
-      time: '3 hours ago',
-      isRead: true,
-      sender: 'emma_artist'
-    },
-    unreadCount: 0,
-    messages: [
-      { id: 1, sender: 'emma_artist', text: 'Hi! I love your creative content', time: '8:00 AM', isRead: true },
-      { id: 2, sender: 'me', text: 'Thank you so much! Your art is amazing too', time: '8:05 AM', isRead: true },
-      { id: 3, sender: 'emma_artist', text: 'Check out my new art tutorial!', time: '11:30 AM', isRead: true }
-    ]
-  },
-  {
-    id: 4,
-    user: {
-      username: 'alex_musician',
-      displayName: 'Alex Rodriguez',
-      avatar: 'https://ui-avatars.com/api/?name=Alex+Rodriguez&background=FF6B35&color=fff',
-      isOnline: false,
-      lastSeen: '2 days ago'
-    },
-    lastMessage: {
-      text: 'Thanks for using my sound! 🎵',
-      time: '2 days ago',
-      isRead: true,
-      sender: 'alex_musician'
-    },
-    unreadCount: 0,
-    messages: [
-      { id: 1, sender: 'alex_musician', text: 'Hey! I noticed you used my original sound', time: '2 days ago', isRead: true },
-      { id: 2, sender: 'me', text: "Yes! It was perfect for my video. Hope that's okay!", time: '2 days ago', isRead: true },
-      { id: 3, sender: 'alex_musician', text: 'Thanks for using my sound! 🎵', time: '2 days ago', isRead: true }
-    ]
-  }
-];
-
-// Suggested users will be fetched from API
+// All conversations will be fetched from backend API - no hardcoded data
 
 const getParticipant = (conversation, currentUser) => {
   if (Array.isArray(conversation?.participants) && conversation.participants.length) {
@@ -147,7 +56,15 @@ const convertMessage = (message, currentUser) => {
     sender: isSelf ? 'me' : senderUsername || 'creator',
     text: messageText,
     time: timestamp
-      ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ? (() => {
+          try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } catch {
+            return '';
+          }
+        })()
       : '',
     isRead: Boolean(message.isRead ?? message.read ?? isSelf)
   };
@@ -183,7 +100,7 @@ const convertConversation = (conversation, currentUser) => {
 const MessageCenter = ({ onClose }) => {
   const { user } = useAuth();
   
-  const [conversations, setConversations] = useState(SAMPLE_CONVERSATIONS);
+  const [conversations, setConversations] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
@@ -266,7 +183,7 @@ const MessageCenter = ({ onClose }) => {
 
   useEffect(() => {
     if (!user) {
-      setConversations(SAMPLE_CONVERSATIONS);
+      setConversations([]);
       return;
     }
 
@@ -281,13 +198,11 @@ const MessageCenter = ({ onClose }) => {
           ? response
           : [];
 
-        if (rawConversations.length > 0) {
-          setConversations(rawConversations.map((conversation) => convertConversation(conversation, user)));
-        }
+        setConversations(rawConversations.map((conversation) => convertConversation(conversation, user)));
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        setConversationError('Unable to load conversations right now. Showing recent conversations.');
-        setConversations(SAMPLE_CONVERSATIONS);
+        setConversationError('Unable to load conversations. Please try again.');
+        setConversations([]);
       } finally {
         setIsLoadingConversations(false);
       }
@@ -432,11 +347,11 @@ const MessageCenter = ({ onClose }) => {
             .map((messageId) => markMessageAsRead(messageId))
         );
       }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      setConversationError('Unable to load messages for this conversation. Showing recent history.');
-      setMessages((conversation.messages || []).map((message) => convertMessage(message, user)));
-    } finally {
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        setConversationError('Unable to load messages for this conversation. Please try again.');
+        setMessages([]);
+      } finally {
       setMessagesLoading(false);
     }
   };

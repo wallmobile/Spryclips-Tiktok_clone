@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getCreatorBalance,
@@ -11,6 +12,30 @@ import './Balance.css';
 
 const Balance = ({ onClose }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if opened as route or modal
+  const isRoute = location.pathname === '/balance' || location.pathname === '/wallet';
+  
+  const handleClose = () => {
+    if (isRoute) {
+      // Check if we came from profile/AccountSettings
+      const fromProfile = document.referrer.includes('/profile') || 
+                         location.state?.from === '/profile' ||
+                         document.referrer.includes('profile');
+      
+      if (fromProfile || !document.referrer) {
+        // Navigate to profile page to show AccountSettings
+        navigate('/profile', { replace: true });
+      } else {
+        // Go back in history
+        navigate(-1);
+      }
+    } else if (onClose) {
+      onClose(); // Modal close
+    }
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -197,11 +222,36 @@ const Balance = ({ onClose }) => {
   );
 
   return (
-    <div className="balance-overlay" onClick={onClose}>
+    <div className="balance-overlay" onClick={handleClose}>
       <div className="balance-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="balance-header">
-          <button className="balance-close-btn" onClick={onClose}>
+          <button 
+            className="balance-close-btn" 
+            onClick={handleClose}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25) !important';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3) !important';
+              e.currentTarget.style.transform = 'translateY(-50%) !important';
+              e.currentTarget.style.scale = '1 !important';
+              e.currentTarget.style.opacity = '1 !important';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15) !important';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25) !important';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3) !important';
+              e.currentTarget.style.transform = 'translateY(-50%) !important';
+              e.currentTarget.style.scale = '1 !important';
+              e.currentTarget.style.opacity = '1 !important';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15) !important';
+            }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.25) !important',
+              borderColor: 'rgba(255, 255, 255, 0.3) !important',
+              transition: 'none !important',
+              opacity: '1 !important',
+            }}
+          >
             <i className="fa-solid fa-times"></i>
           </button>
           <h2>Balance & Wallet</h2>

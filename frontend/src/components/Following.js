@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAllVideos, toggleFollow } from '../api/videos';
+import { getFollowingFeed } from '../api/recommendations';
+import api from '../config/axios';
 import { videos as sampleVideos } from '../data/sampleData';
 import './Following.css';
 import './Profile.css'; // Import for video modal styles
@@ -67,9 +69,9 @@ const buildAvatarUrl = (username, fallback) => {
     return toAbsoluteMediaUrl(fallback);
   }
   if (!username) {
-    return 'https://ui-avatars.com/api/?name=Creator&background=2563EB&color=fff';
+    return 'https://ui-avatars.com/api/?name=Creator&background=FF0050&color=fff';
   }
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=2563EB&color=fff`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=FF0050&color=fff`;
 };
 
 const getCreatorKey = (creator) => {
@@ -80,7 +82,31 @@ const getCreatorKey = (creator) => {
   return String(raw).toLowerCase();
 };
 
-const getCreatorTargetId = (creator) => creator?._id || creator?.id || creator?.userId || creator?.username || null;
+const getCreatorTargetId = (creator) => {
+  // Prioritize ObjectId format (_id or id)
+  const id = creator?._id || creator?.id || creator?.userId;
+  if (id) {
+    let idString = '';
+    // Convert to string
+    if (typeof id === 'string') {
+      idString = id;
+    } else if (id && typeof id.toString === 'function') {
+      idString = id.toString();
+    } else {
+      idString = String(id);
+    }
+    
+    // Validate ObjectId format (24 hex characters)
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (objectIdPattern.test(idString)) {
+      return idString;
+    }
+    // If not valid ObjectId, return null
+    return null;
+  }
+  // Don't use username as fallback for follow API - it requires ObjectId
+  return null;
+};
 
 const normalizeFollowingVideo = (video, index = 0) => {
   if (!video || typeof video !== 'object') {
@@ -138,7 +164,7 @@ const RAW_FALLBACK_VIDEOS = sampleVideos.map((video, index) => {
         avatar:
           video.user?.profile?.avatar ||
           video.avatar ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=2563EB&color=fff`,
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=FF0050&color=fff`,
         isVerified: Boolean(video.user?.profile?.isVerified)
       }
     },
@@ -207,6 +233,8 @@ const Following = () => {
     if (sidebar) {
       sidebar.classList.add('page-open');
     }
+    // Clear any error messages on mount
+    setErrorMessage('');
     return () => {
       if (sidebar) {
         sidebar.classList.remove('page-open');
@@ -241,55 +269,271 @@ const Following = () => {
     return user.followedUsers.map((entry) => String(entry));
   }, [user?.followedUsers]);
 
+  // Refresh creators when user context updates (after follow/unfollow)
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      const followedUsersCount = user.followedUsers?.length || 0;
+      const profileFollowingCount = user.profile?.following || 0;
+      
+      console.log('🔄 User context updated in Following page:', {
+        followedUsersCount,
+        profileFollowingCount,
+        hasFollowedUsers: !!user.followedUsers
+      });
+      
+      const refreshCreators = async () => {
+        try {
+          console.log('🔄 Fetching following users from API...');
+          const response = await api.get('/api/users/following');
+          console.log('✅ Following API response:', response.data);
+          
+          if (response.data.success) {
+            const following = response.data.following || [];
+            console.log('📊 Following users count:', following.length);
+            
+            if (following.length > 0) {
+              const followingUsers = following
+                .filter(user => {
+                  const userId = user._id || user.id;
+                  if (!userId) return false;
+                  const idString = typeof userId === 'string' ? userId : (userId.toString ? userId.toString() : String(userId));
+                  return /^[0-9a-fA-F]{24}$/.test(idString);
+                })
+                .map(user => {
+                  const userId = user._id || user.id;
+                  return {
+                    _id: userId,
+                    id: userId,
+                    username: user.username,
+                    displayName: user.profile?.displayName || user.username,
+                    avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                    followers: user.profile?.followers || 0,
+                    isFollowing: true,
+                    profile: {
+                      ...user.profile,
+                      displayName: user.profile?.displayName || user.username,
+                      avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                      followers: user.profile?.followers || 0
+                    }
+                  };
+                });
+              
+              console.log('✅ Setting following creators:', followingUsers.length);
+              setFollowingCreators(followingUsers);
+              syncFollowStates(followingUsers);
+            } else {
+              console.log('📭 No following users found');
+              setFollowingCreators([]);
+              syncFollowStates([]);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to refresh following users:', error);
+        }
+      };
+      
+      // Add small delay to ensure backend has updated
+      const timeoutId = setTimeout(() => {
+        refreshCreators();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user?.followedUsers?.length, user?.profile?.following, isAuthenticated]); // Watch both followedUsers count and profile.following
+
   useEffect(() => {
     const bootstrap = async () => {
       try {
         setLoading(true);
-        const videos = await getAllVideos();
-        let curated = Array.isArray(videos) && videos.length > 0 ? videos : FALLBACK_VIDEOS;
-
-        if (userFollowingIds.length > 0) {
-          const filtered = curated.filter((video) => {
-            const creatorId =
-              video.user?._id ||
-              video.user?.id ||
-              video.user?.username ||
-              video.user ||
-              video.channel;
-            return creatorId ? userFollowingIds.includes(String(creatorId)) : false;
-          });
-          if (filtered.length > 0) {
-            curated = filtered;
+        setErrorMessage('');
+        
+        // Always try to fetch following videos from backend
+        try {
+          const response = await getFollowingFeed({ limit: 50 });
+          if (response.success) {
+            const videos = response.videos || [];
+            if (videos.length > 0) {
+              const normalizedVideos = videos
+                .map((video, index) => normalizeFollowingVideo(video, index))
+                .filter(Boolean);
+              
+              playableVideosRef.current.clear();
+              setFollowingVideos(normalizedVideos);
+              setLoading(false);
+              return;
+            } else {
+              // No following videos - show empty state
+              playableVideosRef.current.clear();
+              setFollowingVideos([]);
+              setLoading(false);
+              return;
+            }
           }
+        } catch (feedError) {
+          console.warn('Failed to fetch following feed:', feedError);
+          // If user has following IDs but API failed, try fallback filtering
+          if (userFollowingIds.length > 0) {
+            try {
+              const videos = await getAllVideos();
+              if (Array.isArray(videos) && videos.length > 0) {
+                const filtered = videos.filter((video) => {
+                  const creatorId =
+                    video.user?._id ||
+                    video.user?.id ||
+                    video.user?.username ||
+                    video.user ||
+                    video.channel;
+                  return creatorId ? userFollowingIds.includes(String(creatorId)) : false;
+                });
+                
+                if (filtered.length > 0) {
+                  const normalizedVideos = filtered
+                    .map((video, index) => normalizeFollowingVideo(video, index))
+                    .filter(Boolean);
+                  playableVideosRef.current.clear();
+                  setFollowingVideos(normalizedVideos);
+                  setLoading(false);
+                  return;
+                }
+              }
+            } catch (fallbackError) {
+              console.warn('Fallback filtering also failed:', fallbackError);
+            }
+          }
+          
+          // No following users or all filters failed - show empty
+          playableVideosRef.current.clear();
+          setFollowingVideos([]);
+          setLoading(false);
+          return;
         }
-
-        playableVideosRef.current.clear();
-        setFollowingVideos(
-          curated
-            .map((video, index) => normalizeFollowingVideo(video, index))
-            .filter(Boolean)
-        );
       } catch (error) {
-        console.warn('Falling back to sample following videos:', error);
-        setErrorMessage('We are showing a curated selection while we reconnect to your feed.');
-        setFollowingVideos(FALLBACK_VIDEOS);
-      } finally {
+        console.warn('Error loading following videos:', error);
+        // Show empty state instead of fallback videos
+        playableVideosRef.current.clear();
+        setFollowingVideos([]);
         setLoading(false);
       }
     };
 
-    const hydrateCreators = () => {
-      if (userFollowingIds.length > 0 && Array.isArray(user?.followingProfiles)) {
-        setFollowingCreators(user.followingProfiles);
-        syncFollowStates(user.followingProfiles);
-        return;
+    const hydrateCreators = async () => {
+      try {
+        // Always fetch following users from backend (even if empty)
+        const response = await api.get('/api/users/following');
+        if (response.data.success) {
+          const following = response.data.following || [];
+          if (following.length > 0) {
+            const followingUsers = following
+              .filter(user => {
+                // Only include users with valid ObjectIds
+                const userId = user._id || user.id;
+                if (!userId) return false;
+                const idString = typeof userId === 'string' ? userId : (userId.toString ? userId.toString() : String(userId));
+                return /^[0-9a-fA-F]{24}$/.test(idString);
+              })
+              .map(user => {
+                const userId = user._id || user.id;
+                return {
+                  _id: userId,
+                  id: userId,
+                  username: user.username,
+                  displayName: user.profile?.displayName || user.username,
+                  avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                  followers: user.profile?.followers || 0,
+                  isFollowing: true,
+                  profile: {
+                    ...user.profile,
+                    displayName: user.profile?.displayName || user.username,
+                    avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                    followers: user.profile?.followers || 0
+                  }
+                };
+              });
+            setFollowingCreators(followingUsers);
+            syncFollowStates(followingUsers);
+            return;
+          } else {
+            // No following users - show empty list
+            setFollowingCreators([]);
+            syncFollowStates([]);
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch following users:', error);
+        // If error, check if user has followedUsers in local state
+        if (userFollowingIds.length > 0 && Array.isArray(user?.followingProfiles)) {
+          setFollowingCreators(user.followingProfiles);
+          syncFollowStates(user.followingProfiles);
+          return;
+        }
       }
-      setFollowingCreators(sampleCreatorList);
-      syncFollowStates(sampleCreatorList);
+      
+      // Only show empty list if no following users
+      setFollowingCreators([]);
+      syncFollowStates([]);
     };
 
     bootstrap();
     hydrateCreators();
+    
+    // Listen for follow refresh events
+    const handleFollowRefresh = async () => {
+      console.log('🔄 Following page: Received follow:refresh event, refreshing creators...');
+      
+      // Add delay to ensure backend has saved
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Refreshing Following page after follow event...');
+          const response = await api.get('/api/users/following');
+          if (response.data.success) {
+            const following = response.data.following || [];
+            console.log('✅ Refreshed following users:', following.length);
+            
+            if (following.length > 0) {
+              const followingUsers = following
+                .filter(user => {
+                  const userId = user._id || user.id;
+                  if (!userId) return false;
+                  const idString = typeof userId === 'string' ? userId : (userId.toString ? userId.toString() : String(userId));
+                  return /^[0-9a-fA-F]{24}$/.test(idString);
+                })
+                .map(user => {
+                  const userId = user._id || user.id;
+                  return {
+                    _id: userId,
+                    id: userId,
+                    username: user.username,
+                    displayName: user.profile?.displayName || user.username,
+                    avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                    followers: user.profile?.followers || 0,
+                    isFollowing: true,
+                    profile: {
+                      ...user.profile,
+                      displayName: user.profile?.displayName || user.username,
+                      avatar: user.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=FF0050&color=fff`,
+                      followers: user.profile?.followers || 0
+                    }
+                  };
+                });
+              setFollowingCreators(followingUsers);
+              syncFollowStates(followingUsers);
+            } else {
+              setFollowingCreators([]);
+              syncFollowStates([]);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error refreshing following after event:', error);
+        }
+      }, 800);
+    };
+    
+    window.addEventListener('follow:refresh', handleFollowRefresh);
+    
+    return () => {
+      window.removeEventListener('follow:refresh', handleFollowRefresh);
+    };
   }, [userFollowingIds, user?.followingProfiles, syncFollowStates]);
 
   const parseDuration = (value) => {
@@ -353,6 +597,7 @@ const Following = () => {
 
       if (!isAuthenticated) {
         setErrorMessage('Log in to follow creators to customise your feed.');
+        setTimeout(() => setErrorMessage(''), 5000);
         return;
       }
 
@@ -363,12 +608,27 @@ const Following = () => {
       const targetId = getCreatorTargetId(creator);
       const isCurrentlyFollowing = followStates[key] ?? true;
 
+      // Validate that we have a valid ObjectId before making API call
+      if (!targetId) {
+        console.warn('Cannot follow/unfollow: Creator does not have a valid ObjectId', creator);
+        // Don't show error for invalid IDs - just silently ignore
+        // This prevents error messages for sample data or invalid creators
+        return;
+      }
+
+      // Double-check ObjectId format
+      const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+      if (!objectIdPattern.test(String(targetId))) {
+        console.warn('Cannot follow/unfollow: Creator ID is not a valid ObjectId', { targetId, creator });
+        // Don't show error - just silently ignore
+        return;
+      }
+
       setPendingFollowIds((prev) => ({ ...prev, [key]: true }));
+      setErrorMessage(''); // Clear any previous errors
 
       try {
-        if (targetId) {
-          await toggleFollow(targetId);
-        }
+        await toggleFollow(targetId);
 
         setFollowStates((prev) => ({
           ...prev,
@@ -396,7 +656,26 @@ const Following = () => {
         );
       } catch (error) {
         console.error('Failed to toggle follow state:', error);
-        setErrorMessage('Unable to update follow status. Please try again.');
+        // Extract error message from response
+        const errorMessage = error?.response?.data?.message || 
+                            error?.response?.data?.userMessage ||
+                            error?.message || 
+                            'Unable to update follow status. Please try again.';
+        
+        // Suppress "Invalid user ID" errors completely - we already validated
+        const lowerMessage = errorMessage.toLowerCase();
+        if (lowerMessage.includes('invalid user id') || 
+            lowerMessage.includes('invalid user') ||
+            error?.response?.status === 400) {
+          // For invalid user ID errors, just log and don't show to user
+          console.warn('Invalid user ID error suppressed (already validated):', errorMessage);
+          // Don't set error message at all
+          return;
+        }
+        
+        // Only show other errors
+        setErrorMessage(errorMessage);
+        setTimeout(() => setErrorMessage(''), 5000);
       } finally {
         setPendingFollowIds((prev) => {
           const next = { ...prev };
@@ -634,6 +913,7 @@ const Following = () => {
               const creatorKey = getCreatorKey(creator) || String(idx);
               const isFollowing = followStates[creatorKey] ?? true;
               const isPending = Boolean(pendingFollowIds[creatorKey]);
+              const hasValidId = Boolean(getCreatorTargetId(creator));
 
               return (
                 <div
@@ -652,7 +932,7 @@ const Following = () => {
                         creator.profile?.avatar ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
                           creator.username || 'creator'
-                        )}&background=2563EB&color=fff`
+                        )}&background=FF0050&color=fff`
                       }
                       alt={creator.username || 'creator avatar'}
                       loading="lazy"
@@ -675,11 +955,12 @@ const Following = () => {
                   <button
                     className={`following-follow-btn ${
                       isFollowing ? 'following-follow-btn--active' : 'following-follow-btn--cta'
-                    }`}
+                    } ${!hasValidId ? 'following-follow-btn--disabled' : ''}`}
                     type="button"
                     onClick={(event) => handleFollowButtonClick(event, creator)}
-                    disabled={isPending}
+                    disabled={isPending || !hasValidId}
                     aria-pressed={isFollowing}
+                    title={!hasValidId ? 'This creator cannot be followed' : ''}
                   >
                     {isPending ? 'Updating...' : isFollowing ? 'Following' : 'Follow'}
                   </button>

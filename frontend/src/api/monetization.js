@@ -3,19 +3,20 @@ import api from '../config/axios';
 // ==================== BALANCE & EARNINGS ====================
 
 export const getCreatorBalance = async () => {
-  const response = await api.get('/api/monetization/balance');
+  const response = await api.get('/api/monetization/balance', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
 export const getEarnings = async (range = 'all') => {
   const response = await api.get('/api/monetization/earnings', {
     params: { range },
+    timeout: 20000 // 20 seconds
   });
   return response.data;
 };
 
 export const getTransactions = async (params = {}) => {
-  const response = await api.get('/api/monetization/transactions', { params });
+  const response = await api.get('/api/monetization/transactions', { params, timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
@@ -50,7 +51,7 @@ export const requestPayout = async (payload) => {
 // ==================== CREATOR FUND ====================
 
 export const getCreatorFundStatus = async () => {
-  const response = await api.get('/api/monetization/creator-fund');
+  const response = await api.get('/api/monetization/creator-fund', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
@@ -67,7 +68,7 @@ export const approveCreatorFund = async () => {
 // ==================== ADS REVENUE ====================
 
 export const getAdsStatus = async () => {
-  const response = await api.get('/api/monetization/ads');
+  const response = await api.get('/api/monetization/ads', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
@@ -89,7 +90,7 @@ export const simulateAds = async (impressions = 1000, clicks = 50) => {
 // ==================== SUBSCRIPTIONS ====================
 
 export const getSubscriptionsStatus = async () => {
-  const response = await api.get('/api/monetization/subscriptions');
+  const response = await api.get('/api/monetization/subscriptions', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
@@ -111,7 +112,7 @@ export const cancelSubscription = async (subscriptionId) => {
 // ==================== TIP JAR ====================
 
 export const getTipJar = async () => {
-  const response = await api.get('/api/monetization/tipjar');
+  const response = await api.get('/api/monetization/tipjar', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 

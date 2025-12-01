@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatorMonetization from './CreatorMonetization';
 import CreatorAnalytics from './CreatorAnalytics';
-import CreatorAcademy from './CreatorAcademy';
 import EffectsMarketplace from './EffectsMarketplace';
 import { getCreatorAnalytics, getCreatorAnalyticsSummary } from '../api/analytics';
 import './CreatorTools.css';
@@ -12,7 +11,6 @@ const CreatorTools = ({ onClose }) => {
   const [showMonetization, setShowMonetization] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
-  const [showAcademy, setShowAcademy] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState(null);
   const [overview, setOverview] = useState(null);
@@ -35,7 +33,13 @@ const CreatorTools = ({ onClose }) => {
       } catch (err) {
         console.error('Failed to load creator stats:', err);
         if (!active) return;
-        setStatsError(err?.response?.data?.message || 'Unable to load creator stats right now.');
+        
+        // Handle timeout errors gracefully - don't show error if it's a timeout
+        if (err?.code === 'ECONNABORTED' || err?.response?.status === 408 || err?.message?.includes('timeout')) {
+          setStatsError('Analytics data is taking longer than expected. Please try again.');
+        } else {
+          setStatsError(err?.response?.data?.message || 'Unable to load creator stats right now.');
+        }
       } finally {
         if (active) {
           setLoadingStats(false);
@@ -99,14 +103,6 @@ const CreatorTools = ({ onClose }) => {
       featured: true
     },
     {
-      id: 'academy',
-      title: 'Creator Academy',
-      description: 'Guided courses and masterclasses to sharpen your skills',
-      icon: 'fa-solid fa-graduation-cap',
-      color: 'gradient-secondary',
-      stats: `${Number(creatorStats.avgEngagementRate || 0).toFixed(1)}% avg engagement`,
-    },
-    {
       id: 'promote',
       title: 'Promote Videos',
       description: 'Boost your content reach with targeted promotion',
@@ -152,30 +148,26 @@ const CreatorTools = ({ onClose }) => {
     { id: 'upload', title: 'Upload Video', icon: 'fa-solid fa-plus', action: 'upload' },
     { id: 'schedule', title: 'Schedule Post', icon: 'fa-solid fa-calendar', action: 'schedule' },
     { id: 'drafts', title: 'View Drafts', icon: 'fa-solid fa-file-lines', action: 'drafts' },
-    { id: 'analytics', title: 'Quick Analytics', icon: 'fa-solid fa-chart-simple', action: 'analytics' },
-    { id: 'academy', title: 'Open Academy', icon: 'fa-solid fa-graduation-cap', action: 'academy' }
+    { id: 'analytics', title: 'Quick Analytics', icon: 'fa-solid fa-chart-simple', action: 'analytics' }
   ];
 
   const handleSectionClick = (sectionId) => {
     switch (sectionId) {
       case 'studio':
         onClose();
-        navigate('/more/studio');
-        break;
-      case 'academy':
-        setShowAcademy(true);
+        navigate('/more/studio', { state: { from: 'creator-tools' } });
         break;
       case 'promote':
         // Navigate to upload page with promote mode
         onClose();
-        navigate('/upload?mode=promote');
+        navigate('/upload?mode=promote', { state: { from: 'creator-tools' } });
         break;
       case 'insights':
         setShowAnalytics(true);
         break;
       case 'live':
         onClose();
-        navigate('/live');
+        navigate('/live', { state: { from: 'creator-tools' } });
         break;
       case 'fund':
         setShowMonetization(true);
@@ -192,23 +184,20 @@ const CreatorTools = ({ onClose }) => {
     switch (action) {
       case 'upload':
         onClose();
-        navigate('/upload');
+        navigate('/upload', { state: { from: 'creator-tools' } });
         break;
       case 'schedule':
         // Navigate to upload page with schedule mode
         onClose();
-        navigate('/upload?mode=schedule');
+        navigate('/upload?mode=schedule', { state: { from: 'creator-tools' } });
         break;
       case 'drafts':
         // Navigate to upload page with drafts view
         onClose();
-        navigate('/upload?view=drafts');
+        navigate('/upload?view=drafts', { state: { from: 'creator-tools' } });
         break;
       case 'analytics':
         setShowAnalytics(true);
-        break;
-      case 'academy':
-        setShowAcademy(true);
         break;
       default:
         break;
@@ -325,22 +314,33 @@ const CreatorTools = ({ onClose }) => {
 
       {/* Creator Monetization Modal */}
       {showMonetization && (
-        <CreatorMonetization onClose={() => setShowMonetization(false)} />
+        <CreatorMonetization 
+          onClose={() => {
+            setShowMonetization(false);
+            // Keep CreatorTools open when closing Monetization
+          }} 
+        />
       )}
 
       {/* Creator Analytics Modal */}
       {showAnalytics && (
-        <CreatorAnalytics onClose={() => setShowAnalytics(false)} />
+        <CreatorAnalytics 
+          onClose={() => {
+            setShowAnalytics(false);
+            // Keep CreatorTools open when closing Analytics
+          }} 
+        />
       )}
 
-      {/* Creator Academy Modal */}
-      {showAcademy && (
-        <CreatorAcademy onClose={() => setShowAcademy(false)} />
-      )}
 
       {/* Effects Marketplace Modal */}
       {showEffects && (
-        <EffectsMarketplace onClose={() => setShowEffects(false)} />
+        <EffectsMarketplace 
+          onClose={() => {
+            setShowEffects(false);
+            // Keep CreatorTools open when closing Effects
+          }} 
+        />
       )}
     </div>
   );

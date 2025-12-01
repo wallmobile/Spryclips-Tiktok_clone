@@ -43,19 +43,34 @@
   }
 }
 /* Remove hover effects from all close buttons across the website */
-button[class*="close"]:hover,
-button[class*="close-btn"]:hover,
-button[class*="modal-close"]:hover,
-[class*="-close-btn"]:hover,
-[class*="close-btn"]:hover,
-[class*="modal-close"]:hover,
-[class*="-close"]:hover {
+button[class*="close"]:hover:not(.balance-close-btn),
+button[class*="close-btn"]:hover:not(.balance-close-btn),
+button[class*="modal-close"]:hover:not(.balance-close-btn),
+[class*="-close-btn"]:hover:not(.balance-close-btn),
+[class*="close-btn"]:hover:not(.balance-close-btn),
+[class*="modal-close"]:hover:not(.balance-close-btn),
+[class*="-close"]:hover:not(.balance-close-btn) {
   transform: none !important;
   background: inherit !important;
   border-color: inherit !important;
   box-shadow: inherit !important;
   scale: 1 !important;
   opacity: inherit !important;
+}
+
+/* Specifically disable hover for balance close button - override everything */
+.balance-close-btn:hover,
+button.balance-close-btn:hover,
+.balance-close-btn:hover *,
+button[class*="close"].balance-close-btn:hover,
+button[class*="close-btn"].balance-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-50%) !important;
+  scale: 1 !important;
+  opacity: 1 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  color: #fff !important;
 }
 
 .app-content {
@@ -70,6 +85,24 @@ button[class*="modal-close"]:hover,
   flex: 1;
   position: relative;
   min-height: 0;
+}
+
+/* Only add minimal padding when navbar is visible (home page and NOT authenticated) */
+.app-content:has(.navbar) .app-outlet {
+  padding-top: 48.5px; /* Minimal space - just enough to clear navbar */
+}
+
+/* Remove all padding when navbar is not present (user is logged in) */
+.app-content:not(:has(.navbar)) .app-outlet,
+.user-authenticated .app-outlet {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Remove all spacing when user is authenticated */
+.user-authenticated .for-you-feed {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .feed-error {

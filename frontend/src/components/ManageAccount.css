@@ -304,6 +304,7 @@
   justify-content: center;
   z-index: 10010;
   padding: 20px;
+  pointer-events: auto !important;
 }
 
 .account-modal-content {
@@ -315,6 +316,9 @@
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(255, 0, 80, 0.3) !important; /* TikTok pink shadow */
   border: 1px solid rgba(255, 0, 80, 0.2) !important; /* TikTok pink border */
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10011;
 }
 
 .account-modal-content.large {
@@ -362,6 +366,9 @@
   padding: 24px;
   overflow-y: auto;
   max-height: calc(80vh - 80px);
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
 }
 
 /* Form Styles */
@@ -423,6 +430,9 @@
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
 }
 
 .cancel-btn {
@@ -433,8 +443,12 @@
   color: #0F172A;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.3s ease;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 11;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cancel-btn:hover {
@@ -450,8 +464,13 @@
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.3s ease;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 11;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .submit-btn:hover {
@@ -467,6 +486,55 @@
 .submit-btn.danger:hover {
   background: linear-gradient(135deg, #25F4EE 0%, #FE2C55 50%, #FF0050 100%) !important; /* TikTok gradient reversed */
   transform: translateY(-2px);
+}
+
+.submit-btn:disabled,
+.submit-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.delete-forever-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10;
+  position: relative;
+}
+
+.account-modal-header.danger {
+  background: linear-gradient(135deg, #DC2626 0%, #EF4444 50%, #F87171 100%) !important;
+}
+
+.warning-list {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 0, 80, 0.08);
+  border-radius: 8px;
+  border-left: 3px solid #FF0050;
+  pointer-events: none;
+  user-select: none;
+}
+
+.warning-item i {
+  color: #FF0050;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.warning-item span {
+  color: #0F172A;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .input-with-action {

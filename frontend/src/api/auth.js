@@ -34,9 +34,15 @@ export const forgotPassword = async (email) => {
   return response.data;
 };
 
-// Reset password
-export const resetPassword = async (token, newPassword) => {
-  const response = await api.post('/api/auth/reset-password', { token, newPassword });
+// Verify reset code (check if code is valid)
+export const verifyResetCode = async (code, email) => {
+  const response = await api.post('/api/auth/verify-reset-code', { code, email });
+  return response.data;
+};
+
+// Reset password (accepts code or token for backward compatibility)
+export const resetPassword = async (code, newPassword) => {
+  const response = await api.post('/api/auth/reset-password', { code, newPassword });
   return response.data;
 };
 
@@ -48,14 +54,35 @@ export const changePassword = async (currentPassword, newPassword) => {
 
 // ==================== EMAIL VERIFICATION ====================
 
-// Verify email
-export const verifyEmail = async (token) => {
-  const response = await api.post('/api/auth/verify-email', { token });
+// Verify email (accepts token for backward compatibility, or code + email)
+export const verifyEmail = async (token, code, email) => {
+  const payload = {};
+  if (code && email) {
+    payload.code = code;
+    payload.email = email;
+  } else if (token) {
+    payload.token = token;
+  } else {
+    throw new Error('Either token or code+email must be provided');
+  }
+  const response = await api.post('/api/auth/verify-email', payload);
   return response.data;
 };
 
 // Resend verification
 export const resendVerification = async () => {
   const response = await api.post('/api/auth/resend-verification');
+  return response.data;
+};
+
+// Send signup verification code (before account creation)
+export const sendSignupVerificationCode = async (email) => {
+  const response = await api.post('/api/auth/send-signup-verification', { email });
+  return response.data;
+};
+
+// Verify signup code (before account creation)
+export const verifySignupCode = async (email, code) => {
+  const response = await api.post('/api/auth/verify-signup-code', { email, code });
   return response.data;
 };

@@ -6,6 +6,7 @@ const authMiddleware = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // PUBLIC UPLOADS DIRECTORY - Production configuration
@@ -56,70 +57,191 @@ router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
       });
     }
 
+    // Validate file type
+    const fileType = type || (req.file.mimetype.startsWith('video/') ? 'video' : 'image');
+    if (!['image', 'video'].includes(fileType)) {
+      // Delete uploaded file if invalid
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file type. Only images and videos are allowed.',
+      });
+    }
+
+    // Generate media URL
     const mediaUrl = `${UPLOADS_BASE_URL}/stories/${req.file.filename}`;
-    const thumbnail = type === 'video' ? mediaUrl : mediaUrl;
+    const thumbnail = mediaUrl; // For now, use same URL for thumbnail
+
+    // Validate text length
+    if (text && text.length > 500) {
+      // Delete uploaded file if validation fails
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Text cannot exceed 500 characters',
+      });
+    }
 
     // Create story
     const story = new Story({
       user: userId,
-      type: type || (req.file.mimetype.startsWith('video/') ? 'video' : 'image'),
+      type: fileType,
       mediaUrl,
       thumbnail,
-      text: text || '',
+      text: (text || '').trim(),
       textColor: textColor || '#FFFFFF',
       textBackground: textBackground || 'transparent',
       music: music || null,
-      isPrivate: isPrivate || false,
+      isPrivate: isPrivate === 'true' || isPrivate === true,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
     });
 
     await story.save();
     await story.populate('user', 'username profile');
-    await story.populate('music');
+    
+    if (music) {
+      await story.populate('music');
+    }
 
+    console.log(`✅ Story created successfully: ${story._id} by user ${userId}`);
+    console.log(`📦 Story details:`, {
+      _id: story._id,
+      user: story.user,
+      type: story.type,
+      expiresAt: story.expiresAt,
+      mediaUrl: story.mediaUrl
+    });
+    
     res.status(201).json({
       success: true,
-      story,
+      story: {
+        _id: story._id,
+        id: story._id, // Also include as 'id' for compatibility
+        user: story.user,
+        type: story.type,
+        mediaUrl: story.mediaUrl,
+        thumbnail: story.thumbnail,
+        text: story.text,
+        expiresAt: story.expiresAt,
+        createdAt: story.createdAt
+      },
       message: 'Story created successfully',
     });
   } catch (error) {
-    console.error('Error creating story:', error);
-    res.status(500).json({
+    console.error('❌ Error creating story:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request file:', req.file ? {
+      filename: req.file.filename,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file');
+    
+    // Clean up uploaded file if story creation fails
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log('✅ Cleaned up uploaded file:', req.file.path);
+      } catch (unlinkError) {
+        console.error('⚠️ Error deleting uploaded file:', unlinkError);
+      }
+    }
+    
+    const errorMessage = error.message || 'Failed to create story';
+    const statusCode = error.statusCode || 500;
+    
+    res.status(statusCode).json({
       success: false,
-      message: 'Failed to create story',
-      error: error.message,
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 });
 
 // ==================== GET USER'S STORIES ====================
+// Optional auth - try to get user from token if available
 router.get('/user/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const currentUserId = req.user ? req.user._id : null;
+    
+    // Try to get current user from token (optional auth)
+    let currentUserId = null;
+    try {
+      // Try to extract token and verify
+      let token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+      if (token && process.env.JWT_SECRET) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && decoded.userId) {
+          const authUser = await User.findById(decoded.userId);
+          if (authUser) {
+            currentUserId = authUser._id.toString();
+          }
+        }
+      }
+    } catch (authError) {
+      // Auth is optional, continue without it
+      console.log('Optional auth failed (this is OK):', authError.message);
+    }
+    
+    // Normalize userId to string for comparison
+    const targetUserId = userId.toString();
+
+    console.log(`📚 GET /user/:userId - Request params:`, {
+      userId,
+      targetUserId,
+      currentUserId
+    });
 
     const user = await User.findById(userId);
 
     if (!user) {
+      console.log(`❌ User not found: ${userId}`);
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Get stories that haven't expired
-    const stories = await Story.find({
+    // Build query - user can always see their own stories
+    // Compare both as strings to handle ObjectId vs string comparison
+    const isOwnProfile = currentUserId && (
+      currentUserId.toString() === targetUserId || 
+      currentUserId.toString() === userId.toString()
+    );
+    
+    console.log(`📚 Fetching stories for user ${userId}`);
+    console.log(`   - Current User ID: ${currentUserId || 'Not authenticated'}`);
+    console.log(`   - Target User ID: ${targetUserId}`);
+    console.log(`   - Is Own Profile: ${isOwnProfile}`);
+    
+    const query = {
       user: userId,
       expiresAt: { $gt: new Date() },
-      $or: [
-        { isPrivate: false },
-        { isPrivate: true, allowedViewers: currentUserId },
-        { user: currentUserId }, // User can always see their own stories
-      ],
-    })
+    };
+
+    // If not own profile, only show public stories
+    if (!isOwnProfile) {
+      query.isPrivate = false;
+      console.log(`   - Query: Only public stories (not own profile)`);
+    } else {
+      console.log(`   - Query: All stories (own profile - including private)`);
+    }
+    
+    // Get stories that haven't expired
+    const stories = await Story.find(query)
       .populate('user', 'username profile')
       .populate('music')
       .sort({ createdAt: -1 });
+
+    console.log(`✅ Found ${stories.length} stories for user ${userId}`);
+    if (stories.length > 0) {
+      stories.forEach((story, index) => {
+        console.log(`   Story ${index + 1}: ${story._id}, type: ${story.type}, expiresAt: ${story.expiresAt}`);
+      });
+    }
 
     // Check if current user has viewed each story
     const storiesWithViewStatus = stories.map(story => {
@@ -430,8 +552,47 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
     }
 
     // Delete media file
-    if (story.mediaUrl && fs.existsSync('.' + story.mediaUrl)) {
-      fs.unlinkSync('.' + story.mediaUrl);
+    if (story.mediaUrl) {
+      try {
+        // Handle both absolute URLs and relative paths
+        let filePath = story.mediaUrl;
+        
+        // If it's a full URL, extract the path
+        if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+          // Extract path from URL like: http://localhost:5000/uploads/stories/filename
+          const urlParts = new URL(filePath);
+          filePath = urlParts.pathname; // This gives /uploads/stories/filename
+        }
+        
+        // Convert to filesystem path (remove leading /)
+        if (filePath.startsWith('/')) {
+          filePath = filePath.substring(1);
+        }
+        
+        // Construct full file path - try multiple possible locations
+        const possiblePaths = [
+          path.join(__dirname, '..', filePath),
+          path.join(UPLOADS_DIR, filePath.replace(/^uploads\//, '')),
+          path.join(storiesUploadDir, path.basename(filePath)),
+        ];
+        
+        let deleted = false;
+        for (const fullPath of possiblePaths) {
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+            console.log(`✅ Deleted story media file: ${fullPath}`);
+            deleted = true;
+            break;
+          }
+        }
+        
+        if (!deleted) {
+          console.warn(`⚠️ Story media file not found: ${story.mediaUrl}`);
+        }
+      } catch (fileError) {
+        console.error('⚠️ Error deleting story media file:', fileError.message);
+        // Continue with story deletion even if file deletion fails
+      }
     }
 
     await Story.findByIdAndDelete(storyId);
@@ -496,6 +657,67 @@ router.get('/:storyId', async (req, res) => {
     });
   }
 });
+
+// ==================== CLEANUP EXPIRED STORIES ====================
+// This function should be called periodically (e.g., every hour) to clean up expired stories
+const cleanupExpiredStories = async () => {
+  try {
+    const expiredStories = await Story.find({
+      expiresAt: { $lt: new Date() },
+    });
+
+    let deletedCount = 0;
+    for (const story of expiredStories) {
+      // Delete media file
+      if (story.mediaUrl) {
+        try {
+          let filePath = story.mediaUrl;
+          
+          if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+            const urlParts = new URL(filePath);
+            filePath = urlParts.pathname;
+          }
+          
+          if (filePath.startsWith('/')) {
+            filePath = filePath.substring(1);
+          }
+          
+          const possiblePaths = [
+            path.join(__dirname, '..', filePath),
+            path.join(UPLOADS_DIR, filePath.replace(/^uploads\//, '')),
+            path.join(storiesUploadDir, path.basename(filePath)),
+          ];
+          
+          for (const fullPath of possiblePaths) {
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+              break;
+            }
+          }
+        } catch (fileError) {
+          console.error('Error deleting expired story file:', fileError.message);
+        }
+      }
+      
+      // Delete story from database
+      await Story.findByIdAndDelete(story._id);
+      deletedCount++;
+    }
+
+    if (deletedCount > 0) {
+      console.log(`🧹 Cleaned up ${deletedCount} expired stories`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired stories:', error);
+  }
+};
+
+// Run cleanup every hour
+if (typeof setInterval !== 'undefined') {
+  setInterval(cleanupExpiredStories, 60 * 60 * 1000); // Every hour
+  // Run immediately on startup
+  cleanupExpiredStories();
+}
 
 module.exports = router;
 

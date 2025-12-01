@@ -181,32 +181,32 @@ const BusinessTools = ({ onClose }) => {
       case 'suite':
         // Navigate to business suite
         onClose();
-        navigate('/more/business-suite');
+        navigate('/more/business-suite', { state: { from: 'business-tools' } });
         break;
       case 'ads':
         // Navigate to ad manager
         onClose();
-        navigate('/more/ad-manager');
+        navigate('/more/ad-manager', { state: { from: 'business-tools' } });
         break;
       case 'biolink':
         // Navigate to Business Suite bio link tab
         onClose();
-        navigate('/more/business-suite?tab=biolink');
+        navigate('/more/business-suite?tab=biolink', { state: { from: 'business-tools' } });
         break;
       case 'promo':
         // Navigate to Business Suite promo codes tab
         onClose();
-        navigate('/more/business-suite?tab=promo');
+        navigate('/more/business-suite?tab=promo', { state: { from: 'business-tools' } });
         break;
       case 'partnerships':
         // Navigate to Business Suite partnerships tab
         onClose();
-        navigate('/more/business-suite?tab=partnerships');
+        navigate('/more/business-suite?tab=partnerships', { state: { from: 'business-tools' } });
         break;
       case 'analytics':
         // Navigate to Business Suite analytics tab
         onClose();
-        navigate('/more/business-suite?tab=analytics');
+        navigate('/more/business-suite?tab=analytics', { state: { from: 'business-tools' } });
         break;
       default:
         break;
@@ -218,22 +218,22 @@ const BusinessTools = ({ onClose }) => {
       case 'verification':
         // Navigate to Business Suite settings for verification
         onClose();
-        navigate('/more/business-suite?tab=settings');
+        navigate('/more/business-suite?tab=settings', { state: { from: 'business-tools' } });
         break;
       case 'catalog':
         // Navigate to Product Catalog page
         onClose();
-        navigate('/more/product-catalog');
+        navigate('/more/product-catalog', { state: { from: 'business-tools' } });
         break;
       case 'messaging':
         // Navigate to Business Messaging page
         onClose();
-        navigate('/more/business-messaging');
+        navigate('/more/business-messaging', { state: { from: 'business-tools' } });
         break;
       case 'insights':
         // Navigate to Audience Insights (analytics tab)
         onClose();
-        navigate('/more/business-suite?tab=analytics');
+        navigate('/more/business-suite?tab=analytics', { state: { from: 'business-tools' } });
         break;
       default:
         break;

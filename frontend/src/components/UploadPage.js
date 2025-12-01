@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { uploadVideo, promoteVideo } from '../api/videos';
 import { saveDraft, scheduleVideo } from '../api/drafts';
 import { searchSounds } from '../api/music';
@@ -14,6 +15,7 @@ const boolToString = (value) => (value ? 'true' : 'false');
 
 const UploadPage = ({ onClose }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const videoPlayerRef = useRef(null);
   const voiceoverInputRef = useRef(null);
@@ -46,6 +48,7 @@ const UploadPage = ({ onClose }) => {
   const [textOverlays, setTextOverlays] = useState([]);
   const [stickers, setStickers] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState('None');
+  const [selectedEffectId, setSelectedEffectId] = useState(null);
   const [selectedSpeed, setSelectedSpeed] = useState('1x');
   const [transitions, setTransitions] = useState([]);
   const [voiceover, setVoiceover] = useState(null);
@@ -95,6 +98,16 @@ const UploadPage = ({ onClose }) => {
   const speedOptions = ['0.5x', '0.75x', '1x', '1.25x', '1.5x', '2x'];
   const transitionOptions = ['Zoom', 'Fade', 'Slide', 'Blur', 'Shake', 'Pulse'];
   const selectedFilterStyle = filterPresets[selectedFilter] || 'none';
+
+  // Handle effect selection from EffectsLab
+  useEffect(() => {
+    if (location.state?.selectedEffect) {
+      setSelectedEffectId(location.state.selectedEffect);
+      // Show a message that effect is selected
+      setUploadSuccess(`Effect selected! It will be applied when you record your video.`);
+      setTimeout(() => setUploadSuccess(null), 3000);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (videoPlayerRef.current) {

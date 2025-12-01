@@ -455,7 +455,19 @@ const ActionBar: React.FC<ActionBarProps> = ({
         onError && onError('Link copied to clipboard!');
         break;
       case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(window.location.href)}`);
+        try {
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(window.location.href)}`;
+          // Use window.location for better mobile compatibility
+          window.location.href = whatsappUrl;
+        } catch (err) {
+          console.error('WhatsApp share error:', err);
+          // Fallback: copy to clipboard
+          navigator.clipboard.writeText(window.location.href).then(() => {
+            onError && onError('Link copied! Paste it in WhatsApp.');
+          }).catch(() => {
+            onError && onError('Failed to share. Please copy the link manually.');
+          });
+        }
         break;
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`);
