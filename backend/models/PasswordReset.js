@@ -12,6 +12,11 @@ const passwordResetSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  code: {
+    type: String,
+    required: false,
+    index: true
+  },
   expiresAt: {
     type: Date,
     required: true,
@@ -31,12 +36,18 @@ const passwordResetSchema = new mongoose.Schema({
 
 // Indexes
 passwordResetSchema.index({ token: 1 });
+passwordResetSchema.index({ code: 1 });
 passwordResetSchema.index({ user: 1 });
 passwordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Generate token
 passwordResetSchema.statics.generateToken = function() {
   return crypto.randomBytes(32).toString('hex');
+};
+
+// Generate 6-digit verification code
+passwordResetSchema.statics.generateCode = function() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 module.exports = mongoose.model('PasswordReset', passwordResetSchema);

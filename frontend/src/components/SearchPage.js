@@ -11,9 +11,11 @@ const SearchPage = ({ onClose }) => {
   const [showVideoFeed, setShowVideoFeed] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [playingStates, setPlayingStates] = useState({});
+  const [videoAspectRatios, setVideoAspectRatios] = useState({}); // Store aspect ratios for each video
   const searchInputRef = useRef(null);
   const videoFeedRef = useRef(null);
   const videoRefs = useRef({});
+  const containerRefs = useRef({}); // Store container refs for each video
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
@@ -85,6 +87,75 @@ const SearchPage = ({ onClose }) => {
       if (ref) ref.pause();
     });
   };
+
+  // Calculate and store video aspect ratio for each video
+  useEffect(() => {
+    if (!showVideoFeed || searchResults.videos.length === 0) return;
+    
+    const cleanupFunctions = [];
+
+    // Use setTimeout to ensure DOM elements are rendered
+    const timeoutId = setTimeout(() => {
+      searchResults.videos.forEach((video, index) => {
+        const videoElement = videoRefs.current[index];
+        const container = containerRefs.current[index];
+        if (!videoElement || !container) return;
+
+        const updateAspectRatio = () => {
+          if (videoElement.videoWidth && videoElement.videoHeight) {
+            const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+            
+            // Apply aspect ratio to container via CSS custom property
+            container.style.setProperty('--video-aspect-ratio', aspectRatio.toString());
+            container.style.setProperty('--video-width', `${videoElement.videoWidth}px`);
+            container.style.setProperty('--video-height', `${videoElement.videoHeight}px`);
+            
+            // Store aspect ratio in state
+            setVideoAspectRatios(prev => ({
+              ...prev,
+              [index]: aspectRatio
+            }));
+          }
+        };
+
+        const handleLoadedMetadata = () => {
+          updateAspectRatio();
+        };
+
+        const handleLoadedData = () => {
+          updateAspectRatio();
+        };
+
+        // Check if metadata is already loaded
+        if (videoElement.readyState >= 1) {
+          updateAspectRatio();
+        } else {
+          videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+          videoElement.addEventListener('loadeddata', handleLoadedData);
+          cleanupFunctions.push(() => {
+            videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            videoElement.removeEventListener('loadeddata', handleLoadedData);
+          });
+        }
+
+        // Also recalculate on window resize
+        const handleResize = () => {
+          updateAspectRatio();
+        };
+
+        window.addEventListener('resize', handleResize);
+        cleanupFunctions.push(() => {
+          window.removeEventListener('resize', handleResize);
+        });
+      });
+    }, 100); // Small delay to ensure DOM is ready
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      cleanupFunctions.forEach(cleanup => cleanup());
+    };
+  }, [searchResults.videos, showVideoFeed]);
 
   // Handle scroll to change current video
   const handleScroll = useCallback(() => {
@@ -347,17 +418,63 @@ const SearchPage = ({ onClose }) => {
               {searchResults.videos.map((video, index) => {
                 const videoSrc = video.url || video.videoUrl || video.playbackUrl;
                 const isActive = index === currentVideoIndex;
+                const aspectRatio = videoAspectRatios[index];
                 
                 return (
-                  <div key={video._id || video.id || index} className="search-video-feed-item">
+                  <div 
+                    key={video._id || video.id || index} 
+                    className="search-video-feed-item"
+                    ref={el => containerRefs.current[index] = el}
+                    style={{
+                      aspectRatio: aspectRatio ? aspectRatio.toString() : 'auto'
+                    }}
+                  >
                     <video
-                      ref={el => videoRefs.current[index] = el}
+                      ref={el => {
+                        if (el) {
+                          videoRefs.current[index] = el;
+                          // Calculate aspect ratio when video loads
+                          const updateAspectRatio = () => {
+                            if (el.videoWidth && el.videoHeight) {
+                              const aspectRatio = el.videoWidth / el.videoHeight;
+                              const container = containerRefs.current[index];
+                              if (container) {
+                                container.style.setProperty('--video-aspect-ratio', aspectRatio.toString());
+                                setVideoAspectRatios(prev => ({
+                                  ...prev,
+                                  [index]: aspectRatio
+                                }));
+                              }
+                            }
+                          };
+                          if (el.readyState >= 1) {
+                            updateAspectRatio();
+                          } else {
+                            el.addEventListener('loadedmetadata', updateAspectRatio);
+                            el.addEventListener('loadeddata', updateAspectRatio);
+                          }
+                        }
+                      }}
                       src={videoSrc}
                       poster={video.thumbnail}
                       playsInline
                       loop
                       muted={!isActive}
                       className="search-video-feed-player"
+                      onLoadedMetadata={(e) => {
+                        const videoEl = e.target;
+                        if (videoEl.videoWidth && videoEl.videoHeight) {
+                          const aspectRatio = videoEl.videoWidth / videoEl.videoHeight;
+                          const container = containerRefs.current[index];
+                          if (container) {
+                            container.style.setProperty('--video-aspect-ratio', aspectRatio.toString());
+                            setVideoAspectRatios(prev => ({
+                              ...prev,
+                              [index]: aspectRatio
+                            }));
+                          }
+                        }
+                      }}
                       onClick={(e) => {
                         // Toggle play/pause on click
                         if (e.target.paused) {

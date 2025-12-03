@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchEffectsToolbox } from '../api/more';
+import EffectsMarketplace from './EffectsMarketplace';
 import './MorePages.css';
 
 const EffectsLab = ({ onClose = () => {} }) => {
@@ -9,6 +10,7 @@ const EffectsLab = ({ onClose = () => {} }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [toolbox, setToolbox] = useState(null);
   const [activeDifficulty, setActiveDifficulty] = useState('all');
+  const [showEffectsMarketplace, setShowEffectsMarketplace] = useState(false);
 
   useEffect(() => {
     window.dispatchEvent(new Event('sidebar:close'));
@@ -56,7 +58,8 @@ const EffectsLab = ({ onClose = () => {} }) => {
 
   const handleClose = () => {
     onClose();
-    navigate('/profile');
+    // Navigate back to More page
+    navigate('/more');
   };
 
   const difficultyFilters = [
@@ -96,6 +99,15 @@ const EffectsLab = ({ onClose = () => {} }) => {
             )}
           </div>
           <div className="more-page__toolbar-actions">
+            <button
+              type="button"
+              className="more-page__button more-page__button--primary"
+              onClick={() => setShowEffectsMarketplace(true)}
+              style={{ marginRight: '1rem' }}
+            >
+              <i className="fa-solid fa-wand-magic-sparkles"></i>
+              Browse Effects
+            </button>
             <div className="more-page__tabs">
               {difficultyFilters.map((filter) => (
                 <button
@@ -157,10 +169,33 @@ const EffectsLab = ({ onClose = () => {} }) => {
           ) : (
             <>
               <div className="more-page__card">
-                <h2>Featured templates</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h2>Featured templates</h2>
+                  <button
+                    type="button"
+                    className="more-page__button more-page__button--ghost"
+                    onClick={() => setShowEffectsMarketplace(true)}
+                  >
+                    <i className="fa-solid fa-wand-magic-sparkles"></i>
+                    Browse All Effects
+                  </button>
+                </div>
                 <div className="more-page__cards-row">
                   {toolbox.templates?.map((template) => (
-                    <div key={template.id} className="more-page__list-item">
+                    <div 
+                      key={template.id} 
+                      className="more-page__list-item"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        // Navigate to upload page with effect selected
+                        navigate('/upload', { 
+                          state: { 
+                            selectedEffect: template.id,
+                            from: 'effects-lab'
+                          } 
+                        });
+                      }}
+                    >
                       <span className="more-page__badge">
                         <i className="fa-solid fa-sparkles"></i> {template.category}
                       </span>
@@ -174,6 +209,23 @@ const EffectsLab = ({ onClose = () => {} }) => {
                           <i className="fa-solid fa-layer-group"></i> {template.complexity}
                         </span>
                       </div>
+                      <button
+                        type="button"
+                        className="more-page__button more-page__button--primary"
+                        style={{ marginTop: '0.5rem', width: '100%' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/upload', { 
+                            state: { 
+                              selectedEffect: template.id,
+                              from: 'effects-lab'
+                            } 
+                          });
+                        }}
+                      >
+                        <i className="fa-solid fa-video"></i>
+                        Use This Effect
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -194,13 +246,6 @@ const EffectsLab = ({ onClose = () => {} }) => {
                         <p>
                           {tool.durationMinutes} min • {tool.difficulty}
                         </p>
-                        <button
-                          type="button"
-                          className="more-page__button more-page__button--primary"
-                          onClick={() => navigate('/creator-academy')}
-                        >
-                          Start lesson
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -222,6 +267,23 @@ const EffectsLab = ({ onClose = () => {} }) => {
           )}
         </main>
       </div>
+
+      {/* Effects Marketplace Modal */}
+      {showEffectsMarketplace && (
+        <EffectsMarketplace
+          onClose={() => setShowEffectsMarketplace(false)}
+          onSelectEffect={(effect) => {
+            // Navigate to upload page with selected effect
+            navigate('/upload', { 
+              state: { 
+                selectedEffect: effect.id,
+                from: 'effects-lab'
+              } 
+            });
+            setShowEffectsMarketplace(false);
+          }}
+        />
+      )}
     </div>
   );
 };

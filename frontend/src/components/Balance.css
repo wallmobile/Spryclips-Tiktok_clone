@@ -86,34 +86,59 @@
 }
 
 .balance-close-btn {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff !important; /* White icon for gradient background */
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  transition: none !important; /* No transition to prevent hover effects */
-  padding: 8px;
-  position: absolute;
-  left: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 11;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  transition: none !important;
+  padding: 8px !important;
+  position: absolute !important;
+  left: 24px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 11 !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }
 
-.balance-close-btn:hover {
-  background: rgba(255, 255, 255, 0.25) !important; /* Same as default */
-  border-color: rgba(255, 255, 255, 0.3) !important; /* Same as default */
-  transform: translateY(-50%) !important; /* Keep original transform */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Same as default */
-  scale: 1 !important; /* No scaling */
+.balance-close-btn:hover,
+.balance-close-btn:active,
+.balance-close-btn:focus,
+.balance-close-btn:hover *,
+.balance-close-btn:active *,
+.balance-close-btn:focus *,
+button.balance-close-btn:hover,
+button[class*="close"].balance-close-btn:hover,
+button[class*="close-btn"].balance-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-50%) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  scale: 1 !important;
+  outline: none !important;
+  opacity: 1 !important;
+  color: #fff !important;
+  cursor: pointer !important;
+}
+
+.balance-close-btn i,
+.balance-close-btn i:hover,
+.balance-close-btn i:active,
+.balance-close-btn:hover i,
+.balance-close-btn:active i {
+  color: #fff !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 .balance-header-placeholder {
@@ -1290,6 +1315,31 @@ body.dark-mode .balance-close-btn {
   background: rgba(255, 255, 255, 0.2) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
+}
+
+body.dark-mode .balance-close-btn:hover,
+body.dark-mode .balance-close-btn:active,
+body.dark-mode .balance-close-btn:focus,
+body.dark-mode .balance-close-btn:hover *,
+body.dark-mode .balance-close-btn:active *,
+body.dark-mode .balance-close-btn:focus * {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-50%) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  scale: 1 !important;
+  outline: none !important;
+  opacity: 1 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .balance-close-btn i,
+body.dark-mode .balance-close-btn i:hover,
+body.dark-mode .balance-close-btn i:active {
+  color: #fff !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 body.dark-mode .balance-content {

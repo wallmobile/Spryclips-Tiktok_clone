@@ -140,25 +140,58 @@ const EnhancedShare = ({ video, profile, type = 'video', onClose }) => {
   };
 
   const handleSocialShare = (platform) => {
-    const url = encodeURIComponent(qrCodeUrl);
-    const text = encodeURIComponent(
-      type === 'video' 
-        ? 'Check out this TikTok video!'
-        : `Follow @${profile?.username} on TikTok!`
-    );
+    try {
+      const url = encodeURIComponent(qrCodeUrl);
+      const text = encodeURIComponent(
+        type === 'video' 
+          ? 'Check out this TikTok video!'
+          : `Follow @${profile?.username} on TikTok!`
+      );
 
-    const shareUrls = {
-      whatsapp: `https://wa.me/?text=${text}%20${url}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-      instagram: `https://www.instagram.com/`, // Instagram doesn't support direct URL sharing
-      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
-      reddit: `https://reddit.com/submit?url=${url}&title=${text}`,
-      pinterest: `https://pinterest.com/pin/create/button/?url=${url}&description=${text}`
-    };
+      const shareUrls = {
+        whatsapp: `https://wa.me/?text=${text}%20${url}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+        twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+        instagram: `https://www.instagram.com/`, // Instagram doesn't support direct URL sharing
+        telegram: `https://t.me/share/url?url=${url}&text=${text}`,
+        reddit: `https://reddit.com/submit?url=${url}&title=${text}`,
+        pinterest: `https://pinterest.com/pin/create/button/?url=${url}&description=${text}`
+      };
 
-    if (shareUrls[platform]) {
-      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+      if (shareUrls[platform]) {
+        // Use window.location for WhatsApp and Telegram (better mobile compatibility)
+        if (platform === 'whatsapp' || platform === 'telegram') {
+          try {
+            window.location.href = shareUrls[platform];
+          } catch (err) {
+            // Fallback to window.open
+            const win = window.open(shareUrls[platform], '_blank', 'noopener,noreferrer');
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+              // Popup blocked, copy to clipboard as fallback
+              navigator.clipboard.writeText(qrCodeUrl).then(() => {
+                alert('Link copied to clipboard! You can paste it in ' + platform);
+              }).catch(() => {
+                alert('Please copy this link manually: ' + qrCodeUrl);
+              });
+            }
+          }
+        } else {
+          // For other platforms, use window.open
+          const win = window.open(shareUrls[platform], '_blank', 'noopener,noreferrer');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            // Popup blocked, try location.href
+            window.location.href = shareUrls[platform];
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(qrCodeUrl).then(() => {
+        alert('Link copied to clipboard! You can paste it manually.');
+      }).catch(() => {
+        alert('Failed to share. Please copy this link: ' + qrCodeUrl);
+      });
     }
   };
 

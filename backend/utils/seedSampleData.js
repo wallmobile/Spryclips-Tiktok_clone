@@ -104,23 +104,26 @@ const seedSampleData = async () => {
       return;
     }
 
-    // Delete ALL videos (they have broken local URLs) and seed fresh sample videos
-    const totalVideos = await Video.countDocuments().exec();
-    if (totalVideos > 0) {
-      console.info(`🧹 Removing ${totalVideos} videos with broken/local URLs...`);
-      await Video.deleteMany({}).exec();
-    }
-
-    console.info('🎬 Seeding sample videos for development...');
-    for (let index = 0; index < sampleData.length; index += 1) {
-      const entry = sampleData[index];
-      const user = await User.findOne({ username: entry.user.username }).exec();
-      if (user) {
-        await createSampleVideo(user, entry.video, index);
-        console.info(`   ✅ Created video: ${entry.video.description.substring(0, 30)}...`);
+    // Only delete and reseed if no working videos exist
+    if (!workingSampleVideo) {
+      // Delete ALL videos (they have broken local URLs) and seed fresh sample videos
+      const totalVideos = await Video.countDocuments().exec();
+      if (totalVideos > 0) {
+        console.info(`🧹 Removing ${totalVideos} videos with broken/local URLs...`);
+        await Video.deleteMany({}).exec();
       }
+
+      console.info('🎬 Seeding sample videos for development...');
+      for (let index = 0; index < sampleData.length; index += 1) {
+        const entry = sampleData[index];
+        const user = await User.findOne({ username: entry.user.username }).exec();
+        if (user) {
+          await createSampleVideo(user, entry.video, index);
+          console.info(`   ✅ Created video: ${entry.video.description.substring(0, 30)}...`);
+        }
+      }
+      console.info('✅ Sample videos ready with working external URLs!');
     }
-    console.info('✅ Sample videos ready with working external URLs!');
   } catch (error) {
     console.error('Failed to seed sample data:', error);
   }

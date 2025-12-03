@@ -5,7 +5,8 @@ import {
   Route,
   Routes,
   useLocation,
-  useNavigate
+  useNavigate,
+  useParams
 } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import './App.css';
@@ -26,8 +27,10 @@ const Sidebar = lazy(() => import('./components/Sidebar'));
 const SystemNotificationBanner = lazy(() => import('./components/SystemNotificationBanner'));
 const Explore = lazy(() => import('./components/Explore'));
 const Following = lazy(() => import('./components/Following'));
+// StoriesBar removed - Stories only show around profile picture
+const StoryViewer = lazy(() => import('./components/StoryViewer'));
+const StoryCreator = lazy(() => import('./components/StoryCreator'));
 const Live = lazy(() => import('./components/LIVE'));
-const LiveStreamWatch = lazy(() => import('./components/LiveStreamWatch'));
 const WatchLater = lazy(() => import('./components/WatchLater'));
 const PlaylistsManager = lazy(() => import('./components/PlaylistsManager'));
 const VideoQAInbox = lazy(() => import('./components/VideoQAInbox'));
@@ -48,7 +51,7 @@ const BusinessMessaging = lazy(() => import('./components/BusinessMessaging'));
 const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
 const NotificationSettings = lazy(() => import('./components/NotificationSettings'));
 const PrivacySettings = lazy(() => import('./components/PrivacySettings'));
-const AppSettings = lazy(() => import('./components/AppSettings'));
+const Balance = lazy(() => import('./components/Balance'));
 
 interface VideoUserProfile {
   avatar?: string;
@@ -189,9 +192,11 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const HomeFeed: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // Story viewer and creator removed from HomeFeed - only available from Profile
   const fallbackVideos = useMemo(
     () => sampleVideos.map((video) => normalizeVideoData(video as Record<string, unknown>, 'sample')),
     []
@@ -310,6 +315,8 @@ const HomeFeed: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  // Story handling removed - stories only accessible from Profile page
+
   if (error && feedItems.length === 0) {
     return (
       <div className="feed-error">
@@ -318,7 +325,12 @@ const HomeFeed: React.FC = () => {
     );
   }
 
-  return <ForYouFeed items={feedItems} />;
+  return (
+    <>
+      {/* StoriesBar removed - Stories only show around profile picture ring */}
+      <ForYouFeed items={feedItems} />
+    </>
+  );
 };
 
 const ExplorePage: React.FC = () => {
@@ -332,11 +344,17 @@ const FollowingPage: React.FC = () => {
 
 const LivePage: React.FC = () => {
   const navigate = useNavigate();
-  return <Live onClose={() => navigate('/')} />;
-};
-
-const LiveStreamWatchPage: React.FC = () => {
-  return <LiveStreamWatch />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools';
+  
+  return <Live onClose={() => {
+    if (fromCreatorTools) {
+      sessionStorage.setItem('openCreatorTools', 'true');
+      navigate('/profile', { replace: true, state: { openCreatorTools: true } });
+    } else {
+      navigate('/');
+    }
+  }} />;
 };
 
 const WatchLaterPage: React.FC = () => {
@@ -354,12 +372,35 @@ const VideoQAPage: React.FC = () => {
 
 const UploadPageRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <UploadPage onClose={() => navigate('/')} />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools' || 
+                           document.referrer.includes('profile') ||
+                           sessionStorage.getItem('fromCreatorTools') === 'true';
+  
+  // Store in sessionStorage when navigating from Creator Tools
+  React.useEffect(() => {
+    if (location.state?.from === 'creator-tools') {
+      sessionStorage.setItem('fromCreatorTools', 'true');
+    }
+  }, [location.state]);
+  
+  const handleClose = () => {
+    if (fromCreatorTools) {
+      sessionStorage.setItem('openCreatorTools', 'true');
+      navigate('/profile', { replace: true, state: { openCreatorTools: true } });
+    } else {
+      sessionStorage.removeItem('openCreatorTools');
+      navigate('/');
+    }
+  };
+  
+  return <UploadPage onClose={handleClose} />;
 };
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  return <Profile onClose={() => navigate('/')} />;
+  const { username } = useParams<{ username?: string }>();
+  return <Profile onClose={() => navigate('/')} username={username} />;
 };
 
 const MorePage: React.FC = () => {
@@ -369,12 +410,26 @@ const MorePage: React.FC = () => {
 
 const TikTokStudioPage: React.FC = () => {
   const navigate = useNavigate();
-  return <TikTokStudio onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools';
+  
+  return <TikTokStudio onClose={() => {
+    if (fromCreatorTools) {
+      navigate('/profile', { replace: true });
+    } else {
+      navigate('/profile');
+    }
+  }} />;
 };
 
 const EffectsLabPage: React.FC = () => {
   const navigate = useNavigate();
-  return <EffectsLab onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  
+  return <EffectsLab onClose={() => {
+    // Always navigate back to More page
+    navigate('/more', { replace: true });
+  }} />;
 };
 
 const SellerDashboardPage: React.FC = () => {
@@ -384,46 +439,96 @@ const SellerDashboardPage: React.FC = () => {
 
 const GrowthToolsPage: React.FC = () => {
   const navigate = useNavigate();
-  return <GrowthToolsHub onClose={() => navigate('/profile')} />;
+  return <GrowthToolsHub onClose={() => navigate('/more')} />;
 };
 
 const BusinessSuitePage: React.FC = () => {
   const navigate = useNavigate();
-  return <BusinessSuite onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
+  return <BusinessSuite onClose={() => {
+    if (fromBusinessTools) {
+      sessionStorage.setItem('openBusinessTools', 'true');
+      navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+    } else {
+      navigate('/profile');
+    }
+  }} />;
 };
 
 const AdManagerPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <AdManager onClose={() => navigate('/profile')} />
+      <AdManager onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const ProductCatalogPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <ProductCatalog onClose={() => navigate('/profile')} />
+      <ProductCatalog onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const BusinessMessagingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <BusinessMessaging onClose={() => navigate('/profile')} />
+      <BusinessMessaging onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const ActivityCenterPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPersonalTools = location.state?.from === 'personal-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <NotificationCenter onClose={() => navigate('/profile')} />
+      <NotificationCenter onClose={() => {
+        if (fromPersonalTools) {
+          sessionStorage.setItem('openPersonalTools', 'true');
+          navigate('/profile', { replace: true, state: { openPersonalTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
@@ -446,18 +551,18 @@ const PrivacySettingsPage: React.FC = () => {
   );
 };
 
-const AppSettingsPage: React.FC = () => {
+const BalancePage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <AppSettings onClose={() => navigate('/profile')} />
+      <Balance onClose={() => navigate(-1)} />
     </Suspense>
   );
 };
 
 const SupportCenterPage: React.FC = () => {
   const navigate = useNavigate();
-  return <SupportCenter onClose={() => navigate('/profile')} />;
+  return <SupportCenter onClose={() => navigate('/more')} />;
 };
 
 const GoogleAuthCallback = lazy(() => import('./components/GoogleAuthCallback'));
@@ -465,14 +570,33 @@ const GoogleAuthCallback = lazy(() => import('./components/GoogleAuthCallback'))
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const from = ((location.state as { from?: Location })?.from?.pathname) || '/';
+  const hasRedirectedRef = React.useRef(false);
+  const isInitialMountRef = React.useRef(true);
 
+  // Allow user to stay on login page even if authenticated - don't force redirect on refresh
+  // Only redirect if they explicitly navigate here while authenticated (not on initial mount/refresh)
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    // Skip redirect on initial mount (refresh case) - let user stay on page
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
-  }, [isAuthenticated, from, navigate]);
+
+    // Only redirect if user is authenticated AND not loading AND not on initial mount
+    if (!loading && isAuthenticated && !hasRedirectedRef.current && user) {
+      // Small delay to prevent race condition with state updates
+      const redirectTimer = setTimeout(() => {
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
+          navigate(from, { replace: true });
+        }
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isAuthenticated, loading, from, navigate, user]);
 
   const handleClose = () => {
     // If there's a previous page in history, go back, otherwise go to home
@@ -483,6 +607,7 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  // Always show login page - don't redirect automatically
   return (
     <div className="auth-page">
       <Suspense fallback={<LoadingSpinner />}>
@@ -498,19 +623,39 @@ const LoginPage: React.FC = () => {
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const from = ((location.state as { from?: Location })?.from?.pathname) || '/';
+  const hasRedirectedRef = React.useRef(false);
+  const isInitialMountRef = React.useRef(true);
 
+  // Allow user to stay on signup page even if authenticated - don't force redirect on refresh
+  // Only redirect if they explicitly navigate here while authenticated (not on initial mount/refresh)
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    // Skip redirect on initial mount (refresh case) - let user stay on page
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
-  }, [isAuthenticated, from, navigate]);
+
+    // Only redirect if user is authenticated AND not loading AND not on initial mount
+    if (!loading && isAuthenticated && !hasRedirectedRef.current && user) {
+      // Small delay to prevent race condition with state updates
+      const redirectTimer = setTimeout(() => {
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
+          navigate(from, { replace: true });
+        }
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isAuthenticated, loading, from, navigate, user]);
 
   const handleClose = () => {
     navigate(from, { replace: true });
   };
 
+  // Always show signup page - don't redirect automatically
   return (
     <div className="auth-page">
       <Suspense fallback={<LoadingSpinner />}>
@@ -525,15 +670,30 @@ const SignupPage: React.FC = () => {
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const showHomeChrome = location.pathname === '/';
+  // Only show navbar when on home page AND user is NOT authenticated
+  const showNavbar = showHomeChrome && !isAuthenticated;
+
+  // Add class to body when user is authenticated to remove navbar spacing
+  useEffect(() => {
+    if (isAuthenticated) {
+      document.body.classList.add('user-authenticated');
+    } else {
+      document.body.classList.remove('user-authenticated');
+    }
+    return () => {
+      document.body.classList.remove('user-authenticated');
+    };
+  }, [isAuthenticated]);
 
   return (
-    <div className="app">
+    <div className={`app ${isAuthenticated ? 'user-authenticated' : ''}`}>
       <Suspense fallback={<LoadingSpinner />}>
         <Sidebar />
       </Suspense>
-      <div className="app-content">
-        {showHomeChrome && (
+      <div className={`app-content ${isAuthenticated ? 'user-authenticated' : ''}`}>
+        {showNavbar && (
           <>
             <Suspense fallback={<div style={{ height: '60px' }}></div>}>
               <Navbar />
@@ -560,7 +720,6 @@ const AppRoutes: React.FC = () => (
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
       <Route path="live" element={<LivePage />} />
-      <Route path="live/watch/:roomId" element={<LiveStreamWatchPage />} />
       <Route path="more" element={<MorePage />} />
       
       {/* Protected Routes - Login Required */}
@@ -576,6 +735,8 @@ const AppRoutes: React.FC = () => (
       <Route path="more/shop" element={<ProtectedRoute><SellerDashboardPage /></ProtectedRoute>} />
       <Route path="more/growth-tools" element={<ProtectedRoute><GrowthToolsPage /></ProtectedRoute>} />
       <Route path="more/support" element={<ProtectedRoute><SupportCenterPage /></ProtectedRoute>} />
+      <Route path="balance" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
+      <Route path="wallet" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
     </Route>
     {/* Full Screen Routes - No Sidebar */}
     <Route path="/more/business-suite" element={
@@ -600,9 +761,6 @@ const AppRoutes: React.FC = () => (
     } />
     <Route path="/more/privacy-settings" element={
       <ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>
-    } />
-    <Route path="/more/app-settings" element={
-      <ProtectedRoute><AppSettingsPage /></ProtectedRoute>
     } />
     {/* Auth Routes */}
     <Route path="/login" element={<LoginPage />} />

@@ -209,6 +209,12 @@ const Search = ({ onClose }) => {
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
                 className="search-input"
               />
             </form>

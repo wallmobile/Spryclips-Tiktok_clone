@@ -1,8 +1,9 @@
 ﻿/* Volume Control - TikTok Style */
 .volume-control {
   position: absolute !important;
-  bottom: 120px !important; /* Bottom left like TikTok */
-  left: 16px !important;
+  top: 1rem !important; /* Top left - moved from bottom */
+  left: 1rem !important; /* 16px */
+  bottom: auto !important; /* Remove bottom positioning */
   z-index: 1001 !important;
   display: flex !important;
   align-items: center;
@@ -470,7 +471,7 @@
 @supports (padding: max(0px)) {
   .volume-control {
     left: max(16px, env(safe-area-inset-left));
-    top: max(12px, env(safe-area-inset-top));
+    top: max(16px, env(safe-area-inset-top)); /* Top left positioning */
   }
 }
 

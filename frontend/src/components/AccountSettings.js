@@ -1,36 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../config/axios';
 import PrivacySettings from './PrivacySettings';
 import Balance from './Balance';
 import CreatorTools from './CreatorTools';
 import BusinessTools from './BusinessTools';
 import PersonalTools from './PersonalTools';
 import NotificationSettings from './NotificationSettings';
+import AppSettings from './AppSettings';
 import ManageAccount from './ManageAccount';
 import MessageCenter from './MessageCenter';
+import StoryCreator from './StoryCreator';
+import StoryViewer from './StoryViewer';
+import { getUserStories } from '../api/stories';
 import './AccountSettings.css';
 
 const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, displayNamePreview, onSubFeatureToggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [showCreatorTools, setShowCreatorTools] = useState(false);
+  
+  // Auto-open Creator Tools if coming back from Upload/other pages
+  useEffect(() => {
+    const shouldOpenCreatorTools = location.state?.openCreatorTools || 
+                                   sessionStorage.getItem('openCreatorTools') === 'true';
+    if (shouldOpenCreatorTools) {
+      setShowCreatorTools(true);
+      sessionStorage.removeItem('openCreatorTools');
+      // Clear state to prevent reopening on next render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+  
+  // Auto-open Business Tools if coming back from sub-features
+  useEffect(() => {
+    const shouldOpenBusinessTools = location.state?.openBusinessTools || 
+                                   sessionStorage.getItem('openBusinessTools') === 'true';
+    if (shouldOpenBusinessTools) {
+      setShowBusinessTools(true);
+      sessionStorage.removeItem('openBusinessTools');
+      // Clear state to prevent reopening on next render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+  
+  // Auto-open Personal Tools if coming back from sub-features
+  useEffect(() => {
+    const shouldOpenPersonalTools = location.state?.openPersonalTools || 
+                                   sessionStorage.getItem('openPersonalTools') === 'true';
+    if (shouldOpenPersonalTools) {
+      setShowPersonalTools(true);
+      sessionStorage.removeItem('openPersonalTools');
+      // Clear state to prevent reopening on next render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+  
   const [showBusinessTools, setShowBusinessTools] = useState(false);
   const [showPersonalTools, setShowPersonalTools] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showAppSettings, setShowAppSettings] = useState(false);
   const [showManageAccount, setShowManageAccount] = useState(false);
   const [showMessageCenter, setShowMessageCenter] = useState(false);
+  const [showStoryCreator, setShowStoryCreator] = useState(false);
+  const [userStories, setUserStories] = useState([]);
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
+  const [loadingStories, setLoadingStories] = useState(false);
 
   // Check if any sub-feature is open
   const hasOpenSubFeature = showPrivacySettings || showBalance || showCreatorTools || 
     showBusinessTools || showPersonalTools || showNotificationSettings || 
-    showManageAccount || showMessageCenter || showDeleteConfirm;
+    showAppSettings || showManageAccount || 
+    showMessageCenter || showDeleteConfirm || showStoryCreator;
 
   // Notify parent component when sub-feature state changes
   useEffect(() => {
@@ -39,28 +85,59 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
     }
   }, [hasOpenSubFeature, onSubFeatureToggle]);
 
+  // Fetch user stories for story ring
+  useEffect(() => {
+    const fetchStories = async () => {
+      const userId = user?._id || user?.id;
+      if (!userId) return;
+
+      try {
+        setLoadingStories(true);
+        const response = await getUserStories(userId);
+        
+        // Filter expired stories (24-hour expiration)
+        const now = new Date();
+        const storiesArray = response?.stories || response?.data?.stories || [];
+        
+        const validStories = storiesArray.filter(story => {
+          if (!story || !story.expiresAt) return false;
+          const expiresAt = new Date(story.expiresAt);
+          return expiresAt > now;
+        });
+        
+        setUserStories(validStories);
+      } catch (error) {
+        console.error('Error fetching user stories in AccountSettings:', error);
+        setUserStories([]);
+      } finally {
+        setLoadingStories(false);
+      }
+    };
+
+    fetchStories();
+    
+    // Listen for story creation events
+    const handleStoryRefresh = () => {
+      fetchStories();
+      setTimeout(() => fetchStories(), 500);
+      setTimeout(() => fetchStories(), 1000);
+    };
+    window.addEventListener('stories:refresh', handleStoryRefresh);
+    
+    return () => {
+      window.removeEventListener('stories:refresh', handleStoryRefresh);
+    };
+  }, [user?._id || user?.id]);
+
 
   const handleDeleteAccount = () => {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = async () => {
-    try {
-      setDeleting(true);
-      const response = await api.delete('/api/users/delete');
-      if (response.data.message) {
-        // Account deleted successfully
-        setShowDeleteConfirm(false);
-        logout();
-        onClose();
-        // Navigate to home page
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('Failed to delete account:', error);
-      alert(error.response?.data?.message || 'Failed to delete account. Please try again.');
-      setDeleting(false);
-    }
+  const confirmDelete = () => {
+    // Here you would call an API to delete the account
+    logout();
+    onClose();
   };
 
   const settingsSections = [
@@ -75,6 +152,12 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
       title: 'Messages',
       icon: 'fa-solid fa-envelope',
       description: 'Send messages and chat'
+    },
+    {
+      id: 'story',
+      title: 'Create Story',
+      icon: 'fa-solid fa-circle-plus',
+      description: 'Share photos and videos that disappear in 24 hours'
     },
     {
       id: 'share',
@@ -162,11 +245,34 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
         {/* Profile Info */}
         <div className="settings-profile-info">
           <div className="settings-avatar">
-            <img
-              src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
-              alt={user?.username}
-              key={user?.profile?.avatar ? `${user.profile.avatar}-${Date.now()}` : user?.username}
-            />
+            {/* Story ring indicator - TikTok style colored ring around profile picture */}
+            {userStories && userStories.length > 0 ? (
+              <div 
+                className="settings-story-ring-wrapper"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (userStories.length > 0) {
+                    setShowStoryViewer(true);
+                  }
+                }}
+                title="View Story"
+              >
+                <div className="settings-story-ring">
+                  <img
+                    src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
+                    alt={user?.username}
+                    key={user?.profile?.avatar ? `${user.profile.avatar}-${Date.now()}` : user?.username}
+                    className="settings-avatar-with-ring"
+                  />
+                </div>
+              </div>
+            ) : (
+              <img
+                src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
+                alt={user?.username}
+                key={user?.profile?.avatar ? `${user.profile.avatar}-${Date.now()}` : user?.username}
+              />
+            )}
           </div>
           <div className="settings-user-info">
             <h3>{displayNamePreview || user?.profile?.displayName || user?.username}</h3>
@@ -185,7 +291,8 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                   onClose();
                   navigate('/more/privacy-settings');
                 } else if (section.id === 'balance') {
-                  setShowBalance(true);
+                  onClose();
+                  navigate('/balance', { state: { from: '/profile' } });
                 } else if (section.id === 'creator') {
                   setShowCreatorTools(true);
                 } else if (section.id === 'business') {
@@ -196,7 +303,7 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                   onClose();
                   navigate('/more/notification-settings');
                 } else if (section.id === 'app') {
-                  navigate('/more/app-settings');
+                  setShowAppSettings(true);
                 } else if (section.id === 'manage') {
                   setShowManageAccount(true);
                 } else if (section.id === 'delete') {
@@ -205,6 +312,8 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                   onOpenEditProfile();
                 } else if (section.id === 'message') {
                   setShowMessageCenter(true);
+                } else if (section.id === 'story') {
+                  setShowStoryCreator(true);
                 } else if (section.id === 'share') {
                   // Handle share functionality
                   if (navigator.share) {
@@ -265,12 +374,8 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                 <button className="cancel-delete-btn" onClick={() => setShowDeleteConfirm(false)}>
                   Cancel
                 </button>
-                <button 
-                  className="confirm-delete-btn" 
-                  onClick={confirmDelete}
-                  disabled={deleting}
-                >
-                  {deleting ? 'Deleting...' : 'Delete Forever'}
+                <button className="confirm-delete-btn" onClick={confirmDelete}>
+                  Delete Forever
                 </button>
               </div>
             </div>
@@ -283,7 +388,7 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
           <PrivacySettings onClose={() => setShowPrivacySettings(false)} />
         )}
 
-        {/* Balance Modal */}
+        {/* Balance Modal - kept for backward compatibility if opened as modal */}
         {showBalance && (
           <Balance onClose={() => setShowBalance(false)} />
         )}
@@ -309,6 +414,11 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
         )}
 
 
+        {/* App Settings Modal */}
+        {showAppSettings && (
+          <AppSettings onClose={() => setShowAppSettings(false)} />
+        )}
+
         {/* Manage Account Modal */}
         {showManageAccount && (
           <ManageAccount onClose={() => setShowManageAccount(false)} />
@@ -319,6 +429,30 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
           <MessageCenter onClose={() => setShowMessageCenter(false)} />
         )}
 
+        {/* Story Creator Modal */}
+        {showStoryCreator && (
+          <StoryCreator 
+            onClose={() => setShowStoryCreator(false)}
+            onStoryCreated={() => {
+              setShowStoryCreator(false);
+              // Refresh stories after creation
+              window.dispatchEvent(new Event('stories:refresh'));
+            }}
+          />
+        )}
+
+        {/* Story Viewer Modal - Render outside modal using portal */}
+        {showStoryViewer && userStories.length > 0 && ReactDOM.createPortal(
+          <StoryViewer
+            storiesByUser={[{
+              user: user,
+              stories: userStories
+            }]}
+            startIndex={0}
+            onClose={() => setShowStoryViewer(false)}
+          />,
+          document.body
+        )}
       </div>
     </div>
   );

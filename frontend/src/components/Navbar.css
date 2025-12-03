@@ -1,24 +1,24 @@
 ﻿.navbar {
   position: fixed !important;
-  top: 0.75rem !important;
-  right: 0.5rem !important;
-  width: auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
   height: auto !important;
-  max-width: 22rem !important; /* Limit width to prevent overlap */
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  justify-content: flex-start !important;
-  padding: 0 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0.75rem 1.5rem !important;
   gap: 1rem !important;
-  z-index: 10000 !important; /* High z-index but positioned above video area */
-  background: transparent !important;
-  border: none !important;
-  backdrop-filter: none;
-  box-shadow: none;
-  transition: right 0.3s ease;
+  z-index: 10000 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid rgba(255, 0, 80, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.3s ease;
   overflow: visible;
-  pointer-events: none; /* Allow clicks to pass through transparent areas */
+  pointer-events: auto !important;
 }
 
 .navbar > * {
@@ -27,11 +27,23 @@
 
 /* Mobile: Navbar full width - Moved to main media query below */
 
+.navbar-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 1.5rem;
+}
+
 .nav-left {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  min-width: 120px;
 }
 
 .navbar-search {
@@ -39,13 +51,15 @@
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  max-width: 28rem;
+  max-width: 500px;
   background: rgba(255, 255, 255, 1);
   border: 1.5px solid rgba(255, 0, 80, 0.12);
   border-radius: 999px;
   padding: 0.5rem 0.875rem;
   box-shadow: 0 1px 8px rgba(255, 0, 80, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  margin: 0;
 }
 
 .navbar-search:focus-within {
@@ -150,14 +164,25 @@ body.page-overlay-open .navbar {
   left: 0;
 }
 
-.nav-right {
+.nav-center {
+  flex: 1;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.nav-right {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
   width: auto;
   height: auto;
-  justify-content: flex-start;
+  justify-content: flex-end;
+  min-width: fit-content;
 }
 
 .nav-top-bar {
@@ -167,14 +192,13 @@ body.page-overlay-open .navbar {
   gap: 0.75rem;
   width: auto;
   min-width: fit-content;
-  max-width: 18rem !important; /* Limit width to prevent overlap */
-  background: #ffffff !important; /* White background like For You page */
-  border-radius: 20px;
-  padding: 0.5rem 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: transparent !important;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
   margin: 0;
   flex-wrap: nowrap;
-  justify-content: center;
+  justify-content: flex-end;
   position: relative;
   white-space: nowrap;
   pointer-events: auto;
@@ -525,16 +549,15 @@ body.dark-mode .nav-icon-btn--ghost {
 /* Desktop: > 1024px (64rem) - Ensure navbar is positioned correctly */
 @media (min-width: 64.0625rem) {
   .navbar {
-    top: 0.75rem !important;
-    right: 0.75rem !important;
-    left: auto !important;
-    bottom: auto !important;
-    width: auto !important;
-    max-width: none !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: auto !important;
-    padding: 0 !important;
-    flex-direction: column !important;
+    padding: 0.75rem 1.5rem !important;
+    flex-direction: row !important;
     box-sizing: border-box !important;
     overflow: visible !important;
   }

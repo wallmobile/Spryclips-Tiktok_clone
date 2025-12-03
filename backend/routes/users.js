@@ -1,9 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
 const User = require('../models/User');
 const Video = require('../models/Video');
 const Notification = require('../models/Notification');
+const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
 const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 
@@ -48,42 +52,6 @@ router.get('/qr-stats', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching QR stats:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch QR stats' });
-  }
-});
-
-// Get app settings (must be before /:id)
-router.get('/app-settings', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('appSettings preferredLanguage preferredRegion');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    
-    // Default app settings
-    const defaultSettings = {
-      darkMode: false,
-      dataSaver: false,
-      autoPlay: true,
-      notifications: true,
-      locationServices: false,
-      analytics: true
-    };
-    
-    // If user has saved settings, use them; otherwise use defaults
-    const hasSavedSettings = user.appSettings && Object.keys(user.appSettings).length > 0;
-    const finalSettings = hasSavedSettings ? user.appSettings : defaultSettings;
-    
-    console.log('Returning app settings:', finalSettings);
-    
-    res.json({
-      success: true,
-      appSettings: finalSettings,
-      preferredLanguage: user.preferredLanguage || 'English',
-      preferredRegion: user.preferredRegion || 'United States'
-    });
-  } catch (error) {
-    console.error('Error fetching app settings:', error);
-    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -270,197 +238,100 @@ router.delete('/block/:userId', authMiddleware, async (req, res) => {
   }
 });
 
-// Get linked accounts (must be before /:id)
-router.get('/linked-accounts', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('linkedAccounts');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Default platforms
-    const defaultPlatforms = [
-      { platform: 'Google', icon: 'fa-brands fa-google', connected: false },
-      { platform: 'Facebook', icon: 'fa-brands fa-facebook', connected: false },
-      { platform: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
-      { platform: 'Twitter', icon: 'fa-brands fa-twitter', connected: false },
-      { platform: 'Apple', icon: 'fa-brands fa-apple', connected: false }
-    ];
-    
-    // Merge with user's linked accounts
-    const linkedAccounts = defaultPlatforms.map(platform => {
-      const userLink = (user.linkedAccounts || []).find(acc => acc.platform === platform.platform);
-      if (userLink) {
-        return {
-          ...platform,
-          email: userLink.email,
-          username: userLink.username,
-          connected: userLink.connected,
-          connectedAt: userLink.connectedAt
-        };
-      }
-      return platform;
-    });
-    
-    res.json({ success: true, linkedAccounts });
-  } catch (error) {
-    console.error('Error fetching linked accounts:', error);
-    res.status(500).json({ message: error.message || 'Failed to fetch linked accounts' });
-  }
-});
-
-// Get account activity (must be before /:id)
-router.get('/account-activity', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('accountActivity');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Return last 20 activities
-    const activities = (user.accountActivity || []).slice(0, 20);
-    res.json({ success: true, activities });
-  } catch (error) {
-    console.error('Error fetching account activity:', error);
-    res.status(500).json({ message: error.message || 'Failed to fetch account activity' });
-  }
-});
-
-// Direct data download - returns JSON file with user data (must be before /:id)
-router.get('/download-data', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id)
-      .select('-password -emailVerificationToken -emailVerificationExpires')
-      .lean();
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Prepare user data for download
-    const userData = {
-      exportDate: new Date().toISOString(),
-      profile: {
-        username: user.username,
-        email: user.email,
-        displayName: user.profile?.displayName || '',
-        bio: user.profile?.bio || '',
-        avatar: user.profile?.avatar || '',
-        website: user.profile?.website || '',
-        isVerified: user.profile?.isVerified || false,
-        followers: user.profile?.followers || 0,
-        following: user.profile?.following || 0,
-        likes: user.profile?.likes || 0
-      },
-      accountInfo: {
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-        accountStatus: user.accountStatus,
-        authProvider: user.authProvider,
-        emailVerified: user.emailVerified
-      },
-      settings: {
-        appSettings: user.appSettings || {},
-        notificationSettings: user.notificationSettings || {},
-        privacySettings: user.privacy || {}
-      },
-      linkedAccounts: user.linkedAccounts || [],
-      activityHistory: (user.accountActivity || []).slice(0, 50)
-    };
-    
-    // Set headers for file download
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="my-data-${new Date().toISOString().split('T')[0]}.json"`);
-    
-    res.json(userData);
-  } catch (error) {
-    console.error('Error downloading user data:', error);
-    res.status(500).json({ message: error.message || 'Failed to download data' });
-  }
-});
-
-// Delete account permanently (must be before /:id)
-router.delete('/delete', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Delete all user-related data
-    // 1. Delete user's videos
-    const Video = require('../models/Video');
-    await Video.deleteMany({ user: user._id });
-    
-    // 2. Delete user's comments
-    const Comment = require('../models/Comment');
-    await Comment.deleteMany({ user: user._id });
-    
-    // 3. Remove user from other users' followers/following lists
-    await User.updateMany(
-      {},
-      { $pull: { 'profile.followers': user._id } }
-    );
-    await User.updateMany(
-      {},
-      { $pull: { 'profile.following': user._id } }
-    );
-    
-    // 4. Delete refresh tokens
-    const RefreshToken = require('../models/RefreshToken');
-    await RefreshToken.deleteMany({ user: user._id });
-    
-    // 5. Delete business profile if exists
-    const { BusinessProfile } = require('../models/Business');
-    await BusinessProfile.deleteOne({ user: user._id });
-    
-    // 6. Delete notifications related to this user
-    const Notification = require('../models/Notification');
-    await Notification.deleteMany({ 
-      $or: [
-        { userId: user._id },
-        { relatedUserId: user._id }
-      ]
-    });
-    
-    // 7. Delete user's likes on videos
-    await Video.updateMany(
-      { likes: user._id },
-      { $pull: { likes: user._id } }
-    );
-    
-    // 8. Finally, delete the user account
-    await User.findByIdAndDelete(user._id);
-    
-    res.json({ message: 'Account deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    res.status(500).json({ message: error.message || 'Failed to delete account' });
-  }
-});
-
 // ==================== DYNAMIC ROUTES ====================
 
 // Get user profile
 router.get('/:id', async (req, res) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
-    }
+    const { id } = req.params;
+    let user;
     
-    const user = await User.findById(req.params.id)
+    // Check if it's a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      user = await User.findById(id)
       .select('-password')
       .populate('videos')
       .populate('followedUsers', 'username profile')
       .populate('followers', 'username profile')
       .populate('profile.pinnedVideo');
+    } else {
+      // Try to find by username (remove @ if present)
+      const username = id.replace(/^@/, '').toLowerCase();
+      user = await User.findOne({ username: username })
+        .select('-password')
+        .populate('videos')
+        .populate('followedUsers', 'username profile')
+        .populate('followers', 'username profile')
+        .populate('profile.pinnedVideo');
+    }
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Check if current user is following this user (optional auth)
+    let isFollowing = false;
+    let isPending = false;
+    
+    try {
+      // Try to get current user from token (optional)
+      let token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+      if (token && process.env.JWT_SECRET) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && decoded.userId) {
+          // IMPORTANT: Don't populate followedUsers, get fresh data from database
+          const currentUser = await User.findById(decoded.userId).lean();
+          if (currentUser) {
+            const userIdStr = user._id.toString();
+            const currentUserIdStr = currentUser._id.toString();
+            
+            console.log('🔍 Checking follow status in GET /:id:', {
+              targetUserId: userIdStr,
+              currentUserId: currentUserIdStr,
+              followedUsersArray: (currentUser.followedUsers || []).map(id => id.toString()),
+              followedUsersType: typeof currentUser.followedUsers
+            });
+            
+            // Check if following - handle both ObjectId and string arrays
+            const followedUsersArray = currentUser.followedUsers || [];
+            isFollowing = followedUsersArray.some(
+              followedId => {
+                const followedIdStr = followedId?.toString() || followedId;
+                const match = followedIdStr === userIdStr;
+                if (match) {
+                  console.log('✅ Found match:', { followedIdStr, userIdStr });
+                }
+                return match;
+              }
+            );
+            
+            console.log('📊 Follow status result:', {
+              isFollowing,
+              targetUserId: userIdStr,
+              followedUsersCount: followedUsersArray.length
+            });
+            
+            // Check if pending (for private accounts)
+            if (!isFollowing && user.privacy?.accountType === 'private') {
+              const pendingRequest = user.followRequests.find(
+                req => req.user.toString() === currentUserIdStr && req.status === 'pending'
+              );
+              isPending = !!pendingRequest;
+            }
+          }
+        }
+      }
+    } catch (authError) {
+      // Not authenticated or token invalid - that's OK, isFollowing will remain false
+      console.log('Optional auth check failed (this is OK):', authError.message);
+    }
+
+    // Convert to object and add isFollowing field
+    const userObject = user.toObject();
+    userObject.isFollowing = isFollowing;
+    userObject.isPending = isPending;
+
+    res.json({ user: userObject, isFollowing, isPending });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -525,6 +396,27 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Get app settings
+router.get('/app-settings', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('appSettings preferredLanguage preferredRegion');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ 
+      success: true,
+      appSettings: user.appSettings || {},
+      preferredLanguage: user.preferredLanguage || 'English',
+      preferredRegion: user.preferredRegion || 'United States'
+    });
+  } catch (error) {
+    console.error('Error fetching app settings:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch app settings' });
+  }
+});
+
 // Update app settings
 router.put('/app-settings', authMiddleware, async (req, res) => {
   try {
@@ -532,7 +424,7 @@ router.put('/app-settings', authMiddleware, async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (appSettings) {
@@ -549,6 +441,7 @@ router.put('/app-settings', authMiddleware, async (req, res) => {
 
     await user.save();
     res.json({ 
+      success: true,
       message: 'App settings updated', 
       appSettings: user.appSettings,
       preferredLanguage: user.preferredLanguage,
@@ -556,7 +449,7 @@ router.put('/app-settings', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating app settings:', error);
-    res.status(500).json({ message: error.message || 'Failed to update app settings' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to update app settings' });
   }
 });
 
@@ -589,21 +482,18 @@ router.put('/change-password', authMiddleware, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     
-    // Log activity
-    if (!user.accountActivity) {
-      user.accountActivity = [];
+    // Add to password history (optional, for security)
+    if (!user.passwordHistory) {
+      user.passwordHistory = [];
     }
-    user.accountActivity.unshift({
-      action: 'Password Changed',
-      device: req.get('user-agent') || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
+    user.passwordHistory.push({
+      password: user.password,
+      changedAt: new Date()
     });
     
     await user.save();
 
-    res.json({ message: 'Password changed successfully' });
+    res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ message: error.message || 'Failed to change password' });
@@ -637,19 +527,6 @@ router.put('/change-email', authMiddleware, async (req, res) => {
     // Update email (will require verification)
     user.email = newEmail.toLowerCase();
     user.emailVerified = false;
-    
-    // Log activity
-    if (!user.accountActivity) {
-      user.accountActivity = [];
-    }
-    user.accountActivity.unshift({
-      action: 'Email Changed',
-      device: req.get('user-agent') || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
-    });
-    
     await user.save();
 
     // In production, send verification email here
@@ -673,19 +550,6 @@ router.put('/change-phone', authMiddleware, async (req, res) => {
     // In production, verify the code here
     // For now, just update the phone
     user.phone = newPhone;
-    
-    // Log activity
-    if (!user.accountActivity) {
-      user.accountActivity = [];
-    }
-    user.accountActivity.unshift({
-      action: 'Phone Number Changed',
-      device: req.get('user-agent') || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
-    });
-    
     await user.save();
 
     res.json({ message: 'Phone number updated successfully' });
@@ -721,39 +585,92 @@ router.post('/request-verification', authMiddleware, async (req, res) => {
     res.status(500).json({ message: error.message || 'Failed to request verification' });
   }
 });
-// Deactivate account
-router.post('/deactivate', authMiddleware, async (req, res) => {
+
+// Request data download
+router.post('/request-data-download', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Update account status
+    // In production, queue data export job here
+    res.json({ message: 'Data download request submitted. You will receive an email within 24 hours.' });
+  } catch (error) {
+    console.error('Error requesting data download:', error);
+    res.status(500).json({ message: error.message || 'Failed to request data download' });
+  }
+});
+
+// Deactivate account
+router.post('/deactivate', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     user.accountStatus = 'suspended';
-    
-    // Add deactivated timestamp (if field exists in schema)
-    if (user.deactivatedAt !== undefined) {
-      user.deactivatedAt = new Date();
-    }
-    
-    // Log activity
-    if (!user.accountActivity) {
-      user.accountActivity = [];
-    }
-    user.accountActivity.unshift({
-      action: 'Account Deactivated',
-      device: req.get('user-agent') || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
-    });
-    
     await user.save();
-    res.json({ message: 'Account deactivated successfully. You can reactivate by logging in within 30 days.' });
+    res.json({ success: true, message: 'Account deactivated successfully' });
   } catch (error) {
     console.error('Error deactivating account:', error);
-    res.status(500).json({ message: error.message || 'Failed to deactivate account' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to deactivate account' });
+  }
+});
+
+// Delete account permanently
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const userId = user._id;
+
+    // Delete all user's videos
+    const videos = await Video.find({ user: userId });
+    for (const video of videos) {
+      // Delete video file if exists
+      if (video.videoUrl && fs.existsSync('.' + video.videoUrl)) {
+        try {
+          fs.unlinkSync('.' + video.videoUrl);
+        } catch (err) {
+          console.error('Error deleting video file:', err);
+        }
+      }
+      // Delete thumbnail if exists
+      if (video.thumbnailUrl && fs.existsSync('.' + video.thumbnailUrl)) {
+        try {
+          fs.unlinkSync('.' + video.thumbnailUrl);
+        } catch (err) {
+          console.error('Error deleting thumbnail file:', err);
+        }
+      }
+    }
+    await Video.deleteMany({ user: userId });
+
+    // Remove user from followers/following lists
+    await User.updateMany(
+      { $or: [{ followers: userId }, { followedUsers: userId }] },
+      { $pull: { followers: userId, followedUsers: userId } }
+    );
+
+    // Delete user's notifications
+    await Notification.deleteMany({ user: userId });
+
+    // Delete user's conversations and messages
+    const conversations = await Conversation.find({ participants: userId });
+    const conversationIds = conversations.map(c => c._id);
+    await Message.deleteMany({ conversation: { $in: conversationIds } });
+    await Conversation.deleteMany({ participants: userId });
+
+    // Finally delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to delete account' });
   }
 });
 
@@ -765,69 +682,13 @@ router.post('/unlink-account', authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Remove the linked account
-    user.linkedAccounts = user.linkedAccounts.filter(acc => acc.platform !== platform);
-    
-    // Log this activity
-    user.accountActivity.unshift({
-      action: `${platform} Account Unlinked`,
-      device: req.headers['user-agent'] || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
-    });
-    
-    await user.save();
+    // In production, unlink the social account here
     res.json({ message: `${platform} account unlinked successfully` });
   } catch (error) {
     console.error('Error unlinking account:', error);
     res.status(500).json({ message: error.message || 'Failed to unlink account' });
   }
 });
-
-// Link social account
-router.post('/link-account', authMiddleware, async (req, res) => {
-  try {
-    const { platform, email, username, providerId } = req.body;
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Check if already linked
-    const existingLink = user.linkedAccounts.find(acc => acc.platform === platform);
-    if (existingLink) {
-      return res.status(400).json({ message: `${platform} account already linked` });
-    }
-    
-    // Add linked account
-    user.linkedAccounts.push({
-      platform,
-      email,
-      username,
-      providerId,
-      connected: true,
-      connectedAt: new Date()
-    });
-    
-    // Log this activity
-    user.accountActivity.unshift({
-      action: `${platform} Account Linked`,
-      device: req.headers['user-agent'] || 'Unknown Device',
-      location: 'Unknown Location',
-      ip: req.ip,
-      status: 'success'
-    });
-    
-    await user.save();
-    res.json({ message: `${platform} account linked successfully`, linkedAccount: user.linkedAccounts.find(acc => acc.platform === platform) });
-  } catch (error) {
-    console.error('Error linking account:', error);
-    res.status(500).json({ message: error.message || 'Failed to link account' });
-  }
-});
-
 
 // Update notification settings
 router.put('/notifications', authMiddleware, async (req, res) => {
@@ -873,11 +734,28 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
   try {
     const userId = req.params.id;
     
+    console.log('📥 Follow request received:', {
+      userId,
+      userIdType: typeof userId,
+      currentUserId: req.user._id.toString()
+    });
+    
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      console.error('❌ Invalid user ID:', userId);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid user ID',
+        userId: userId 
+      });
     }
+    
     const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+      console.error('❌ Current user not found:', req.user._id);
+      return res.status(404).json({ message: 'Current user not found' });
+    }
+    
     const targetUser = await User.findById(userId);
 
     if (!targetUser) {
@@ -911,20 +789,60 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
       }
     }
 
-    const isFollowing = currentUser.followedUsers.includes(userId);
+    // Check if following - convert all to strings for comparison
+    const userIdStr = userId.toString();
+    const currentUserIdStr = req.user._id.toString();
+    
+    const isFollowing = currentUser.followedUsers.some(
+      id => id.toString() === userIdStr
+    );
+
+    console.log('Follow/Unfollow Check:', {
+      userId: userIdStr,
+      currentUserId: currentUserIdStr,
+      isFollowing,
+      followedUsers: currentUser.followedUsers.map(id => id.toString()),
+      followers: targetUser.followers.map(id => id.toString())
+    });
 
     if (isFollowing) {
       // Unfollow
-      currentUser.followedUsers = currentUser.followedUsers.filter(id => id.toString() !== userId);
-      targetUser.followers = targetUser.followers.filter(id => id.toString() !== req.user._id.toString());
-      targetUser.profile.followers--;
-      currentUser.profile.following--;
+      currentUser.followedUsers = currentUser.followedUsers.filter(
+        id => id.toString() !== userIdStr
+      );
+      targetUser.followers = targetUser.followers.filter(
+        id => id.toString() !== currentUserIdStr
+      );
+      if (targetUser.profile.followers > 0) {
+        targetUser.profile.followers--;
+      }
+      if (currentUser.profile.following > 0) {
+        currentUser.profile.following--;
+      }
+      console.log('✅ Unfollowed:', {
+        newFollowedUsers: currentUser.followedUsers.map(id => id.toString()),
+        newFollowers: targetUser.followers.map(id => id.toString()),
+        targetFollowers: targetUser.profile.followers,
+        currentFollowing: currentUser.profile.following
+      });
     } else {
       // Follow
-      currentUser.followedUsers.push(userId);
-      targetUser.followers.push(req.user._id);
+      // Check if already in array to avoid duplicates
+      if (!currentUser.followedUsers.some(id => id.toString() === userIdStr)) {
+        currentUser.followedUsers.push(userId);
+      }
+      if (!targetUser.followers.some(id => id.toString() === currentUserIdStr)) {
+        targetUser.followers.push(req.user._id);
+      }
       targetUser.profile.followers++;
       currentUser.profile.following++;
+      
+      console.log('✅ Followed:', {
+        newFollowedUsers: currentUser.followedUsers.map(id => id.toString()),
+        newFollowers: targetUser.followers.map(id => id.toString()),
+        targetFollowers: targetUser.profile.followers,
+        currentFollowing: currentUser.profile.following
+      });
       
       // Create notification for new follower
       await createNotification({
@@ -940,9 +858,39 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
     await currentUser.save();
     await targetUser.save();
 
-    res.json({ isFollowing: !isFollowing, isPending: false });
+    // IMPORTANT: Refetch from database to ensure we have the latest data
+    const refreshedCurrentUser = await User.findById(req.user._id).lean();
+    const refreshedTargetUser = await User.findById(userId).lean();
+    
+    // Double check the actual state after save using fresh data
+    const verifyFollowing = (refreshedCurrentUser?.followedUsers || []).some(
+      id => {
+        const idStr = id?.toString() || id;
+        return idStr === userIdStr;
+      }
+    );
+
+    console.log('✅ Final state after save and refresh:', {
+      verifyFollowing,
+      followedUsersInDB: (refreshedCurrentUser?.followedUsers || []).map(id => (id?.toString() || id)),
+      targetUserId: userIdStr,
+      response: { isFollowing: verifyFollowing, isPending: false }
+    });
+
+    res.json({ 
+      success: true,
+      isFollowing: verifyFollowing, 
+      isPending: false,
+      message: verifyFollowing ? 'User followed successfully' : 'User unfollowed successfully'
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Follow/Unfollow error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      success: false,
+      message: error.message || 'Failed to follow/unfollow user',
+      error: error.toString()
+    });
   }
 });
 
@@ -1052,6 +1000,43 @@ router.post('/pin-video/:videoId', authMiddleware, async (req, res) => {
 });
 
 // Get follow requests (for private accounts)
+// Get following users list
+router.get('/following', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('followedUsers', 'username profile.avatar profile.displayName profile.followers profile.bio');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Filter out any null/undefined followedUsers (in case of deleted users)
+    const validFollowedUsers = (user.followedUsers || []).filter(fu => fu && fu._id);
+    
+    const following = validFollowedUsers.map(followedUser => ({
+      _id: followedUser._id,
+      id: followedUser._id.toString(),
+      username: followedUser.username,
+      profile: {
+        avatar: followedUser.profile?.avatar,
+        displayName: followedUser.profile?.displayName || followedUser.username,
+        followers: followedUser.profile?.followers || 0,
+        bio: followedUser.profile?.bio || '',
+        isVerified: followedUser.profile?.isVerified || false
+      },
+      isFollowing: true
+    }));
+
+    res.json({ 
+      success: true, 
+      following: following,
+      count: following.length
+    });
+  } catch (error) {
+    console.error('Error fetching following users:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch following users' });
+  }
+});
+
 router.get('/follow-requests', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
@@ -1180,6 +1165,111 @@ router.post('/profile-view/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error tracking profile view:', error);
     res.status(500).json({ success: false, message: 'Failed to track profile view' });
+  }
+});
+
+// Get linked accounts
+router.get('/linked-accounts', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('authProvider providerId');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const linkedAccounts = [
+      { platform: 'Google', icon: 'fa-brands fa-google', connected: user.authProvider === 'google' },
+      { platform: 'Facebook', icon: 'fa-brands fa-facebook', connected: user.authProvider === 'facebook' },
+      { platform: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
+      { platform: 'Twitter', icon: 'fa-brands fa-twitter', connected: false },
+      { platform: 'Apple', icon: 'fa-brands fa-apple', connected: false }
+    ];
+
+    res.json({ success: true, linkedAccounts });
+  } catch (error) {
+    console.error('Error fetching linked accounts:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch linked accounts' });
+  }
+});
+
+// Link account
+router.post('/link-account', authMiddleware, async (req, res) => {
+  try {
+    const { platform } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // In production, this would handle OAuth flow
+    // For now, just return success
+    res.json({ success: true, message: `${platform} account linked successfully` });
+  } catch (error) {
+    console.error('Error linking account:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to link account' });
+  }
+});
+
+// Unlink account
+router.post('/unlink-account', authMiddleware, async (req, res) => {
+  try {
+    const { platform } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Can't unlink if it's the only auth method
+    if (user.authProvider === platform && !user.password) {
+      return res.status(400).json({ success: false, message: 'Cannot unlink your only authentication method' });
+    }
+
+    // In production, this would handle OAuth unlinking
+    res.json({ success: true, message: `${platform} account unlinked successfully` });
+  } catch (error) {
+    console.error('Error unlinking account:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to unlink account' });
+  }
+});
+
+// Get account activity
+router.get('/account-activity', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('lastLogin createdAt');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate activity log from user data
+    const activities = [
+      {
+        id: '1',
+        type: 'account_created',
+        description: 'Account created',
+        time: user.createdAt,
+        ip: 'N/A',
+        device: 'N/A'
+      }
+    ];
+
+    if (user.lastLogin) {
+      activities.push({
+        id: '2',
+        type: 'login',
+        description: 'Last login',
+        time: user.lastLogin,
+        ip: 'N/A',
+        device: 'N/A'
+      });
+    }
+
+    res.json({ success: true, activities });
+  } catch (error) {
+    console.error('Error fetching account activity:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch account activity' });
   }
 });
 

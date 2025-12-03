@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
 import './WatchLater.css';
+import './Profile.css'; // Import for video modal styles
 import { useLibraryStore, toLibraryVideo } from '../store/libraryStore';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -28,6 +29,7 @@ const WatchLater = () => {
   const [removingIds, setRemovingIds] = useState({});
   const [isClearing, setIsClearing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
     hydrate();
@@ -82,15 +84,9 @@ const WatchLater = () => {
         })
         .filter(Boolean);
 
-      // Merge API data with store data (prioritize API data, but keep store entries that aren't in API)
-      const currentStore = useLibraryStore.getState().watchLater || [];
-      const apiVideoIds = new Set(normalized.map(entry => entry.video._id));
-      const storeOnlyEntries = currentStore.filter(entry => !apiVideoIds.has(entry.video._id));
-      
-      // Combine API data with store-only entries (API data first, then store-only)
-      const merged = [...normalized, ...storeOnlyEntries];
-      
-      setWatchLater(merged);
+      // Only use API data - no store merge to ensure only real saved videos are shown
+      // This ensures Watch Later only shows videos the user actually saved to the database
+      setWatchLater(normalized);
       setErrorMessage('');
       setLastSyncedAt(new Date().toISOString());
     } catch (error) {
@@ -214,45 +210,10 @@ const WatchLater = () => {
       if (!entry?.video) {
         return;
       }
-      const video = entry.video;
-      const videoId = video._id;
-      const rawPlaybackUrl = video.url || video.videoUrl || video.playbackUrl || '';
-      const playbackUrl = ensureAbsoluteUrl(rawPlaybackUrl);
-
-      if (!playbackUrl) {
-        setPlayerError('We cannot play this video right now.');
-        return;
-      }
-
-      if (activeVideoId === videoId) {
-        resetPlayerState();
-        return;
-      }
-
-      const rawDuration = parseDuration(video.duration) ?? parseDuration(video.rawDuration);
-
-      setActiveVideoId(videoId);
-      setActivePlayback({
-        duration: Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0,
-        currentTime: 0
-      });
-      setPlayerError('');
-      
-      // Try to play video after a short delay to ensure it's mounted
-      setTimeout(() => {
-        const videoEl = videoRefs.current[videoId];
-        if (videoEl) {
-          const playPromise = videoEl.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((error) => {
-              console.warn('Video autoplay failed on click:', error);
-              // Autoplay failed, user can click play button
-            });
-          }
-        }
-      }, 100);
+      // Open video in modal instead of playing inline
+      setSelectedVideo(entry.video);
     },
-    [activeVideoId, parseDuration, resetPlayerState, ensureAbsoluteUrl]
+    []
   );
 
   const handleRemove = useCallback(
@@ -621,7 +582,107 @@ const WatchLater = () => {
     </div>
   );
 
-  return <div className="watchlater-page">{content}</div>;
+  // Video Modal Component (similar to Profile.js)
+  const renderVideoModal = () => {
+    if (!selectedVideo) return null;
+    
+    // Get the best available video URL
+    let videoSrc = null;
+    
+    // Priority 1: Check processedVideos array
+    if (selectedVideo.processedVideos && Array.isArray(selectedVideo.processedVideos) && selectedVideo.processedVideos.length > 0) {
+      const processedVideo = selectedVideo.processedVideos.find(pv => pv.url && !pv.url.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i));
+      if (processedVideo && processedVideo.url) {
+        videoSrc = processedVideo.url;
+      }
+    }
+    
+    // Priority 2: Check url field
+    if (!videoSrc && selectedVideo.url) {
+      videoSrc = selectedVideo.url;
+    }
+    
+    // Priority 3: Check videoUrl or playbackUrl field
+    if (!videoSrc && (selectedVideo.videoUrl || selectedVideo.playbackUrl)) {
+      videoSrc = selectedVideo.videoUrl || selectedVideo.playbackUrl;
+    }
+    
+    // Ensure absolute URL and verify it's a video file
+    let finalVideoSrc = null;
+    if (videoSrc) {
+      const resolved = ensureAbsoluteUrl(videoSrc);
+      // Only use if it's not an image file
+      if (resolved && !resolved.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+        finalVideoSrc = resolved;
+      }
+    }
+    
+    return (
+      <div className="video-viewer-modal" onClick={() => setSelectedVideo(null)}>
+        <div className="video-viewer-content" onClick={(e) => e.stopPropagation()}>
+          <button className="video-viewer-close" onClick={() => setSelectedVideo(null)}>
+            <i className="fa-solid fa-times"></i>
+          </button>
+          <div className="video-viewer-container">
+            {!finalVideoSrc || finalVideoSrc.trim() === '' ? (
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                color: '#fff',
+                textAlign: 'center',
+                padding: '2rem'
+              }}>
+                <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.7 }}></i>
+                <p>Video playback URL not available</p>
+                <p style={{ fontSize: '0.9rem', opacity: 0.7, marginTop: '0.5rem' }}>This video cannot be played right now.</p>
+              </div>
+            ) : (
+              <video
+                src={finalVideoSrc}
+                controls
+                autoPlay
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  backgroundColor: '#000'
+                }}
+                onError={(e) => {
+                  console.error('Video playback error:', e);
+                  e.currentTarget.style.display = 'none';
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+          </div>
+          <div className="video-viewer-info">
+            <div className="video-viewer-user">
+              <img
+                src={selectedVideo.user?.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedVideo.user?.username || 'User')}&background=FF0050&color=fff`}
+                alt={selectedVideo.user?.username || 'User'}
+                className="video-viewer-avatar"
+              />
+              <div>
+                <h3>@{selectedVideo.user?.username || 'user'}</h3>
+                <p>{selectedVideo.description || 'No description'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="watchlater-page">
+      {content}
+      {renderVideoModal()}
+    </div>
+  );
 };
 
 export default WatchLater;

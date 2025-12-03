@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  emailVerificationCode: {
+    type: String,
+    default: null,
+    index: true
+  },
   emailVerificationExpires: {
     type: Date,
     default: null
@@ -52,22 +57,6 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'suspended', 'banned'],
     default: 'active'
   },
-  linkedAccounts: [{
-    platform: { type: String, required: true },
-    email: { type: String },
-    username: { type: String },
-    providerId: { type: String },
-    connected: { type: Boolean, default: true },
-    connectedAt: { type: Date, default: Date.now }
-  }],
-  accountActivity: [{
-    action: { type: String, required: true },
-    device: { type: String, default: 'Unknown Device' },
-    location: { type: String, default: 'Unknown Location' },
-    ip: { type: String },
-    time: { type: Date, default: Date.now },
-    status: { type: String, enum: ['success', 'blocked', 'failed'], default: 'success' }
-  }],
   failedLoginAttempts: {
     type: Number,
     default: 0

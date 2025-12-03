@@ -122,37 +122,48 @@ const useSocialAuth = ({ onSuccess, onError } = {}) => {
 
   const startGoogleLogin = useCallback(() => {
     if (!googleClientId) {
-      onError?.('Google login is not configured. Please add REACT_APP_GOOGLE_CLIENT_ID to environment variables.');
+      const errorMsg = 'Google login is not configured. Please add REACT_APP_GOOGLE_CLIENT_ID to your .env file. See SETUP_SOCIAL_LOGIN.md for instructions.';
+      console.error(errorMsg);
+      onError?.(errorMsg);
       return Promise.resolve();
     }
 
-    // Use redirect flow to open Google login page directly
-    const redirectUri = `${window.location.origin}/auth/google/callback`;
-    const scope = 'openid email profile';
-    const responseType = 'token';
-    const state = Math.random().toString(36).substring(7); // Random state for security
-    
-    // Store state in sessionStorage for verification
-    sessionStorage.setItem('google_oauth_state', state);
-    
-    // Build Google OAuth URL
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${encodeURIComponent(googleClientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=${responseType}` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}` +
-      `&prompt=select_account`;
-    
-    // Open Google login page in same window
-    window.location.href = googleAuthUrl;
-    
-    return Promise.resolve();
+    try {
+      // Use redirect flow to open Google login page directly
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const scope = 'openid email profile';
+      const responseType = 'token';
+      const state = Math.random().toString(36).substring(7); // Random state for security
+      
+      // Store state in sessionStorage for verification
+      sessionStorage.setItem('google_oauth_state', state);
+      
+      // Build Google OAuth URL
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(googleClientId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=${responseType}` +
+        `&scope=${encodeURIComponent(scope)}` +
+        `&state=${encodeURIComponent(state)}` +
+        `&prompt=select_account`;
+      
+      console.log('Redirecting to Google login...');
+      // Open Google login page in same window
+      window.location.href = googleAuthUrl;
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Google login error:', error);
+      onError?.('Failed to start Google login. Please try again.');
+      return Promise.reject(error);
+    }
   }, [googleClientId, onError]);
 
   const startFacebookLogin = useCallback(() => {
     if (!facebookAppId) {
-      onError?.('Facebook login is not configured. Please add REACT_APP_FACEBOOK_APP_ID to environment variables.');
+      const errorMsg = 'Facebook login is not configured. Please add REACT_APP_FACEBOOK_APP_ID to your .env file. See SETUP_SOCIAL_LOGIN.md for instructions.';
+      console.error(errorMsg);
+      onError?.(errorMsg);
       return Promise.resolve();
     }
 
@@ -164,28 +175,42 @@ const useSocialAuth = ({ onSuccess, onError } = {}) => {
       }
     }
 
-    return new Promise((resolve) => {
-      window.FB.login(
-        async (response) => {
-          if (!response?.authResponse?.accessToken) {
-            if (response.status === 'not_authorized' || response.status === 'unknown') {
-              onError?.('Facebook sign-in was cancelled or not authorized.');
-            } else {
-              onError?.('Facebook sign-in was cancelled.');
+    return new Promise((resolve, reject) => {
+      try {
+        window.FB.login(
+          async (response) => {
+            try {
+              if (!response?.authResponse?.accessToken) {
+                if (response.status === 'not_authorized' || response.status === 'unknown') {
+                  onError?.('Facebook sign-in was cancelled or not authorized.');
+                } else {
+                  onError?.('Facebook sign-in was cancelled.');
+                }
+                resolve();
+                return;
+              }
+              console.log('Facebook login successful, verifying with backend...');
+              const result = await socialLogin('facebook', { accessToken: response.authResponse.accessToken });
+              if (result.success) {
+                console.log('Facebook login complete!');
+                onSuccess?.('facebook');
+              } else {
+                onError?.(result.message || 'Facebook login failed. Please try again.');
+              }
+              resolve();
+            } catch (err) {
+              console.error('Facebook login callback error:', err);
+              onError?.(err?.message || 'Facebook login failed. Please try again.');
+              resolve();
             }
-            resolve();
-            return;
-          }
-          const result = await socialLogin('facebook', { accessToken: response.authResponse.accessToken });
-          if (result.success) {
-            onSuccess?.('facebook');
-          } else {
-            onError?.(result.message);
-          }
-          resolve();
-        },
-        { scope: 'email,public_profile' }
-      );
+          },
+          { scope: 'email,public_profile' }
+        );
+      } catch (error) {
+        console.error('Facebook login error:', error);
+        onError?.('Failed to start Facebook login. Please try again.');
+        reject(error);
+      }
     });
   }, [facebookAppId, onError, onSuccess, socialLogin]);
 

@@ -99,7 +99,8 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
 
   const handleClose = () => {
     onClose();
-    navigate('/profile');
+    // Navigate back to More page
+    navigate('/more');
   };
 
   const setSection = (section) => {
@@ -236,47 +237,246 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
     }
 
     if (activeSection === 'analytics') {
+      const { analytics } = growthData;
       return (
-        <div className="more-page__grid more-page__grid--three">
-          {analyticsCards.map((card) => (
-            <div key={card.id} className="more-page__card">
-              <h2>{card.title}</h2>
-              <p>{card.content}</p>
-              <p className="more-page__stat-label">{card.footer}</p>
+        <>
+          <div className="more-page__grid more-page__grid--three">
+            {analyticsCards.map((card) => (
+              <div key={card.id} className="more-page__card">
+                <h2>{card.title}</h2>
+                <p>{card.content}</p>
+                <p className="more-page__stat-label">{card.footer}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Additional Analytics Cards */}
+          <div className="more-page__grid more-page__grid--two" style={{ marginTop: '1.5rem' }}>
+            <div className="more-page__card">
+              <h2>Total Performance</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Total Views</span>
+                  <strong style={{ fontSize: '1.25rem', color: '#FF0050' }}>
+                    {analytics?.totalViews?.toLocaleString() || '0'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Total Likes</span>
+                  <strong style={{ fontSize: '1.25rem', color: '#FF0050' }}>
+                    {analytics?.totalLikes?.toLocaleString() || '0'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Total Comments</span>
+                  <strong style={{ fontSize: '1.25rem', color: '#FF0050' }}>
+                    {analytics?.totalComments?.toLocaleString() || '0'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Total Shares</span>
+                  <strong style={{ fontSize: '1.25rem', color: '#FF0050' }}>
+                    {analytics?.totalShares?.toLocaleString() || '0'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                  <span>Videos Published</span>
+                  <strong style={{ fontSize: '1.25rem', color: '#FF0050' }}>
+                    {analytics?.videoCount || '0'}
+                  </strong>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+
+            <div className="more-page__card">
+              <h2>Top Performing Videos</h2>
+              {analytics?.topVideos && analytics.topVideos.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {analytics.topVideos.slice(0, 5).map((video, index) => (
+                    <div key={video.id} style={{ padding: '0.75rem', background: 'rgba(255, 0, 80, 0.05)', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                        <strong style={{ fontSize: '0.9rem' }}>#{index + 1} {video.title}</strong>
+                        <span style={{ fontSize: '0.85rem', color: '#666' }}>{video.engagementRate}% engagement</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#666' }}>
+                        <span>👁️ {video.views.toLocaleString()}</span>
+                        <span>❤️ {video.likes.toLocaleString()}</span>
+                        <span>💬 {video.comments.toLocaleString()}</span>
+                        <span>📤 {video.shares.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ marginTop: '1rem', color: '#666' }}>No videos yet. Start creating to see your top performers!</p>
+              )}
+            </div>
+          </div>
+        </>
       );
     }
 
     if (activeSection === 'insights') {
+      const insights = growthData.insights || [];
+      const audienceData = growthData.audienceInsights || {
+        topCountries: [],
+        ageGroups: [],
+        activeHours: [],
+        contentPreferences: []
+      };
+
       return (
-        <div className="more-page__list">
-          {growthData.insights?.map((item) => (
-            <div key={item.id} className="more-page__list-item">
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+        <>
+          {/* Audience Insights Cards */}
+          <div className="more-page__grid more-page__grid--two" style={{ marginBottom: '1.5rem' }}>
+            <div className="more-page__card">
+              <h2>🌍 Top Countries</h2>
+              {audienceData.topCountries && audienceData.topCountries.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {audienceData.topCountries.map((country, index) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{country.flag} {country.country}</span>
+                      <strong style={{ color: '#FF0050' }}>{country.percentage}%</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ marginTop: '1rem', color: '#666' }}>No audience data available yet.</p>
+              )}
             </div>
-          ))}
-        </div>
+
+            <div className="more-page__card">
+              <h2>👥 Age Groups</h2>
+              {audienceData.ageGroups && audienceData.ageGroups.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {audienceData.ageGroups.map((age, index) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{age.range} years</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '60%' }}>
+                        <div style={{ flex: 1, height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${age.percentage}%`, height: '100%', background: '#FF0050', borderRadius: '4px' }}></div>
+                        </div>
+                        <strong style={{ color: '#FF0050', minWidth: '40px', textAlign: 'right' }}>{age.percentage}%</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ marginTop: '1rem', color: '#666' }}>No age data available yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="more-page__grid more-page__grid--two" style={{ marginBottom: '1.5rem' }}>
+            <div className="more-page__card">
+              <h2>⏰ Active Hours</h2>
+              {audienceData.activeHours && audienceData.activeHours.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {audienceData.activeHours.map((hour, index) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{hour.label}</strong>
+                        <span style={{ fontSize: '0.85rem', color: '#666', marginLeft: '0.5rem' }}>{hour.hour}</span>
+                      </div>
+                      <strong style={{ color: '#FF0050' }}>{hour.percentage}%</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ marginTop: '1rem', color: '#666' }}>No active time data available yet.</p>
+              )}
+            </div>
+
+            <div className="more-page__card">
+              <h2>🎯 Content Preferences</h2>
+              {audienceData.contentPreferences && audienceData.contentPreferences.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {audienceData.contentPreferences.map((pref, index) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{pref.type}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '60%' }}>
+                        <div style={{ flex: 1, height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${pref.percentage}%`, height: '100%', background: '#FF0050', borderRadius: '4px' }}></div>
+                        </div>
+                        <strong style={{ color: '#FF0050', minWidth: '40px', textAlign: 'right' }}>{pref.percentage}%</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ marginTop: '1rem', color: '#666' }}>No preference data available yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Insights List */}
+          <div className="more-page__card">
+            <h2>💡 Key Insights</h2>
+            <div className="more-page__list" style={{ marginTop: '1rem' }}>
+              {insights.map((item) => (
+                <div key={item.id} className="more-page__list-item">
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       );
     }
 
     if (activeSection === 'suggestions') {
+      const suggestions = growthData.suggestions || [];
+      const priorityColors = {
+        high: '#FF0050',
+        medium: '#FF6B9D',
+        low: '#FFB3D1'
+      };
+
       return (
         <div className="more-page__list">
-          {growthData.suggestions?.map((suggestion) => (
-            <div key={suggestion.id} className="more-page__list-item">
-              <h3>{suggestion.title}</h3>
-              <p>{suggestion.description}</p>
-              <button
-                type="button"
-                className="more-page__button more-page__button--primary"
-                onClick={() => navigate('/creator-academy')}
-              >
-                <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                View playbook
-              </button>
+          {suggestions.map((suggestion) => (
+            <div key={suggestion.id} className="more-page__list-item" style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'start', gap: '1rem' }}>
+                <div style={{ 
+                  minWidth: '4px', 
+                  width: '4px', 
+                  height: '100%', 
+                  background: priorityColors[suggestion.priority] || '#FF0050',
+                  borderRadius: '2px',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0
+                }}></div>
+                <div style={{ flex: 1, marginLeft: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <h3 style={{ margin: 0 }}>{suggestion.title}</h3>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      padding: '0.25rem 0.5rem', 
+                      background: priorityColors[suggestion.priority] || '#FF0050',
+                      color: 'white',
+                      borderRadius: '12px',
+                      textTransform: 'uppercase',
+                      fontWeight: '600'
+                    }}>
+                      {suggestion.priority}
+                    </span>
+                    {suggestion.category && (
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        padding: '0.25rem 0.5rem', 
+                        background: 'rgba(0,0,0,0.05)',
+                        borderRadius: '12px',
+                        color: '#666'
+                      }}>
+                        {suggestion.category}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>{suggestion.description}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>

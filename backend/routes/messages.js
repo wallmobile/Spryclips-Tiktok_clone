@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
@@ -71,7 +72,6 @@ router.post('/conversations', authMiddleware, async (req, res) => {
     }
 
     // Check if userId is a valid ObjectId, if not try to find user by username
-    const mongoose = require('mongoose');
     let targetUserId = userId;
     
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -496,4 +496,3 @@ router.put('/conversations/:conversationId/archive', authMiddleware, async (req,
 });
 
 module.exports = router;
-

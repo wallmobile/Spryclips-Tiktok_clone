@@ -1,0 +1,232 @@
+.stories-bar {
+  width: 100%;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 0.75rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.stories-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.stories-bar__container {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1rem;
+  min-width: max-content;
+}
+
+.stories-bar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  min-width: 70px;
+  transition: transform 0.2s ease;
+}
+
+.stories-bar__item:hover {
+  transform: scale(1.05);
+}
+
+.stories-bar__item--unviewed .stories-bar__avatar-wrapper {
+  border: 2px solid #FF0050;
+}
+
+.stories-bar__item--own .stories-bar__avatar-wrapper {
+  border: 2px solid #999;
+}
+
+.stories-bar__item--own:hover {
+  transform: scale(1.05);
+}
+
+.stories-bar__avatar-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stories-bar__item--unviewed .stories-bar__avatar-wrapper {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+}
+
+.stories-bar__avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  padding: 2px;
+}
+
+.stories-bar__unviewed-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: #FF0050;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.stories-bar__username {
+  font-size: 0.75rem;
+  color: #333;
+  text-align: center;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.stories-bar__count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #FF0050;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.35rem;
+  border-radius: 10px;
+  border: 2px solid #fff;
+}
+
+.stories-bar__item--create .stories-bar__avatar-wrapper {
+  background: #f0f0f0;
+  border: 2px dashed #ccc;
+}
+
+.stories-bar__avatar-wrapper--create {
+  position: relative;
+}
+
+.stories-bar__create-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: #FF0050;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.stories-bar__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.stories-bar__empty-message {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  color: #999;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Tablet Responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .stories-bar {
+    padding: 0.65rem 0;
+  }
+
+  .stories-bar__container {
+    gap: 0.875rem;
+    padding: 0 1.25rem;
+  }
+
+  .stories-bar__item {
+    min-width: 65px;
+  }
+
+  .stories-bar__avatar-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .stories-bar__username {
+    font-size: 0.725rem;
+    max-width: 65px;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .stories-bar {
+    padding: 0.5rem 0;
+  }
+
+  .stories-bar__container {
+    gap: 0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  .stories-bar__item {
+    min-width: 60px;
+  }
+
+  .stories-bar__avatar-wrapper {
+    width: 56px;
+    height: 56px;
+  }
+
+  .stories-bar__username {
+    font-size: 0.7rem;
+    max-width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stories-bar__container {
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .stories-bar__item {
+    min-width: 55px;
+  }
+
+  .stories-bar__avatar-wrapper {
+    width: 50px;
+    height: 50px;
+  }
+
+  .stories-bar__username {
+    font-size: 0.65rem;
+    max-width: 55px;
+  }
+}
+

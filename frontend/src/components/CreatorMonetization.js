@@ -115,26 +115,35 @@ const CreatorMonetization = ({ onClose }) => {
       setLoading(true);
       setError(null);
       try {
-        const [balanceRes, earningsRes, transactionsRes] = await Promise.all([
-          getCreatorBalance().catch((err) => {
-            console.error('Balance fetch failed', err);
-            return null;
-          }),
-          getEarnings('30d').catch((err) => {
-            console.error('Earnings fetch failed', err);
-            return null;
-          }),
-          getTransactions({ limit: 50 }).catch((err) => {
-            console.error('Transactions fetch failed', err);
-            return null;
-          }),
+        // Make all API calls in parallel for faster loading
+        const [
+          balanceRes,
+          earningsRes,
+          transactionsRes,
+          partnershipsRes,
+          statsRes,
+          fundRes,
+          adsRes,
+          subscriptionsRes,
+          tipJarRes
+        ] = await Promise.allSettled([
+          getCreatorBalance(),
+          getEarnings('30d'),
+          getTransactions({ limit: 50 }),
+          getPartnerships(),
+          getPartnershipStats(),
+          getCreatorFundStatus(),
+          getAdsStatus(),
+          getSubscriptionsStatus(),
+          getTipJar()
         ]);
 
         if (cancelled) return;
 
-        const balance = balanceRes?.balance || {};
-        const earnings = earningsRes?.earnings || {};
-        const transactions = transactionsRes?.transactions || [];
+        // Process balance, earnings, transactions
+        const balance = balanceRes.status === 'fulfilled' ? (balanceRes.value?.balance || {}) : {};
+        const earnings = earningsRes.status === 'fulfilled' ? (earningsRes.value?.earnings || {}) : {};
+        const transactions = transactionsRes.status === 'fulfilled' ? (transactionsRes.value?.transactions || []) : [];
 
         const earningsThisMonth = (earnings.transactions || [])
           .filter((tx) => tx.createdAt && isWithinDays(tx.createdAt, 30))
@@ -182,125 +191,98 @@ const CreatorMonetization = ({ onClose }) => {
           recentTips,
         });
 
-        // Fetch partnerships from backend
-        try {
-          const [partnershipsRes, statsRes] = await Promise.all([
-            getPartnerships().catch(() => null),
-            getPartnershipStats().catch(() => null)
-          ]);
-          
-          if (partnershipsRes?.partnerships) {
-            const formattedPartnerships = partnershipsRes.partnerships.map(p => ({
+        // Process partnerships
+        if (partnershipsRes.status === 'fulfilled' && partnershipsRes.value?.partnerships) {
+          const formattedPartnerships = partnershipsRes.value.partnerships.map(p => ({
+            id: p._id,
+            brandName: p.brandName,
+            campaignName: p.campaignName,
+            status: p.status,
+            earnings: p.budget,
+            deadline: p.deadline?.split('T')[0],
+            deliverables: p.totalDeliverables,
+            completed: p.completedDeliverables || 0,
+            type: p.campaignType,
+            description: p.description
+          }));
+          setPartnerships(formattedPartnerships);
+        }
+        
+        if (statsRes.status === 'fulfilled' && statsRes.value?.stats) {
+          setPartnershipStats(statsRes.value.stats);
+        }
+
+        // Process Creator Fund status
+        if (fundRes.status === 'fulfilled' && fundRes.value?.fundStatus) {
+          setCreatorFund(prev => ({
+            ...prev,
+            status: fundRes.value.fundStatus.status,
+            isEligible: fundRes.value.fundStatus.isEligible,
+            totalEarnings: fundRes.value.fundStatus.totalEarnings || prev.totalEarnings,
+            eligibilitySnapshot: fundRes.value.fundStatus.eligibilitySnapshot,
+            requirements: fundRes.value.fundStatus.requirements
+          }));
+        }
+
+        // Process Ads status
+        if (adsRes.status === 'fulfilled' && adsRes.value?.adsStatus) {
+          setAdsRevenue(prev => ({
+            ...prev,
+            enabled: adsRes.value.adsStatus.adsEnabled,
+            totalEarnings: adsRes.value.adsStatus.totalEarnings || prev.totalEarnings,
+            thisMonth: adsRes.value.adsStatus.currentMonthEarnings || prev.thisMonth,
+            impressions: adsRes.value.adsStatus.totalImpressions || prev.impressions,
+            clicks: adsRes.value.adsStatus.totalClicks || prev.clicks,
+            cpm: adsRes.value.adsStatus.cpm || prev.cpm
+          }));
+          setAdsSettings(prev => ({
+            ...prev,
+            enabled: adsRes.value.adsStatus.adsEnabled,
+            ...adsRes.value.adsStatus.settings
+          }));
+        }
+
+        // Process Subscriptions status
+        if (subscriptionsRes.status === 'fulfilled' && subscriptionsRes.value) {
+          const subsRes = subscriptionsRes.value;
+          setSubscriptions(prev => ({
+            ...prev,
+            totalSubscribers: subsRes.stats?.totalSubscribers || prev.totalSubscribers,
+            monthlyRevenue: subsRes.stats?.monthlyRevenue || prev.monthlyRevenue,
+            plans: subsRes.plans?.length ? subsRes.plans.map(p => ({
               id: p._id,
-              brandName: p.brandName,
-              campaignName: p.campaignName,
-              status: p.status,
-              earnings: p.budget,
-              deadline: p.deadline?.split('T')[0],
-              deliverables: p.totalDeliverables,
-              completed: p.completedDeliverables || 0,
-              type: p.campaignType,
-              description: p.description
-            }));
-            setPartnerships(formattedPartnerships);
-          }
-          
-          if (statsRes?.stats) {
-            setPartnershipStats(statsRes.stats);
-          }
-        } catch (partErr) {
-          console.log('Partnerships fetch failed, using fallback:', partErr);
+              name: p.name,
+              price: p.price,
+              subscribers: p.subscriberCount
+            })) : prev.plans
+          }));
+          setSubscriptionSettings(prev => ({
+            ...prev,
+            enabled: subsRes.settings?.enabled || false,
+            plans: subsRes.plans?.length ? subsRes.plans.map(p => ({
+              name: p.name,
+              price: p.price,
+              benefits: p.benefits || []
+            })) : prev.plans
+          }));
         }
 
-        // Fetch Creator Fund status
-        try {
-          const fundRes = await getCreatorFundStatus().catch(() => null);
-          if (fundRes?.fundStatus) {
-            setCreatorFund(prev => ({
-              ...prev,
-              status: fundRes.fundStatus.status,
-              isEligible: fundRes.fundStatus.isEligible,
-              totalEarnings: fundRes.fundStatus.totalEarnings || prev.totalEarnings,
-              eligibilitySnapshot: fundRes.fundStatus.eligibilitySnapshot,
-              requirements: fundRes.fundStatus.requirements
-            }));
-          }
-        } catch (err) {
-          console.log('Creator Fund status fetch failed:', err);
-        }
-
-        // Fetch Ads status
-        try {
-          const adsRes = await getAdsStatus().catch(() => null);
-          if (adsRes?.adsStatus) {
-            setAdsRevenue(prev => ({
-              ...prev,
-              enabled: adsRes.adsStatus.adsEnabled,
-              totalEarnings: adsRes.adsStatus.totalEarnings || prev.totalEarnings,
-              thisMonth: adsRes.adsStatus.currentMonthEarnings || prev.thisMonth,
-              impressions: adsRes.adsStatus.totalImpressions || prev.impressions,
-              clicks: adsRes.adsStatus.totalClicks || prev.clicks,
-              cpm: adsRes.adsStatus.cpm || prev.cpm
-            }));
-            setAdsSettings(prev => ({
-              ...prev,
-              enabled: adsRes.adsStatus.adsEnabled,
-              ...adsRes.adsStatus.settings
-            }));
-          }
-        } catch (err) {
-          console.log('Ads status fetch failed:', err);
-        }
-
-        // Fetch Subscriptions status
-        try {
-          const subsRes = await getSubscriptionsStatus().catch(() => null);
-          if (subsRes) {
-            setSubscriptions(prev => ({
-              ...prev,
-              totalSubscribers: subsRes.stats?.totalSubscribers || prev.totalSubscribers,
-              monthlyRevenue: subsRes.stats?.monthlyRevenue || prev.monthlyRevenue,
-              plans: subsRes.plans?.length ? subsRes.plans.map(p => ({
-                id: p._id,
-                name: p.name,
-                price: p.price,
-                subscribers: p.subscriberCount
-              })) : prev.plans
-            }));
-            setSubscriptionSettings(prev => ({
-              ...prev,
-              enabled: subsRes.settings?.enabled || false,
-              plans: subsRes.plans?.length ? subsRes.plans.map(p => ({
-                name: p.name,
-                price: p.price,
-                benefits: p.benefits || []
-              })) : prev.plans
-            }));
-          }
-        } catch (err) {
-          console.log('Subscriptions status fetch failed:', err);
-        }
-
-        // Fetch Tip Jar
-        try {
-          const tipRes = await getTipJar().catch(() => null);
-          if (tipRes?.tipjar) {
-            setTipJar(prev => ({
-              ...prev,
-              totalTips: tipRes.tipjar.totalReceived || prev.totalTips,
-              thisMonth: tipRes.tipjar.monthlyReceived || prev.thisMonth,
-              totalTippers: tipRes.tipjar.tipCount || prev.totalTippers,
-              recentTips: tipRes.tipjar.recentTips?.map(t => ({
-                id: t._id,
-                username: t.sender?.username || 'supporter',
-                amount: t.value,
-                message: t.message,
-                date: t.createdAt
-              })) || prev.recentTips
-            }));
-          }
-        } catch (err) {
-          console.log('Tip Jar fetch failed:', err);
+        // Process Tip Jar
+        if (tipJarRes.status === 'fulfilled' && tipJarRes.value?.tipjar) {
+          const tipRes = tipJarRes.value;
+          setTipJar(prev => ({
+            ...prev,
+            totalTips: tipRes.tipjar.totalReceived || prev.totalTips,
+            thisMonth: tipRes.tipjar.monthlyReceived || prev.thisMonth,
+            totalTippers: tipRes.tipjar.tipCount || prev.totalTippers,
+            recentTips: tipRes.tipjar.recentTips?.map(t => ({
+              id: t._id,
+              username: t.sender?.username || 'supporter',
+              amount: t.value,
+              message: t.message,
+              date: t.createdAt
+            })) || prev.recentTips
+          }));
         }
       } catch (err) {
         if (!cancelled) {

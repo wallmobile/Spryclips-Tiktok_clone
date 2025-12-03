@@ -13,6 +13,7 @@ const ManageAccount = ({ onClose }) => {
   const [showAccountVerification, setShowAccountVerification] = useState(false);
   const [showDownloadData, setShowDownloadData] = useState(false);
   const [showDeactivateAccount, setShowDeactivateAccount] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showLinkedAccounts, setShowLinkedAccounts] = useState(false);
   const [showAccountActivity, setShowAccountActivity] = useState(false);
 
@@ -233,6 +234,24 @@ const ManageAccount = ({ onClose }) => {
           setSaving(false);
         }
         break;
+      case 'delete':
+        try {
+          setSaving(true);
+          const response = await api.delete('/api/users/delete-account');
+          setSaveMessage(response.data.message || 'Account deleted successfully.');
+          setShowDeleteAccount(false);
+          setTimeout(() => {
+            setSaveMessage('');
+            logout();
+            onClose();
+          }, 2000);
+        } catch (error) {
+          setSaveMessage(error.response?.data?.message || 'Failed to delete account');
+          setTimeout(() => setSaveMessage(''), 3000);
+        } finally {
+          setSaving(false);
+        }
+        break;
       default:
         break;
     }
@@ -374,6 +393,14 @@ const ManageAccount = ({ onClose }) => {
           description: 'Temporarily deactivate your account',
           icon: 'fa-solid fa-user-slash',
           action: () => setShowDeactivateAccount(true),
+          danger: true
+        },
+        {
+          id: 'delete',
+          title: 'Delete Account',
+          description: 'Permanently delete your account',
+          icon: 'fa-solid fa-trash',
+          action: () => setShowDeleteAccount(true),
           danger: true
         }
       ]
@@ -853,6 +880,65 @@ const ManageAccount = ({ onClose }) => {
                     disabled={saving}
                   >
                     {saving ? 'Deactivating...' : 'Deactivate'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Account Modal */}
+        {showDeleteAccount && (
+          <div className="account-modal-overlay" onClick={() => setShowDeleteAccount(false)}>
+            <div className="account-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="account-modal-header danger">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                <h3>Delete Account</h3>
+                <button className="account-modal-close" onClick={() => setShowDeleteAccount(false)}>
+                  <i className="fa-solid fa-times"></i>
+                </button>
+              </div>
+              <div className="account-modal-body">
+                <p>
+                  Are you sure you want to delete your account? This action cannot be undone.
+                </p>
+                <div className="warning-list">
+                  <div className="warning-item">
+                    <i className="fa-solid fa-x"></i>
+                    <span>All your videos will be permanently deleted</span>
+                  </div>
+                  <div className="warning-item">
+                    <i className="fa-solid fa-x"></i>
+                    <span>Your followers will be removed</span>
+                  </div>
+                  <div className="warning-item">
+                    <i className="fa-solid fa-x"></i>
+                    <span>You won't be able to recover your account</span>
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="cancel-btn" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowDeleteAccount(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="submit-btn danger delete-forever-btn"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAccountAction('delete');
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? 'Deleting...' : 'Delete Forever'}
                   </button>
                 </div>
               </div>

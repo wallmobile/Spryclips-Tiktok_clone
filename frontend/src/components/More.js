@@ -13,11 +13,7 @@ import './More.css';
 
 const LOCAL_LANGUAGE_KEY = 'preferredLanguage';
 const FALLBACK_LANGUAGES = [
-  { id: 'en_us', label: 'English (US)' },
-  { id: 'en_uk', label: 'English (UK)' },
-  { id: 'es_es', label: 'Español' },
-  { id: 'hi_in', label: 'हिन्दी' },
-  { id: 'ur_pk', label: 'اردو' }
+  { id: 'en_us', label: 'English (US)' }
 ];
 
 const More = ({ onClose = () => {}, mode = 'overlay' }) => {
@@ -227,13 +223,6 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
         path: '/more/effects'
       },
       {
-        id: 'sell_shop',
-        label: 'Sell on TikTok Shop',
-        icon: 'fa-store',
-        action: 'route',
-        path: '/more/shop'
-      },
-      {
         id: 'growth_tools',
         label: 'Growth tools',
         icon: 'fa-chart-line',
@@ -274,7 +263,12 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
     
     switch (item.action) {
       case 'route':
-        navigate(item.path);
+        // Pass state to indicate navigation from More page
+        if (item.path?.includes('/more/')) {
+          navigate(item.path, { state: { from: 'more' } });
+        } else {
+          navigate(item.path);
+        }
         break;
       case 'submenu-route':
         setActiveSubmenu((prev) => (prev === item.id ? null : item.id));
