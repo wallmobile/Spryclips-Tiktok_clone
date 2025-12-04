@@ -2039,6 +2039,31 @@ body.dark-mode .stream-title-bar p {
   color: rgba(209, 213, 219, 0.9) !important;
 }
 
+/* Ensure LIVE badge always remains visible for viewers and hosts
+   (force high z-index, clear contrast, and allow pointer-events). */
+.live-badge-stream {
+  z-index: 10050 !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #FF0050 0%, #DC2626 100%) !important;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+  pointer-events: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-radius: 20px !important;
+}
+
+.live-badge-stream .live-dot {
+  background: #ffffff !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.85) !important;
+}
+
+/* In case of light-mode overrides elsewhere, ensure contrast stays readable */
+body:not(.dark-mode) .live-badge-stream {
+  color: #ffffff !important;
+}
+
 body.dark-mode .control-btn {
   background: rgba(0, 0, 0, 0.8) !important;
   color: #fff !important;
@@ -2323,4 +2348,62 @@ body.dark-mode .comments-list::-webkit-scrollbar-thumb {
 
 body.dark-mode .comments-list::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Host end-stream confirmation modal */
+.end-stream-confirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 11000;
+  pointer-events: auto;
+}
+
+.end-stream-confirm-card {
+  background: #0F172A;
+  color: #fff;
+  padding: 18px 20px;
+  border-radius: 10px;
+  min-width: 300px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(2,6,23,0.6);
+}
+
+.end-stream-confirm-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+}
+
+.end-stream-confirm-card p {
+  margin: 0 0 14px 0;
+  color: rgba(255,255,255,0.85);
+}
+
+.end-stream-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.end-confirm-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.end-confirm-btn.confirm {
+  background: linear-gradient(135deg,#FF0050 0%,#DC2626 100%);
+  border: none;
+}
+
+.end-confirm-btn.cancel {
+  background: rgba(255,255,255,0.06);
 }

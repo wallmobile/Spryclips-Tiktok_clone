@@ -481,44 +481,48 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   };
 
   const handleEndStream = async () => {
-    if (window.confirm('Are you sure you want to end the stream?')) {
-      try {
-        // Stop the camera/media tracks first
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
+    // Open in-app confirmation modal instead of using browser confirm
+    setShowEndConfirm(true);
+  };
 
-        // Call backend API to end the stream
-        const streamId = streamData?.id || streamData?._id;
-        if (streamId) {
-          const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
-          const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include' // Use cookies for authentication
-          });
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-          const data = await response.json();
-          
-          if (!response.ok) {
-            console.error('Failed to end stream on server:', data.message);
-          } else {
-            console.log('Stream ended successfully on server');
-          }
-        }
+  const confirmEndStream = async () => {
+    setShowEndConfirm(false);
+    try {
+      // Stop the camera/media tracks first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
 
-        // Call the onEnd callback to update parent state
-        if (onEnd) {
-          onEnd();
+      // Call backend API to end the stream
+      const streamId = streamData?.id || streamData?._id;
+      if (streamId) {
+        const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+        const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Use cookies for authentication
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          console.error('Failed to end stream on server:', data.message);
+        } else {
+          console.log('Stream ended successfully on server');
         }
-      } catch (error) {
-        console.error('Error ending stream:', error);
-        // Still call onEnd to clean up UI even if API call fails
-        if (onEnd) {
-          onEnd();
-        }
+      }
+
+      // Call the onEnd callback to update parent state
+      if (onEnd) {
+        onEnd();
+      }
+    } catch (error) {
+      console.error('Error ending stream:', error);
+      if (onEnd) {
+        onEnd();
       }
     }
   };
@@ -627,6 +631,19 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
       {/* Main Video Area */}
       <div className="stream-main">
         <div className={`stream-video-container ${isVideoLoaded ? 'video-loaded' : ''}`} onClick={(e) => e.stopPropagation()}>
+          {/* Host confirm modal for ending stream */}
+          {showEndConfirm && isBroadcaster && (
+            <div className="end-stream-confirm" role="dialog" aria-modal="true">
+              <div className="end-stream-confirm-card">
+                <h4>End Stream</h4>
+                <p>Are you sure you want to end the stream?</p>
+                <div className="end-stream-actions">
+                  <button className="end-confirm-btn cancel" onClick={() => setShowEndConfirm(false)}>Cancel</button>
+                  <button className="end-confirm-btn confirm" onClick={confirmEndStream}>End Stream</button>
+                </div>
+              </div>
+            </div>
+          )}
           <video
             ref={videoRef}
             autoPlay

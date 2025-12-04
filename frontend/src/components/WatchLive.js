@@ -19,6 +19,8 @@ const WatchLive = () => {
   const [likes, setLikes] = useState(0);
   const [hasGuest, setHasGuest] = useState(false);
   const [guestVideo, setGuestVideo] = useState(null);
+  const [endedModalOpen, setEndedModalOpen] = useState(false);
+  const [endedInfo, setEndedInfo] = useState(null);
   
   const videoRef = useRef(null);
   const guestVideoRef = useRef(null);
@@ -120,9 +122,11 @@ const WatchLive = () => {
       setIsConnecting(true);
     });
 
-    socket.on('live:ended', () => {
-      alert('The live stream has ended');
-      navigate('/live');
+    socket.on('live:ended', (data) => {
+      console.log('Received live:ended', data);
+      // Show end-of-stream modal to user instead of an alert
+      setEndedInfo({ message: (data && data.message) || 'The live stream has ended' });
+      setEndedModalOpen(true);
     });
 
     socket.on('live:guest-joined', (data) => {
@@ -326,6 +330,34 @@ const WatchLive = () => {
     <div className="watch-live-container">
       <div className="watch-live-main">
         <div className="watch-live-video-container">
+          {/* End-of-stream modal */}
+          {endedModalOpen && (
+            <div className="end-stream-modal" role="dialog" aria-modal="true">
+              <div className="end-modal-content">
+                <h3>Stream Ended</h3>
+                <p>{endedInfo?.message || 'This live stream has ended.'}</p>
+                <div className="end-modal-buttons">
+                  <button
+                    className="end-modal-btn primary"
+                    onClick={() => navigate('/live')}
+                  >
+                    Back to Live List
+                  </button>
+                  <button
+                    className="end-modal-btn"
+                    onClick={() => setEndedModalOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Visible LIVE badge for viewers */}
+          <div className="watch-live-badge" aria-hidden="true">
+            <span className="watch-live-dot" />
+            LIVE
+          </div>
           {isConnecting && (
             <div className="connecting-overlay">
               <div className="connecting-spinner"></div>
