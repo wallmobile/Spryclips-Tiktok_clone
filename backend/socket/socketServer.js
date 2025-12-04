@@ -20,10 +20,16 @@ const initializeSocket = (server) => {
   // Authentication middleware for socket
   io.use(async (socket, next) => {
     try {
+      // If a token is provided, verify it and attach the user to the socket.
+      // If no token is provided, allow the connection as an anonymous socket
+      // (useful for public viewers). Handlers must handle socket.user possibly being null.
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
-        return next(new Error('Authentication error'));
+        // Allow anonymous connection
+        socket.userId = null;
+        socket.user = null;
+        return next();
       }
 
       const jwtSecret = process.env.JWT_SECRET;
@@ -42,12 +48,16 @@ const initializeSocket = (server) => {
       socket.user = user;
       next();
     } catch (error) {
-      next(new Error('Authentication error'));
+      // If token invalid, treat as anonymous rather than rejecting connection
+      console.warn('Socket auth failed, connecting as anonymous:', error?.message || error);
+      socket.userId = null;
+      socket.user = null;
+      next();
     }
   });
 
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.userId}`);
+    console.log(`User connected: ${socket.userId} (socket id ${socket.id})`);
 
     // Join user's personal room
     socket.join(`user:${socket.userId}`);

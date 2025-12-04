@@ -34,6 +34,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   
   // WebRTC refs for broadcasting
   const peerConnectionsRef = useRef(new Map()); // viewerSocketId -> RTCPeerConnection
+  const viewerPeerRef = useRef(null); // RTCPeerConnection for viewer mode
+  const hostSocketIdRef = useRef(null);
 
   const giftOptions = useMemo(() => [
     { id: 'rose', name: 'Rose', emoji: '🌹', price: 1 },
@@ -174,12 +176,15 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   useEffect(() => {
     if (isBroadcaster) {
       initializeCamera();
-    } else if (streamData?.streamUrl && videoRef.current) {
-      // For viewers, connect to stream URL
-      videoRef.current.src = streamData.streamUrl;
-      videoRef.current.play().then(() => {
-        setIsVideoLoaded(true);
-      }).catch(console.error);
+    } else {
+      // For viewers: if a WebRTC session is available we'll attach remoteStream,
+      // otherwise fall back to a stream URL (if provided)
+      if (videoRef.current) {
+        if (streamData?.streamUrl) {
+          // set src as fallback while waiting for WebRTC
+          videoRef.current.src = streamData.streamUrl;
+        }
+      }
     }
   }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
 
@@ -364,6 +369,90 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
       socket.emit('live:leave', { roomId });
     };
   }, [socket, isBroadcaster, isConnected, streamData, createPeerConnectionForViewer, handleWebRTCAnswer, handleWebRTCIceCandidate]);
+
+  // Viewer WebRTC: join as viewer and handle offer/ICE from host
+  useEffect(() => {
+    if (!socket || isBroadcaster || !streamData) return;
+
+    const canonicalRoomId = streamData?.id || streamData?._id || streamData?.roomId;
+    if (!canonicalRoomId) return;
+
+    // Create peer connection for viewer
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    viewerPeerRef.current = pc;
+
+    // Handle incoming tracks
+    pc.ontrack = (event) => {
+      if (videoRef.current && event.streams && event.streams[0]) {
+        console.log('[Viewer] Received remote stream from host');
+        videoRef.current.srcObject = event.streams[0];
+        setIsVideoLoaded(true);
+      }
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socket) {
+        socket.emit('webrtc:ice-candidate', {
+          roomId: canonicalRoomId,
+          candidate: event.candidate,
+          targetId: hostSocketIdRef.current || null
+        });
+      }
+    };
+
+    const handleJoined = (data) => {
+      console.log('[Viewer] live:joined', data);
+      hostSocketIdRef.current = data.hostSocketId || hostSocketIdRef.current;
+    };
+
+    const handleOffer = async ({ offer, fromId }) => {
+      try {
+        console.log('[Viewer] Received offer from host', fromId);
+        if (!viewerPeerRef.current) return;
+        await viewerPeerRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await viewerPeerRef.current.createAnswer();
+        await viewerPeerRef.current.setLocalDescription(answer);
+        socket.emit('webrtc:answer', {
+          roomId: canonicalRoomId,
+          answer: viewerPeerRef.current.localDescription,
+          targetId: fromId
+        });
+        console.log('[Viewer] Sent answer to host');
+      } catch (err) {
+        console.error('[Viewer] Error handling offer:', err);
+      }
+    };
+
+    const handleIce = async ({ candidate }) => {
+      try {
+        if (!viewerPeerRef.current) return;
+        await viewerPeerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error('[Viewer] Error adding ICE candidate:', err);
+      }
+    };
+
+    socket.on('live:joined', handleJoined);
+    socket.on('webrtc:offer', handleOffer);
+    socket.on('webrtc:ice-candidate', handleIce);
+
+    // Join the room as viewer
+    socket.emit('live:join', { roomId: canonicalRoomId, role: 'viewer' });
+    console.log('[Viewer] Joining live room:', canonicalRoomId);
+
+    return () => {
+      socket.off('live:joined', handleJoined);
+      socket.off('webrtc:offer', handleOffer);
+      socket.off('webrtc:ice-candidate', handleIce);
+      if (viewerPeerRef.current) {
+        viewerPeerRef.current.close();
+        viewerPeerRef.current = null;
+      }
+      if (socket) {
+        socket.emit('live:leave', { roomId: canonicalRoomId });
+      }
+    };
+  }, [socket, isBroadcaster, streamData]);
 
   const handleSendComment = (e) => {
     e.preventDefault();
