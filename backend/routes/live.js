@@ -9,6 +9,7 @@ const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
 const crypto = require('crypto');
 const router = express.Router();
+const { emitNotification } = require('../socket/socketServer');
 
 // ==================== START LIVE STREAM ====================
 router.post('/start', authMiddleware, async (req, res) => {
@@ -53,6 +54,38 @@ router.post('/start', authMiddleware, async (req, res) => {
 
     await liveStream.save();
     await liveStream.populate('streamer', 'username profile');
+
+    // Notify followers that streamer started a live
+    try {
+      const streamer = await User.findById(userId).select('username followers');
+      if (streamer && Array.isArray(streamer.followers) && streamer.followers.length > 0) {
+        const notification = {
+          type: 'live_started',
+          stream: {
+            id: liveStream._id,
+            roomId: liveStream.roomId,
+            title: liveStream.title,
+            thumbnail: liveStream.thumbnail || ''
+          },
+          streamer: {
+            id: streamer._id,
+            username: streamer.username
+          },
+          createdAt: new Date()
+        };
+
+        streamer.followers.forEach(followerId => {
+          try {
+            emitNotification(followerId.toString(), notification);
+          } catch (err) {
+            // Non-fatal: continue notifying other followers
+            console.error('Failed to emit live_started notification to', followerId, err?.message || err);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error sending live-started notifications:', err);
+    }
 
     res.status(201).json({
       success: true,

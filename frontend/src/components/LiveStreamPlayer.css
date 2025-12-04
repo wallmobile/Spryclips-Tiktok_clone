@@ -480,6 +480,56 @@
   color: #FF0050;
 }
 
+/* Light mode adjustments: ensure share button and popup are visible on light backgrounds */
+body:not(.dark-mode) .share-stream-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .share-stream-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+  transform: scale(1.02);
+}
+
+body:not(.dark-mode) .share-menu-popup {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .share-menu-header h4 {
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .close-share-btn {
+  color: rgba(15, 23, 42, 0.7);
+}
+
+body:not(.dark-mode) .close-share-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .share-link-input {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .share-option-btn {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  color: #0F172A;
+}
+
+body:not(.dark-mode) .share-option-btn i {
+  color: inherit;
+}
+
+
 /* Stream Title - Floating Bottom Bar */
 .stream-title-container {
   position: absolute;

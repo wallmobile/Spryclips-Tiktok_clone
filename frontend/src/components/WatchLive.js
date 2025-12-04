@@ -23,6 +23,7 @@ const WatchLive = () => {
   const videoRef = useRef(null);
   const guestVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
+  const hostSocketIdRef = useRef(null);
   const chatEndRef = useRef(null);
   const roomIdRef = useRef(null);
 
@@ -75,7 +76,8 @@ const WatchLive = () => {
         setViewerCount(response.stream.viewers || 0);
         setLikes(response.stream.likes || 0);
         setIsLiked(response.stream.likedBy?.includes?.(localStorage.getItem('userId')) || false);
-        roomIdRef.current = response.stream.roomId || streamId;
+        // Prefer the Mongo _id for socket room joins; fall back to roomId
+        roomIdRef.current = response.stream._id || response.stream.roomId || streamId;
       }
     } catch (error) {
       console.error('Error fetching stream details:', error);
@@ -90,6 +92,8 @@ const WatchLive = () => {
       console.log('Joined live room:', data);
       setIsConnecting(false);
       setViewerCount(data.viewerCount || 0);
+      // store host socket id so viewer can target offers/ICE to the host
+      hostSocketIdRef.current = data.hostSocketId || null;
       // Start WebRTC connection to host
       setupWebRTC('viewer');
     });
@@ -182,22 +186,13 @@ const WatchLive = () => {
           socket.emit('webrtc:ice-candidate', {
             roomId: roomIdRef.current,
             candidate: event.candidate,
-            targetId: stream.streamer._id // Host socket ID (would need to be passed)
+            targetId: hostSocketIdRef.current || stream.streamer._id
           });
         }
       };
 
-      // Create offer if viewer
-      if (role === 'viewer') {
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        
-        socket.emit('webrtc:offer', {
-          roomId: roomIdRef.current,
-          offer: offer,
-          targetId: 'host' // Would need actual host socket ID
-        });
-      }
+      // For viewers we do NOT create the offer — the host creates the offer and sends it to the viewer.
+      // Viewer simply creates the RTCPeerConnection and waits for an incoming offer from the host.
     } catch (error) {
       console.error('WebRTC setup error:', error);
       setIsConnecting(false);
