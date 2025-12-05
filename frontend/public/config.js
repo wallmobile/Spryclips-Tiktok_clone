@@ -19,6 +19,5 @@
 window.APP_CONFIG = {
   API_URL: '',  // Empty for Nginx proxy - Production deployment for spryclips.com
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'http://spryclips.com/uploads'  // Production: 'https://spryclips.com/uploads'
+  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Production: 'https://spryclips.com/uploads'
 };
-
