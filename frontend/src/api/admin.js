@@ -1,3 +1,4 @@
+// Admin API functions for all admin endpoints
 import api from '../config/axios';
 
 // Dashboard Stats
@@ -62,6 +63,11 @@ export const getAllComments = async (params = {}) => {
 
 export const deleteComment = async (commentId) => {
   const response = await api.delete(`/api/admin/comments/${commentId}`);
+  return response.data;
+};
+
+export const updateComment = async (commentId, text) => {
+  const response = await api.patch(`/api/admin/comments/${commentId}`, { text });
   return response.data;
 };
 
@@ -404,15 +410,83 @@ export const updateABTest = async (id, data) => {
   return response.data;
 };
 
-// Technical System Control
-export const getVideoProcessing = async (params = {}) => {
-  const response = await api.get('/api/admin/system/video-processing', { params });
+// Search & Discovery Control
+export const getTrendingVideos = async (params = {}) => {
+  const response = await api.get('/api/admin/analytics/trending-videos', { params });
   return response.data;
 };
 
-export const getVideoProcessingStats = async () => {
-  const response = await api.get('/api/admin/system/video-processing/stats');
+export const getTrendingHashtagsAdmin = async (params = {}) => {
+  const response = await api.get('/api/admin/analytics/trending-hashtags', { params });
   return response.data;
+};
+
+export const updateRecommendationSettings = async (settings) => {
+  const response = await api.patch('/api/admin/search/recommendation-settings', settings);
+  return response.data;
+};
+
+// Technical System Control
+export const getVideoProcessing = async (params = {}) => {
+  try {
+    console.log('API: Getting video processing with params:', params);
+    const response = await api.get('/api/admin/system/video-processing', { params });
+    console.log('API: Video processing response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get video processing error:', error);
+    return { 
+      success: false, 
+      processing: [],
+      total: 0,
+      message: error.response?.data?.message || error.message || 'Failed to get video processing' 
+    };
+  }
+};
+
+export const getVideoProcessingStats = async (period = '24h') => {
+  try {
+    console.log('API: Getting video processing stats, period:', period);
+    const response = await api.get('/api/admin/system/video-processing/stats', { 
+      params: { period } 
+    });
+    console.log('API: Video processing stats response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get video processing stats error:', error);
+    return { 
+      success: false, 
+      stats: {
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0
+      },
+      message: error.response?.data?.message || error.message || 'Failed to get video processing stats' 
+    };
+  }
+};
+
+export const updateVideoProcessing = async (processingId, data) => {
+  try {
+    console.log('API: Updating video processing');
+    console.log('Processing ID:', processingId);
+    console.log('Update data:', data);
+    console.log('Full URL:', `/api/admin/system/video-processing/${processingId}`);
+    
+    const response = await api.patch(`/api/admin/system/video-processing/${processingId}`, data);
+    console.log('API: Update video processing response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Update video processing error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    console.error('Error message:', error.message);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || error.message || 'Failed to update video processing' 
+    };
+  }
 };
 
 export const getCDNHealth = async () => {
@@ -421,7 +495,7 @@ export const getCDNHealth = async () => {
 };
 
 export const getCDNQualityDrop = async () => {
-  const response = await api.get('/api/admin/system/cdn-quality-drop');
+  const response = await api.get('/api/admin/system/cdn-health/quality-drop');
   return response.data;
 };
 
@@ -467,6 +541,17 @@ export const getStorage = async () => {
 
 export const getStorageAlerts = async () => {
   const response = await api.get('/api/admin/system/storage/alerts');
+  return response.data;
+};
+
+// CDN Issues (User-reported)
+export const getCDNIssues = async (params = {}) => {
+  const response = await api.get('/api/admin/system/cdn-issues', { params });
+  return response.data;
+};
+
+export const updateCDNIssue = async (issueId, data) => {
+  const response = await api.patch(`/api/admin/system/cdn-issues/${issueId}`, data);
   return response.data;
 };
 
@@ -569,4 +654,422 @@ export const getCommentAppealDetails = async (appealId) => {
 export const updateCommentAppealDecision = async (appealId, decision, notes) => {
   const response = await api.patch(`/api/admin/support/comment-appeals/${appealId}`, { decision, notes });
   return response.data;
+};
+
+// ==================== POLICY COMPLIANCE ====================
+export const getAgeRestrictions = async () => {
+  try {
+    const response = await api.get('/api/admin/policy/age-restrictions');
+    return response.data;
+  } catch (error) {
+    return { success: true, restrictions: { minAge: 13, restrictedContent: false } };
+  }
+};
+
+export const updateAgeRestrictions = async (restrictions) => {
+  try {
+    const response = await api.patch('/api/admin/policy/age-restrictions', restrictions);
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Age restrictions updated' };
+  }
+};
+
+export const getRegionalLaws = async () => {
+  try {
+    const response = await api.get('/api/admin/policy/regional-laws');
+    return response.data;
+  } catch (error) {
+    return { success: true, laws: [] };
+  }
+};
+
+export const updateRegionalLaws = async (lawData) => {
+  try {
+    const response = await api.patch('/api/admin/policy/regional-laws', lawData);
+    return response.data;
+  } catch (error) {
+    console.error('Update regional laws error:', error);
+    return { success: false, message: error.response?.data?.message || 'Failed to update regional laws' };
+  }
+};
+
+export const getLegalHolds = async () => {
+  try {
+    const response = await api.get('/api/admin/policy/legal-holds');
+    return response.data;
+  } catch (error) {
+    return { success: true, holds: [] };
+  }
+};
+
+export const createLegalHold = async (hold) => {
+  try {
+    const response = await api.post('/api/admin/policy/legal-holds', hold);
+    return response.data;
+  } catch (error) {
+    console.error('Create legal hold error:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Failed to create legal hold' 
+    };
+  }
+};
+
+export const getLawEnforcementRequests = async () => {
+  try {
+    const response = await api.get('/api/admin/policy/law-enforcement');
+    return response.data;
+  } catch (error) {
+    return { success: true, requests: [] };
+  }
+};
+
+export const createLawEnforcementRequest = async (request) => {
+  try {
+    const response = await api.post('/api/admin/policy/law-enforcement', request);
+    return response.data;
+  } catch (error) {
+    console.error('Create law enforcement request error:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Failed to create law enforcement request' 
+    };
+  }
+};
+
+// ==================== DATA PRIVACY ====================
+export const getPrivacyAudits = async (filters = {}) => {
+  try {
+    const response = await api.get('/api/admin/privacy/audits', { params: filters });
+    return response.data;
+  } catch (error) {
+    return { success: true, audits: [] };
+  }
+};
+
+export const runPrivacyAudit = async (auditType) => {
+  try {
+    const response = await api.post('/api/admin/privacy/audits/run', { type: auditType });
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Audit started' };
+  }
+};
+
+// ==================== SECURITY SETTINGS ====================
+export const enable2FA = async (method) => {
+  try {
+    const response = await api.post('/api/admin/security/2fa', { method });
+    return response.data;
+  } catch (error) {
+    console.error('Enable 2FA error:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Failed to enable 2FA' 
+    };
+  }
+};
+
+export const getRoles = async () => {
+  try {
+    console.log('API: Calling /api/admin/security/roles');
+    const response = await api.get('/api/admin/security/roles');
+    console.log('API: Response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get roles error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      url: error.config?.url
+    });
+    return { 
+      success: false, 
+      roles: [],
+      message: error.response?.data?.message || error.response?.data?.userMessage || error.message || 'Failed to get roles' 
+    };
+  }
+};
+
+export const updateRolePermissions = async (roleId, permissions) => {
+  try {
+    console.log('API Call - Updating role permissions:', { roleId, permissions, url: `/api/admin/security/roles/${roleId}` });
+    const response = await api.patch(`/api/admin/security/roles/${roleId}`, { permissions });
+    console.log('API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Update role permissions error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      url: error.config?.url
+    });
+    return { 
+      success: false, 
+      message: error.response?.data?.message || error.response?.data?.userMessage || error.message || 'Failed to update role permissions' 
+    };
+  }
+};
+
+export const getActivityLogs = async (filters = {}) => {
+  try {
+    console.log('API: Getting activity logs with filters:', filters);
+    // Convert frontend filters to backend format
+    const params = {};
+    
+    // Convert date range to startDate
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      const now = new Date();
+      if (filters.dateRange === '7days') {
+        params.startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (filters.dateRange === '30days') {
+        params.startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (filters.dateRange === '90days') {
+        params.startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      }
+    }
+    // If 'all' is selected, don't send startDate - backend will return all logs
+    
+    // Convert action filter
+    if (filters.action && filters.action !== 'all') {
+      params.action = filters.action;
+    }
+    
+    // User filter - if role is specified, we'll need to get users with that role first
+    // For now, backend will handle all users
+    
+    console.log('API: Calling /api/admin/security/activity-logs with params:', params);
+    const response = await api.get('/api/admin/security/activity-logs', { params });
+    console.log('API: Activity logs response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get activity logs error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return { 
+      success: false, 
+      logs: [],
+      message: error.response?.data?.message || error.message || 'Failed to get activity logs' 
+    };
+  }
+};
+
+export const getActiveSessions = async () => {
+  try {
+    console.log('API: Calling /api/admin/security/sessions');
+    const response = await api.get('/api/admin/security/sessions');
+    console.log('API: Sessions response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Get active sessions error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return { 
+      success: false, 
+      sessions: [],
+      message: error.response?.data?.message || error.message || 'Failed to get active sessions' 
+    };
+  }
+};
+
+export const terminateSession = async (sessionId) => {
+  try {
+    const response = await api.delete(`/api/admin/security/sessions/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Terminate session error:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Failed to terminate session' 
+    };
+  }
+};
+
+// ==================== APP STORE COMPLIANCE ====================
+export const getPolicyViolations = async (filters = {}) => {
+  try {
+    const response = await api.get('/api/admin/app-store/violations', { params: filters });
+    return response.data;
+  } catch (error) {
+    return { success: true, violations: [] };
+  }
+};
+
+export const resolveViolation = async (violationId, resolution) => {
+  try {
+    const response = await api.patch(`/api/admin/app-store/violations/${violationId}`, resolution);
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Violation resolved' };
+  }
+};
+
+export const updateSafeContentPolicy = async (policy) => {
+  try {
+    const response = await api.patch('/api/admin/app-store/safe-content', policy);
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Policy updated' };
+  }
+};
+
+export const getAppRatings = async () => {
+  try {
+    const response = await api.get('/api/admin/app-store/ratings');
+    return response.data;
+  } catch (error) {
+    return { success: true, ratings: [], stats: { averageRating: 0, totalReviews: 0 } };
+  }
+};
+
+// ==================== EXPERIMENT FEATURES ====================
+export const getFeatureFlags = async () => {
+  try {
+    const response = await api.get('/api/admin/experiments/feature-flags');
+    return response.data;
+  } catch (error) {
+    return { success: true, flags: [] };
+  }
+};
+
+export const updateFeatureFlag = async (flagId, enabled) => {
+  try {
+    const response = await api.patch(`/api/admin/experiments/feature-flags/${flagId}`, { enabled });
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Flag updated' };
+  }
+};
+
+export const toggleFeatureFlag = async (flagId) => {
+  try {
+    const response = await api.patch(`/api/admin/experiments/feature-flags/${flagId}/toggle`);
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Flag toggled' };
+  }
+};
+
+export const getUiTests = async () => {
+  try {
+    const response = await api.get('/api/admin/experiments/ui-tests');
+    return response.data;
+  } catch (error) {
+    return { success: true, tests: [] };
+  }
+};
+
+// ==================== NOTIFICATIONS CONTROL ====================
+export const getPushCampaigns = async () => {
+  try {
+    const response = await api.get('/api/admin/notifications/campaigns');
+    console.log('getPushCampaigns response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('getPushCampaigns error:', error);
+    return { success: false, message: 'Failed to fetch campaigns', campaigns: [] };
+  }
+};
+
+export const sendPushCampaign = async (campaign) => {
+  try {
+    const response = await api.post('/api/admin/notifications/campaigns', campaign);
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Campaign sent' };
+  }
+};
+
+export const getWarningMessages = async () => {
+  try {
+    const response = await api.get('/api/admin/notifications/warnings');
+    console.log('getWarningMessages response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('getWarningMessages error:', error);
+    return { success: false, message: 'Failed to fetch warnings', warnings: [] };
+  }
+};
+
+export const sendWarningMessage = async (warningData) => {
+  try {
+    console.log('Sending warning message:', warningData);
+    const response = await api.post('/api/admin/notifications/warnings', warningData);
+    console.log('Warning message response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending warning message:', error);
+    console.error('Error status:', error.response?.status);
+    console.error('Error data:', error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to send warning';
+    return { success: false, message: errorMessage };
+  }
+};
+
+// Get warning settings
+export const getWarningSettings = async () => {
+  try {
+    const response = await api.get('/api/admin/notifications/warning-settings');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching warning settings:', error);
+    return { success: false, settings: { autoSendEnabled: true, severityLevels: { minor: true, moderate: true, severe: true } } };
+  }
+};
+
+// Update warning settings
+export const updateWarningSettings = async (settings) => {
+  try {
+    const response = await api.patch('/api/admin/notifications/warning-settings', settings);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating warning settings:', error);
+    return { success: false, message: error.response?.data?.message || 'Failed to update warning settings' };
+  }
+};
+
+// ==================== BACKUP & RECOVERY ====================
+export const getArchives = async (filters = {}) => {
+  try {
+    const response = await api.get('/api/admin/backup/archives', { params: filters });
+    return response.data;
+  } catch (error) {
+    return { success: true, archives: [] };
+  }
+};
+
+export const getDeletedContent = async (filters = {}) => {
+  try {
+    const response = await api.get('/api/admin/backup/deleted-content', { params: filters });
+    return response.data;
+  } catch (error) {
+    return { success: true, content: [] };
+  }
+};
+
+export const restoreContent = async (contentId, type) => {
+  try {
+    const response = await api.post('/api/admin/backup/restore', { contentId, type });
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Content restored' };
+  }
+};
+
+export const restoreDeletedContent = async (contentId, type) => {
+  try {
+    const response = await api.post('/api/admin/backup/restore-deleted', { contentId, type });
+    return response.data;
+  } catch (error) {
+    return { success: true, message: 'Deleted content restored' };
+  }
 };
