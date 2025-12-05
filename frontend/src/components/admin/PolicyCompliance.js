@@ -1,6 +1,8 @@
+// Policy compliance management page component
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AdminSidebar from './AdminSidebar';
 import {
   getAgeRestrictions,
   updateAgeRestrictions,
@@ -17,7 +19,23 @@ import './AdminPanel.css';
 const PolicyCompliance = ({ onClose }) => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('age-restrictions');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') || 'age-restrictions';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  
+  // Update activeTab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'age-restrictions';
+    // Map old tab names to new ones for backward compatibility
+    const tabMapping = {
+      'regional': 'regional-laws',
+      'age-restrictions': 'age-restrictions',
+      'legal-hold': 'legal-hold',
+      'law-enforcement': 'law-enforcement'
+    };
+    const mappedTab = tabMapping[tab] || tab;
+    setActiveTab(mappedTab);
+  }, [searchParams]);
   
   // Law Enforcement Requests State
   const [lawEnforcementRequests, setLawEnforcementRequests] = useState([]);
@@ -38,13 +56,8 @@ const PolicyCompliance = ({ onClose }) => {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading) {
-    return <div className="admin-loading">Loading...</div>;
-  }
-
-  if (!user || user.role !== 'admin') {
-    return null;
-  }
+  // Don't block rendering - ProtectedRoute handles auth
+  // Always render - let ProtectedRoute handle auth
 
   // Age Restrictions State
   const [ageRestrictions, setAgeRestrictions] = useState({
@@ -80,9 +93,15 @@ const PolicyCompliance = ({ onClose }) => {
 
   const loadAgeRestrictions = async () => {
     try {
-      // TODO: Add API call
-      // const data = await getAgeRestrictions();
-      // setAgeRestrictions(data);
+      const data = await getAgeRestrictions();
+      if (data.success && data.restrictions) {
+        setAgeRestrictions({
+          minAge: data.restrictions.minAge || 13,
+          restrictedContent: data.restrictions.restrictedContent !== undefined ? data.restrictions.restrictedContent : true,
+          ageVerification: data.restrictions.ageVerification !== undefined ? data.restrictions.ageVerification : false,
+          parentalControls: data.restrictions.parentalControls !== undefined ? data.restrictions.parentalControls : true
+        });
+      }
     } catch (error) {
       console.error('Error loading age restrictions:', error);
     }
@@ -93,6 +112,15 @@ const PolicyCompliance = ({ onClose }) => {
       const data = await getRegionalLaws();
       if (data.success && data.laws) {
         setRegionalLaws(data.laws);
+        // Find current region settings
+        const currentLaw = data.laws.find(law => law.region === selectedRegion);
+        if (currentLaw) {
+          setRegionSettings({
+            contentRestrictions: currentLaw.contentRestrictions || [],
+            dataRetention: currentLaw.dataRetention || 365,
+            gdprCompliant: currentLaw.gdprCompliant || false
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading regional laws:', error);
@@ -107,6 +135,7 @@ const PolicyCompliance = ({ onClose }) => {
       }
     } catch (error) {
       console.error('Error loading legal holds:', error);
+      setLegalHolds([]);
     }
   };
 
@@ -118,6 +147,7 @@ const PolicyCompliance = ({ onClose }) => {
       }
     } catch (error) {
       console.error('Error loading law enforcement requests:', error);
+      setLawEnforcementRequests([]);
     }
   };
 
@@ -126,13 +156,30 @@ const PolicyCompliance = ({ onClose }) => {
     try {
       const result = await updateAgeRestrictions(ageRestrictions);
       if (result.success) {
-        alert('Age restrictions updated successfully!');
+        // Show success notification
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+        successMsg.textContent = '✓ Age restrictions updated successfully!';
+        document.body.appendChild(successMsg);
+        setTimeout(() => {
+          successMsg.style.transition = 'opacity 0.3s';
+          successMsg.style.opacity = '0';
+          setTimeout(() => successMsg.remove(), 300);
+        }, 3000);
       } else {
         throw new Error(result.message || 'Update failed');
       }
     } catch (error) {
       console.error('Error updating age restrictions:', error);
-      alert('Failed to update age restrictions: ' + (error.message || 'Unknown error'));
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+      errorMsg.textContent = '✗ Failed to update: ' + (error.message || 'Unknown error');
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        errorMsg.style.transition = 'opacity 0.3s';
+        errorMsg.style.opacity = '0';
+        setTimeout(() => errorMsg.remove(), 300);
+      }, 3000);
     } finally {
       setLoading(false);
     }
@@ -141,39 +188,100 @@ const PolicyCompliance = ({ onClose }) => {
   const handleUpdateRegionalLaws = async () => {
     setLoading(true);
     try {
-      const result = await updateRegionalLaws(regionalLaws);
+      const updateData = {
+        region: selectedRegion,
+        dataRetention: regionSettings.dataRetention,
+        gdprCompliant: regionSettings.gdprCompliant,
+        contentRestrictions: regionSettings.contentRestrictions
+      };
+      
+      const result = await updateRegionalLaws(updateData);
       if (result.success) {
-        alert('Regional laws updated successfully!');
+        // Show success notification
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+        successMsg.textContent = '✓ Regional settings updated successfully!';
+        document.body.appendChild(successMsg);
+        setTimeout(() => {
+          successMsg.style.transition = 'opacity 0.3s';
+          successMsg.style.opacity = '0';
+          setTimeout(() => successMsg.remove(), 300);
+        }, 3000);
+        
+        // Reload data
+        loadRegionalLaws();
       } else {
         throw new Error(result.message || 'Update failed');
       }
     } catch (error) {
       console.error('Error updating regional laws:', error);
-      alert('Failed to update regional laws: ' + (error.message || 'Unknown error'));
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+      errorMsg.textContent = '✗ Failed to update: ' + (error.message || 'Unknown error');
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        errorMsg.style.transition = 'opacity 0.3s';
+        errorMsg.style.opacity = '0';
+        setTimeout(() => errorMsg.remove(), 300);
+      }, 3000);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateLegalHold = async () => {
+    if (!newLegalHold.caseId.trim() || !newLegalHold.description.trim()) {
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+      errorMsg.textContent = '✗ Please fill in Case ID and Description';
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        errorMsg.style.transition = 'opacity 0.3s';
+        errorMsg.style.opacity = '0';
+        setTimeout(() => errorMsg.remove(), 300);
+      }, 3000);
+      return;
+    }
+    
     setLoading(true);
     try {
       const result = await createLegalHold(newLegalHold);
       if (result.success) {
-        alert('Legal hold created successfully!');
+        // Show success notification
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+        successMsg.textContent = '✓ Legal hold created successfully!';
+        document.body.appendChild(successMsg);
+        setTimeout(() => {
+          successMsg.style.transition = 'opacity 0.3s';
+          successMsg.style.opacity = '0';
+          setTimeout(() => successMsg.remove(), 300);
+        }, 3000);
+        
+        // Reset form
         setNewLegalHold({
           caseId: '',
           description: '',
           affectedContent: [],
           expiryDate: ''
         });
+        
+        // Reload legal holds list
         loadLegalHolds();
       } else {
         throw new Error(result.message || 'Creation failed');
       }
     } catch (error) {
       console.error('Error creating legal hold:', error);
-      alert('Failed to create legal hold: ' + (error.message || 'Unknown error'));
+      const errorMsg = document.createElement('div');
+      errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+      errorMsg.textContent = '✗ Failed to create: ' + (error.message || 'Unknown error');
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        errorMsg.style.transition = 'opacity 0.3s';
+        errorMsg.style.opacity = '0';
+        setTimeout(() => errorMsg.remove(), 300);
+      }, 3000);
     } finally {
       setLoading(false);
     }
@@ -181,45 +289,59 @@ const PolicyCompliance = ({ onClose }) => {
 
   return (
     <div className="admin-panel-page-container">
+      <div className="admin-panel-with-sidebar">
+        <AdminSidebar 
+          activeTab="policy"
+          setActiveTab={(tab) => {
+            // If clicking on a different main tab, navigate away
+            if (tab && tab !== 'policy') {
+              // Map tab IDs to routes
+              const routeMap = {
+                'dashboard': '/admin',
+                'users': '/admin',
+                'videos': '/admin',
+                'stories': '/admin',
+                'comments': '/admin',
+                'moderation': '/admin',
+                'safety': '/admin',
+                'monetization': '/admin',
+                'analytics': '/admin',
+                'search': '/admin',
+                'system': '/admin',
+                'support': '/admin',
+                'security': '/admin/security-settings',
+                'app-store': '/admin/app-store-compliance',
+                'experiments': '/admin/experiment-features',
+                'notifications': '/admin/notifications-control',
+                'backup': '/admin/backup-recovery'
+              };
+              const route = routeMap[tab] || '/admin';
+              navigate(route);
+            }
+          }}
+          activeSubTab={activeTab}
+          setActiveSubTab={(subTab) => {
+            // Update active tab when sub-item is clicked
+            if (subTab) {
+              setActiveTab(subTab);
+              navigate(`/admin/policy-compliance?tab=${subTab}`, { replace: true });
+            }
+          }}
+          onClose={onClose} 
+        />
+        <div className="admin-panel-main-content">
       <div className="policy-compliance">
       <div className="admin-page-header">
-        <h2>Policy Compliance</h2>
+        <h2>
+          Policy Compliance
+          {activeTab === 'age-restrictions' && ' → Age Restrictions'}
+          {activeTab === 'regional-laws' && ' → Regional Laws'}
+          {activeTab === 'legal-hold' && ' → Legal Hold'}
+          {activeTab === 'law-enforcement' && ' → Law Enforcement'}
+        </h2>
         <button className="admin-close-btn" onClick={onClose}>
           <i className="fa-solid fa-times"></i>
         </button>
-      </div>
-
-      <div className="admin-tabs-container">
-        <div className="admin-tabs">
-          <button
-            className={`admin-tab ${activeTab === 'age-restrictions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('age-restrictions')}
-          >
-            <i className="fa-solid fa-shield"></i>
-            Age Restrictions
-          </button>
-          <button
-            className={`admin-tab ${activeTab === 'regional' ? 'active' : ''}`}
-            onClick={() => setActiveTab('regional')}
-          >
-            <i className="fa-solid fa-globe"></i>
-            Regional Laws
-          </button>
-          <button
-            className={`admin-tab ${activeTab === 'legal-hold' ? 'active' : ''}`}
-            onClick={() => setActiveTab('legal-hold')}
-          >
-            <i className="fa-solid fa-gavel"></i>
-            Legal Hold
-          </button>
-          <button
-            className={`admin-tab ${activeTab === 'law-enforcement' ? 'active' : ''}`}
-            onClick={() => setActiveTab('law-enforcement')}
-          >
-            <i className="fa-solid fa-handcuffs"></i>
-            Law Enforcement
-          </button>
-        </div>
       </div>
 
       <div className="admin-content-area">
@@ -312,7 +434,7 @@ const PolicyCompliance = ({ onClose }) => {
           </div>
         )}
 
-        {activeTab === 'regional' && (
+        {activeTab === 'regional-laws' && (
           <div className="regional-laws">
             <h3>Regional Laws & Compliance</h3>
             <div className="compliance-controls">
@@ -320,7 +442,26 @@ const PolicyCompliance = ({ onClose }) => {
                 <label>Select Region</label>
                 <select
                   value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  onChange={(e) => {
+                    const newRegion = e.target.value;
+                    setSelectedRegion(newRegion);
+                    // Load settings for selected region
+                    const currentLaw = regionalLaws.find(law => law.region === newRegion);
+                    if (currentLaw) {
+                      setRegionSettings({
+                        contentRestrictions: currentLaw.contentRestrictions || [],
+                        dataRetention: currentLaw.dataRetention || 365,
+                        gdprCompliant: currentLaw.gdprCompliant || false
+                      });
+                    } else {
+                      // Reset to defaults if region not found
+                      setRegionSettings({
+                        contentRestrictions: [],
+                        dataRetention: 365,
+                        gdprCompliant: false
+                      });
+                    }
+                  }}
                 >
                   <option value="US">United States</option>
                   <option value="EU">European Union</option>
@@ -512,19 +653,24 @@ const PolicyCompliance = ({ onClose }) => {
                   <p className="empty-state">No active legal holds</p>
                 ) : (
                   legalHolds.map((hold) => (
-                    <div key={hold.id} className="legal-hold-item">
+                    <div key={hold._id || hold.id} className="legal-hold-item">
                       <div className="hold-header">
                         <span className="case-id">Case: {hold.caseId}</span>
-                        <span className={`hold-status ${hold.status}`}>
-                          {hold.status}
+                        <span className={`hold-status ${hold.status || 'active'}`}>
+                          {hold.status || 'active'}
                         </span>
                       </div>
                       <p className="hold-description">{hold.description}</p>
                       <div className="hold-details">
-                        <span>Content IDs: {hold.affectedContent.length}</span>
-                        <span>Expiry: {hold.expiryDate}</span>
-                        <span>Created: {hold.createdDate}</span>
+                        <span>Content IDs: {hold.affectedContent?.length || 0}</span>
+                        <span>Expiry: {hold.expiryDate ? new Date(hold.expiryDate).toLocaleDateString() : 'No expiry'}</span>
+                        <span>Created: {hold.createdAt ? new Date(hold.createdAt).toLocaleDateString() : (hold.createdDate || 'N/A')}</span>
                       </div>
+                      {hold.createdBy && (
+                        <div className="hold-creator">
+                          Created by: {hold.createdBy.username || hold.createdBy.email || 'Admin'}
+                        </div>
+                      )}
                       <div className="hold-actions">
                         <button className="btn-view">View Details</button>
                         <button className="btn-remove">Release Hold</button>
@@ -600,13 +746,37 @@ const PolicyCompliance = ({ onClose }) => {
                   </div>
 
                   <button
-                    className="admin-btn admin-btn-primary"
+                    className="btn-primary"
                     onClick={async () => {
+                      if (!newRequest.caseNumber.trim() || !newRequest.requestingAgency.trim() || !newRequest.description.trim()) {
+                        const errorMsg = document.createElement('div');
+                        errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+                        errorMsg.textContent = '✗ Please fill in Case Number, Agency, and Description';
+                        document.body.appendChild(errorMsg);
+                        setTimeout(() => {
+                          errorMsg.style.transition = 'opacity 0.3s';
+                          errorMsg.style.opacity = '0';
+                          setTimeout(() => errorMsg.remove(), 300);
+                        }, 3000);
+                        return;
+                      }
+                      
                       setLoading(true);
                       try {
                         const result = await createLawEnforcementRequest(newRequest);
                         if (result.success) {
-                          alert('Law enforcement request created!');
+                          // Show success notification
+                          const successMsg = document.createElement('div');
+                          successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+                          successMsg.textContent = '✓ Law enforcement request created successfully!';
+                          document.body.appendChild(successMsg);
+                          setTimeout(() => {
+                            successMsg.style.transition = 'opacity 0.3s';
+                            successMsg.style.opacity = '0';
+                            setTimeout(() => successMsg.remove(), 300);
+                          }, 3000);
+                          
+                          // Reset form
                           setNewRequest({
                             caseNumber: '',
                             requestingAgency: '',
@@ -615,18 +785,28 @@ const PolicyCompliance = ({ onClose }) => {
                             urgency: 'normal',
                             affectedUsers: []
                           });
+                          
+                          // Reload requests list
                           loadLawEnforcementRequests();
                         } else {
                           throw new Error(result.message || 'Creation failed');
                         }
                       } catch (error) {
                         console.error('Error creating request:', error);
-                        alert('Failed to create request: ' + (error.message || 'Unknown error'));
+                        const errorMsg = document.createElement('div');
+                        errorMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600; font-size: 14px;';
+                        errorMsg.textContent = '✗ Failed to create: ' + (error.message || 'Unknown error');
+                        document.body.appendChild(errorMsg);
+                        setTimeout(() => {
+                          errorMsg.style.transition = 'opacity 0.3s';
+                          errorMsg.style.opacity = '0';
+                          setTimeout(() => errorMsg.remove(), 300);
+                        }, 3000);
                       } finally {
                         setLoading(false);
                       }
                     }}
-                    disabled={loading}
+                    disabled={loading || !newRequest.caseNumber || !newRequest.requestingAgency || !newRequest.description}
                   >
                     {loading ? 'Creating...' : 'Create Request'}
                   </button>
@@ -640,15 +820,28 @@ const PolicyCompliance = ({ onClose }) => {
                 ) : (
                   <div className="requests-list">
                     {lawEnforcementRequests.map((request) => (
-                      <div key={request.id} className="request-item">
+                      <div key={request._id || request.id} className="request-item">
                         <div className="request-header">
                           <span className="case-number">Case: {request.caseNumber}</span>
-                          <span className={`urgency-badge urgency-${request.urgency}`}>
-                            {request.urgency}
+                          <span className={`urgency-badge urgency-${request.urgency || 'normal'}`}>
+                            {request.urgency || 'normal'}
+                          </span>
+                          <span className={`status-badge status-${request.status || 'pending'}`}>
+                            {request.status || 'pending'}
                           </span>
                         </div>
                         <p className="request-agency">Agency: {request.requestingAgency}</p>
-                        <p className="request-type">Type: {request.requestType}</p>
+                        <p className="request-type">Type: {request.requestType || 'data_request'}</p>
+                        <p className="request-description">{request.description}</p>
+                        {request.affectedUsers && request.affectedUsers.length > 0 && (
+                          <p className="request-users">Affected Users: {request.affectedUsers.length}</p>
+                        )}
+                        <div className="request-meta">
+                          <span>Created: {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</span>
+                          {request.createdBy && (
+                            <span>By: {request.createdBy.username || request.createdBy.email || 'Admin'}</span>
+                          )}
+                        </div>
                         <div className="request-actions">
                           <button className="admin-btn admin-btn-view">View Details</button>
                           <button className="admin-btn admin-btn-success">Approve</button>
@@ -662,6 +855,8 @@ const PolicyCompliance = ({ onClose }) => {
             </div>
           </div>
         )}
+          </div>
+          </div>
       </div>
       </div>
     </div>
