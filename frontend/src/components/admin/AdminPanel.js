@@ -1,3 +1,4 @@
+// Main admin panel component with all features
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +16,7 @@ import {
   deleteStory,
   getAllComments,
   deleteComment,
+  updateComment,
   updateUserProfile,
   verifyUserIdentity,
   getUserLoginHistory,
@@ -76,8 +78,11 @@ import {
   updateABTest,
   getVideoProcessing,
   getVideoProcessingStats,
+  updateVideoProcessing,
   getCDNHealth,
   getCDNQualityDrop,
+  getCDNIssues,
+  updateCDNIssue,
   getServerHealth,
   getServerMetrics,
   getErrorLogs,
@@ -85,8 +90,6 @@ import {
   getCrashStats,
   getAPIRequests,
   getAPIRequestStats,
-  getStorage,
-  getStorageAlerts,
   getTickets,
   getTicketDetails,
   assignTicket,
@@ -153,6 +156,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [commentsPagination, setCommentsPagination] = useState({ page: 1, limit: 20, total: 0 });
   const [commentsSearch, setCommentsSearch] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
   // Moderation
   const [moderationTab, setModerationTab] = useState('videos');
@@ -279,10 +284,26 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [videoProcessingPagination, setVideoProcessingPagination] = useState({ page: 1, limit: 20, total: 0 });
   const [videoProcessingStatus, setVideoProcessingStatus] = useState('all');
   const [loadingVideoProcessing, setLoadingVideoProcessing] = useState(false);
+  const [selectedVideoProcessing, setSelectedVideoProcessing] = useState(null);
+  const [formData, setFormData] = useState({
+    status: '',
+    progress: 0,
+    processingStage: ''
+  });
+  const [saving, setSaving] = useState(false);
   
   const [cdnHealth, setCdnHealth] = useState([]);
   const [cdnQualityDrop, setCdnQualityDrop] = useState([]);
   const [loadingCDN, setLoadingCDN] = useState(false);
+  
+  // User-reported CDN issues
+  const [cdnIssues, setCdnIssues] = useState([]);
+  const [cdnIssuesPagination, setCdnIssuesPagination] = useState({ page: 1, limit: 20, total: 0 });
+  const [cdnIssueStatus, setCdnIssueStatus] = useState('all');
+  const [cdnIssuePriority, setCdnIssuePriority] = useState('all');
+  const [cdnIssueType, setCdnIssueType] = useState('all');
+  const [loadingCDNIssues, setLoadingCDNIssues] = useState(false);
+  const [selectedCDNIssue, setSelectedCDNIssue] = useState(null);
   
   const [serverHealth, setServerHealth] = useState([]);
   const [serverMetrics, setServerMetrics] = useState(null);
@@ -308,9 +329,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [apiRequestPeriod, setApiRequestPeriod] = useState('1h');
   const [loadingAPIRequests, setLoadingAPIRequests] = useState(false);
   
-  const [storage, setStorage] = useState([]);
-  const [storageAlerts, setStorageAlerts] = useState([]);
-  const [loadingStorage, setLoadingStorage] = useState(false);
 
   // Support and Problem Solving
   const [supportTab, setSupportTab] = useState('tickets');
@@ -355,7 +373,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [shadowbanPagination, setShadowbanPagination] = useState({ page: 1, limit: 50, total: 0 });
   const [shadowbanStatus, setShadowbanStatus] = useState('all');
   const [shadowbanCaseType, setShadowbanCaseType] = useState('all');
-  const [loadingShadowban, setLoadingShadowban] = useState(false);
+  const [loadingShadowbanCases, setLoadingShadowbanCases] = useState(false);
   const [selectedShadowbanCase, setSelectedShadowbanCase] = useState(null);
   
   // Comment Appeals
@@ -493,6 +511,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     if (activeTab === 'analytics' && analyticsTab === 'devices') {
       fetchDeviceNetworkStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, analyticsTab]);
 
   // Fetch blacklist
@@ -605,12 +624,27 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       } else if (systemTab === 'api-requests') {
         fetchAPIRequests();
         fetchAPIRequestStats();
-      } else if (systemTab === 'storage') {
-        fetchStorage();
-        fetchStorageAlerts();
       }
     }
   }, [activeTab, systemTab, videoProcessingPagination.page, videoProcessingStatus, errorLogsPagination.page, errorLogLevel, errorLogType, errorLogSeverity, errorLogResolved, apiRequestPagination.page, apiRequestEndpoint, apiRequestMethod, apiRequestStatus, serverMetricsPeriod, apiRequestPeriod]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedVideoProcessing) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [selectedVideoProcessing]);
 
   // Fetch Support and Problem Solving data
   useEffect(() => {
@@ -811,7 +845,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
       return;
     }
     try {
@@ -819,11 +853,50 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       if (response.success) {
         setToast({ type: 'success', message: 'Comment deleted successfully' });
         fetchComments();
+      } else {
+        setToast({ type: 'error', message: response.message || 'Failed to delete comment' });
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
-      setToast({ type: 'error', message: 'Failed to delete comment' });
+      setToast({ type: 'error', message: error.response?.data?.message || 'Failed to delete comment' });
     }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingComment(comment);
+    setEditCommentText(comment.text || '');
+  };
+
+  const handleSaveCommentEdit = async () => {
+    if (!editingComment || !editCommentText.trim()) {
+      setToast({ type: 'error', message: 'Comment text cannot be empty' });
+      return;
+    }
+    
+    if (editCommentText.length > 1000) {
+      setToast({ type: 'error', message: 'Comment text is too long (max 1000 characters)' });
+      return;
+    }
+
+    try {
+      const response = await updateComment(editingComment._id, editCommentText.trim());
+      if (response.success) {
+        setToast({ type: 'success', message: 'Comment updated successfully' });
+        setEditingComment(null);
+        setEditCommentText('');
+        fetchComments();
+      } else {
+        setToast({ type: 'error', message: response.message || 'Failed to update comment' });
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      setToast({ type: 'error', message: error.response?.data?.message || 'Failed to update comment' });
+    }
+  };
+
+  const handleCancelCommentEdit = () => {
+    setEditingComment(null);
+    setEditCommentText('');
   };
 
   // Moderation functions
@@ -1470,17 +1543,52 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     try {
       setLoadingDeviceNetwork(true);
       setDeviceNetworkStats(null); // Clear previous data
-      const response = await getDeviceNetworkStats();
-      if (response.success && response.stats) {
-        setDeviceNetworkStats(response.stats);
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const response = await Promise.race([
+        getDeviceNetworkStats(),
+        timeoutPromise
+      ]);
+      
+      if (response && response.success) {
+        // Always set stats, even if empty
+        setDeviceNetworkStats(response.stats || {
+          devices: [],
+          os: [],
+          browsers: [],
+          networks: []
+        });
       } else {
-        setDeviceNetworkStats(null);
-        setToast({ type: 'error', message: response.message || 'Failed to load device/network stats' });
+        // Set empty stats instead of null so page doesn't show error
+        setDeviceNetworkStats({
+          devices: [],
+          os: [],
+          browsers: [],
+          networks: []
+        });
+        if (response && response.message) {
+          setToast({ type: 'warning', message: response.message });
+        }
       }
     } catch (error) {
       console.error('Error fetching device/network stats:', error);
-      setDeviceNetworkStats(null); // Ensure no fake data
-      setToast({ type: 'error', message: 'Failed to load device/network stats from database' });
+      // Set empty stats instead of null
+      setDeviceNetworkStats({
+        devices: [],
+        os: [],
+        browsers: [],
+        networks: []
+      });
+      
+      const errorMessage = error.message === 'Request timeout' 
+        ? 'Request timed out. Please try again.'
+        : 'No device data available. Users need to login first to generate device statistics.';
+      
+      setToast({ type: 'warning', message: errorMessage });
     } finally {
       setLoadingDeviceNetwork(false);
     }
@@ -1579,23 +1687,53 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     }
   };
 
+  // Update form data when selectedVideoProcessing changes
+  useEffect(() => {
+    if (selectedVideoProcessing) {
+      setFormData({
+        status: selectedVideoProcessing?.status || 'pending',
+        progress: selectedVideoProcessing?.uploadProgress || 0,
+        processingStage: selectedVideoProcessing?.processingStage || 'upload'
+      });
+    }
+  }, [selectedVideoProcessing]);
+
   // Technical System Control - Video Processing
   const fetchVideoProcessing = async () => {
     try {
       setLoadingVideoProcessing(true);
+      console.log('Fetching video processing with status:', videoProcessingStatus);
       const params = {
         page: videoProcessingPagination.page,
         limit: videoProcessingPagination.limit
       };
       if (videoProcessingStatus !== 'all') params.status = videoProcessingStatus;
       const response = await getVideoProcessing(params);
+      console.log('📥 Video processing response from DATABASE:', response);
       if (response.success) {
-        setVideoProcessing(response.processing || []);
-        setVideoProcessingPagination({ ...videoProcessingPagination, total: response.total || 0 });
+        // Verify data is from database (not fake)
+        if (response.processing && response.processing.length > 0) {
+          console.log('✅ REAL DATA from DATABASE:', {
+            count: response.processing.length,
+            firstRecord: {
+              id: response.processing[0]._id,
+              status: response.processing[0].status,
+              videoId: response.processing[0].videoId?._id,
+              userId: response.processing[0].userId?._id
+            }
+          });
+        }
+        setVideoProcessing(response.processing || []); // Real data from database
+        setVideoProcessingPagination({ ...videoProcessingPagination, total: response.total || 0 }); // Real count
+        console.log('✅ Video processing loaded from DATABASE:', response.processing?.length || 0, 'real records');
+      } else {
+        console.warn('Failed to load video processing:', response.message);
+        setVideoProcessing([]);
       }
     } catch (error) {
       console.error('Error fetching video processing:', error);
       setToast({ type: 'error', message: 'Failed to load video processing status' });
+      setVideoProcessing([]);
     } finally {
       setLoadingVideoProcessing(false);
     }
@@ -1603,12 +1741,35 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   const fetchVideoProcessingStats = async () => {
     try {
+      console.log('Fetching video processing stats...');
       const response = await getVideoProcessingStats('24h');
+      console.log('Video processing stats response:', response);
       if (response.success) {
         setVideoProcessingStats(response);
+        console.log('✅ Video processing stats loaded');
+      } else {
+        console.warn('Failed to load video processing stats:', response.message);
+        // Set default stats
+        setVideoProcessingStats({
+          stats: {
+            pending: 0,
+            processing: 0,
+            completed: 0,
+            failed: 0
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching video processing stats:', error);
+      // Set default stats on error
+      setVideoProcessingStats({
+        stats: {
+          pending: 0,
+          processing: 0,
+          completed: 0,
+          failed: 0
+        }
+      });
     }
   };
 
@@ -1616,13 +1777,30 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const fetchCDNHealth = async () => {
     try {
       setLoadingCDN(true);
+      console.log('🔵 Fetching CDN health from DATABASE...');
       const response = await getCDNHealth();
+      console.log('📥 CDN Health API response:', response);
       if (response.success) {
-        setCdnHealth(response.cdnHealth || []);
+        const data = response.cdnHealth || [];
+        console.log('✅ REAL DATA from DATABASE - CDN Health records:', data.length);
+        console.log('📊 CDN Health data details:', data.map(cdn => ({
+          id: cdn._id,
+          provider: cdn.cdnProvider,
+          region: cdn.region,
+          status: cdn.status,
+          latency: cdn.qualityMetrics?.averageLatency,
+          qualityDrops: cdn.videoQuality?.qualityDropCount,
+          lastChecked: cdn.lastChecked
+        })));
+        setCdnHealth(data);
+      } else {
+        console.warn('⚠️ CDN Health response not successful:', response.message);
+        setCdnHealth([]);
       }
     } catch (error) {
-      console.error('Error fetching CDN health:', error);
+      console.error('❌ Error fetching CDN health:', error);
       setToast({ type: 'error', message: 'Failed to load CDN health' });
+      setCdnHealth([]);
     } finally {
       setLoadingCDN(false);
     }
@@ -1630,12 +1808,28 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   const fetchCDNQualityDrop = async () => {
     try {
+      console.log('🔵 Fetching CDN quality drop from DATABASE...');
       const response = await getCDNQualityDrop();
+      console.log('📥 CDN Quality Drop API response:', response);
       if (response.success) {
-        setCdnQualityDrop(response.qualityDrops || []);
+        const data = response.qualityDrops || [];
+        console.log('✅ REAL DATA from DATABASE - Quality Drop records:', data.length);
+        console.log('📊 Quality Drop data details:', data.map(drop => ({
+          id: drop._id,
+          provider: drop.cdnProvider,
+          region: drop.region,
+          dropCount: drop.videoQuality?.qualityDropCount,
+          latency: drop.qualityMetrics?.averageLatency,
+          status: drop.status
+        })));
+        setCdnQualityDrop(data);
+      } else {
+        console.warn('⚠️ CDN Quality Drop response not successful:', response.message);
+        setCdnQualityDrop([]);
       }
     } catch (error) {
-      console.error('Error fetching CDN quality drop:', error);
+      console.error('❌ Error fetching CDN quality drop:', error);
+      setCdnQualityDrop([]);
     }
   };
 
@@ -1657,12 +1851,13 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   const fetchServerMetrics = async () => {
     try {
-      const response = await getServerMetrics(serverMetricsPeriod);
+      const response = await getServerMetrics({ period: serverMetricsPeriod });
       if (response.success) {
         setServerMetrics(response);
       }
     } catch (error) {
       console.error('Error fetching server metrics:', error);
+      setToast({ type: 'error', message: 'Failed to load server metrics' });
     }
   };
 
@@ -1693,7 +1888,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   const fetchCrashStats = async () => {
     try {
-      const response = await getCrashStats('24h');
+      const response = await getCrashStats();
       if (response.success) {
         setCrashStats(response);
       }
@@ -1742,7 +1937,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   const fetchAPIRequestStats = async () => {
     try {
-      const response = await getAPIRequestStats(apiRequestPeriod);
+      const response = await getAPIRequestStats({ period: apiRequestPeriod });
       if (response.success) {
         setApiRequestStats(response);
       }
@@ -1751,37 +1946,11 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     }
   };
 
-  // Technical System Control - Storage
-  const fetchStorage = async () => {
-    try {
-      setLoadingStorage(true);
-      const response = await getStorage();
-      if (response.success) {
-        setStorage(response.storage || []);
-      }
-    } catch (error) {
-      console.error('Error fetching storage:', error);
-      setToast({ type: 'error', message: 'Failed to load storage data' });
-    } finally {
-      setLoadingStorage(false);
-    }
-  };
-
-  const fetchStorageAlerts = async () => {
-    try {
-      const response = await getStorageAlerts();
-      if (response.success) {
-        setStorageAlerts(response.alerts || []);
-      }
-    } catch (error) {
-      console.error('Error fetching storage alerts:', error);
-    }
-  };
-
   // Support and Problem Solving - Tickets
   const fetchTickets = async () => {
     try {
       setLoadingTickets(true);
+      console.log('🎫 Fetching tickets...');
       const params = {
         page: ticketsPagination.page,
         limit: ticketsPagination.limit
@@ -1789,14 +1958,21 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       if (ticketStatus !== 'all') params.status = ticketStatus;
       if (ticketPriority !== 'all') params.priority = ticketPriority;
       if (ticketCategory !== 'all') params.category = ticketCategory;
+      console.log('🎫 Tickets API params:', params);
       const response = await getTickets(params);
+      console.log('🎫 Tickets API response:', response);
       if (response.success) {
-        setTickets(response.tickets || []);
+        const ticketsData = response.tickets || [];
+        console.log('✅ Tickets loaded from DATABASE:', ticketsData.length, 'tickets');
+        console.log('📊 REAL DATA from DATABASE:', ticketsData);
+        setTickets(ticketsData);
         setTicketsPagination({ ...ticketsPagination, total: response.total || 0 });
         setTicketStats(response.stats || {});
+      } else {
+        console.warn('⚠️ Tickets API returned success: false');
       }
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      console.error('❌ Error fetching tickets:', error);
       setToast({ type: 'error', message: 'Failed to load tickets' });
     } finally {
       setLoadingTickets(false);
@@ -1888,7 +2064,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   // Support and Problem Solving - Shadowban Cases
   const fetchShadowbanCases = async () => {
     try {
-      setLoadingShadowban(true);
+      setLoadingShadowbanCases(true);
       const params = {
         page: shadowbanPagination.page,
         limit: shadowbanPagination.limit
@@ -1904,7 +2080,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       console.error('Error fetching shadowban cases:', error);
       setToast({ type: 'error', message: 'Failed to load shadowban cases' });
     } finally {
-      setLoadingShadowban(false);
+      setLoadingShadowbanCases(false);
     }
   };
 
@@ -2150,8 +2326,41 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   }
   
   // Early return if user is not admin or not logged in (redirect handled in useEffect above)
-  if (!currentUser || (currentUser && currentUser.role !== 'admin')) {
+  // But don't block if we're still loading - let ProtectedRoute handle it
+  if (!authLoading && !currentUser) {
     return null;
+  }
+  
+  if (!authLoading && currentUser && currentUser.role !== 'admin') {
+    return null;
+  }
+  
+  // If still loading, show loading state instead of blocking
+  if (authLoading && !currentUser && !cachedUser) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        color: '#666',
+        background: '#fff'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #f3f3f3',
+            borderTop: '3px solid #FF0050',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 12px'
+          }} />
+          <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>Loading admin panel...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
   }
 
   const closeButton = isModal ? (
@@ -2165,14 +2374,17 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       <AdminSidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        activeSubTab={null}
+        activeSubTab={activeTab === 'system' ? systemTab : null}
         setActiveSubTab={(subTab) => {
           if (activeTab === 'moderation') setModerationTab(subTab);
           else if (activeTab === 'safety') setSafetyTab(subTab);
           else if (activeTab === 'monetization') setMonetizationTab(subTab);
           else if (activeTab === 'analytics') setAnalyticsTab(subTab);
           else if (activeTab === 'search') setSearchTab(subTab);
-          else if (activeTab === 'system') setSystemTab(subTab);
+          else if (activeTab === 'system') {
+            console.log('Setting systemTab to:', subTab);
+            setSystemTab(subTab);
+          }
           else if (activeTab === 'support') setSupportTab(subTab);
         }}
         onClose={onClose} 
@@ -2271,13 +2483,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         return `Technical System → ${systemTabNames[systemTab] || systemTab}`;
                       }
                       return 'Technical System';
-                    case 'support': return 'Support & Help';
+                    case 'support': 
+                      if (supportTab) {
+                        const supportTabNames = {
+                          'tickets': 'User Tickets',
+                          'login-issues': 'Login Issues',
+                          'payment-issues': 'Payment Issues',
+                          'video-upload': 'Upload Issues',
+                          'shadowban': 'Shadowban Cases',
+                          'comment-appeals': 'Comment Appeals'
+                        };
+                        return `Support & Help → ${supportTabNames[supportTab] || supportTab}`;
+                      }
+                      return 'Support & Help';
                     case 'policy': return 'Policy Compliance';
                     case 'security': return 'Security';
                     case 'app-store': return 'App Store Compliance';
                     case 'experiments': return 'Experiment Features';
                     case 'notifications': return 'Notifications Control';
-                    case 'backup': return 'Backup & Recovery';
                     default: return 'Admin Panel';
                   }
                 };
@@ -3636,12 +3859,22 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             <td>{comment.likes || 0}</td>
                             <td>{new Date(comment.createdAt).toLocaleDateString()}</td>
                             <td>
-                              <button
-                                onClick={() => handleDeleteComment(comment._id)}
-                                className="admin-btn admin-btn-delete"
-                              >
-                                Delete
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={() => handleEditComment(comment)}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                  title="Edit comment"
+                                >
+                                  <i className="fa-solid fa-edit"></i> Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteComment(comment._id)}
+                                  className="admin-btn admin-btn-danger admin-btn-small"
+                                  title="Delete comment"
+                                >
+                                  <i className="fa-solid fa-trash"></i> Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -3667,6 +3900,47 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </div>
                   )}
                 </>
+              )}
+
+              {/* Edit Comment Modal */}
+              {editingComment && (
+                <div className="admin-modal-overlay" onClick={handleCancelCommentEdit}>
+                  <div className="admin-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                    <div className="admin-modal-header">
+                      <h3>Edit Comment</h3>
+                      <button onClick={handleCancelCommentEdit}>×</button>
+                    </div>
+                    <div className="admin-modal-body">
+                      <div className="admin-form-group">
+                        <label>Comment Text</label>
+                        <textarea
+                          value={editCommentText}
+                          onChange={(e) => setEditCommentText(e.target.value)}
+                          rows="5"
+                          maxLength={1000}
+                          style={{ width: '100%', padding: '12px', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '14px', fontFamily: 'inherit', resize: 'vertical' }}
+                          placeholder="Enter comment text..."
+                        />
+                        <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                          {editCommentText.length}/1000 characters
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '16px', padding: '12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+                        <div><strong>User:</strong> {editingComment.user?.username || 'Unknown'}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Video:</strong> {editingComment.video?.description?.substring(0, 50) || 'N/A'}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Created:</strong> {new Date(editingComment.createdAt).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div className="admin-modal-footer">
+                      <button className="admin-btn admin-btn-secondary" onClick={handleCancelCommentEdit}>
+                        Cancel
+                      </button>
+                      <button className="admin-btn admin-btn-success" onClick={handleSaveCommentEdit}>
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -5192,7 +5466,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
             <div className="admin-analytics-content">
               {loadingDeviceNetwork ? (
                 <div className="admin-loading">Loading device/network stats...</div>
-              ) : deviceNetworkStats ? (
+              ) : deviceNetworkStats !== null ? (
                 <>
                   <h4 style={{ marginBottom: '12px' }}>Device Types</h4>
                   <div className="admin-table-container" style={{ marginBottom: '20px' }}>
@@ -5204,12 +5478,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {deviceNetworkStats.devices?.map((device, idx) => (
+                        {deviceNetworkStats.devices && deviceNetworkStats.devices.length > 0 ? (
+                          deviceNetworkStats.devices.map((device, idx) => (
                           <tr key={idx}>
-                            <td>{device.name}</td>
+                              <td>{device.name || 'Unknown'}</td>
                             <td>{device.count?.toLocaleString() || '0'}</td>
                           </tr>
-                        ))}
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No device data available</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -5224,12 +5504,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {deviceNetworkStats.os?.map((os, idx) => (
+                        {deviceNetworkStats.os && deviceNetworkStats.os.length > 0 ? (
+                          deviceNetworkStats.os.map((os, idx) => (
                           <tr key={idx}>
-                            <td>{os.name}</td>
+                              <td>{os.name || 'Unknown'}</td>
                             <td>{os.count?.toLocaleString() || '0'}</td>
                           </tr>
-                        ))}
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No OS data available</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -5244,12 +5530,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {deviceNetworkStats.browsers?.map((browser, idx) => (
+                        {deviceNetworkStats.browsers && deviceNetworkStats.browsers.length > 0 ? (
+                          deviceNetworkStats.browsers.map((browser, idx) => (
                           <tr key={idx}>
-                            <td>{browser.name}</td>
+                              <td>{browser.name || 'Unknown'}</td>
                             <td>{browser.count?.toLocaleString() || '0'}</td>
                           </tr>
-                        ))}
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No browser data available</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -5264,18 +5556,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {deviceNetworkStats.networks?.map((network, idx) => (
+                        {deviceNetworkStats.networks && deviceNetworkStats.networks.length > 0 ? (
+                          deviceNetworkStats.networks.map((network, idx) => (
                           <tr key={idx}>
-                            <td>{network.name}</td>
+                              <td>{network.name || 'Unknown'}</td>
                             <td>{network.count?.toLocaleString() || '0'}</td>
                           </tr>
-                        ))}
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No network data available</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </>
               ) : (
-                <div className="admin-error">Failed to load device/network stats</div>
+                <div className="admin-loading">Preparing device statistics...</div>
               )}
             </div>
           )}
@@ -5835,22 +6133,106 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             </tr>
                           ) : (
                             videoProcessing.map((proc) => (
-                              <tr key={proc._id}>
-                                <td>{proc.videoId?.title?.substring(0, 30) || proc.videoId?._id || 'N/A'}</td>
-                                <td>{proc.userId?.username || 'Unknown'}</td>
+                              <tr key={proc._id || proc.id}>
                                 <td>
-                                  <span className={`moderation-badge ${proc.status}`}>{proc.status}</span>
+                                  <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {proc.videoId?.title ? (
+                                      <span title={proc.videoId.title}>
+                                        {proc.videoId.title.substring(0, 30)}
+                                        {proc.videoId.title.length > 30 ? '...' : ''}
+                                      </span>
+                                    ) : (
+                                      <span style={{ color: '#6c757d', fontFamily: 'monospace', fontSize: '12px' }}>
+                                        {String(proc.videoId?._id || proc.videoId || 'N/A').substring(0, 20)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
-                                <td>{proc.uploadProgress}%</td>
-                                <td>{proc.processingStage || 'N/A'}</td>
-                                <td>{(proc.fileSize / (1024 * 1024)).toFixed(2)} MB</td>
-                                <td>{new Date(proc.startedAt).toLocaleString()}</td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {proc.userId?.profile?.avatar && (
+                                      <img 
+                                        src={proc.userId.profile.avatar} 
+                                        alt="" 
+                                        style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                      />
+                                    )}
+                                    <span>{proc.userId?.username || proc.userId?.email || 'Unknown'}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className={`moderation-badge status-${proc.status}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {proc.status || 'pending'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '100px' }}>
+                                    <div style={{ 
+                                      flex: 1,
+                                      height: '8px', 
+                                      background: '#e9ecef', 
+                                      borderRadius: '4px',
+                                      overflow: 'hidden'
+                                    }}>
+                                      <div style={{
+                                        width: `${proc.uploadProgress || 0}%`,
+                                        height: '100%',
+                                        background: proc.status === 'failed' ? '#dc3545' : 
+                                                   proc.status === 'completed' ? '#28a745' : 
+                                                   'linear-gradient(135deg, #FF0050 0%, #25F4EE 100%)',
+                                        transition: 'width 0.3s'
+                                      }}></div>
+                                    </div>
+                                    <span style={{ fontSize: '12px', color: '#6c757d', minWidth: '35px' }}>
+                                      {proc.uploadProgress || 0}%
+                                    </span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span style={{ 
+                                    padding: '4px 8px', 
+                                    background: '#f8f9fa', 
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    textTransform: 'capitalize',
+                                    color: '#495057'
+                                  }}>
+                                    {proc.processingStage || 'N/A'}
+                                  </span>
+                                </td>
+                                <td>
+                                  {proc.fileSize ? (
+                                    <span style={{ fontSize: '13px' }}>
+                                      {(proc.fileSize / (1024 * 1024)).toFixed(2)} MB
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#6c757d' }}>N/A</span>
+                                  )}
+                                </td>
+                                <td>
+                                  {proc.startedAt ? (
+                                    <span style={{ fontSize: '12px', color: '#495057' }}>
+                                      {new Date(proc.startedAt).toLocaleString()}
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#6c757d' }}>N/A</span>
+                                  )}
+                                </td>
                                 <td>
                                   <button
                                     onClick={() => {
-                                      setSelectedErrorLog(proc);
+                                      console.log('Button clicked! Video processing data:', proc);
+                                      setSelectedVideoProcessing(proc);
+                                      console.log('State set, selectedVideoProcessing should be:', proc);
                                     }}
                                     className="admin-btn admin-btn-secondary"
+                                    style={{ fontSize: '12px', padding: '6px 12px' }}
                                   >
                                     View Details
                                   </button>
@@ -5865,6 +6247,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 </div>
               )}
 
+              {/* Video Processing Details Modal - REMOVED (duplicate, using the one outside tab section at line 7087) */}
+
               {/* CDN Health */}
               {systemTab === 'cdn-health' && (
                 <div className="admin-system-content">
@@ -5872,48 +6256,416 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <div className="admin-loading">Loading CDN health...</div>
                   ) : (
                     <>
-                      <div className="admin-dashboard-stats" style={{ marginBottom: '20px' }}>
-                        {cdnHealth.map((cdn) => (
-                          <div key={cdn._id} className="admin-stat-card">
-                            <div className="admin-stat-value">{cdn.cdnProvider}</div>
-                            <div className="admin-stat-label">{cdn.status}</div>
-                            <div style={{ fontSize: '12px', marginTop: '8px' }}>
-                              Latency: {cdn.qualityMetrics?.averageLatency || 0}ms
-                              <br />
-                              Quality Drops: {cdn.videoQuality?.qualityDropCount || 0}
+                      {cdnHealth.length === 0 && cdnQualityDrop.length === 0 ? (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '60px 20px',
+                          color: '#666'
+                        }}>
+                          <i className="fa-solid fa-server" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}></i>
+                          <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>No CDN Health Data</h3>
+                          <p style={{ margin: 0, fontSize: '14px' }}>CDN health data will appear here once available.</p>
                             </div>
+                      ) : (
+                        <>
+                          <div className="admin-dashboard-stats" style={{ 
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                            gap: '20px',
+                            marginBottom: '30px'
+                          }}>
+                            {cdnHealth.length > 0 ? (
+                              cdnHealth.map((cdn) => {
+                                // Format provider name nicely
+                                const providerName = cdn.cdnProvider
+                                  ? cdn.cdnProvider
+                                      .split('-')
+                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                      .join(' ')
+                                  : 'Unknown';
+                                
+                                // Status colors and gradients
+                                const statusConfig = cdn.status === 'healthy' ? {
+                                  color: '#28a745',
+                                  bgGradient: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                  borderColor: '#28a745',
+                                  icon: 'fa-circle-check'
+                                } : cdn.status === 'degraded' ? {
+                                  color: '#ffc107',
+                                  bgGradient: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
+                                  borderColor: '#ffc107',
+                                  icon: 'fa-triangle-exclamation'
+                                } : cdn.status === 'down' ? {
+                                  color: '#dc3545',
+                                  bgGradient: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                                  borderColor: '#dc3545',
+                                  icon: 'fa-circle-xmark'
+                                } : {
+                                  color: '#6c757d',
+                                  bgGradient: 'linear-gradient(135deg, #6c757d 0%, #5a6268 100%)',
+                                  borderColor: '#6c757d',
+                                  icon: 'fa-circle-question'
+                                };
+                                
+                                const latency = cdn.qualityMetrics?.averageLatency || 0;
+                                const latencyStatus = latency < 50 ? 'excellent' : latency < 100 ? 'good' : 'poor';
+                                
+                                return (
+                                  <div 
+                                    key={cdn._id || cdn.id} 
+                                    className="admin-stat-card"
+                                    style={{
+                                      background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                                      border: `2px solid ${statusConfig.borderColor}`,
+                                      borderRadius: '16px',
+                                      padding: '24px',
+                                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                                      transition: 'all 0.3s ease',
+                                      position: 'relative',
+                                      overflow: 'hidden'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform = 'translateY(-4px)';
+                                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform = 'translateY(0)';
+                                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                                    }}
+                                  >
+                                    {/* Status indicator bar */}
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: '4px',
+                                      background: statusConfig.bgGradient
+                                    }}></div>
+                                    
+                                    {/* Header */}
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'space-between',
+                                      marginBottom: '16px'
+                                    }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{
+                                          width: '48px',
+                                          height: '48px',
+                                          borderRadius: '12px',
+                                          background: statusConfig.bgGradient,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: 'white',
+                                          fontSize: '20px',
+                                          boxShadow: `0 4px 8px ${statusConfig.color}40`
+                                        }}>
+                                          <i className={`fa-solid ${statusConfig.icon}`}></i>
                           </div>
-                        ))}
+                                        <div>
+                                          <div style={{ 
+                                            fontSize: '18px', 
+                                            fontWeight: '700',
+                                            color: '#212529',
+                                            marginBottom: '4px'
+                                          }}>
+                                            {providerName}
+                                          </div>
+                                          <div style={{ 
+                                            fontSize: '12px',
+                                            color: '#6c757d',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.5px'
+                                          }}>
+                                            {cdn.region || 'N/A'}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div style={{
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        background: `${statusConfig.color}15`,
+                                        color: statusConfig.color,
+                                        fontSize: '11px',
+                                        fontWeight: '600',
+                                        textTransform: 'capitalize',
+                                        border: `1px solid ${statusConfig.color}30`
+                                      }}>
+                                        {cdn.status || 'Unknown'}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Metrics */}
+                                    <div style={{ 
+                                      display: 'grid',
+                                      gridTemplateColumns: '1fr 1fr',
+                                      gap: '12px',
+                                      marginTop: '16px',
+                                      paddingTop: '16px',
+                                      borderTop: '1px solid #e9ecef'
+                                    }}>
+                                      <div>
+                                        <div style={{ 
+                                          fontSize: '11px', 
+                                          color: '#6c757d',
+                                          marginBottom: '4px',
+                                          fontWeight: '500'
+                                        }}>
+                                          Latency
+                                        </div>
+                                        <div style={{ 
+                                          fontSize: '20px', 
+                                          fontWeight: '700',
+                                          color: latencyStatus === 'excellent' ? '#28a745' : 
+                                                 latencyStatus === 'good' ? '#ffc107' : '#dc3545'
+                                        }}>
+                                          {latency}ms
+                                        </div>
+                                      </div>
+                                      
+                                      <div>
+                                        <div style={{ 
+                                          fontSize: '11px', 
+                                          color: '#6c757d',
+                                          marginBottom: '4px',
+                                          fontWeight: '500'
+                                        }}>
+                                          Quality Drops
+                                        </div>
+                                        <div style={{ 
+                                          fontSize: '20px', 
+                                          fontWeight: '700',
+                                          color: (cdn.videoQuality?.qualityDropCount || 0) === 0 ? '#28a745' : '#ffc107'
+                                        }}>
+                                          {cdn.videoQuality?.qualityDropCount || 0}
+                                        </div>
+                                      </div>
+                                      
+                                      {cdn.bandwidth && (
+                                        <>
+                                          <div>
+                                            <div style={{ 
+                                              fontSize: '11px', 
+                                              color: '#6c757d',
+                                              marginBottom: '4px',
+                                              fontWeight: '500'
+                                            }}>
+                                              Bandwidth
+                                            </div>
+                                            <div style={{ 
+                                              fontSize: '16px', 
+                                              fontWeight: '600',
+                                              color: '#212529'
+                                            }}>
+                                              {(cdn.bandwidth.used / 1000).toFixed(1)} Gbps
+                                            </div>
+                                          </div>
+                                          
+                                          <div>
+                                            <div style={{ 
+                                              fontSize: '11px', 
+                                              color: '#6c757d',
+                                              marginBottom: '4px',
+                                              fontWeight: '500'
+                                            }}>
+                                              Utilization
+                                            </div>
+                                            <div style={{ 
+                                              fontSize: '16px', 
+                                              fontWeight: '600',
+                                              color: cdn.bandwidth.utilization > 80 ? '#ffc107' : '#28a745'
+                                            }}>
+                                              {cdn.bandwidth.utilization?.toFixed(1) || 0}%
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Real Data Indicator */}
+                                    <div style={{
+                                      marginTop: '12px',
+                                      paddingTop: '12px',
+                                      borderTop: '1px solid #e9ecef',
+                                      fontSize: '10px',
+                                      color: '#6c757d',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
+                                    }}>
+                                      <i className="fa-solid fa-database" style={{ fontSize: '10px' }}></i>
+                                      <span>Real-time data from database</span>
+                                      {cdn.lastChecked && (
+                                        <span style={{ marginLeft: 'auto' }}>
+                                          {new Date(cdn.lastChecked).toLocaleTimeString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div style={{ 
+                                padding: '40px', 
+                                textAlign: 'center', 
+                                color: '#666',
+                                background: '#f9f9f9',
+                                borderRadius: '12px',
+                                gridColumn: '1 / -1'
+                              }}>
+                                <i className="fa-solid fa-server" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}></i>
+                                <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>No CDN providers found</p>
+                              </div>
+                            )}
                       </div>
                       
                       {cdnQualityDrop.length > 0 && (
-                        <div className="admin-table-container">
-                          <h3 style={{ marginBottom: '16px' }}>Quality Drop Issues</h3>
-                          <table className="admin-table">
+                            <div className="admin-table-container" style={{
+                              background: '#ffffff',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                              border: '1px solid #e9ecef',
+                              marginTop: '20px'
+                            }}>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '20px',
+                                paddingBottom: '16px',
+                                borderBottom: '2px solid #e9ecef'
+                              }}>
+                                <h3 style={{ 
+                                  margin: 0, 
+                                  fontSize: '20px',
+                                  fontWeight: '700',
+                                  color: '#212529',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px'
+                                }}>
+                                  <i className="fa-solid fa-exclamation-triangle" style={{ color: '#ffc107' }}></i>
+                                  Quality Drop Issues
+                                </h3>
+                                <span style={{
+                                  padding: '8px 16px',
+                                  background: 'linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)',
+                                  color: '#856404',
+                                  borderRadius: '20px',
+                                  fontSize: '13px',
+                                  fontWeight: '600',
+                                  border: '1px solid #ffc10730',
+                                  boxShadow: '0 2px 4px rgba(255, 193, 7, 0.2)'
+                                }}>
+                                  {cdnQualityDrop.length} Active Issue{cdnQualityDrop.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <table className="admin-table" style={{
+                                width: '100%',
+                                borderCollapse: 'separate',
+                                borderSpacing: 0
+                              }}>
                             <thead>
                               <tr>
-                                <th>Provider</th>
-                                <th>Region</th>
-                                <th>Drop Count</th>
-                                <th>Average Latency</th>
-                                <th>Status</th>
+                                    <th style={{ 
+                                      background: '#f8f9fa',
+                                      padding: '12px',
+                                      textAlign: 'left',
+                                      fontWeight: '600',
+                                      color: '#495057',
+                                      borderBottom: '2px solid #dee2e6'
+                                    }}>Provider</th>
+                                    <th style={{ 
+                                      background: '#f8f9fa',
+                                      padding: '12px',
+                                      textAlign: 'left',
+                                      fontWeight: '600',
+                                      color: '#495057',
+                                      borderBottom: '2px solid #dee2e6'
+                                    }}>Region</th>
+                                    <th style={{ 
+                                      background: '#f8f9fa',
+                                      padding: '12px',
+                                      textAlign: 'left',
+                                      fontWeight: '600',
+                                      color: '#495057',
+                                      borderBottom: '2px solid #dee2e6'
+                                    }}>Drop Count</th>
+                                    <th style={{ 
+                                      background: '#f8f9fa',
+                                      padding: '12px',
+                                      textAlign: 'left',
+                                      fontWeight: '600',
+                                      color: '#495057',
+                                      borderBottom: '2px solid #dee2e6'
+                                    }}>Average Latency</th>
+                                    <th style={{ 
+                                      background: '#f8f9fa',
+                                      padding: '12px',
+                                      textAlign: 'left',
+                                      fontWeight: '600',
+                                      color: '#495057',
+                                      borderBottom: '2px solid #dee2e6'
+                                    }}>Status</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {cdnQualityDrop.map((drop) => (
-                                <tr key={drop._id}>
-                                  <td>{drop.cdnProvider}</td>
-                                  <td>{drop.region}</td>
-                                  <td>{drop.videoQuality?.qualityDropCount || 0}</td>
-                                  <td>{drop.qualityMetrics?.averageLatency || 0}ms</td>
-                                  <td>
-                                    <span className={`moderation-badge ${drop.status}`}>{drop.status}</span>
+                                  {cdnQualityDrop.map((drop) => {
+                                    const providerName = drop.cdnProvider
+                                      ? drop.cdnProvider
+                                          .split('-')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ')
+                                      : 'Unknown';
+                                    
+                                    return (
+                                      <tr key={drop._id || drop.id} style={{
+                                        borderBottom: '1px solid #e9ecef',
+                                        transition: 'background 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                      >
+                                        <td style={{ padding: '14px 12px', fontWeight: '500' }}>{providerName}</td>
+                                        <td style={{ padding: '14px 12px', color: '#6c757d' }}>{drop.region || 'N/A'}</td>
+                                        <td style={{ padding: '14px 12px' }}>
+                                          <span style={{
+                                            padding: '4px 10px',
+                                            background: '#fff3cd',
+                                            color: '#856404',
+                                            borderRadius: '12px',
+                                            fontSize: '12px',
+                                            fontWeight: '600'
+                                          }}>
+                                            {drop.videoQuality?.qualityDropCount || 0}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: '14px 12px', fontWeight: '500' }}>
+                                          {drop.qualityMetrics?.averageLatency || 0}ms
+                                        </td>
+                                        <td style={{ padding: '14px 12px' }}>
+                                          <span className={`moderation-badge ${drop.status || 'unknown'}`} style={{ 
+                                            textTransform: 'capitalize',
+                                            padding: '6px 12px',
+                                            borderRadius: '20px',
+                                            fontSize: '12px',
+                                            fontWeight: '600'
+                                          }}>
+                                            {drop.status || 'Unknown'}
+                                          </span>
                                   </td>
                                 </tr>
-                              ))}
+                                    );
+                                  })}
                             </tbody>
                           </table>
                         </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}
@@ -6255,100 +7007,1865 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 </div>
               )}
 
-              {/* Storage */}
-              {systemTab === 'storage' && (
-                <div className="admin-system-content">
-                  {loadingStorage ? (
-                    <div className="admin-loading">Loading storage data...</div>
-                  ) : (
-                    <>
-                      <div className="admin-dashboard-stats" style={{ marginBottom: '20px' }}>
-                        {storage.map((stor) => (
-                          <div key={stor._id} className="admin-stat-card">
-                            <div className="admin-stat-value">{stor.storageType}</div>
-                            <div className="admin-stat-label">
-                              {stor.utilization.toFixed(1)}% Used
+            </div>
+          )}
+
+          {/* Support & Help Tab */}
+          {activeTab === 'support' && (
+            <div className="admin-support-content" style={{ 
+              width: '100%', 
+              minHeight: 'calc(100vh - 80px)', 
+              maxHeight: 'calc(100vh - 80px)',
+              overflowY: 'auto !important', 
+              overflowX: 'hidden !important',
+              background: '#f8f9fa',
+              position: 'relative'
+            }}>
+              {supportTab === 'tickets' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {/* Stats Cards */}
+                  {ticketStats && Object.keys(ticketStats).length > 0 && (
+                    <div className="admin-dashboard-stats" style={{ 
+                      marginBottom: '30px', 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+                      gap: '20px' 
+                    }}>
+                      {Object.entries(ticketStats).map(([status, count]) => {
+                        const statusConfig = {
+                          'open': { gradient: 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)', icon: '🔓' },
+                          'in-progress': { gradient: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)', icon: '⚙️' },
+                          'resolved': { gradient: 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)', icon: '✅' },
+                          'closed': { gradient: 'linear-gradient(135deg, #6c757d 0%, #545b62 100%)', icon: '🔒' }
+                        };
+                        const config = statusConfig[status] || { gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: '📋' };
+                        return (
+                          <div 
+                            key={status}
+                            className="admin-stat-card"
+                            style={{
+                              background: config.gradient,
+                              color: 'white',
+                              padding: '24px',
+                              borderRadius: '16px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              transition: 'all 0.3s ease',
+                              cursor: 'pointer',
+                              border: '2px solid transparent'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)';
+                              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.2)';
+                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                              e.currentTarget.style.borderColor = 'transparent';
+                            }}
+                          >
+                            <div style={{ 
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              marginBottom: '16px'
+                            }}>
+                              <div style={{ 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
+                                opacity: 0.95
+                              }}>
+                                {status.replace('-', ' ')}
+                              </div>
+                              <div style={{ fontSize: '28px', opacity: 0.9 }}>
+                                {config.icon}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '12px', marginTop: '8px' }}>
-                              Used: {(stor.used).toFixed(2)} GB / {(stor.totalCapacity).toFixed(2)} GB
-                              <br />
-                              Available: {(stor.available).toFixed(2)} GB
+                            <div style={{ 
+                              fontSize: '42px', 
+                              fontWeight: '800', 
+                              marginBottom: '8px',
+                              lineHeight: '1'
+                            }}>
+                              {count}
+                            </div>
+                            <div style={{ 
+                              fontSize: '13px', 
+                              opacity: 0.9,
+                              fontWeight: '500'
+                            }}>
+                              {count === 1 ? 'Ticket' : 'Tickets'}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                      {storageAlerts.length > 0 && (
-                        <div className="admin-table-container" style={{ marginBottom: '20px' }}>
-                          <h3 style={{ marginBottom: '16px' }}>Storage Alerts</h3>
-                          <table className="admin-table">
+                  {/* Filters */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '24px', 
+                    flexWrap: 'wrap', 
+                    gap: '16px',
+                    background: 'white',
+                    padding: '20px 24px',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <div className="admin-filters" style={{ 
+                      display: 'flex', 
+                      gap: '16px', 
+                      flexWrap: 'wrap',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ 
+                          fontSize: '12px', 
+                          fontWeight: '600', 
+                          color: '#495057',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Status
+                        </label>
+                        <select
+                          value={ticketStatus}
+                          onChange={(e) => {
+                            setTicketStatus(e.target.value);
+                            setTicketsPagination({ ...ticketsPagination, page: 1 });
+                          }}
+                          className="admin-filter-select"
+                          style={{
+                            padding: '12px 20px',
+                            borderRadius: '10px',
+                            border: '2px solid #e0e0e0',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            background: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            minWidth: '180px',
+                            outline: 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e0e0e0';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                        >
+                          <option value="all">All Status</option>
+                          <option value="open">Open</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ 
+                          fontSize: '12px', 
+                          fontWeight: '600', 
+                          color: '#495057',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Priority
+                        </label>
+                        <select
+                          value={ticketPriority}
+                          onChange={(e) => {
+                            setTicketPriority(e.target.value);
+                            setTicketsPagination({ ...ticketsPagination, page: 1 });
+                          }}
+                          className="admin-filter-select"
+                          style={{
+                            padding: '12px 20px',
+                            borderRadius: '10px',
+                            border: '2px solid #e0e0e0',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            background: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            minWidth: '180px',
+                            outline: 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e0e0e0';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                        >
+                          <option value="all">All Priority</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ 
+                          fontSize: '12px', 
+                          fontWeight: '600', 
+                          color: '#495057',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Category
+                        </label>
+                        <select
+                          value={ticketCategory}
+                          onChange={(e) => {
+                            setTicketCategory(e.target.value);
+                            setTicketsPagination({ ...ticketsPagination, page: 1 });
+                          }}
+                          className="admin-filter-select"
+                          style={{
+                            padding: '12px 20px',
+                            borderRadius: '10px',
+                            border: '2px solid #e0e0e0',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            background: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            minWidth: '180px',
+                            outline: 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e0e0e0';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                          }}
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="technical">Technical</option>
+                          <option value="billing">Billing</option>
+                          <option value="account">Account</option>
+                          <option value="content">Content</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ 
+                      fontSize: '15px', 
+                      color: '#495057', 
+                      fontWeight: '600',
+                      padding: '12px 20px',
+                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                      borderRadius: '10px',
+                      border: '1px solid #dee2e6'
+                    }}>
+                      📊 Total: <span style={{ color: '#667eea', fontSize: '18px' }}>{ticketsPagination.total || 0}</span> tickets
+                    </div>
+                  </div>
+
+                  {loadingTickets ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ 
+                        fontSize: '48px', 
+                        marginBottom: '20px',
+                        animation: 'spin 1s linear infinite'
+                      }}>⏳</div>
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '600',
+                        color: '#495057',
+                        marginBottom: '8px'
+                      }}>Loading tickets...</div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#6c757d'
+                      }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : tickets.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ 
+                        fontSize: '80px', 
+                        marginBottom: '24px',
+                        opacity: 0.7,
+                        filter: 'grayscale(20%)'
+                      }}>🎫</div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: '700', 
+                        marginBottom: '12px',
+                        color: '#212529',
+                        letterSpacing: '-0.5px'
+                      }}>No tickets found</div>
+                      <div style={{ 
+                        fontSize: '15px', 
+                        color: '#6c757d',
+                        maxWidth: '450px',
+                        margin: '0 auto',
+                        lineHeight: '1.6'
+                      }}>User tickets will appear here when users submit support requests. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="admin-table-container" style={{
+                        background: 'white',
+                        borderRadius: '12px',
+                        padding: '0',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                        border: '1px solid #e9ecef',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          padding: '20px 24px',
+                          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                          borderBottom: '2px solid #dee2e6'
+                        }}>
+                          <h3 style={{
+                            margin: 0,
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: '#212529',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}>
+                            <span>📋</span> Tickets List
+                          </h3>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="admin-table" style={{ margin: 0 }}>
                             <thead>
-                              <tr>
-                                <th>Storage</th>
-                                <th>Alert Type</th>
-                                <th>Severity</th>
-                                <th>Message</th>
-                                <th>Current Value</th>
-                                <th>Threshold</th>
+                              <tr style={{ background: '#f8f9fa' }}>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Ticket ID</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>User</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Subject</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Category</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Priority</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Status</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Created</th>
+                                <th style={{ 
+                                  fontWeight: '700', 
+                                  color: '#495057',
+                                  padding: '16px 20px',
+                                  fontSize: '13px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {storageAlerts.map((alert, idx) => (
-                                <tr key={idx}>
-                                  <td>{alert.storageType}</td>
-                                  <td>{alert.type}</td>
-                                  <td>
-                                    <span className={`moderation-badge ${alert.severity}`}>{alert.severity}</span>
+                            {tickets.map((ticket, index) => {
+                              const priorityColors = {
+                                'urgent': { bg: '#dc3545', text: 'white', icon: '🚨' },
+                                'high': { bg: '#fd7e14', text: 'white', icon: '⚠️' },
+                                'medium': { bg: '#ffc107', text: '#212529', icon: '⚡' },
+                                'low': { bg: '#28a745', text: 'white', icon: '✅' }
+                              };
+                              const statusColors = {
+                                'open': { bg: '#17a2b8', text: 'white', icon: '🔓' },
+                                'in-progress': { bg: '#007bff', text: 'white', icon: '⚙️' },
+                                'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const priority = priorityColors[ticket.priority] || priorityColors['medium'];
+                              const status = statusColors[ticket.status] || statusColors['open'];
+                              return (
+                                <tr 
+                                  key={ticket._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < tickets.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ 
+                                    fontWeight: '700', 
+                                    color: '#667eea',
+                                    padding: '16px 20px',
+                                    fontSize: '14px'
+                                  }}>
+                                    <span style={{
+                                      padding: '4px 10px',
+                                      background: 'rgba(102, 126, 234, 0.1)',
+                                      borderRadius: '6px',
+                                      fontFamily: 'monospace'
+                                    }}>
+                                      #{ticket.ticketId || ticket._id.toString().slice(-6)}
+                                    </span>
                                   </td>
-                                  <td>{alert.message}</td>
-                                  <td>{alert.currentValue}%</td>
-                                  <td>{alert.threshold}%</td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      {ticket.user?.profile?.avatar ? (
+                                        <img 
+                                          src={ticket.user.profile.avatar} 
+                                          alt={ticket.user.username}
+                                          style={{ 
+                                            width: '40px', 
+                                            height: '40px', 
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: '2px solid #e9ecef',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                          }}
+                                        />
+                                      ) : (
+                                        <div style={{
+                                          width: '40px',
+                                          height: '40px',
+                                          borderRadius: '50%',
+                                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: 'white',
+                                          fontWeight: '700',
+                                          fontSize: '16px'
+                                        }}>
+                                          {(ticket.user?.username || 'U')[0].toUpperCase()}
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div style={{ 
+                                          fontWeight: '600',
+                                          fontSize: '14px',
+                                          color: '#212529',
+                                          marginBottom: '2px'
+                                        }}>
+                                          {ticket.user?.username || 'Unknown'}
+                                        </div>
+                                        {ticket.user?.email && (
+                                          <div style={{ 
+                                            fontSize: '12px', 
+                                            color: '#6c757d'
+                                          }}>
+                                            {ticket.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ 
+                                    maxWidth: '300px',
+                                    padding: '16px 20px'
+                                  }}>
+                                    <div style={{ 
+                                      fontWeight: '600', 
+                                      marginBottom: '6px',
+                                      fontSize: '14px',
+                                      color: '#212529'
+                                    }}>
+                                      {ticket.subject || 'No subject'}
+                                    </div>
+                                    {ticket.description && (
+                                      <div style={{ 
+                                        fontSize: '12px', 
+                                        color: '#6c757d',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                        lineHeight: '1.4'
+                                      }}>
+                                        {ticket.description.substring(0, 60)}...
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '6px 14px',
+                                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      textTransform: 'capitalize',
+                                      color: '#495057',
+                                      border: '1px solid #dee2e6',
+                                      display: 'inline-block'
+                                    }}>
+                                      {ticket.category || 'General'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: priority.bg,
+                                      color: priority.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{priority.icon}</span>
+                                      {ticket.priority || 'medium'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {ticket.status || 'open'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '13px', 
+                                      fontWeight: '600',
+                                      color: '#212529',
+                                      marginBottom: '4px'
+                                    }}>
+                                      {new Date(ticket.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: '11px', 
+                                      color: '#6c757d'
+                                    }}>
+                                      {new Date(ticket.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedTicket(ticket)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+
+                      {/* Pagination */}
+                      {ticketsPagination.total > ticketsPagination.limit && (
+                        <div className="admin-pagination" style={{
+                          marginTop: '24px',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '16px',
+                          padding: '20px',
+                          background: 'white',
+                          borderRadius: '12px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}>
+                          <button
+                            disabled={ticketsPagination.page === 1}
+                            onClick={() => setTicketsPagination({ ...ticketsPagination, page: ticketsPagination.page - 1 })}
+                            style={{
+                              padding: '12px 24px',
+                              borderRadius: '10px',
+                              border: '2px solid',
+                              borderColor: ticketsPagination.page === 1 ? '#e9ecef' : '#667eea',
+                              background: ticketsPagination.page === 1 ? '#f8f9fa' : 'white',
+                              color: ticketsPagination.page === 1 ? '#adb5bd' : '#667eea',
+                              cursor: ticketsPagination.page === 1 ? 'not-allowed' : 'pointer',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              opacity: ticketsPagination.page === 1 ? 0.5 : 1
+                            }}
+                            onMouseEnter={(e) => {
+                              if (ticketsPagination.page !== 1) {
+                                e.currentTarget.style.background = '#667eea';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.transform = 'translateX(-2px)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (ticketsPagination.page !== 1) {
+                                e.currentTarget.style.background = 'white';
+                                e.currentTarget.style.color = '#667eea';
+                                e.currentTarget.style.transform = 'translateX(0)';
+                              }
+                            }}
+                          >
+                            ← Previous
+                          </button>
+                          <span style={{ 
+                            fontWeight: '600', 
+                            color: '#495057',
+                            fontSize: '15px',
+                            padding: '12px 20px',
+                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                            borderRadius: '10px',
+                            border: '1px solid #dee2e6'
+                          }}>
+                            Page <strong style={{ color: '#667eea' }}>{ticketsPagination.page}</strong> of <strong>{Math.ceil(ticketsPagination.total / ticketsPagination.limit)}</strong>
+                          </span>
+                          <button
+                            disabled={ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit)}
+                            onClick={() => setTicketsPagination({ ...ticketsPagination, page: ticketsPagination.page + 1 })}
+                            style={{
+                              padding: '12px 24px',
+                              borderRadius: '10px',
+                              border: '2px solid',
+                              borderColor: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#e9ecef' : '#667eea',
+                              background: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#f8f9fa' : 'white',
+                              color: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#adb5bd' : '#667eea',
+                              cursor: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? 'not-allowed' : 'pointer',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              opacity: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? 0.5 : 1
+                            }}
+                            onMouseEnter={(e) => {
+                              if (ticketsPagination.page < Math.ceil(ticketsPagination.total / ticketsPagination.limit)) {
+                                e.currentTarget.style.background = '#667eea';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.transform = 'translateX(2px)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (ticketsPagination.page < Math.ceil(ticketsPagination.total / ticketsPagination.limit)) {
+                                e.currentTarget.style.background = 'white';
+                                e.currentTarget.style.color = '#667eea';
+                                e.currentTarget.style.transform = 'translateX(0)';
+                              }
+                            }}
+                          >
+                            Next →
+                          </button>
                         </div>
                       )}
+                    </>
+                  )}
+                </div>
+              )}
 
-                      <div className="admin-table-container">
-                        <table className="admin-table">
+              {supportTab === 'login-issues' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {loadingLoginIssues ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ 
+                        fontSize: '48px', 
+                        marginBottom: '20px',
+                        animation: 'spin 1s linear infinite'
+                      }}>⏳</div>
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '600',
+                        color: '#495057',
+                        marginBottom: '8px'
+                      }}>Loading login issues...</div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#6c757d'
+                      }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : loginIssues.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ 
+                        fontSize: '80px', 
+                        marginBottom: '24px',
+                        opacity: 0.7,
+                        filter: 'grayscale(20%)'
+                      }}>🔐</div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: '700', 
+                        marginBottom: '12px',
+                        color: '#212529',
+                        letterSpacing: '-0.5px'
+                      }}>No login issues found</div>
+                      <div style={{ 
+                        fontSize: '15px', 
+                        color: '#6c757d',
+                        maxWidth: '450px',
+                        margin: '0 auto',
+                        lineHeight: '1.6'
+                      }}>Login issues will appear here when users report authentication problems. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <div className="admin-table-container" style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '0',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '1px solid #e9ecef',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '700',
+                          color: '#212529',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span>🔐</span> Login Issues List
+                        </h3>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ margin: 0 }}>
                           <thead>
-                            <tr>
-                              <th>Storage Type</th>
-                              <th>Total Capacity</th>
-                              <th>Used</th>
-                              <th>Available</th>
-                              <th>Utilization</th>
-                              <th>Files</th>
-                              <th>Last Checked</th>
+                            <tr style={{ background: '#f8f9fa' }}>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>User</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Issue Type</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Description</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Status</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Reported</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {storage.length === 0 ? (
-                              <tr>
-                                <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>No storage data available</td>
-                              </tr>
-                            ) : (
-                              storage.map((stor) => (
-                                <tr key={stor._id}>
-                                  <td>{stor.storageType}</td>
-                                  <td>{(stor.totalCapacity).toFixed(2)} GB</td>
-                                  <td>{(stor.used).toFixed(2)} GB</td>
-                                  <td>{(stor.available).toFixed(2)} GB</td>
-                                  <td>
-                                    <span className={`moderation-badge ${stor.utilization > 90 ? 'critical' : stor.utilization > 75 ? 'warning' : 'healthy'}`}>
-                                      {stor.utilization.toFixed(1)}%
+                            {loginIssues.map((issue, index) => {
+                              const statusColors = {
+                                'pending': { bg: '#ffc107', text: '#212529', icon: '⏳' },
+                                'in-progress': { bg: '#007bff', text: 'white', icon: '⚙️' },
+                                'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const status = statusColors[issue.status] || statusColors['pending'];
+                              return (
+                                <tr 
+                                  key={issue._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < loginIssues.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                      }}>
+                                        {(issue.user?.username || 'U')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#212529', marginBottom: '2px' }}>
+                                          {issue.user?.username || 'Unknown'}
+                                        </div>
+                                        {issue.user?.email && (
+                                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                            {issue.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '6px 14px',
+                                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      textTransform: 'capitalize',
+                                      color: '#495057',
+                                      border: '1px solid #dee2e6',
+                                      display: 'inline-block'
+                                    }}>
+                                      {issue.issueType || 'Unknown'}
                                     </span>
                                   </td>
-                                  <td>{stor.files?.total || 0}</td>
-                                  <td>{new Date(stor.lastChecked).toLocaleString()}</td>
+                                  <td style={{ maxWidth: '300px', padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '14px', 
+                                      color: '#212529',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {issue.description || 'No description'}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {issue.status || 'pending'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212529', marginBottom: '4px' }}>
+                                      {new Date(issue.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                      {new Date(issue.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedLoginIssue(issue)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
                                 </tr>
-                              ))
-                            )}
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
-                    </>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {supportTab === 'payment-issues' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {loadingPaymentIssues ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ fontSize: '48px', marginBottom: '20px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#495057', marginBottom: '8px' }}>Loading payment issues...</div>
+                      <div style={{ fontSize: '14px', color: '#6c757d' }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : paymentIssues.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ fontSize: '80px', marginBottom: '24px', opacity: 0.7, filter: 'grayscale(20%)' }}>💳</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#212529', letterSpacing: '-0.5px' }}>No payment issues found</div>
+                      <div style={{ fontSize: '15px', color: '#6c757d', maxWidth: '450px', margin: '0 auto', lineHeight: '1.6' }}>Payment issues will appear here when users report transaction problems. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <div className="admin-table-container" style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '0',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '1px solid #e9ecef',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '700',
+                          color: '#212529',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span>💳</span> Payment Issues List
+                        </h3>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ margin: 0 }}>
+                          <thead>
+                            <tr style={{ background: '#f8f9fa' }}>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>User</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Issue Type</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Transaction ID</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Amount</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Status</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Reported</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paymentIssues.map((issue, index) => {
+                              const statusColors = {
+                                'pending': { bg: '#ffc107', text: '#212529', icon: '⏳' },
+                                'in-progress': { bg: '#007bff', text: 'white', icon: '⚙️' },
+                                'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const status = statusColors[issue.status] || statusColors['pending'];
+                              return (
+                                <tr 
+                                  key={issue._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < paymentIssues.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                      }}>
+                                        {(issue.user?.username || 'U')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#212529', marginBottom: '2px' }}>
+                                          {issue.user?.username || 'Unknown'}
+                                        </div>
+                                        {issue.user?.email && (
+                                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                            {issue.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '6px 14px',
+                                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      textTransform: 'capitalize',
+                                      color: '#495057',
+                                      border: '1px solid #dee2e6',
+                                      display: 'inline-block'
+                                    }}>
+                                      {issue.issueType || 'Unknown'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '4px 10px',
+                                      background: 'rgba(102, 126, 234, 0.1)',
+                                      borderRadius: '6px',
+                                      fontFamily: 'monospace',
+                                      fontSize: '13px',
+                                      fontWeight: '600',
+                                      color: '#667eea'
+                                    }}>
+                                      {issue.transactionId || 'N/A'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '16px', 
+                                      fontWeight: '700',
+                                      color: '#28a745'
+                                    }}>
+                                      ${(issue.amount || 0).toFixed(2)}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {issue.status || 'pending'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212529', marginBottom: '4px' }}>
+                                      {new Date(issue.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                      {new Date(issue.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedPaymentIssue(issue)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {supportTab === 'video-upload' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {loadingVideoUploadIssues ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ fontSize: '48px', marginBottom: '20px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#495057', marginBottom: '8px' }}>Loading video upload issues...</div>
+                      <div style={{ fontSize: '14px', color: '#6c757d' }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : videoUploadIssues.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ fontSize: '80px', marginBottom: '24px', opacity: 0.7, filter: 'grayscale(20%)' }}>📹</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#212529', letterSpacing: '-0.5px' }}>No video upload issues found</div>
+                      <div style={{ fontSize: '15px', color: '#6c757d', maxWidth: '450px', margin: '0 auto', lineHeight: '1.6' }}>Video upload issues will appear here when users report problems uploading videos. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <div className="admin-table-container" style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '0',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '1px solid #e9ecef',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '700',
+                          color: '#212529',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span>📹</span> Video Upload Issues List
+                        </h3>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ margin: 0 }}>
+                          <thead>
+                            <tr style={{ background: '#f8f9fa' }}>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>User</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Issue Type</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Description</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Status</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Reported</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {videoUploadIssues.map((issue, index) => {
+                              const statusColors = {
+                                'pending': { bg: '#ffc107', text: '#212529', icon: '⏳' },
+                                'in-progress': { bg: '#007bff', text: 'white', icon: '⚙️' },
+                                'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const status = statusColors[issue.status] || statusColors['pending'];
+                              return (
+                                <tr 
+                                  key={issue._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < videoUploadIssues.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                      }}>
+                                        {(issue.user?.username || 'U')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#212529', marginBottom: '2px' }}>
+                                          {issue.user?.username || 'Unknown'}
+                                        </div>
+                                        {issue.user?.email && (
+                                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                            {issue.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '6px 14px',
+                                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      textTransform: 'capitalize',
+                                      color: '#495057',
+                                      border: '1px solid #dee2e6',
+                                      display: 'inline-block'
+                                    }}>
+                                      {issue.issueType || 'Unknown'}
+                                    </span>
+                                  </td>
+                                  <td style={{ maxWidth: '300px', padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '14px', 
+                                      color: '#212529',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {issue.description || 'No description'}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {issue.status || 'pending'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212529', marginBottom: '4px' }}>
+                                      {new Date(issue.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                      {new Date(issue.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedVideoUploadIssue(issue)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {supportTab === 'shadowban' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {loadingShadowbanCases ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ fontSize: '48px', marginBottom: '20px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#495057', marginBottom: '8px' }}>Loading shadowban cases...</div>
+                      <div style={{ fontSize: '14px', color: '#6c757d' }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : shadowbanCases.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ fontSize: '80px', marginBottom: '24px', opacity: 0.7, filter: 'grayscale(20%)' }}>👻</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#212529', letterSpacing: '-0.5px' }}>No shadowban cases found</div>
+                      <div style={{ fontSize: '15px', color: '#6c757d', maxWidth: '450px', margin: '0 auto', lineHeight: '1.6' }}>Shadowban cases will appear here when users report visibility issues. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <div className="admin-table-container" style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '0',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '1px solid #e9ecef',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '700',
+                          color: '#212529',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span>👻</span> Shadowban Cases List
+                        </h3>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ margin: 0 }}>
+                          <thead>
+                            <tr style={{ background: '#f8f9fa' }}>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>User</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Case Type</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Description</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Status</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Reported</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {shadowbanCases.map((case_, index) => {
+                              const statusColors = {
+                                'pending': { bg: '#ffc107', text: '#212529', icon: '⏳' },
+                                'investigating': { bg: '#17a2b8', text: 'white', icon: '🔍' },
+                                'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'rejected': { bg: '#dc3545', text: 'white', icon: '❌' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const status = statusColors[case_.status] || statusColors['pending'];
+                              return (
+                                <tr 
+                                  key={case_._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < shadowbanCases.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                      }}>
+                                        {(case_.user?.username || 'U')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#212529', marginBottom: '2px' }}>
+                                          {case_.user?.username || 'Unknown'}
+                                        </div>
+                                        {case_.user?.email && (
+                                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                            {case_.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '6px 14px',
+                                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '600',
+                                      textTransform: 'capitalize',
+                                      color: '#495057',
+                                      border: '1px solid #dee2e6',
+                                      display: 'inline-block'
+                                    }}>
+                                      {case_.caseType || 'Unknown'}
+                                    </span>
+                                  </td>
+                                  <td style={{ maxWidth: '300px', padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '14px', 
+                                      color: '#212529',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {case_.description || 'No description'}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {case_.status || 'pending'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212529', marginBottom: '4px' }}>
+                                      {new Date(case_.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                      {new Date(case_.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedShadowbanCase(case_)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {supportTab === 'comment-appeals' && (
+                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                  {loadingCommentAppeals ? (
+                    <div className="admin-loading" style={{ 
+                      textAlign: 'center', 
+                      padding: '80px 20px',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                      <div style={{ fontSize: '48px', marginBottom: '20px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#495057', marginBottom: '8px' }}>Loading comment appeals...</div>
+                      <div style={{ fontSize: '14px', color: '#6c757d' }}>Please wait while we fetch the data</div>
+                    </div>
+                  ) : commentAppeals.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '100px 40px', 
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '2px dashed #e9ecef'
+                    }}>
+                      <div style={{ fontSize: '80px', marginBottom: '24px', opacity: 0.7, filter: 'grayscale(20%)' }}>💬</div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#212529', letterSpacing: '-0.5px' }}>No comment appeals found</div>
+                      <div style={{ fontSize: '15px', color: '#6c757d', maxWidth: '450px', margin: '0 auto', lineHeight: '1.6' }}>Comment appeals will appear here when users appeal removed comments. Check back later or adjust your filters.</div>
+                    </div>
+                  ) : (
+                    <div className="admin-table-container" style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '0',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      border: '1px solid #e9ecef',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '700',
+                          color: '#212529',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <span>💬</span> Comment Appeals List
+                        </h3>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ margin: 0 }}>
+                          <thead>
+                            <tr style={{ background: '#f8f9fa' }}>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>User</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Comment</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Appeal Reason</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Status</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Submitted</th>
+                              <th style={{ fontWeight: '700', color: '#495057', padding: '16px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #dee2e6' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {commentAppeals.map((appeal, index) => {
+                              const statusColors = {
+                                'pending': { bg: '#ffc107', text: '#212529', icon: '⏳' },
+                                'under-review': { bg: '#17a2b8', text: 'white', icon: '🔍' },
+                                'approved': { bg: '#28a745', text: 'white', icon: '✅' },
+                                'rejected': { bg: '#dc3545', text: 'white', icon: '❌' },
+                                'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                              };
+                              const status = statusColors[appeal.status] || statusColors['pending'];
+                              return (
+                                <tr 
+                                  key={appeal._id}
+                                  style={{ 
+                                    transition: 'all 0.2s ease',
+                                    borderBottom: index < commentAppeals.length - 1 ? '1px solid #f0f0f0' : 'none'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                    e.currentTarget.style.transform = 'scale(1.001)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }}
+                                >
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                      }}>
+                                        {(appeal.user?.username || 'U')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#212529', marginBottom: '2px' }}>
+                                          {appeal.user?.username || 'Unknown'}
+                                        </div>
+                                        {appeal.user?.email && (
+                                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                            {appeal.user.email}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ maxWidth: '250px', padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '14px', 
+                                      color: '#212529',
+                                      fontWeight: '500',
+                                      marginBottom: '4px'
+                                    }}>
+                                      {appeal.comment?.text?.substring(0, 60) || 'N/A'}
+                                      {appeal.comment?.text && appeal.comment.text.length > 60 && '...'}
+                                    </div>
+                                  </td>
+                                  <td style={{ maxWidth: '300px', padding: '16px 20px' }}>
+                                    <div style={{ 
+                                      fontSize: '13px', 
+                                      color: '#495057',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {appeal.appealReason || 'No reason provided'}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <span style={{
+                                      padding: '8px 14px',
+                                      background: status.bg,
+                                      color: status.text,
+                                      borderRadius: '20px',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      textTransform: 'capitalize',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                      <span>{status.icon}</span>
+                                      {appeal.status || 'pending'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#212529', marginBottom: '4px' }}>
+                                      {new Date(appeal.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                      {new Date(appeal.createdAt).toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '16px 20px' }}>
+                                    <button
+                                      onClick={() => setSelectedCommentAppeal(appeal)}
+                                      className="admin-btn admin-btn-secondary admin-btn-small"
+                                      style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(102, 126, 234, 0.4)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                                      }}
+                                    >
+                                      <span>👁️</span> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -6620,6 +9137,570 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     className="admin-btn admin-btn-secondary"
                   >
                     Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Video Processing Details Form - Small form, positioned correctly */}
+          {selectedVideoProcessing && (
+            <div 
+              className="admin-modal-overlay" 
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setSelectedVideoProcessing(null);
+                }
+              }} 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: '280px', // Start AFTER sidebar
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000, // BELOW sidebar (99999)
+                padding: '20px'
+              }}
+            >
+              <div 
+                className="admin-modal-content" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ 
+                  maxWidth: '500px', 
+                  width: '100%',
+                  background: 'white',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                  position: 'relative',
+                  zIndex: 1001, // Above overlay but BELOW sidebar
+                  padding: '0'
+                }}
+              >
+                <div className="admin-modal-header" style={{
+                  padding: '20px',
+                  borderBottom: '1px solid #e9ecef',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'linear-gradient(135deg, #FF0050 0%, #25F4EE 100%)',
+                  color: 'white',
+                  borderRadius: '12px 12px 0 0'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Video Processing Details</h3>
+                  <button 
+                    onClick={() => setSelectedVideoProcessing(null)}
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.2)', 
+                      border: 'none', 
+                      color: 'white', 
+                      width: '28px', 
+                      height: '28px', 
+                      borderRadius: '50%', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px'
+                    }}
+                  >
+                    <i className="fa-solid fa-times"></i>
+                  </button>
+                </div>
+                <form 
+                  className="admin-modal-body" 
+                  style={{ padding: '20px' }}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('✅✅✅ FORM SUBMITTED! ✅✅✅');
+                    console.log('Current formData state:', formData);
+                    
+                    if (saving) {
+                      console.log('⏳ Already saving, ignoring duplicate submission');
+                      return;
+                    }
+                    
+                    setSaving(true);
+                    
+                    const updateData = {
+                      status: formData.status,
+                      uploadProgress: parseInt(formData.progress) || 0,
+                      processingStage: formData.processingStage
+                    };
+                    
+                    console.log('📤 Update data to send:', updateData);
+                    console.log('📋 Selected video processing:', selectedVideoProcessing);
+                    
+                    try {
+                      const processingId = selectedVideoProcessing?._id || selectedVideoProcessing?.id;
+                      
+                      console.log('🆔 Processing ID:', processingId);
+                      console.log('🔍 Full object keys:', selectedVideoProcessing ? Object.keys(selectedVideoProcessing) : 'null');
+                      
+                      if (!processingId) {
+                        console.error('❌❌❌ Processing ID NOT FOUND!');
+                        console.error('Selected object:', JSON.stringify(selectedVideoProcessing, null, 2));
+                        setToast({ type: 'error', message: 'Error: Processing ID not found. Check console.' });
+                        setSaving(false);
+                        return;
+                      }
+                      
+                      console.log('📡 Calling updateVideoProcessing API with ID:', processingId);
+                      const result = await updateVideoProcessing(processingId, updateData);
+                      console.log('📥 API Response:', result);
+                      
+                      if (result && result.success) {
+                        console.log('✅✅✅ UPDATE SUCCESSFUL! ✅✅✅');
+                        console.log('Updated record:', result.processing);
+                        
+                        // Show success message
+                        setToast({ type: 'success', message: '✅ Video processing updated successfully in database!' });
+                        
+                        // Refresh the video processing list
+                        if (systemTab === 'video-processing') {
+                          console.log('🔄 Refreshing video processing list...');
+                          await fetchVideoProcessing();
+                        }
+                        
+                        // Show success alert as backup
+                        alert('✅ Success! Video processing updated successfully in database!');
+                        
+                        setTimeout(() => {
+                          setSelectedVideoProcessing(null);
+                          setSaving(false);
+                        }, 2000);
+                      } else {
+                        console.error('❌ Update failed:', result?.message || 'Unknown error');
+                        const errorMsg = result?.message || 'Failed to update video processing';
+                        setToast({ type: 'error', message: errorMsg });
+                        alert('❌ Error: ' + errorMsg);
+                        setSaving(false);
+                      }
+                    } catch (error) {
+                      console.error('❌❌❌ ERROR UPDATING VIDEO PROCESSING:', error);
+                      console.error('Error message:', error.message);
+                      console.error('Error response:', error.response?.data);
+                      console.error('Error status:', error.response?.status);
+                      const errorMsg = error.response?.data?.message || error.message || 'Failed to update. Check console.';
+                      setToast({ type: 'error', message: errorMsg });
+                      alert('❌ Error: ' + errorMsg);
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                      <label style={{ fontWeight: '600', color: '#495057', marginBottom: '6px', display: 'block', fontSize: '13px' }}>Video ID</label>
+                      <input
+                        type="text"
+                        value={selectedVideoProcessing?.videoId?._id || selectedVideoProcessing?.videoId || ''}
+                        readOnly
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          background: '#f8f9fa',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{ fontWeight: '600', color: '#495057', marginBottom: '6px', display: 'block', fontSize: '13px' }}>User</label>
+                      <input
+                        type="text"
+                        value={selectedVideoProcessing?.userId?.username || selectedVideoProcessing?.userId?.email || 'Unknown'}
+                        readOnly
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          background: '#f8f9fa'
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{ fontWeight: '600', color: '#495057', marginBottom: '6px', display: 'block', fontSize: '13px' }}>Status</label>
+                      <select
+                        name="status"
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          background: 'white'
+                        }}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="uploading">Uploading</option>
+                        <option value="transcoding">Transcoding</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ fontWeight: '600', color: '#495057', marginBottom: '6px', display: 'block', fontSize: '13px' }}>Progress (%)</label>
+                      <input
+                        type="number"
+                        name="progress"
+                        min="0"
+                        max="100"
+                        value={formData.progress}
+                        onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          background: 'white'
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{ fontWeight: '600', color: '#495057', marginBottom: '6px', display: 'block', fontSize: '13px' }}>Processing Stage</label>
+                      <select
+                        name="processingStage"
+                        value={formData.processingStage}
+                        onChange={(e) => setFormData({ ...formData, processingStage: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          background: 'white'
+                        }}
+                      >
+                        <option value="upload">Upload</option>
+                        <option value="validation">Validation</option>
+                        <option value="transcode">Transcode</option>
+                        <option value="thumbnail">Thumbnail</option>
+                        <option value="metadata">Metadata</option>
+                        <option value="cdn-upload">CDN Upload</option>
+                        <option value="complete">Complete</option>
+                      </select>
+                    </div>
+                    
+                    {selectedVideoProcessing?.errorMessage && (
+                      <div>
+                        <label style={{ fontWeight: '600', color: '#dc3545', marginBottom: '6px', display: 'block', fontSize: '13px' }}>Error Message</label>
+                        <textarea
+                          defaultValue={selectedVideoProcessing.errorMessage}
+                          readOnly
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '1px solid #fcc',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            background: '#fee',
+                            color: '#c33',
+                            minHeight: '60px',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ 
+                    marginTop: '20px', 
+                    display: 'flex', 
+                    justifyContent: 'flex-end', 
+                    gap: '10px' 
+                  }}>
+                    <button 
+                      type="button"
+                      className="admin-btn admin-btn-secondary"
+                      onClick={() => setSelectedVideoProcessing(null)}
+                      style={{ fontSize: '13px', padding: '8px 16px' }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      className="admin-btn admin-btn-primary"
+                      disabled={saving}
+                      style={{ 
+                        fontSize: '13px', 
+                        padding: '8px 16px',
+                        opacity: saving ? 0.6 : 1,
+                        cursor: saving ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* CDN Issue Resolve Modal */}
+          {selectedCDNIssue && (
+            <div 
+              className="admin-modal-overlay" 
+              onClick={(e) => {
+                if (e.target.classList.contains('admin-modal-overlay')) {
+                  setSelectedCDNIssue(null);
+                }
+              }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10000,
+                padding: '20px'
+              }}
+            >
+              <div 
+                className="admin-modal-content" 
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  maxWidth: '600px',
+                  width: '100%',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  zIndex: 10001
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px',
+                  paddingBottom: '16px',
+                  borderBottom: '2px solid #e9ecef'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#212529' }}>
+                    <i className="fa-solid fa-bug" style={{ marginRight: '10px', color: '#007bff' }}></i>
+                    Issue Details
+                  </h3>
+                  <button
+                    onClick={() => setSelectedCDNIssue(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '24px',
+                      color: '#6c757d',
+                      cursor: 'pointer',
+                      padding: '0',
+                      width: '30px',
+                      height: '30px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f8f9fa';
+                      e.currentTarget.style.color = '#212529';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                      e.currentTarget.style.color = '#6c757d';
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                      Reported By
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {selectedCDNIssue.reportedBy?.profile?.avatar && (
+                        <img 
+                          src={selectedCDNIssue.reportedBy.profile.avatar} 
+                          alt={selectedCDNIssue.reportedBy.username}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '16px' }}>
+                          {selectedCDNIssue.reportedBy?.username || 'Unknown User'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                          {selectedCDNIssue.reportedBy?.email || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                      Issue Type
+                    </label>
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      textTransform: 'capitalize',
+                      fontSize: '14px'
+                    }}>
+                      {selectedCDNIssue.issueType?.replace('-', ' ') || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                      Description
+                    </label>
+                    <div style={{
+                      padding: '12px',
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '#495057',
+                      minHeight: '80px',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {selectedCDNIssue.description || 'No description provided'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                        Priority
+                      </label>
+                      <select
+                        value={selectedCDNIssue.priority || 'medium'}
+                        onChange={(e) => setSelectedCDNIssue({ ...selectedCDNIssue, priority: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #dee2e6',
+                          fontSize: '14px',
+                          background: '#fff'
+                        }}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                        Status
+                      </label>
+                      <select
+                        value={selectedCDNIssue.status || 'pending'}
+                        onChange={(e) => setSelectedCDNIssue({ ...selectedCDNIssue, status: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #dee2e6',
+                          fontSize: '14px',
+                          background: '#fff'
+                        }}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="investigating">Investigating</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="dismissed">Dismissed</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#6c757d', marginBottom: '6px' }}>
+                      Admin Notes
+                    </label>
+                    <textarea
+                      value={selectedCDNIssue.adminNotes || ''}
+                      onChange={(e) => setSelectedCDNIssue({ ...selectedCDNIssue, adminNotes: e.target.value })}
+                      placeholder="Add notes about this issue..."
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #dee2e6',
+                        fontSize: '14px',
+                        minHeight: '100px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+                  
+                  {selectedCDNIssue.resolvedAt && (
+                    <div style={{ marginBottom: '16px', padding: '12px', background: '#d4edda', borderRadius: '8px', fontSize: '13px', color: '#155724' }}>
+                      <strong>Resolved:</strong> {new Date(selectedCDNIssue.resolvedAt).toLocaleString()}
+                      {selectedCDNIssue.resolvedBy && (
+                        <span> by {selectedCDNIssue.resolvedBy?.username || 'Admin'}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  justifyContent: 'flex-end',
+                  paddingTop: '16px',
+                  borderTop: '1px solid #e9ecef'
+                }}>
+                  <button
+                    onClick={() => setSelectedCDNIssue(null)}
+                    className="admin-btn admin-btn-secondary"
+                    style={{ fontSize: '14px', padding: '10px 20px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleUpdateCDNIssue(selectedCDNIssue._id || selectedCDNIssue.id, {
+                        status: selectedCDNIssue.status,
+                        priority: selectedCDNIssue.priority,
+                        adminNotes: selectedCDNIssue.adminNotes
+                      });
+                    }}
+                    className="admin-btn admin-btn-primary"
+                    style={{ fontSize: '14px', padding: '10px 20px' }}
+                  >
+                    <i className="fa-solid fa-check" style={{ marginRight: '6px' }}></i>
+                    Save Changes
                   </button>
                 </div>
               </div>
