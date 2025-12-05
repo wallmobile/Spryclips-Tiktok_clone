@@ -1,12 +1,49 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Admin sidebar navigation component with menu items
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './AdminSidebar.css';
 
 const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, onClose }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(true);
+  const location = useLocation();
+  // On desktop/tablet (>= 769px), sidebar should always be open. On mobile, it can be toggled.
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const isDesktop = window.innerWidth >= 769;
+      console.log('AdminSidebar: Initial isOpen state:', isDesktop, 'window width:', window.innerWidth);
+      return isDesktop; // Always open on desktop/tablet
+    }
+    console.log('AdminSidebar: Defaulting to open (window undefined)');
+    return true; // Default to open
+  });
+  
+  // Keep sidebar open on desktop/tablet when window resizes
+  useEffect(() => {
+    // Ensure sidebar is open on desktop/tablet on mount
+    if (typeof window !== 'undefined') {
+      const isDesktop = window.innerWidth >= 769;
+      console.log('AdminSidebar: useEffect - isDesktop:', isDesktop, 'window width:', window.innerWidth, 'current isOpen:', isOpen);
+      if (isDesktop && !isOpen) {
+        console.log('AdminSidebar: Setting isOpen to true (desktop)');
+        setIsOpen(true);
+      }
+    }
+    
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 769;
+      console.log('AdminSidebar: Resize - isDesktop:', isDesktop, 'window width:', window.innerWidth, 'current isOpen:', isOpen);
+      if (isDesktop && !isOpen) {
+        // On desktop, ensure it's open (but don't force if user explicitly closed it)
+        console.log('AdminSidebar: Resize - setting isOpen to true');
+        setIsOpen(true);
+      }
+      // On mobile, allow user to toggle - don't force state
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen]);
 
   const menuItems = [
     { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard', subItems: [] },
@@ -76,8 +113,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         { id: 'blacklist', label: 'Blacklist' },
         { id: 'boosted', label: 'Boost Content' },
         { id: 'hashtags', label: 'Hashtag Control' },
-        { id: 'ab-tests', label: 'A/B Tests' },
-        { id: 'discovery-control', label: 'Discovery Control' }
+        { id: 'ab-tests', label: 'A/B Tests' }
       ]
     },
     {
@@ -88,8 +124,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         { id: 'age-restrictions', label: 'Age Restrictions' },
         { id: 'regional-laws', label: 'Regional Laws' },
         { id: 'legal-hold', label: 'Legal Hold' },
-        { id: 'law-enforcement', label: 'Law Enforcement Requests' },
-        { id: 'data-privacy', label: 'Data Privacy Audits' }
+        { id: 'law-enforcement', label: 'Law Enforcement Requests' }
       ]
     },
     {
@@ -97,7 +132,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
       icon: 'fa-shield-halved',
       label: 'Security',
       subItems: [
-        { id: '2fa', label: 'Two-Factor Auth' },
         { id: 'roles', label: 'Role-Based Access' },
         { id: 'activity-logs', label: 'Activity Logs' },
         { id: 'sessions', label: 'Session Tracking' }
@@ -112,8 +146,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         { id: 'cdn-health', label: 'CDN Health' },
         { id: 'server-health', label: 'Server Health' },
         { id: 'error-logs', label: 'Error Logs' },
-        { id: 'api-requests', label: 'API Requests' },
-        { id: 'storage', label: 'Storage' }
+        { id: 'api-requests', label: 'API Requests' }
       ]
     },
     {
@@ -130,39 +163,12 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
       ]
     },
     {
-      id: 'app-store',
-      icon: 'fa-mobile-screen',
-      label: 'App Store Compliance',
-      subItems: [
-        { id: 'violations', label: 'Policy Violations' },
-        { id: 'ratings', label: 'Ratings & Reviews' }
-      ]
-    },
-    {
-      id: 'experiments',
-      icon: 'fa-flask',
-      label: 'Experiment Features',
-      subItems: [
-        { id: 'feature-flags', label: 'Feature Flags' },
-        { id: 'ui-testing', label: 'UI Testing' }
-      ]
-    },
-    {
       id: 'notifications',
       icon: 'fa-bell',
       label: 'Notifications Control',
       subItems: [
         { id: 'push-campaigns', label: 'Push Campaigns' },
         { id: 'warnings', label: 'Warning Messages' }
-      ]
-    },
-    {
-      id: 'backup',
-      icon: 'fa-database',
-      label: 'Backup & Recovery',
-      subItems: [
-        { id: 'archives', label: 'Audit Archives' },
-        { id: 'restore', label: 'Restore Content' }
       ]
     }
   ];
@@ -183,20 +189,67 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
       {/* Mobile Toggle Button */}
       <button
         className="admin-sidebar-toggle"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Toggle button clicked, current isOpen:', isOpen);
+          setIsOpen(prev => {
+            const newState = !prev;
+            console.log('Setting isOpen to:', newState);
+            return newState;
+          });
+        }}
         aria-label="Toggle sidebar"
+        style={{ zIndex: 100000, pointerEvents: 'auto', cursor: 'pointer' }}
       >
         <i className={`fa-solid ${isOpen ? 'fa-times' : 'fa-bars'}`}></i>
       </button>
 
-      {/* Sidebar */}
-      <div className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
+      {/* Sidebar - Force visible on desktop/tablet */}
+      {(() => {
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 769;
+        const shouldShow = isDesktop || isOpen;
+        console.log('AdminSidebar: Rendering - isDesktop:', isDesktop, 'isOpen:', isOpen, 'shouldShow:', shouldShow);
+        return (
+          <div 
+            className={`admin-sidebar ${shouldShow ? 'open' : ''}`}
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              width: '280px',
+              height: '100vh',
+              background: '#ffffff',
+              zIndex: 99999,
+              display: 'flex',
+              flexDirection: 'column',
+              transform: shouldShow ? 'translateX(0)' : 'translateX(-100%)',
+              visibility: shouldShow ? 'visible' : 'hidden',
+              opacity: shouldShow ? 1 : 0,
+              borderRight: '2px solid #e9ecef',
+              boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',
+              pointerEvents: shouldShow ? 'auto' : 'none'
+            }}
+          >
         <div className="admin-sidebar-header">
           <div className="admin-sidebar-logo">
             <i className="fa-solid fa-shield-halved"></i>
             <span>Admin Panel</span>
           </div>
-          <button className="admin-sidebar-close" onClick={() => setIsOpen(false)}>
+          <button 
+            className="admin-sidebar-close" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const isMobile = window.innerWidth < 769;
+              if (isMobile) {
+                setIsOpen(false);
+              }
+              // On desktop, don't close - just log
+              console.log('Close button clicked, isMobile:', isMobile);
+            }}
+            style={{ pointerEvents: 'auto' }}
+          >
             <i className="fa-solid fa-times"></i>
           </button>
         </div>
@@ -204,27 +257,98 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         <div className="admin-sidebar-content">
           <nav className="admin-sidebar-nav">
             {menuItems.map((item) => {
-              const isActive = activeTab === item.id;
+              // Check if we're on a separate page route
+              const isOnSeparatePage = 
+                (item.id === 'notifications' && location.pathname === '/admin/notifications-control') ||
+                (item.id === 'policy' && location.pathname === '/admin/policy-compliance') ||
+                (item.id === 'security' && location.pathname === '/admin/security-settings');
+              
+              // Show submenu as active if:
+              // 1. activeTab matches this item, OR
+              // 2. We're on the separate page for this item (so submenu stays visible)
+              const isActive = activeTab === item.id || isOnSeparatePage;
               const hasSubItems = item.subItems && item.subItems.length > 0;
 
               return (
-                <div key={item.id} className="admin-sidebar-item">
-                  <button
-                    className={`admin-sidebar-link ${isActive ? 'active' : ''}`}
-                    onClick={() => {
-                      if (!hasSubItems) {
-                        setActiveTab(item.id);
-                        setIsOpen(false);
-                      } else {
-                        // Toggle submenu for items with sub-items
-                        if (isActive) {
-                          setActiveTab(null);
+                <div 
+                  key={item.id} 
+                  className="admin-sidebar-item"
+                  onClick={(e) => {
+                    // Prevent auto-scroll when clicking on item
+                    e.stopPropagation();
+                  }}
+                >
+                    <button
+                      className={`admin-sidebar-link ${isActive ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Menu item clicked:', item.id, 'isActive:', isActive, 'hasSubItems:', hasSubItems);
+                        const isMobile = window.innerWidth < 769;
+                        if (!hasSubItems) {
+                          console.log('No sub-items, setting activeTab to:', item.id);
+                          if (setActiveTab) {
+                            setActiveTab(item.id);
+                          }
+                          if (isMobile) {
+                            setIsOpen(false);
+                          }
                         } else {
-                          setActiveTab(item.id);
+                          // Toggle submenu for all items with sub-items
+                          const currentActiveTab = activeTab;
+                          
+                          // Check if we're on a separate page route for this item
+                          const isOnThisSeparatePage = 
+                            (item.id === 'notifications' && location.pathname === '/admin/notifications-control') ||
+                            (item.id === 'policy' && location.pathname === '/admin/policy-compliance') ||
+                            (item.id === 'security' && location.pathname === '/admin/security-settings');
+                          
+                          // Check if this item is currently active (submenu is open)
+                          // Either activeTab matches OR we're on the separate page
+                          const isCurrentlyActive = currentActiveTab === item.id || isOnThisSeparatePage;
+                          
+                          if (isCurrentlyActive) {
+                            // Close submenu on second click
+                            console.log('Closing submenu for:', item.id, 'current activeTab:', currentActiveTab, 'isOnThisSeparatePage:', isOnThisSeparatePage);
+                            if (setActiveTab) {
+                              setActiveTab(null);
+                            }
+                            // If on separate page, navigate back to admin panel
+                            if (isOnThisSeparatePage) {
+                              navigate('/admin');
+                            }
+                          } else {
+                            // Open submenu on first click
+                            console.log('Opening submenu for:', item.id, 'current activeTab:', currentActiveTab);
+                            if (setActiveTab) {
+                              setActiveTab(item.id);
+                            }
+                            // For separate page routes, also navigate on first click
+                            if (item.id === 'notifications') {
+                              navigate('/admin/notifications-control?tab=push-campaigns');
+                              if (setActiveSubTab) setActiveSubTab('push-campaigns');
+                            } else if (item.id === 'policy') {
+                              navigate('/admin/policy-compliance?tab=age-restrictions');
+                              if (setActiveSubTab) setActiveSubTab('age-restrictions');
+                            } else if (item.id === 'security') {
+                              navigate('/admin/security-settings?tab=roles');
+                              if (setActiveSubTab) setActiveSubTab('roles');
+                            }
+                            if (isMobile) {
+                              setIsOpen(false);
+                            }
+                          }
                         }
-                      }
-                    }}
-                  >
+                      }}
+                      type="button"
+                      style={{ 
+                        pointerEvents: 'auto', 
+                        touchAction: 'manipulation',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none'
+                      }}
+                    >
                     <i className={`fa-solid ${item.icon}`}></i>
                     <span>{item.label}</span>
                     {hasSubItems && (
@@ -235,64 +359,52 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                   {hasSubItems && isActive && (
                     <div className="admin-sidebar-submenu">
                       {item.subItems.map((subItem) => {
-                        // Disable auto-highlighting from main content tabs
-                        // Sidebar items will only be highlighted when clicked directly from sidebar
-                        const isSubActive = false;
+                        // Check if this sub-item is active based on activeSubTab prop
+                        const isSubActive = activeSubTab === subItem.id;
                         
                         // Handle navigation for new separate pages
                         const handleSubItemClick = (e) => {
+                          e.preventDefault();
                           e.stopPropagation(); // Prevent parent click
                           
-                          if (subItem.id === 'discovery-control') {
-                            navigate('/admin/search-discovery');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'age-restrictions' || subItem.id === 'regional-laws' || subItem.id === 'legal-hold' || subItem.id === 'law-enforcement') {
-                            navigate('/admin/policy-compliance');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'data-privacy') {
-                            navigate('/admin/data-privacy-audits');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === '2fa' || subItem.id === 'roles' || subItem.id === 'activity-logs' || subItem.id === 'sessions') {
-                            navigate('/admin/security-settings');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'violations' || subItem.id === 'ratings') {
-                            navigate('/admin/app-store-compliance');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'feature-flags' || subItem.id === 'ui-testing') {
-                            navigate('/admin/experiment-features');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'push-campaigns' || subItem.id === 'warnings') {
-                            navigate('/admin/notifications-control');
-                            setIsOpen(false);
-                            return;
-                          }
-                          if (subItem.id === 'archives' || subItem.id === 'restore') {
-                            navigate('/admin/backup-recovery');
-                            setIsOpen(false);
-                            return;
-                          }
+                          // Only close sidebar on mobile (screen width < 1024px)
+                          const isMobile = window.innerWidth < 769;
                           
-                          // Default behavior for other sub-items
-                          setActiveTab(item.id);
-                          const subTabId = item.id === 'moderation' || item.id === 'safety' || item.id === 'monetization' || item.id === 'analytics' || item.id === 'search' 
-                            ? subItem.id 
-                            : null;
-                          if (setActiveSubTab && subTabId) {
-                            setActiveSubTab(subTabId);
+                          try {
+                            if (subItem.id === 'age-restrictions' || subItem.id === 'regional-laws' || subItem.id === 'legal-hold' || subItem.id === 'law-enforcement') {
+                              navigate(`/admin/policy-compliance?tab=${subItem.id}`);
+                              if (setActiveSubTab) setActiveSubTab(subItem.id);
+                              if (isMobile) setIsOpen(false);
+                              return;
+                            }
+                            if (subItem.id === 'roles' || subItem.id === 'activity-logs' || subItem.id === 'sessions') {
+                              navigate(`/admin/security-settings?tab=${subItem.id}`);
+                              if (setActiveSubTab) setActiveSubTab(subItem.id);
+                              if (isMobile) setIsOpen(false);
+                              return;
+                            }
+                            if (subItem.id === 'push-campaigns' || subItem.id === 'warnings') {
+                              navigate(`/admin/notifications-control?tab=${subItem.id}`);
+                              if (setActiveSubTab) setActiveSubTab(subItem.id);
+                              if (isMobile) setIsOpen(false);
+                              return;
+                            }
+                            
+                            // Default behavior for other sub-items
+                            if (setActiveTab) {
+                              setActiveTab(item.id);
+                            }
+                            // Set subTab for tabs that use subTab state (moderation, safety, monetization, analytics, search, system, support)
+                            const subTabId = (item.id === 'moderation' || item.id === 'safety' || item.id === 'monetization' || item.id === 'analytics' || item.id === 'search' || item.id === 'system' || item.id === 'support')
+                              ? subItem.id 
+                              : null;
+                            if (setActiveSubTab && subTabId) {
+                              setActiveSubTab(subTabId);
+                            }
+                            if (isMobile) setIsOpen(false);
+                          } catch (error) {
+                            console.error('Error handling sub-item click:', error);
                           }
-                          setIsOpen(false);
                         };
                         
                         return (
@@ -301,6 +413,19 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                             className={`admin-sidebar-sublink ${isSubActive ? 'active' : ''}`}
                             onClick={handleSubItemClick}
                             type="button"
+                            style={{ 
+                              pointerEvents: 'auto', 
+                              touchAction: 'manipulation',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none',
+                              width: '100%',
+                              textAlign: 'left',
+                              background: 'none',
+                              border: 'none',
+                              position: 'relative',
+                              zIndex: 5
+                            }}
                           >
                             {subItem.label}
                           </button>
@@ -324,10 +449,12 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
             <span>Logout</span>
           </button>
         </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Overlay for mobile */}
-      {isOpen && (
+      {isOpen && typeof window !== 'undefined' && window.innerWidth < 769 && (
         <div className="admin-sidebar-overlay" onClick={() => setIsOpen(false)}></div>
       )}
     </>
