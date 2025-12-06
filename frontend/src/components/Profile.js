@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import AccountSettings from '../settings/AccountSettings';
 import { getMyVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
 import { updateProfile, pinVideo, followUser } from '../../api/users';
