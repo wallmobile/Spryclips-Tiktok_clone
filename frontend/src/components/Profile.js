@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import AccountSettings from '../settings/AccountSettings';
-import { getMyVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
-import { updateProfile, pinVideo, followUser } from '../../api/users';
-import { getUserStories } from '../../api/stories';
-import StoryViewer from '../stories/StoryViewer';
-import api, { API_URL } from '../../config/axios';
+import AccountSettings from './AccountSettings';
+import { getMyVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../api/videos';
+import { updateProfile, pinVideo, followUser } from '../api/users';
+import { getUserStories } from '../api/stories';
+import StoryViewer from './StoryViewer';
+import api, { API_URL } from '../config/axios';
 import './Profile.css';
 
 const Profile = ({ onClose, username: viewUsername }) => {
@@ -2572,15 +2572,3 @@ const Profile = ({ onClose, username: viewUsername }) => {
 };
 
 export default Profile;
-
-
-
-
-
-
-
-
-
-
-
-
