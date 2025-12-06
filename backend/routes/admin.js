@@ -547,6 +547,8 @@ router.get('/stories', async (req, res) => {
     const [stories, total] = await Promise.all([
       Story.find()
         .populate('user', 'username email profile.avatar')
+        .populate('reactions.user', 'username')
+        .populate('replies.user', 'username')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

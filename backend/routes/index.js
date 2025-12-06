@@ -31,6 +31,7 @@ router.use("/video-features", require("./video-features"));
 router.use("/verification", require("./verification"));
 router.use("/2fa", require("./2fa"));
 router.use("/process-video", require("./process-video"));
+router.use("/admin", require("./admin"));
 
 // API versioning
 router.use("/v1", require("./v1"));

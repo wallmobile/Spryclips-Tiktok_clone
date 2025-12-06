@@ -47,8 +47,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Show brief loading only if no cached user
+  // Show brief loading only if no cached user - with very short timeout
   if (loading && !timedOut && !hasCachedUser) {
+    // For admin routes, don't show loading - render immediately
+    if (location.pathname.startsWith('/admin')) {
+      return children; // Render immediately for admin routes
+    }
     return (
       <div style={{
         display: 'flex',

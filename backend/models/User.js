@@ -17,6 +17,15 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  phone: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
   password: {
     type: String,
     required: function() {
@@ -35,6 +44,56 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  identityVerified: {
+    type: Boolean,
+    default: false
+  },
+  identityVerificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'not_submitted'],
+    default: 'not_submitted'
+  },
+  identityVerificationSubmittedAt: {
+    type: Date,
+    default: null
+  },
+  warningStrikes: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 3
+  },
+  warningHistory: [{
+    reason: String,
+    issuedAt: {
+      type: Date,
+      default: Date.now
+    },
+    issuedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  }],
+  loginHistory: [{
+    ipAddress: String,
+    userAgent: String,
+    device: String,
+    browser: String,
+    os: String,
+    location: String,
+    loginAt: {
+      type: Date,
+      default: Date.now
+    },
+    logoutAt: Date,
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    isUnusual: { type: Boolean, default: false },
+    riskScore: { type: Number, default: 0, min: 0, max: 10 },
+    browserFingerprint: String
+  }],
   emailVerificationToken: {
     type: String,
     default: null
@@ -57,6 +116,48 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'suspended', 'banned'],
     default: 'active'
   },
+  // Safety & Security
+  isBot: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  botScore: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  spamScore: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+    index: true
+  },
+  accountTakeoverRisk: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 10
+  },
+  unusualLoginAlerts: [{
+    timestamp: Date,
+    ipAddress: String,
+    location: String,
+    riskScore: Number,
+    actionTaken: String,
+    reviewed: { type: Boolean, default: false }
+  }],
+  childSafetyFlag: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  reportCount: {
+    type: Number,
+    default: 0
+  },
   failedLoginAttempts: {
     type: Number,
     default: 0
@@ -67,8 +168,34 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'moderator', 'admin'],
+    enum: ['user', 'moderator', 'admin', 'creator'],
     default: 'user'
+  },
+  // Monetization
+  creatorStatus: {
+    type: String,
+    enum: ['not_applied', 'pending', 'approved', 'rejected', 'suspended'],
+    default: 'not_applied',
+    index: true
+  },
+  creatorEarnings: {
+    totalEarned: { type: Number, default: 0 },
+    availableBalance: { type: Number, default: 0 },
+    pendingWithdrawal: { type: Number, default: 0 },
+    totalWithdrawn: { type: Number, default: 0 },
+    adRevenueShare: { type: Number, default: 50, min: 0, max: 100 } // Percentage
+  },
+  taxInfo: {
+    taxId: String,
+    taxCountry: String,
+    documents: [{
+      type: String, // W-9, W-8, etc.
+      documentUrl: String,
+      uploadedAt: Date,
+      verified: { type: Boolean, default: false },
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      verifiedAt: Date
+    }]
   },
   authProvider: {
     type: String,
@@ -384,7 +511,13 @@ userSchema.pre('save', async function(next) {
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   if (this.authProvider !== 'local') return false;
-  return bcrypt.compare(candidatePassword, this.password);
+  if (!this.password || !candidatePassword) return false;
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    console.error('Error comparing password:', error);
+    return false;
+  }
 };
 
 // Check if account is locked

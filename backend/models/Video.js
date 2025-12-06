@@ -216,7 +216,51 @@ const videoSchema = new mongoose.Schema({
     type: String,
     enum: ['processing', 'ready', 'failed', 'draft', 'scheduled'],
     default: 'processing'
-  }
+  },
+  // Moderation fields
+  moderationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'flagged', 'under_review'],
+    default: 'pending'
+  },
+  isSensitive: {
+    type: Boolean,
+    default: false
+  },
+  copyrightDispute: {
+    type: {
+      type: String,
+      enum: ['dmca', 'trademark', 'other'],
+      default: null
+    },
+    reportedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reportedAt: Date,
+    resolvedAt: Date,
+    resolvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    resolution: String,
+    isResolved: {
+      type: Boolean,
+      default: false
+    }
+  },
+  aiFlags: {
+    nudity: { confidence: Number, flagged: Boolean, reviewed: Boolean },
+    hate: { confidence: Number, flagged: Boolean, reviewed: Boolean },
+    violence: { confidence: Number, flagged: Boolean, reviewed: Boolean },
+    spam: { confidence: Number, flagged: Boolean, reviewed: Boolean }
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: Date,
+  moderationNotes: String
 }, {
   timestamps: true
 });
@@ -229,5 +273,14 @@ videoSchema.index({ hashtags: 1 });
 videoSchema.index({ createdAt: -1 });
 videoSchema.index({ views: -1 });
 videoSchema.index({ likes: -1 });
+// Moderation indexes
+videoSchema.index({ moderationStatus: 1, createdAt: -1 });
+videoSchema.index({ isSensitive: 1 });
+videoSchema.index({ 'copyrightDispute.isResolved': 1 });
+videoSchema.index({ 'aiFlags.nudity.flagged': 1 });
+videoSchema.index({ 'aiFlags.hate.flagged': 1 });
+videoSchema.index({ 'aiFlags.violence.flagged': 1 });
+videoSchema.index({ 'aiFlags.spam.flagged': 1 });
+videoSchema.index({ reviewedBy: 1, reviewedAt: -1 });
 
 module.exports = mongoose.model('Video', videoSchema);

@@ -36,3 +36,4 @@ if (!emailFrom || !emailAppPassword) {
 console.log('╚═══════════════════════════════════════════════════════════╝');
 console.log('\n');
 
+

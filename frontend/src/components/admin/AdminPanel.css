@@ -1673,6 +1673,13 @@ textarea.tiktok-input {
 /* ==================== RESPONSIVE ==================== */
 
 /* ==================== MOBILE RESPONSIVE ==================== */
+/* Admin Ticket Modal - Smaller and respects sidebar */
+@media (min-width: 769px) {
+  .admin-ticket-modal-overlay {
+    left: 280px !important; /* Account for sidebar width on desktop */
+  }
+}
+
 @media (max-width: 768px) {
   .admin-panel-with-sidebar {
     width: 100%;

@@ -745,6 +745,236 @@ router.get('/languages', authMiddleware, (_req, res) => {
   });
 });
 
+// Test route to verify server is running with new routes (no auth required for testing)
+router.get('/support/test', (req, res) => {
+  console.log('✅ Test route hit: /api/more/support/test');
+  res.json({
+    success: true,
+    message: 'Support routes are working! Server has been restarted with new routes.',
+    timestamp: new Date().toISOString(),
+    routes: [
+      'POST /api/more/support/tickets',
+      'GET /api/more/support/tickets',
+      'GET /api/more/support/tickets/:id',
+      'POST /api/more/support/tickets/:id/message'
+    ]
+  });
+});
+
+// Create support ticket (user side) - MUST be before GET /support/tickets/:id
+router.post('/support/tickets', authMiddleware, async (req, res) => {
+  try {
+    console.log('🎫🎫🎫 POST /api/more/support/tickets - ROUTE HIT! 🎫🎫🎫');
+    console.log('🎫 User ID:', req.user?._id);
+    console.log('🎫 Request body:', JSON.stringify(req.body, null, 2));
+    const Ticket = require('../models/Ticket');
+    const { category, subject, description, priority = 'medium' } = req.body;
+
+    if (!category || !subject || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category, subject, and description are required'
+      });
+    }
+
+    // Map frontend issue types to backend categories
+    const categoryMap = {
+      'account': 'account',
+      'monetization': 'payment',
+      'video': 'technical',
+      'general': 'general',
+      'content': 'content',
+      'other': 'other'
+    };
+
+    const ticketCategory = categoryMap[category] || 'other';
+
+    // Generate ticket ID before creating ticket
+    const ticketCount = await Ticket.countDocuments();
+    const ticketId = `TK-${Date.now()}-${String(ticketCount + 1).padStart(6, '0')}`;
+
+    // Create ticket
+    const ticket = new Ticket({
+      ticketId: ticketId,
+      userId: req.user._id,
+      category: ticketCategory,
+      priority: priority,
+      subject: subject,
+      description: description,
+      status: 'open',
+      messages: [{
+        sender: 'user',
+        senderId: req.user._id,
+        message: description,
+        timestamp: new Date(),
+        read: false
+      }]
+    });
+
+    await ticket.save();
+
+    console.log(`✅ New support ticket created: ${ticket.ticketId} by user ${req.user.username}`);
+
+    res.json({
+      success: true,
+      message: 'Support ticket created successfully',
+      ticket: {
+        id: ticket._id,
+        ticketId: ticket.ticketId,
+        category: ticket.category,
+        subject: ticket.subject,
+        status: ticket.status,
+        createdAt: ticket.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error creating support ticket:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create support ticket. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Get user's own tickets
+router.get('/support/tickets', authMiddleware, async (req, res) => {
+  try {
+    console.log('🎫 GET /api/more/support/tickets - Request received from user:', req.user._id);
+    const Ticket = require('../models/Ticket');
+    const tickets = await Ticket.find({ userId: req.user._id })
+      .sort({ lastActivityAt: -1 })
+      .select('ticketId subject category status priority createdAt lastActivityAt messages')
+      .lean();
+
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        ticketId: ticket.ticketId,
+        subject: ticket.subject,
+        category: ticket.category,
+        status: ticket.status,
+        priority: ticket.priority,
+        createdAt: ticket.createdAt,
+        lastActivityAt: ticket.lastActivityAt,
+        unreadCount: ticket.messages?.filter(m => m.sender === 'admin' && !m.read).length || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching user tickets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch tickets'
+    });
+  }
+});
+
+// Get specific ticket with messages (user side)
+router.get('/support/tickets/:id', authMiddleware, async (req, res) => {
+  try {
+    const Ticket = require('../models/Ticket');
+    const ticket = await Ticket.findOne({
+      _id: req.params.id,
+      userId: req.user._id
+    }).populate('assignedTo', 'username email');
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      ticket: {
+        id: ticket._id,
+        ticketId: ticket.ticketId,
+        subject: ticket.subject,
+        category: ticket.category,
+        status: ticket.status,
+        priority: ticket.priority,
+        messages: ticket.messages || [],
+        createdAt: ticket.createdAt,
+        lastActivityAt: ticket.lastActivityAt
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching ticket:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ticket'
+    });
+  }
+});
+
+// Add message to ticket (user side)
+router.post('/support/tickets/:id/message', authMiddleware, async (req, res) => {
+  try {
+    const Ticket = require('../models/Ticket');
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message is required'
+      });
+    }
+
+    const ticket = await Ticket.findOne({
+      _id: req.params.id,
+      userId: req.user._id
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    // Add user message
+    ticket.messages.push({
+      sender: 'user',
+      senderId: req.user._id,
+      message: message.trim(),
+      timestamp: new Date(),
+      read: false
+    });
+
+    // Update status and last activity
+    if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      ticket.status = 'open';
+    }
+    ticket.lastActivityAt = new Date();
+
+    await ticket.save();
+
+    res.json({
+      success: true,
+      message: 'Message sent successfully',
+      ticket: {
+        id: ticket._id,
+        ticketId: ticket.ticketId,
+        messages: ticket.messages
+      }
+    });
+  } catch (error) {
+    console.error('Error adding message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send message'
+    });
+  }
+});
+
 router.get('/preferences', authMiddleware, (req, res) => {
   const experience = req.user?.experience || {};
   res.json({

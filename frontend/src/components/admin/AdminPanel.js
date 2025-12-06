@@ -341,6 +341,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [ticketCategory, setTicketCategory] = useState('all');
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [adminReplyMessage, setAdminReplyMessage] = useState('');
+  const [sendingAdminReply, setSendingAdminReply] = useState(false);
   const [ticketStats, setTicketStats] = useState({});
   
   // Login Issues
@@ -1984,10 +1986,66 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       const response = await getTicketDetails(ticketId);
       if (response.success) {
         setSelectedTicket(response.ticket);
+        setAdminReplyMessage('');
+        
+        // Automatically update ticket status to "resolved" (solved) when admin views it
+        if (response.ticket.status !== 'resolved' && response.ticket.status !== 'closed') {
+          try {
+            const updateResponse = await updateTicketStatus(ticketId, 'resolved', 'Automatically resolved when admin viewed the ticket');
+            if (updateResponse.success) {
+              // Update the selected ticket with new status
+              setSelectedTicket(prev => prev ? { ...prev, status: 'resolved' } : null);
+              // Refresh tickets list to show updated status
+              await fetchTickets();
+              // Show success message
+              setToast({ type: 'success', message: 'Ticket automatically marked as solved' });
+            }
+          } catch (updateError) {
+            console.error('Error updating ticket status:', updateError);
+            // Don't show error toast, just log it - ticket view should still work
+          }
+        }
+        
+        // Auto scroll to bottom
+        setTimeout(() => {
+          const container = document.getElementById('admin-ticket-messages');
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Error fetching ticket details:', error);
       setToast({ type: 'error', message: 'Failed to load ticket details' });
+    }
+  };
+
+  const handleAdminReply = async () => {
+    if (!adminReplyMessage.trim() || !selectedTicket || sendingAdminReply) return;
+
+    setSendingAdminReply(true);
+    try {
+      const response = await addTicketMessage(selectedTicket.id || selectedTicket._id, adminReplyMessage.trim());
+      if (response.success) {
+        setAdminReplyMessage('');
+        setToast({ type: 'success', message: 'Reply sent successfully' });
+        // Refresh ticket details
+        await fetchTicketDetails(selectedTicket.id || selectedTicket._id);
+        // Auto scroll to bottom after reply
+        setTimeout(() => {
+          const container = document.getElementById('admin-ticket-messages');
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
+      } else {
+        throw new Error(response.message || 'Failed to send reply');
+      }
+    } catch (error) {
+      console.error('Error sending admin reply:', error);
+      setToast({ type: 'error', message: 'Failed to send reply. Please try again.' });
+    } finally {
+      setSendingAdminReply(false);
     }
   };
 
@@ -3763,6 +3821,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           <th>User</th>
                           <th>Type</th>
                           <th>Views</th>
+                          <th>Likes</th>
+                          <th>Comments</th>
                           <th>Expires</th>
                           <th>Actions</th>
                         </tr>
@@ -3781,6 +3841,30 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             <td>{story.user?.username || 'Unknown'}</td>
                             <td>{story.type}</td>
                             <td>{story.views || 0}</td>
+                            <td>
+                              <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '4px',
+                                color: '#FF0050',
+                                fontWeight: '600'
+                              }}>
+                                <i className="fa-solid fa-heart"></i>
+                                {story.reactions?.length || 0}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '4px',
+                                color: '#25F4EE',
+                                fontWeight: '600'
+                              }}>
+                                <i className="fa-solid fa-comment"></i>
+                                {story.replies?.length || 0}
+                              </span>
+                            </td>
                             <td>{new Date(story.expiresAt).toLocaleString()}</td>
                             <td>
                               <button
@@ -7637,7 +7721,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                   </td>
                                   <td style={{ padding: '16px 20px' }}>
                                     <button
-                                      onClick={() => setSelectedTicket(ticket)}
+                                      onClick={() => fetchTicketDetails(ticket._id)}
                                       className="admin-btn admin-btn-secondary admin-btn-small"
                                       style={{
                                         padding: '10px 20px',
@@ -7673,6 +7757,149 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </table>
                         </div>
                       </div>
+
+                    {/* Ticket Details Modal */}
+                    {selectedTicket && (
+                      <div className="admin-ticket-modal-overlay" style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10000,
+                        padding: '20px'
+                      }} onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                          setSelectedTicket(null);
+                        }
+                      }}>
+                        <div style={{
+                          background: 'white',
+                          borderRadius: '12px',
+                          width: '100%',
+                          maxWidth: '500px', // Reduced from 700px - smaller form
+                          maxHeight: '85vh',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+                        }}>
+                          {/* Compact Modal Header */}
+                          <div style={{
+                            padding: '16px 20px',
+                            borderBottom: '1px solid #e9ecef',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            borderRadius: '12px 12px 0 0'
+                          }}>
+                            <div>
+                              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>
+                                {selectedTicket.subject}
+                              </h3>
+                              <p style={{ margin: '4px 0 0 0', opacity: 0.9, fontSize: '12px' }}>
+                                {selectedTicket.ticketId || selectedTicket._id}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedTicket(null);
+                              }}
+                              style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '32px',
+                                height: '32px',
+                                color: 'white',
+                                cursor: 'pointer',
+                                fontSize: '18px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+
+                          {/* Modal Content - Compact */}
+                          <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+                            {/* User's Initial Problem Description */}
+                            {selectedTicket.description && (
+                              <div style={{
+                                marginBottom: '20px',
+                                padding: '16px',
+                                background: '#fff3cd',
+                                border: '1px solid #ffc107',
+                                borderRadius: '8px',
+                                borderLeft: '4px solid #ffc107'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                  <i className="fa-solid fa-exclamation-circle" style={{ color: '#856404', fontSize: '16px' }}></i>
+                                  <span style={{ fontWeight: '700', color: '#856404', fontSize: '14px' }}>User's Problem:</span>
+                                </div>
+                                <div style={{ color: '#856404', whiteSpace: 'pre-wrap', fontSize: '14px', lineHeight: '1.6' }}>
+                                  {selectedTicket.description}
+                                </div>
+                                {selectedTicket.category && (
+                                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#856404' }}>
+                                    <strong>Category:</strong> {selectedTicket.category.charAt(0).toUpperCase() + selectedTicket.category.slice(1)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Messages/Chat - Read Only View */}
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
+                              <div style={{
+                                flex: 1,
+                                overflowY: 'auto',
+                                border: '1px solid #e9ecef',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                background: '#f8f9fa'
+                              }}>
+                                {selectedTicket.messages && selectedTicket.messages.length > 0 ? (
+                                  selectedTicket.messages.map((msg, idx) => (
+                                    <div key={idx} style={{
+                                      marginBottom: '12px',
+                                      padding: '10px 14px',
+                                      background: msg.sender === 'admin' ? '#e7f3ff' : '#fff',
+                                      borderRadius: '8px',
+                                      borderLeft: `3px solid ${msg.sender === 'admin' ? '#007bff' : '#28a745'}`,
+                                      maxWidth: '85%',
+                                      marginLeft: msg.sender === 'admin' ? '0' : 'auto',
+                                      marginRight: msg.sender === 'admin' ? 'auto' : '0'
+                                    }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: '600', color: '#495057', fontSize: '13px' }}>
+                                          {msg.sender === 'admin' ? '👨‍💼 Admin' : '👤 User'}
+                                        </span>
+                                        <span style={{ fontSize: '11px', color: '#6c757d' }}>
+                                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </div>
+                                      <div style={{ color: '#212529', whiteSpace: 'pre-wrap', fontSize: '14px', lineHeight: '1.5' }}>{msg.message}</div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div style={{ textAlign: 'center', color: '#6c757d', padding: '20px' }}>
+                                    No messages yet
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                       {/* Pagination */}
                       {ticketsPagination.total > ticketsPagination.limit && (

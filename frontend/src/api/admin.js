@@ -577,7 +577,7 @@ export const assignTicket = async (ticketId, assignedTo) => {
 };
 
 export const addTicketMessage = async (ticketId, message) => {
-  const response = await api.post(`/api/admin/support/tickets/${ticketId}/messages`, { message });
+  const response = await api.post(`/api/admin/support/tickets/${ticketId}/message`, { message });
   return response.data;
 };
 

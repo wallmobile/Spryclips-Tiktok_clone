@@ -17,10 +17,9 @@ const Sidebar = () => {
       { id: 'live', icon: 'fa-tv', label: 'LIVE', path: '/live' },
       { id: 'upload', icon: 'fa-square-plus', label: 'Upload', path: '/upload', auth: true },
       { id: 'profile', icon: 'fa-user', label: 'Profile', path: '/profile', auth: true },
-      ...(user?.role === 'admin' ? [{ id: 'admin', icon: 'fa-shield-halved', label: 'Admin', path: '/admin', auth: true }] : []),
       { id: 'more', icon: 'fa-ellipsis', label: 'More', path: '/more' }
     ],
-    [user?.role]
+    []
   );
 
   const activeNav = useMemo(() => {
@@ -157,15 +156,15 @@ const Sidebar = () => {
             </div>
           ) : (
             <div className="sidebar-auth-buttons">
-              <button
-                className="login-btn-sidebar"
-                onClick={() => {
-                  navigate('/login', { state: { from: location } });
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Log in
-              </button>
+            <button
+              className="login-btn-sidebar"
+              onClick={() => {
+                navigate('/login', { state: { from: location } });
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              Log in
+            </button>
               <button
                 className="signup-btn-sidebar"
                 onClick={() => {
