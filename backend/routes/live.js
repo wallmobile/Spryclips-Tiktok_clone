@@ -170,18 +170,29 @@ router.get('/active', async (req, res) => {
       .sort({ viewers: -1, createdAt: -1 })
       .limit(50);
 
-    // Format response for frontend
-    const formattedStreams = activeStreams.map(stream => ({
-      id: stream._id,
-      roomId: stream.roomId,
-      username: stream.streamer.username,
-      profilePicture: stream.streamer.profile?.profilePicture || '',
-      title: stream.title,
-      thumbnail: stream.thumbnail || stream.streamer.profile?.profilePicture || '',
-      viewerCount: stream.viewers,
-      category: stream.category,
-      createdAt: stream.createdAt
-    }));
+    // Format response for frontend (defensive: streamer may be null)
+    const formattedStreams = activeStreams.map(stream => {
+      const streamer = stream.streamer || {};
+      const username = streamer.username || 'Unknown';
+      const profilePicture = streamer.profile?.profilePicture || '';
+      const thumbnail = stream.thumbnail || profilePicture || '';
+
+      if (!stream.streamer) {
+        console.warn(`Live stream ${stream._id} missing populated streamer field`);
+      }
+
+      return {
+        id: stream._id,
+        roomId: stream.roomId,
+        username,
+        profilePicture,
+        title: stream.title,
+        thumbnail,
+        viewerCount: stream.viewers,
+        category: stream.category,
+        createdAt: stream.createdAt
+      };
+    });
 
     res.json({
       success: true,
