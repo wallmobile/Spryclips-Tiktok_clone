@@ -82,7 +82,7 @@ const LIVE = ({ onClose = () => {} }) => {
     
     setLoadingMyStream(true);
     try {
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
       console.log('Fetching active stream for user:', userId);
       const response = await fetch(`${API_URL}/api/live/user/${userId}?status=live`, {
         credentials: 'include'
@@ -222,7 +222,7 @@ const LIVE = ({ onClose = () => {} }) => {
         return;
       }
 
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
       const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
         method: 'POST',
         headers: {
