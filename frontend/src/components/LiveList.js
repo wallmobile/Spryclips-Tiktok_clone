@@ -64,7 +64,7 @@ const LiveList = () => {
         </h1>
         <div className="live-list-categories">
           {categories.map((cat) => (
-              const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+              const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com' ;
 
               const resolveUrl = (path) => {
                 if (!path) return '';
