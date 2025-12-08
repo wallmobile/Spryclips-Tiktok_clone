@@ -40,7 +40,7 @@ const LiveStreamWatch = () => {
         setLoading(true);
         setError(null);
 
-        const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+        const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
         const response = await fetch(`${API_URL}/api/live/room/${roomId}`, {
           credentials: 'include'
         });

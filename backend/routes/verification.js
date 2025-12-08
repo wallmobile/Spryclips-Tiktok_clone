@@ -9,7 +9,7 @@ const router = express.Router();
 
 // PUBLIC UPLOADS DIRECTORY - Production configuration
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
-const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'https://spryclips.com/uploads');
 
 // Configure multer for document uploads
 const verificationUploadDir = path.join(UPLOADS_DIR, 'verification');

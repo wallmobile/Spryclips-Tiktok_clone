@@ -23,7 +23,7 @@ const getSocketURL = () => {
     const origin = window.location.origin;
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
       console.log('[useSocket] Development mode detected, using localhost:5000');
-      return 'http://localhost:5000';
+      return 'https://spryclips.com';
     }
     console.log('[useSocket] Production mode detected, using same origin:', origin);
     return origin; // same origin in production
@@ -31,7 +31,7 @@ const getSocketURL = () => {
   
   // Fallback
   console.log('[useSocket] Using fallback: localhost:5000');
-  return 'http://localhost:5000';
+  return 'https://spryclips.com';
 };
 
 const API_URL = getSocketURL();

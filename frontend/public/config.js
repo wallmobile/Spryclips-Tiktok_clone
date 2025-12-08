@@ -14,7 +14,7 @@
 //    Example: 'https://api.yoursite.com' ya 'https://backend.yoursite.com'
 //
 // 3. Local development:
-//    API_URL: 'http://localhost:5000'
+//    API_URL: 'https://spryclips.com'
 //
 window.APP_CONFIG = {
   API_URL: '',  // Empty for Nginx proxy - Production deployment for spryclips.com
