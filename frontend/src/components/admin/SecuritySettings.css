@@ -10,6 +10,26 @@
   overflow-x: hidden;
 }
 
+.security-header {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden !important;
+  position: relative;
+}
+
+.security-header h2 {
+  color: white;
+  margin: 0;
+}
+
 .security-tab-content {
   padding: 16px;
   overflow-y: visible;
@@ -403,6 +423,26 @@
 }
 
 @media (max-width: 1024px) {
+  .admin-page-header,
+  .security-header {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+    color: white !important;
+  }
+
+  .admin-page-header h2,
+  .security-header h2 {
+    font-size: 18px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: white !important;
+  }
+
   .security-tab-content {
     padding: 12px;
   }
@@ -413,12 +453,24 @@
 }
 
 @media (max-width: 768px) {
-  .admin-page-header {
+  .admin-page-header,
+  .security-header {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
     padding: 12px 16px;
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+    color: white !important;
   }
 
-  .admin-page-header h2 {
+  .admin-page-header h2,
+  .security-header h2 {
     font-size: 18px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: white !important;
   }
 
   .admin-tabs {
@@ -468,12 +520,24 @@
 }
 
 @media (max-width: 480px) {
-  .admin-page-header {
+  .admin-page-header,
+  .security-header {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
     padding: 10px 12px;
+    background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+    color: white !important;
   }
 
-  .admin-page-header h2 {
+  .admin-page-header h2,
+  .security-header h2 {
     font-size: 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: white !important;
   }
 
   .admin-tab {
