@@ -339,9 +339,6 @@ const PolicyCompliance = ({ onClose }) => {
           {activeTab === 'legal-hold' && ' → Legal Hold'}
           {activeTab === 'law-enforcement' && ' → Law Enforcement'}
         </h2>
-        <button className="admin-close-btn" onClick={onClose}>
-          <i className="fa-solid fa-times"></i>
-        </button>
       </div>
 
       <div className="admin-content-area">
