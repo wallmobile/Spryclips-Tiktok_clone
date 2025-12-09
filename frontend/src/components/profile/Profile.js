@@ -62,7 +62,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [userStories, setUserStories] = useState([]);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
-  const [loadingStories, setLoadingStories] = useState(false);
+  // const [loadingStories, setLoadingStories] = useState(false); // Not currently used
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowPending, setIsFollowPending] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -171,7 +171,6 @@ const Profile = ({ onClose, username: viewUsername }) => {
       }
       
       try {
-        setLoadingStories(true);
         console.log('📚 Profile: Calling getUserStories API for userId:', targetUserId);
         const response = await getUserStories(targetUserId);
         
@@ -219,7 +218,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
         console.error('Error stack:', error.stack);
         setUserStories([]);
       } finally {
-        setLoadingStories(false);
+        // Loading state removed - not currently used
       }
     };
 
@@ -581,7 +580,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
         await api.get('/api/auth/verify', {
           timeout: 2000
         });
-      } catch (checkError) {
+      } catch {
         // Silently continue - allow saving even if backend check fails
         console.log('Backend check failed, continuing with save...');
       }
@@ -688,20 +687,25 @@ const Profile = ({ onClose, username: viewUsername }) => {
       return '0:00';
     }
 
-    if (typeof secondsLike === 'string' && secondsLike.includes(':')) {
-      const parts = secondsLike.split(':').map((part) => Number(part));
-      if (parts.every((part) => Number.isFinite(part))) {
-        if (parts.length === 3) {
-          const [hours, minutes, seconds] = parts;
-          const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-          return formatDurationLabel(totalSeconds);
-        }
-        if (parts.length === 2) {
-          const [minutes, seconds] = parts;
-          const totalSeconds = minutes * 60 + seconds;
-          return formatDurationLabel(totalSeconds);
+    try {
+      if (typeof secondsLike === 'string' && secondsLike.includes(':')) {
+        const parts = secondsLike.split(':').map((part) => Number(part));
+        if (parts && Array.isArray(parts) && parts.length > 0 && parts.every((part) => Number.isFinite(part))) {
+          if (parts.length === 3 && parts[0] != null && parts[1] != null && parts[2] != null) {
+            const [hours, minutes, seconds] = parts;
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+            return formatDurationLabel(totalSeconds);
+          }
+          if (parts.length === 2 && parts[0] != null && parts[1] != null) {
+            const [minutes, seconds] = parts;
+            const totalSeconds = minutes * 60 + seconds;
+            return formatDurationLabel(totalSeconds);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error parsing duration:', error, 'secondsLike:', secondsLike);
+      // Fallback to default formatting
     }
 
     const seconds = Number(secondsLike);
@@ -784,8 +788,10 @@ const Profile = ({ onClose, username: viewUsername }) => {
             const selectedThumb = possibleThumbnails.find((thumb) => {
               const normalizedThumb = thumb.trim();
               return !/\.((mp4|mov|avi|mkv|webm)(\?.*)?|mp3|wav|aac)$/i.test(normalizedThumb);
-            }) || possibleThumbnails[0];
-            resolvedThumbnail = ensureAbsoluteUrl(selectedThumb);
+            }) || (possibleThumbnails.length > 0 ? possibleThumbnails[0] : null);
+            if (selectedThumb) {
+              resolvedThumbnail = ensureAbsoluteUrl(selectedThumb);
+            }
             hasImageThumbnail =
               typeof resolvedThumbnail === 'string' &&
               resolvedThumbnail.length > 0 &&
@@ -1126,12 +1132,13 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const handleVideoAction = async (videoId, action) => {
     try {
       switch(action) {
-        case 'view':
+        case 'view': {
           const videoToView = videos.find(v => v.id === videoId);
           if (videoToView) {
             setSelectedVideo(videoToView);
           }
           break;
+        }
         case 'retry':
           try {
             await retryVideoProcessing(videoId);
@@ -1185,7 +1192,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 errorMessage = 'Please login again to delete videos.';
               } else if (error?.response?.status === 403) {
                 errorMessage = 'You do not have permission to delete this video.';
-              } else if (error?.message) {
+              } else if (error?.message && typeof error.message === 'string') {
                 // Remove localhost URLs and technical details from error messages
                 errorMessage = error.message
                   .replace(/http:\/\/localhost:\d+/gi, 'server')
@@ -1223,7 +1230,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
           setTimeout(() => setShowToast(false), 3000);
           break;
         }
-        case 'pin':
+        case 'pin': {
           await pinVideo(videoId);
           // Refresh videos to update pinned status
           const response = await getMyVideos();
@@ -1245,14 +1252,16 @@ const Profile = ({ onClose, username: viewUsername }) => {
             setPinnedVideo(formattedVideos.find(video => video.isPinned) || null);
           }
           break;
-        case 'download':
+        }
+        case 'download': {
           try {
             await downloadVideo(videoId);
             alert('Video download started!');
-          } catch (error) {
+          } catch {
             alert('Failed to download video');
           }
           break;
+        }
         default:
           console.log(`Action ${action} clicked for video ${videoId}`);
       }
@@ -1315,26 +1324,40 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const formatStat = (value) => Number(value ?? 0).toLocaleString();
 
   const ensureAbsoluteUrl = (input) => {
-    if (!input) {
-      return '';
-    }
-    const trimmed = input.trim();
-    if (/^(https?:)?\/\//i.test(trimmed)) {
-      if (/^\/\//.test(trimmed)) {
-        const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-        return `${protocol}${trimmed}`;
+    try {
+      if (!input) {
+        return '';
       }
-      return trimmed;
+      if (typeof input !== 'string') {
+        return String(input || '');
+      }
+      const trimmed = input.trim();
+      if (!trimmed) {
+        return '';
+      }
+      if (/^(https?:)?\/\//i.test(trimmed)) {
+        if (/^\/\//.test(trimmed)) {
+          const protocol = typeof window !== 'undefined' && window.location?.protocol ? window.location.protocol : 'http:';
+          return `${protocol}${trimmed}`;
+        }
+        return trimmed;
+      }
+      if (/^(data:|blob:)/i.test(trimmed)) {
+        return trimmed;
+      }
+      const base =
+        API_URL ||
+        (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
+      if (!base || typeof base !== 'string') {
+        return trimmed;
+      }
+      const normalizedBase = base.replace(/\/+$/, '');
+      const normalizedPath = trimmed.replace(/^\/+/, '');
+      return `${normalizedBase}/${normalizedPath}`;
+    } catch (error) {
+      console.error('Error in ensureAbsoluteUrl:', error, 'input:', input);
+      return typeof input === 'string' ? input : '';
     }
-    if (/^(data:|blob:)/i.test(trimmed)) {
-      return trimmed;
-    }
-    const base =
-      API_URL ||
-      (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
-    const normalizedBase = base.replace(/\/+$/, '');
-    const normalizedPath = trimmed.replace(/^\/+/, '');
-    return `${normalizedBase}/${normalizedPath}`;
   };
 
   return (
@@ -1578,7 +1601,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   }}
                 >
                   <i className="fa-solid fa-link"></i>
-                  {websiteLink.replace(/^https?:\/\//, '')}
+                  {websiteLink && typeof websiteLink === 'string' ? websiteLink.replace(/^https?:\/\//, '') : websiteLink}
                 </a>
               )}
               
@@ -1738,70 +1761,10 @@ const Profile = ({ onClose, username: viewUsername }) => {
                     </div>
                   ) : filteredVideos.length > 0 ? (
                     <div className="uploaded-videos-grid">
-                      {filteredVideos.map((video, index) => (
-                  <div key={video.id} className="uploaded-video-card">
-                    {video.status && video.status !== 'ready' && (
-                      <div className={`video-status-badge ${video.status}`}>
-                        {video.status === 'failed' ? (
-                          <>
-                            <i className="fa-solid fa-triangle-exclamation"></i>
-                            <span>Processing failed</span>
-                          </>
-                        ) : (
-                          <>
-                            <i className="fa-solid fa-spinner fa-spin"></i>
-                            <span>Processing...</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <div
-                      className={`video-thumbnail-wrapper ${activeVideoId === video.id ? 'is-playing' : ''} ${video.status !== 'ready' ? 'is-disabled' : ''}`}
-                      onClick={() => {
-                        if (video.status !== 'ready') return;
-                        // Open video in full modal with all details
-                        setSelectedVideo(video);
-                      }}
-                    >
-                      {/* Removed inline video player - videos now open in full modal */}
-                      {false && activeVideoId === video.id ? (
-                        <video />
-                      ) : (
-                        <>
-                          {video.hasThumbnail ? (
-                            <img 
-                              src={video.thumbnail} 
-                              alt={video.caption} 
-                              className="uploaded-video-thumbnail"
-                            />
-                          ) : (
-                            <div className="thumbnail-fallback">
-                              <i className="fa-solid fa-photo-film"></i>
-                              <span>No thumbnail</span>
-                            </div>
-                          )}
-                          {video.status === 'ready' ? (
-                            <>
-                              <div className="video-duration-badge">
-                                {video.duration}
-                              </div>
-                              <button
-                                type="button"
-                                className="thumbnail-play-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (video.status === 'ready') {
-                                    // Open video in full modal with all details
-                                    setSelectedVideo(video);
-                                  }
-                                }}
-                                disabled={video.status !== 'ready'}
-                              >
-                                <i className="fa-solid fa-circle-play"></i>
-                              </button>
-                            </>
-                          ) : (
-                            <div className="processing-overlay">
+                      {filteredVideos.map((video) => (
+                        <div key={video.id} className="uploaded-video-card">
+                          {video.status && video.status !== 'ready' && (
+                            <div className={`video-status-badge ${video.status}`}>
                               {video.status === 'failed' ? (
                                 <>
                                   <i className="fa-solid fa-triangle-exclamation"></i>
@@ -1815,7 +1778,61 @@ const Profile = ({ onClose, username: viewUsername }) => {
                               )}
                             </div>
                           )}
+                          <div
+                            className={`video-thumbnail-wrapper ${activeVideoId === video.id ? 'is-playing' : ''} ${video.status !== 'ready' ? 'is-disabled' : ''}`}
+                            onClick={() => {
+                              if (video.status !== 'ready') return;
+                              // Open video in full modal with all details
+                              setSelectedVideo(video);
+                            }}
+                          >
+                      {/* Removed inline video player - videos now open in full modal */}
+                      {video.hasThumbnail ? (
+                        <img 
+                          src={video.thumbnail} 
+                          alt={video.caption} 
+                          className="uploaded-video-thumbnail"
+                        />
+                      ) : (
+                        <div className="thumbnail-fallback">
+                          <i className="fa-solid fa-photo-film"></i>
+                          <span>No thumbnail</span>
+                        </div>
+                      )}
+                      {video.status === 'ready' ? (
+                        <>
+                          <div className="video-duration-badge">
+                            {video.duration}
+                          </div>
+                          <button
+                            type="button"
+                            className="thumbnail-play-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (video.status === 'ready') {
+                                // Open video in full modal with all details
+                                setSelectedVideo(video);
+                              }
+                            }}
+                            disabled={video.status !== 'ready'}
+                          >
+                            <i className="fa-solid fa-circle-play"></i>
+                          </button>
                         </>
+                      ) : (
+                        <div className="processing-overlay">
+                          {video.status === 'failed' ? (
+                            <>
+                              <i className="fa-solid fa-triangle-exclamation"></i>
+                              <span>Processing failed</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-spinner fa-spin"></i>
+                              <span>Processing...</span>
+                            </>
+                          )}
+                        </div>
                       )}
                       <div className="visibility-tag">
                         {video.visibility === 'public' && (
@@ -1834,87 +1851,87 @@ const Profile = ({ onClose, username: viewUsername }) => {
                           </span>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="video-card-content">
-                      {/* Title + Delete Button Row - SAME HORIZONTAL LINE */}
-                      <div className="video-card-title-delete-row">
-                        {/* Title - LEFT side */}
-                        <h3 className="video-card-caption">{video.caption}</h3>
-                        
-                        {/* Delete Button - RIGHT side (same line as title) - NO ICON, JUST TEXT, SMALLER HEIGHT */}
-                        {isMyProfile && (
-                          <button 
-                            className="video-card-delete-button"
-                            onClick={() => handleVideoAction(video.id, 'delete')}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '0',
-                              marginTop: '0',
-                              padding: '0.25rem 0.75rem', /* REDUCED PADDING - Smaller height */
-                              borderRadius: '0.375rem', /* Smaller radius */
-                              backgroundColor: '#FF0050',
-                              background: '#FF0050',
-                              backgroundImage: 'none',
-                              color: '#ffffff',
-                              border: 'none',
-                              marginLeft: 'auto',
-                              minHeight: '1.25rem', /* Reduced minimum height */
-                              lineHeight: '1.2' /* Tighter line height */
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                      
-                      {/* Stats/Icons Row - Below Title/Delete Row */}
-                      <div className="video-card-stats">
-                        <span className="stat">
-                          <i className="fa-solid fa-eye"></i>
-                          {formatStat(video.views)}
-                        </span>
-                        <span className="stat">
-                          <i className="fa-solid fa-heart"></i>
-                          {formatStat(video.likes)}
-                        </span>
-                        <span className="stat">
-                          <i className="fa-solid fa-comment"></i>
-                          {video.comments}
-                        </span>
-                      </div>
-                      
-                      {/* Time Text - Below Stats */}
-                      <div className="video-card-meta">
-                        <span className="upload-date">{video.uploadDate}</span>
-                        {video.status && video.status !== 'ready' && (
-                          <div className={`processing-state-wrapper ${video.status}`}>
-                            <span className={`processing-state ${video.status}`}>
-                              {video.status === 'failed' ? (
-                                <>
-                                  <i className="fa-solid fa-triangle-exclamation"></i>
-                                  {sanitizeErrorMessage(video.processingError)}
-                                </>
-                              ) : (
-                                <>
-                                  <i className="fa-solid fa-spinner fa-spin"></i>
-                                  Processing...
-                                </>
-                              )}
-                            </span>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                          
+                          <div className="video-card-content">
+                            {/* Title + Delete Button Row - SAME HORIZONTAL LINE */}
+                            <div className="video-card-title-delete-row">
+                              {/* Title - LEFT side */}
+                              <h3 className="video-card-caption">{video.caption}</h3>
+                              
+                              {/* Delete Button - RIGHT side (same line as title) - NO ICON, JUST TEXT, SMALLER HEIGHT */}
+                              {isMyProfile && (
+                                <button 
+                                  className="video-card-delete-button"
+                                  onClick={() => handleVideoAction(video.id, 'delete')}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0',
+                                    marginTop: '0',
+                                    padding: '0.25rem 0.75rem', /* REDUCED PADDING - Smaller height */
+                                    borderRadius: '0.375rem', /* Smaller radius */
+                                    backgroundColor: '#FF0050',
+                                    background: '#FF0050',
+                                    backgroundImage: 'none',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    marginLeft: 'auto',
+                                    minHeight: '1.25rem', /* Reduced minimum height */
+                                    lineHeight: '1.2' /* Tighter line height */
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                            
+                            {/* Stats/Icons Row - Below Title/Delete Row */}
+                            <div className="video-card-stats">
+                              <span className="stat">
+                                <i className="fa-solid fa-eye"></i>
+                                {formatStat(video.views)}
+                              </span>
+                              <span className="stat">
+                                <i className="fa-solid fa-heart"></i>
+                                {formatStat(video.likes)}
+                              </span>
+                              <span className="stat">
+                                <i className="fa-solid fa-comment"></i>
+                                {video.comments}
+                              </span>
+                            </div>
+                            
+                            {/* Time Text - Below Stats */}
+                            <div className="video-card-meta">
+                              <span className="upload-date">{video.uploadDate}</span>
+                              {video.status && video.status !== 'ready' && (
+                                <div className={`processing-state-wrapper ${video.status}`}>
+                                  <span className={`processing-state ${video.status}`}>
+                                    {video.status === 'failed' ? (
+                                      <>
+                                        <i className="fa-solid fa-triangle-exclamation"></i>
+                                        {sanitizeErrorMessage(video.processingError)}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Processing...
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="empty-state">
                 <div className="empty-icon">
-                <i className="fa-solid fa-video"></i>
+                  <i className="fa-solid fa-video"></i>
                 </div>
                 <h3>No videos uploaded yet</h3>
                 <p>Start creating and sharing your content!</p>
@@ -2139,8 +2156,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
 
             <div className="edit-modal-body">
               <div className="edit-form-group">
-                <label>Username</label>
+                <label htmlFor="username-edit-modal-input">Username</label>
                 <input
+                  id="username-edit-modal-input"
                   type="text"
                   value={usernameText}
                   onChange={(e) => setUsernameText(e.target.value)}
@@ -2150,8 +2168,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label>Bio</label>
+                <label htmlFor="bio-textarea">Bio</label>
                 <textarea
+                  id="bio-textarea"
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
                   placeholder="Tell us about yourself"
@@ -2163,8 +2182,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label>Privacy Setting</label>
-                <div className="privacy-toggle">
+                <label htmlFor="privacy-toggle">Privacy Setting</label>
+                <div id="privacy-toggle" className="privacy-toggle">
                   <button
                     className={`privacy-btn ${!isPrivate ? 'active' : ''}`}
                     onClick={() => setIsPrivate(false)}
@@ -2186,8 +2205,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label>Website Link</label>
+                <label htmlFor="website-link-edit-input">Website Link</label>
                 <input
+                  id="website-link-edit-input"
                   type="url"
                   value={websiteLink}
                   onChange={(e) => setWebsiteLink(e.target.value)}
@@ -2197,8 +2217,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label>Profile Banner</label>
-                <div className="banner-upload-section">
+                <label htmlFor="banner-upload">Profile Banner</label>
+                <div id="banner-upload" className="banner-upload-section">
                   <div className="banner-preview-container">
                     <div
                       className="banner-preview"
