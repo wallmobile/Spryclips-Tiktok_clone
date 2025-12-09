@@ -56,16 +56,27 @@ const WatchLater = () => {
     setLoadingRemote(true);
     try {
       const response = await fetchWatchLater();
-      const entries = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.watchLater)
-        ? response.watchLater
-        : [];
+      console.log('[Watch Later] API Response:', response);
+      
+      // Handle different response formats
+      let entries = [];
+      if (Array.isArray(response)) {
+        entries = response;
+      } else if (Array.isArray(response?.watchLater)) {
+        entries = response.watchLater;
+      } else if (response?.data && Array.isArray(response.data.watchLater)) {
+        entries = response.data.watchLater;
+      } else if (response?.data && Array.isArray(response.data)) {
+        entries = response.data;
+      }
+      
+      console.log('[Watch Later] Parsed entries:', entries.length);
 
       const normalized = entries
         .map((entry, index) => {
           const rawVideo = entry?.video;
           if (!rawVideo || typeof rawVideo !== 'object') {
+            console.warn('[Watch Later] Skipping entry with invalid video:', entry);
             return null;
           }
           const fallbackId =
@@ -84,13 +95,20 @@ const WatchLater = () => {
         })
         .filter(Boolean);
 
+      console.log('[Watch Later] Normalized entries:', normalized.length);
+
       // Only use API data - no store merge to ensure only real saved videos are shown
       // This ensures Watch Later only shows videos the user actually saved to the database
       setWatchLater(normalized);
       setErrorMessage('');
       setLastSyncedAt(new Date().toISOString());
     } catch (error) {
-      console.error('Failed to sync watch later list', error);
+      console.error('[Watch Later] Failed to sync watch later list', error);
+      console.error('[Watch Later] Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
       const fallbackMessage =
         error?.response?.data?.message ||
         error?.message ||
@@ -116,6 +134,24 @@ const WatchLater = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [watchLater.length, initialized, isAuthenticated, loadWatchLater]);
+
+  // Listen for watch later updates from other components
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const handleWatchLaterUpdate = () => {
+      console.log('[Watch Later] Received update event, refreshing...');
+      // Small delay to ensure backend has processed the change
+      setTimeout(() => {
+        loadWatchLater();
+      }, 500);
+    };
+
+    window.addEventListener('watchlater:updated', handleWatchLaterUpdate);
+    return () => {
+      window.removeEventListener('watchlater:updated', handleWatchLaterUpdate);
+    };
+  }, [isAuthenticated, loadWatchLater]);
 
   const loading = !initialized || loadingRemote;
 

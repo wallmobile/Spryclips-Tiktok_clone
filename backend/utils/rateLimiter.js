@@ -22,7 +22,7 @@ const generalLimiter =
   process.env.NODE_ENV === 'production'
     ? rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // Limit each IP to 100 requests per windowMs
+        max: 1000, // Increased to 1000 requests per 15 minutes in production
         message: {
           success: false,
           message: 'Too many requests, please try again later'
@@ -36,10 +36,11 @@ const generalLimiter =
           if (path.includes('/forgot-password') || path.includes('forgot-password')) {
             return true;
           }
-          return false;
+          // Skip rate limiting for localhost/development IPs even in production
+          return req.ip === '::1' || req.ip === '127.0.0.1' || req.ip?.includes('127.0.0.1') || req.ip?.includes('localhost');
         }
       })
-    : (req, res, next) => next(); // In non-production environments, disable rate limiting for smoother local testing
+    : (req, res, next) => next(); // In non-production environments, disable rate limiting completely
 
 // Strict rate limiter for upload routes
 const uploadLimiter = rateLimit({

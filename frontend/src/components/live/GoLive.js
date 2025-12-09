@@ -21,6 +21,8 @@ const GoLive = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [showStartPreview, setShowStartPreview] = useState(true);
+  const [cameraError, setCameraError] = useState(null);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(false);
   
   const videoRef = useRef(null);
   const previewVideoRef = useRef(null);
@@ -69,6 +71,9 @@ const GoLive = () => {
   }, [socket, isConnected, isLive]);
 
   const requestCameraPreview = async () => {
+    setIsLoadingCamera(true);
+    setCameraError(null);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -85,6 +90,8 @@ const GoLive = () => {
       localStreamRef.current = stream;
       setCameraPreview(true);
       setShowStartPreview(false);
+      setCameraError(null);
+      setIsLoadingCamera(false);
       
       if (previewVideoRef.current) {
         previewVideoRef.current.srcObject = stream;
@@ -99,17 +106,27 @@ const GoLive = () => {
       
     } catch (error) {
       console.error('Error accessing camera:', error);
-      let errorMessage = 'Could not access camera. ';
-      if (error.name === 'NotFoundError') {
-        errorMessage += 'No camera found.';
-      } else if (error.name === 'NotAllowedError') {
-        errorMessage += 'Permission denied. Please allow camera access.';
+      let errorMessage = 'Unable to access camera.';
+      let errorType = 'unknown';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
+        errorType = 'permission';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please connect a camera and try again.';
+        errorType = 'notFound';
       } else if (error.name === 'NotReadableError') {
-        errorMessage += 'Camera is already in use by another application.';
-      } else {
-        errorMessage += 'Please check your camera permissions.';
+        errorMessage = 'Camera is being used by another application. Please close other apps using the camera.';
+        errorType = 'inUse';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Camera access blocked for security reasons. Please use HTTPS or localhost.';
+        errorType = 'security';
       }
-      alert(errorMessage);
+      
+      setCameraError({ message: errorMessage, type: errorType });
+      setShowStartPreview(true);
+    } finally {
+      setIsLoadingCamera(false);
     }
   };
 
@@ -473,7 +490,41 @@ const GoLive = () => {
         {/* Main Content Area */}
         <div className="go-live-content-wrapper">
           <div className="camera-preview-container">
-            {showStartPreview ? (
+            {cameraError ? (
+              <div className="camera-error-container">
+                <div className="camera-error-content">
+                  <i className="fa-solid fa-camera-slash"></i>
+                  <p className="camera-error-message">{cameraError.message}</p>
+                  {cameraError.type === 'permission' && (
+                    <div className="camera-permission-instructions">
+                      <p className="instructions-title">How to enable camera access:</p>
+                      <ul className="instructions-list">
+                        <li><strong>Chrome/Edge:</strong> Click the lock icon in the address bar → Site Settings → Camera → Allow</li>
+                        <li><strong>Firefox:</strong> Click the lock icon → Permissions → Camera → Allow</li>
+                        <li><strong>Safari:</strong> Safari → Settings → Websites → Camera → Allow</li>
+                      </ul>
+                    </div>
+                  )}
+                  <button
+                    onClick={requestCameraPreview}
+                    className="try-again-btn"
+                    disabled={isLoadingCamera}
+                  >
+                    {isLoadingCamera ? (
+                      <>
+                        <div className="spinner-small"></div>
+                        <span>Requesting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-rotate-right"></i>
+                        <span>Try Again</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : showStartPreview ? (
               <div className="start-preview-placeholder">
                 <div className="preview-placeholder-content">
                   <i className="fa-solid fa-camera"></i>
@@ -519,7 +570,8 @@ const GoLive = () => {
             )}
           </div>
 
-          {showStartPreview ? (
+          {/* Only show Start Preview button when there's no error and preview hasn't started */}
+          {showStartPreview && !cameraError && !isLoadingCamera ? (
             <div className="start-preview-container">
               <button
                 onClick={handleStartPreview}
@@ -529,7 +581,7 @@ const GoLive = () => {
                 <span>Start Preview</span>
               </button>
             </div>
-          ) : (
+          ) : !cameraError ? (
             <div className="go-live-form-container">
               <div className="title-input-container">
                 <label htmlFor="stream-title" className="form-label">Stream Title *</label>

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import useOverlayPage from '../../hooks/useOverlayPage';
-import SearchPage from '../feed/SearchPage';
 import {
   fetchSupportedLanguages,
   fetchExperiencePreferences,
@@ -27,22 +26,39 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
   const [loadingPreferences, setLoadingPreferences] = useState(false);
   const [preferenceFeedback, setPreferenceFeedback] = useState(null);
-  const [isSearchPageOpen, setIsSearchPageOpen] = useState(false);
 
   useOverlayPage(onClose, { bodyClass: 'more-page-open', enabled: isOverlay });
 
+  // Hide sidebar when More page is open (works for both overlay and page modes)
   useEffect(() => {
+    // Add body class for page mode too
+    if (!isOverlay) {
+      document.body.classList.add('more-page-open');
+      document.documentElement.classList.add('more-page-open');
+    }
+    
+    // Close mobile menu if open
     window.dispatchEvent(new Event('sidebar:close'));
+    
+    // Hide sidebar on desktop and mobile
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) {
       sidebar.classList.add('page-open');
     }
+    
     return () => {
+      // Remove body class
+      if (!isOverlay) {
+        document.body.classList.remove('more-page-open');
+        document.documentElement.classList.remove('more-page-open');
+      }
+      
+      // Show sidebar again when More page closes
       if (sidebar) {
         sidebar.classList.remove('page-open');
       }
     };
-  }, []);
+  }, [isOverlay]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -186,12 +202,6 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
   const menuItems = useMemo(() => (
     [
       {
-        id: 'search',
-        label: 'Search',
-        icon: 'fa-search',
-        action: 'search'
-      },
-      {
         id: 'watch_later',
         label: 'Watch Later',
         icon: 'fa-bookmark',
@@ -279,9 +289,6 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       case 'toggle-theme':
         handleThemeToggle();
         break;
-      case 'search':
-        setIsSearchPageOpen(true);
-        break;
       default:
         break;
     }
@@ -314,6 +321,8 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       }}
     >
       <div className="more-header">
+        <h1>More</h1>
+        <div className="more-header-spacer"></div>
         <button
           className="more-close-btn"
           onClick={() => onClose()}
@@ -322,8 +331,6 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
         >
           <i className="fa-solid fa-times"></i>
         </button>
-        <h1>More</h1>
-        <div className="more-header-placeholder" aria-hidden="true"></div>
       </div>
 
       {preferenceFeedback && (
@@ -415,24 +422,14 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
 
   if (isOverlay) {
     return (
-      <>
         <div className="more-overlay" onClick={onClose} role="dialog" aria-modal="true">
           {content}
         </div>
-        {isSearchPageOpen && (
-          <SearchPage onClose={() => setIsSearchPageOpen(false)} />
-        )}
-      </>
     );
   }
 
   return (
-    <>
       <div className="more-page">{content}</div>
-      {isSearchPageOpen && (
-        <SearchPage onClose={() => setIsSearchPageOpen(false)} />
-      )}
-    </>
   );
 };
 

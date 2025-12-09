@@ -26,6 +26,7 @@ const Navbar = lazy(() => import('./components/navigation/Navbar'));
 const Sidebar = lazy(() => import('./components/navigation/Sidebar'));
 const SystemNotificationBanner = lazy(() => import('./components/common/SystemNotificationBanner'));
 const Explore = lazy(() => import('./components/feed/Explore'));
+const SearchPage = lazy(() => import('./components/feed/SearchPage'));
 const Following = lazy(() => import('./components/feed/Following'));
 // StoriesBar removed - Stories only show around profile picture
 const StoryViewer = lazy(() => import('./components/stories/StoryViewer'));
@@ -341,6 +342,11 @@ const HomeFeed: React.FC = () => {
 const ExplorePage: React.FC = () => {
   const navigate = useNavigate();
   return <Explore mode="overlay" onClose={() => navigate('/', { replace: true })} />;
+};
+
+const SearchPageRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <SearchPage onClose={() => navigate('/', { replace: true })} />;
 };
 
 const FollowingPage: React.FC = () => {
@@ -731,6 +737,7 @@ const AppRoutes: React.FC = () => (
       {/* Public Routes - No Login Required */}
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
+      <Route path="search" element={<SearchPageRoute />} />
       <Route path="live" element={<LivePage />} />
       <Route path="more" element={<MorePage />} />
       

@@ -366,19 +366,23 @@ router.get('/growth', authMiddleware, async (req, res) => {
     const monthlyGain = Math.floor(currentFollowers * 0.18); // 18% monthly growth estimate
     const growthRate = accountAgeDays > 0 ? ((monthlyGain / Math.max(currentFollowers - monthlyGain, 1)) * 100).toFixed(1) : '0.0';
 
-    // Get user's videos with performance data
+    // Get user's videos with performance data from database
     const videos = await Video.find({ user: userId })
       .select('views likes comments shares createdAt description hashtags')
       .sort({ views: -1 })
       .limit(50)
       .lean();
 
-    // Calculate analytics
+    console.log(`[Growth API] Fetched ${videos.length} videos from database for user ${userId}`);
+
+    // Calculate analytics from real database data
     const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
     const totalLikes = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
     const totalComments = videos.reduce((sum, v) => sum + (v.comments || 0), 0);
     const totalShares = videos.reduce((sum, v) => sum + (v.shares || 0), 0);
     const videoCount = videos.length;
+
+    console.log(`[Growth API] Calculated analytics - Views: ${totalViews}, Likes: ${totalLikes}, Comments: ${totalComments}, Shares: ${totalShares}, Videos: ${videoCount}`);
 
     // Top performing videos
     const topVideos = videos
@@ -411,33 +415,13 @@ router.get('/growth', authMiddleware, async (req, res) => {
     // Average view duration (simulated - in real app, track actual watch time)
     const avgViewDuration = videoCount > 0 ? Math.floor(totalViews / videoCount / 10) : 0;
 
-    // Audience Insights (simulated - in real app, track actual demographics)
+    // Audience Insights - Return empty when no real data available
+    // In production, this would come from actual user analytics tracking
     const audienceInsights = {
-      topCountries: [
-        { country: 'United States', percentage: 45, flag: '🇺🇸' },
-        { country: 'India', percentage: 28, flag: '🇮🇳' },
-        { country: 'United Kingdom', percentage: 12, flag: '🇬🇧' },
-        { country: 'Canada', percentage: 8, flag: '🇨🇦' },
-        { country: 'Australia', percentage: 7, flag: '🇦🇺' }
-      ],
-      ageGroups: [
-        { range: '18-24', percentage: 35 },
-        { range: '25-34', percentage: 42 },
-        { range: '35-44', percentage: 18 },
-        { range: '45+', percentage: 5 }
-      ],
-      activeHours: [
-        { hour: '7-9 AM', percentage: 12, label: 'Morning' },
-        { hour: '12-2 PM', percentage: 18, label: 'Lunch' },
-        { hour: '5-7 PM', percentage: 32, label: 'Evening' },
-        { hour: '9-11 PM', percentage: 38, label: 'Night' }
-      ],
-      contentPreferences: [
-        { type: 'Entertainment', percentage: 45 },
-        { type: 'Educational', percentage: 28 },
-        { type: 'Trending', percentage: 18 },
-        { type: 'Comedy', percentage: 9 }
-      ]
+      topCountries: [], // No dummy data - show empty state
+      ageGroups: [], // No dummy data - show empty state
+      activeHours: [], // No dummy data - show empty state
+      contentPreferences: [] // No dummy data - show empty state
     };
 
     // Suggestions & Playbooks
@@ -486,7 +470,7 @@ router.get('/growth', authMiddleware, async (req, res) => {
       }
     ];
 
-    res.json({
+    const responseData = {
       analytics: {
         followerGain: {
           weekly: weeklyGain,
@@ -499,34 +483,37 @@ router.get('/growth', authMiddleware, async (req, res) => {
         totalShares,
         videoCount,
         averageViewDurationSeconds: avgViewDuration,
-        hashtagsPerforming: topHashtags.length > 0 ? topHashtags : ['#fyp', '#viral', '#trending'],
+        hashtagsPerforming: topHashtags.length > 0 ? topHashtags : [],
         topVideos
       },
-      insights: [
+      insights: videoCount > 0 ? [
         {
           id: 'insight-1',
-          title: 'Peak engagement times',
-          detail: `Your audience is most active between 5-7 PM (32%) and 9-11 PM (38%). Post during these hours for maximum reach.`
+          title: 'Video performance',
+          detail: `You have ${videoCount} video${videoCount > 1 ? 's' : ''} with ${totalViews.toLocaleString()} total views. Keep creating to see more insights!`
         },
         {
           id: 'insight-2',
-          title: 'Primary audience location',
-          detail: `45% of your audience is from United States, followed by India (28%). Create content that resonates with these regions.`
+          title: 'Engagement rate',
+          detail: `Your videos have an average engagement rate of ${totalViews > 0 ? (((totalLikes + totalComments + totalShares) / totalViews) * 100).toFixed(1) : '0'}%.`
         },
-        {
+        ...(topVideos.length > 0 ? [{
           id: 'insight-3',
-          title: 'Age demographics',
-          detail: `Your core audience (77%) is between 18-34 years old. Tailor your content style and topics to this age group.`
-        },
+          title: 'Top performer',
+          detail: `Your best video "${topVideos[0].title.substring(0, 40)}..." has ${topVideos[0].views.toLocaleString()} views.`
+        }] : [])
+      ] : [
         {
-          id: 'insight-4',
-          title: 'Content preferences',
-          detail: `Entertainment content (45%) performs best with your audience, followed by educational content (28%).`
+          id: 'insight-1',
+          title: 'Get started',
+          detail: 'Start posting videos to unlock audience insights and growth recommendations.'
         }
       ],
       audienceInsights,
       suggestions
-    });
+    };
+
+    res.json(responseData);
   } catch (error) {
     console.error('Error fetching growth insights:', error);
     // Return fallback data on error
@@ -571,24 +558,10 @@ router.get('/growth', authMiddleware, async (req, res) => {
         }
       ],
       audienceInsights: {
-        topCountries: [
-          { country: 'United States', percentage: 45, flag: '🇺🇸' },
-          { country: 'India', percentage: 28, flag: '🇮🇳' },
-          { country: 'United Kingdom', percentage: 12, flag: '🇬🇧' }
-        ],
-        ageGroups: [
-          { range: '18-24', percentage: 35 },
-          { range: '25-34', percentage: 42 },
-          { range: '35-44', percentage: 18 }
-        ],
-        activeHours: [
-          { hour: '5-7 PM', percentage: 32, label: 'Evening' },
-          { hour: '9-11 PM', percentage: 38, label: 'Night' }
-        ],
-        contentPreferences: [
-          { type: 'Entertainment', percentage: 45 },
-          { type: 'Educational', percentage: 28 }
-        ]
+        topCountries: [],
+        ageGroups: [],
+        activeHours: [],
+        contentPreferences: []
       }
     });
   }

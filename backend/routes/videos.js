@@ -57,10 +57,28 @@ router.get('/', asyncHandler(async (req, res) => {
     cache.delete(cacheKey);
   }
 
+  // Filter to only show videos from spryclips server
+  // Exclude videos with external URLs (YouTube, Vimeo, etc.)
+  // Allow: spryclips.com, localhost, and relative paths
+  const videoQuery = {
+    status: 'ready',
+    isPrivate: false,
+    $or: [
+      // Videos from spryclips.com
+      { url: { $regex: /spryclips\.com/i } },
+      // Videos from localhost (development)
+      { url: { $regex: /localhost|127\.0\.0\.1/i } },
+      // Relative paths (uploads/, processed/)
+      { url: { $regex: /^(uploads|processed)\// } },
+      // Videos without http/https (relative paths)
+      { url: { $not: { $regex: /^https?:\/\//i } } }
+    ]
+  };
+
   const videos = await cache.getOrSet(
     cacheKey,
     async () =>
-      Video.find({ status: 'ready', isPrivate: false })
+      Video.find(videoQuery)
         .populate('user', 'username profile')
         .select('-processedVideos')
         .sort({ [sortBy]: sortOrder })
@@ -70,7 +88,7 @@ router.get('/', asyncHandler(async (req, res) => {
     60 // Reduced cache time to 1 minute for faster updates
   );
 
-  const total = await Video.countDocuments({ status: 'ready', isPrivate: false });
+  const total = await Video.countDocuments(videoQuery);
 
   sendPaginated(res, videos, { page, limit, total }, 'Videos retrieved successfully');
 }));

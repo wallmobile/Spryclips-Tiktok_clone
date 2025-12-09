@@ -2447,6 +2447,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       </div>
     );
   }
+
+  useEffect(() => {
     const hamburger = document.querySelector('.admin-sidebar-toggle');
     const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
     

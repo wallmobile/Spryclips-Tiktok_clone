@@ -274,8 +274,8 @@ const LIVE = ({ onClose = () => {} }) => {
   }, []);
 
   const filteredStreams = useMemo(() => {
-    // prefer real streams fetched from API; fall back to SAMPLE_STREAMS
-    const list = (streams && streams.length > 0) ? streams : SAMPLE_STREAMS;
+    // Only use real streams from API - no dummy data fallback
+    const list = streams || [];
     if (activeFilter === 'all') return list;
     return list.filter((stream) => (stream.category || '').toLowerCase() === activeFilter);
   }, [activeFilter, streams]);

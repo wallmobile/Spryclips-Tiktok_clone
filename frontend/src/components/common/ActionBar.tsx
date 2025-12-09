@@ -339,11 +339,17 @@ const ActionBar: React.FC<ActionBarProps> = ({
       try {
         if (shouldSave) {
           await addWatchLaterApi(videoId);
+          console.log('[ActionBar] Successfully added video to watch later:', videoId);
+          // Dispatch event to notify Watch Later page
+          window.dispatchEvent(new CustomEvent('watchlater:updated', { detail: { action: 'add', videoId } }));
         } else {
           await removeWatchLaterApi(videoId);
+          console.log('[ActionBar] Successfully removed video from watch later:', videoId);
+          // Dispatch event to notify Watch Later page
+          window.dispatchEvent(new CustomEvent('watchlater:updated', { detail: { action: 'remove', videoId } }));
         }
       } catch (error) {
-        console.error('Failed to sync Watch Later', error);
+        console.error('[ActionBar] Failed to sync Watch Later', error);
         onError?.(
           shouldSave
             ? 'Failed to save video to Watch Later. Please try again.'

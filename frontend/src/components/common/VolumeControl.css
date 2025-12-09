@@ -83,36 +83,36 @@
   outline-offset: 2px;
 }
 
-/* Slider Container - Pill Shape - Horizontal Layout - Navbar Colors */
+/* Slider Container - Clean Grey Background */
 .volume-slider-container {
-  background: linear-gradient(135deg, #f8faff 0%, #e0f2fe 50%, #dbeafe 100%) !important; /* Navbar gradient */
+  background: #f5f5f5 !important; /* Light grey background */
   backdrop-filter: blur(10px);
-  border-radius: 9999px;
-  padding: 8px 14px !important; /* Padding like TikTok */
-  min-width: 120px !important; /* Width like TikTok */
-  max-width: 160px !important; /* Width like TikTok */
-  height: 38px; /* Slightly taller */
+  border-radius: 8px !important; /* Rounded corners */
+  padding: 8px 12px !important; /* Compact padding */
+  min-width: 140px !important; /* Adequate width */
+  max-width: 180px !important; /* Max width */
+  height: 40px !important; /* Fixed height */
   display: flex !important;
-  flex-direction: row !important; /* Horizontal layout - left to right */
+  flex-direction: row !important; /* Horizontal layout */
   align-items: center !important;
-  justify-content: flex-start !important; /* Start from left */
+  justify-content: space-between !important; /* Space between slider and percentage */
+  gap: 10px !important; /* Gap between elements */
   opacity: 0 !important; /* Hidden by default */
   visibility: hidden !important; /* Hidden by default */
   transform: translateX(-10px) !important; /* Slightly offset when hidden */
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease !important; /* Optimized transitions */
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.18) !important; /* Navbar shadow */
-  border: 1px solid #93c5fd !important; /* Navbar border color */
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important; /* Subtle shadow */
+  border: 1px solid rgba(0, 0, 0, 0.08) !important; /* Light border */
   pointer-events: none !important; /* Not interactive when hidden */
-  margin-left: 0; /* No extra margin */
+  margin-left: 8px !important; /* Gap from icon */
   position: relative !important;
   z-index: 1002 !important;
 }
 
 .volume-slider-container:hover {
-  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #bfdbfe 100%) !important; /* Lighter navbar gradient on hover */
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25) !important; /* Navbar shadow on hover */
-  border-color: #2563EB !important; /* Navbar primary blue border */
-  transform: scale(1.02) !important;
+  background: #eeeeee !important; /* Slightly darker grey on hover */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
 }
 
 .volume-slider-container.visible {
@@ -120,15 +120,14 @@
   visibility: visible !important;
   transform: translateX(0) !important;
   pointer-events: auto !important; /* Enable interaction when visible */
-  margin-left: -4px !important; /* Reduce gap when visible */
 }
 
-/* Dragging state - enhanced visual feedback - Navbar Colors */
+/* Dragging state */
 .volume-slider-container.dragging {
-  transform: translateX(0) scale(1.05) !important;
-  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #bfdbfe 100%) !important; /* Navbar gradient when dragging */
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3), 0 0 0 2px rgba(37, 99, 235, 0.2) !important; /* Navbar shadow */
-  border-color: #2563EB !important; /* Navbar primary blue border */
+  transform: translateX(0) scale(1.02) !important;
+  background: #e8e8e8 !important; /* Darker grey when dragging */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Ensure slider input is clickable and draggable */
@@ -191,11 +190,11 @@
 
 /* Volume Percentage Display - Shows on right side */
 .volume-percentage-display {
-  position: absolute !important;
-  right: 14px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  color: #000000 !important; /* Black text on white background */
+  position: relative !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+  color: #333333 !important; /* Dark grey text */
   font-size: 12px !important;
   font-weight: 600 !important;
   white-space: nowrap !important;
@@ -203,17 +202,19 @@
   z-index: 10 !important;
   min-width: 35px !important;
   text-align: right !important;
+  flex-shrink: 0 !important; /* Don't shrink */
+  margin-left: auto !important; /* Push to right */
 }
 
 
 /* Slider Track - Horizontal (Left to Right) - Fixed Vertical Alignment */
 .volume-slider {
-  flex: 1;
-  width: 100% !important;
+  flex: 1 !important; /* Take available space */
+  width: auto !important; /* Auto width */
   height: 4px !important;
   -webkit-appearance: none !important;
   appearance: none !important;
-  background: rgba(0, 0, 0, 0.15) !important; /* Light dark track - original */
+  background: rgba(0, 0, 0, 0.2) !important; /* Darker track for visibility */
   outline: none !important;
   border-radius: 2px !important;
   cursor: pointer !important;
@@ -223,16 +224,17 @@
   -webkit-tap-highlight-color: transparent !important;
   margin: 0 !important;
   padding: 0 !important;
-  touch-action: pan-x !important; /* Allow horizontal dragging - left to right */
-  transition: background 0.1s ease, height 0.1s ease !important; /* Optimized transitions */
-  user-select: none !important; /* Prevent text selection during drag */
+  touch-action: pan-x !important; /* Allow horizontal dragging */
+  transition: background 0.1s ease, height 0.1s ease !important;
+  user-select: none !important;
   -webkit-user-select: none !important;
-  will-change: width !important; /* Only animate width, not transform */
-  writing-mode: horizontal-tb !important; /* Horizontal writing mode */
-  direction: ltr !important; /* Left to right direction */
-  orientation: horizontal !important; /* Horizontal orientation */
-  vertical-align: middle !important; /* Center vertically */
-  align-self: center !important; /* Center in flex container */
+  will-change: width !important;
+  writing-mode: horizontal-tb !important;
+  direction: ltr !important;
+  orientation: horizontal !important;
+  vertical-align: middle !important;
+  align-self: center !important;
+  min-width: 80px !important; /* Minimum slider width */
 }
 
 .volume-slider:hover {

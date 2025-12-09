@@ -428,57 +428,87 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
     if (activeSection === 'suggestions') {
       const suggestions = growthData.suggestions || [];
       const priorityColors = {
-        high: '#FF0050',
-        medium: '#FF6B9D',
-        low: '#FFB3D1'
+        high: { bg: '#FF0050', light: 'rgba(255, 0, 80, 0.1)', border: 'rgba(255, 0, 80, 0.2)' },
+        medium: { bg: '#FF6B9D', light: 'rgba(255, 107, 157, 0.1)', border: 'rgba(255, 107, 157, 0.2)' },
+        low: { bg: '#FFB3D1', light: 'rgba(255, 179, 209, 0.1)', border: 'rgba(255, 179, 209, 0.2)' }
       };
 
       return (
-        <div className="more-page__list">
-          {suggestions.map((suggestion) => (
-            <div key={suggestion.id} className="more-page__list-item" style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '1rem' }}>
-                <div style={{ 
-                  minWidth: '4px', 
-                  width: '4px', 
-                  height: '100%', 
-                  background: priorityColors[suggestion.priority] || '#FF0050',
-                  borderRadius: '2px',
-                  position: 'absolute',
-                  left: 0,
-                  top: 0
-                }}></div>
-                <div style={{ flex: 1, marginLeft: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0 }}>{suggestion.title}</h3>
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      padding: '0.25rem 0.5rem', 
-                      background: priorityColors[suggestion.priority] || '#FF0050',
-                      color: 'white',
-                      borderRadius: '12px',
-                      textTransform: 'uppercase',
-                      fontWeight: '600'
+        <div className="more-page__suggestions-list">
+          {suggestions.map((suggestion) => {
+            const priorityStyle = priorityColors[suggestion.priority] || priorityColors.high;
+            return (
+              <div key={suggestion.id} className="more-page__suggestion-card" style={{ 
+                borderLeft: `4px solid ${priorityStyle.bg}`,
+                background: '#fff',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                marginBottom: '1rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                transition: 'all 0.3s ease',
+                border: `1px solid ${priorityStyle.border}`
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'nowrap' }}>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: '1.1rem', 
+                      fontWeight: '700', 
+                      color: '#1a1a1a',
+                      flex: '1 1 auto',
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}>
-                      {suggestion.priority}
-                    </span>
-                    {suggestion.category && (
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        padding: '0.25rem 0.5rem', 
-                        background: 'rgba(0,0,0,0.05)',
-                        borderRadius: '12px',
-                        color: '#666'
+                      {suggestion.title}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap', flexShrink: 0 }}>
+                      <span className="more-page__priority-badge" style={{ 
+                        fontSize: '0.7rem', 
+                        padding: '0.35rem 0.75rem', 
+                        background: priorityStyle.bg,
+                        color: 'white',
+                        borderRadius: '20px',
+                        textTransform: 'uppercase',
+                        fontWeight: '700',
+                        letterSpacing: '0.5px',
+                        boxShadow: `0 2px 4px ${priorityStyle.border}`,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}>
-                        {suggestion.category}
+                        {suggestion.priority}
                       </span>
-                    )}
+                      {suggestion.category && (
+                        <span className="more-page__category-badge" style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '0.35rem 0.75rem', 
+                          background: '#f5f5f5',
+                          borderRadius: '20px',
+                          color: '#666',
+                          fontWeight: '600',
+                          border: '1px solid #e0e0e0',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}>
+                          {suggestion.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>{suggestion.description}</p>
+                  <p style={{ 
+                    margin: 0, 
+                    color: '#64748B', 
+                    lineHeight: '1.7', 
+                    fontSize: '0.95rem',
+                    paddingTop: '0.25rem'
+                  }}>
+                    {suggestion.description}
+                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
