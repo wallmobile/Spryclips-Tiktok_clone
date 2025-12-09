@@ -294,16 +294,13 @@ const SecuritySettings = ({ onClose }) => {
         />
         <div className="admin-panel-main-content">
       <div className="security-settings">
-        <div className="admin-page-header">
+        <div className="admin-page-header security-header">
           <h2>
             Security Settings
             {activeTab === 'roles' && ' → Role-Based Access'}
             {activeTab === 'activity-logs' && ' → Activity Logs'}
             {activeTab === 'sessions' && ' → Session Tracking'}
           </h2>
-          <button className="admin-close-btn" onClick={onClose}>
-            <i className="fa-solid fa-times"></i>
-          </button>
         </div>
 
         <div className="admin-content-area">
