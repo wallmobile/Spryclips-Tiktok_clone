@@ -73,7 +73,9 @@ export const WatchHistoryProvider = ({ children }) => {
       // Extract hashtags
       const hashtags = videoData.hashtags || [];
       const description = videoData.description || '';
-      const extractedHashtags = [...hashtags, ...(description.match(/#\w+/g) || []).map(t => t.slice(1))];
+      const matchResult = description.match(/#\w+/g);
+      const matchedHashtags = matchResult ? matchResult.map(t => t && typeof t === 'string' ? t.slice(1) : '').filter(Boolean) : [];
+      const extractedHashtags = [...hashtags, ...matchedHashtags];
       
       // Update hashtag interests
       extractedHashtags.forEach(tag => {
@@ -139,9 +141,10 @@ export const WatchHistoryProvider = ({ children }) => {
   const getTopInterests = useCallback((type = 'hashtags', limit = 10) => {
     const interests = userInterests[type] || {};
     return Object.entries(interests)
-      .sort((a, b) => b[1] - a[1])
+      .filter((entry) => entry && Array.isArray(entry) && entry.length >= 2 && entry[1] != null)
+      .sort((a, b) => (b[1] || 0) - (a[1] || 0))
       .slice(0, limit)
-      .map(([key, value]) => ({ key, score: value }));
+      .map(([key, value]) => ({ key, score: value || 0 }));
   }, [userInterests]);
 
   // Check if video was watched
