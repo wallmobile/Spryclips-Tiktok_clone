@@ -9,7 +9,7 @@ const ADMIN_PASSWORD = 'Admin@123456';
 async function createAdminUser() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tiktok_clone';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tiktok-clone';
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
