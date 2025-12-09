@@ -45,20 +45,20 @@ export const useSocket = () => {
     let isMounted = true;
 
     const establishConnection = async () => {
-      if (!user) {
-        setIsConnected(false);
-        return;
-      }
-
       try {
-        const refreshResponse = await refreshSession();
-        const token = refreshResponse?.accessToken;
-
-        if (!token || !isMounted) {
-          setIsConnected(false);
-          return;
+        // If user is present, try to refresh session and include token in handshake.
+        let token = null;
+        if (user) {
+          try {
+            const refreshResponse = await refreshSession();
+            token = refreshResponse?.accessToken || null;
+          } catch (err) {
+            console.warn('refreshSession failed (socket auth will proceed without token):', err?.message || err);
+            token = null;
+          }
         }
 
+        // Establish socket connection. If token is null, the server will allow anonymous socket.
         socketRef.current = io(API_URL, {
           auth: {
             token
@@ -69,9 +69,12 @@ export const useSocket = () => {
         const socket = socketRef.current;
 
         socket.on('connect', () => {
-          console.log('Socket connected');
+          console.log('Socket connected', socket.id);
           setIsConnected(true);
-          socket.emit('subscribe:notifications');
+          // Only subscribe to notifications when authenticated
+          if (socket.userId || user) {
+            socket.emit('subscribe:notifications');
+          }
         });
 
         socket.on('disconnect', () => {
@@ -84,7 +87,7 @@ export const useSocket = () => {
           setIsConnected(false);
         });
       } catch (error) {
-        console.error('Failed to refresh token for socket connection:', error);
+        console.error('Failed to establish socket connection:', error);
         setIsConnected(false);
       }
     };

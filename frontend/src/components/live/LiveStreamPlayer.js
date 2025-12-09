@@ -34,6 +34,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   
   // WebRTC refs for broadcasting
   const peerConnectionsRef = useRef(new Map()); // viewerSocketId -> RTCPeerConnection
+  const viewerPeerRef = useRef(null); // RTCPeerConnection for viewer mode
+  const hostSocketIdRef = useRef(null);
 
   const giftOptions = useMemo(() => [
     { id: 'rose', name: 'Rose', emoji: '🌹', price: 1 },
@@ -174,12 +176,15 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   useEffect(() => {
     if (isBroadcaster) {
       initializeCamera();
-    } else if (streamData?.streamUrl && videoRef.current) {
-      // For viewers, connect to stream URL
-      videoRef.current.src = streamData.streamUrl;
-      videoRef.current.play().then(() => {
-        setIsVideoLoaded(true);
-      }).catch(console.error);
+    } else {
+      // For viewers: if a WebRTC session is available we'll attach remoteStream,
+      // otherwise fall back to a stream URL (if provided)
+      if (videoRef.current) {
+        if (streamData?.streamUrl) {
+          // set src as fallback while waiting for WebRTC
+          videoRef.current.src = streamData.streamUrl;
+        }
+      }
     }
   }, [isBroadcaster, streamData?.streamUrl, initializeCamera]);
 
@@ -365,6 +370,90 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     };
   }, [socket, isBroadcaster, isConnected, streamData, createPeerConnectionForViewer, handleWebRTCAnswer, handleWebRTCIceCandidate]);
 
+  // Viewer WebRTC: join as viewer and handle offer/ICE from host
+  useEffect(() => {
+    if (!socket || isBroadcaster || !streamData) return;
+
+    const canonicalRoomId = streamData?.id || streamData?._id || streamData?.roomId;
+    if (!canonicalRoomId) return;
+
+    // Create peer connection for viewer
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    viewerPeerRef.current = pc;
+
+    // Handle incoming tracks
+    pc.ontrack = (event) => {
+      if (videoRef.current && event.streams && event.streams[0]) {
+        console.log('[Viewer] Received remote stream from host');
+        videoRef.current.srcObject = event.streams[0];
+        setIsVideoLoaded(true);
+      }
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socket) {
+        socket.emit('webrtc:ice-candidate', {
+          roomId: canonicalRoomId,
+          candidate: event.candidate,
+          targetId: hostSocketIdRef.current || null
+        });
+      }
+    };
+
+    const handleJoined = (data) => {
+      console.log('[Viewer] live:joined', data);
+      hostSocketIdRef.current = data.hostSocketId || hostSocketIdRef.current;
+    };
+
+    const handleOffer = async ({ offer, fromId }) => {
+      try {
+        console.log('[Viewer] Received offer from host', fromId);
+        if (!viewerPeerRef.current) return;
+        await viewerPeerRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await viewerPeerRef.current.createAnswer();
+        await viewerPeerRef.current.setLocalDescription(answer);
+        socket.emit('webrtc:answer', {
+          roomId: canonicalRoomId,
+          answer: viewerPeerRef.current.localDescription,
+          targetId: fromId
+        });
+        console.log('[Viewer] Sent answer to host');
+      } catch (err) {
+        console.error('[Viewer] Error handling offer:', err);
+      }
+    };
+
+    const handleIce = async ({ candidate }) => {
+      try {
+        if (!viewerPeerRef.current) return;
+        await viewerPeerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error('[Viewer] Error adding ICE candidate:', err);
+      }
+    };
+
+    socket.on('live:joined', handleJoined);
+    socket.on('webrtc:offer', handleOffer);
+    socket.on('webrtc:ice-candidate', handleIce);
+
+    // Join the room as viewer
+    socket.emit('live:join', { roomId: canonicalRoomId, role: 'viewer' });
+    console.log('[Viewer] Joining live room:', canonicalRoomId);
+
+    return () => {
+      socket.off('live:joined', handleJoined);
+      socket.off('webrtc:offer', handleOffer);
+      socket.off('webrtc:ice-candidate', handleIce);
+      if (viewerPeerRef.current) {
+        viewerPeerRef.current.close();
+        viewerPeerRef.current = null;
+      }
+      if (socket) {
+        socket.emit('live:leave', { roomId: canonicalRoomId });
+      }
+    };
+  }, [socket, isBroadcaster, streamData]);
+
   const handleSendComment = (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -392,44 +481,48 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   };
 
   const handleEndStream = async () => {
-    if (window.confirm('Are you sure you want to end the stream?')) {
-      try {
-        // Stop the camera/media tracks first
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
+    // Open in-app confirmation modal instead of using browser confirm
+    setShowEndConfirm(true);
+  };
 
-        // Call backend API to end the stream
-        const streamId = streamData?.id || streamData?._id;
-        if (streamId) {
-          const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
-          const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include' // Use cookies for authentication
-          });
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-          const data = await response.json();
-          
-          if (!response.ok) {
-            console.error('Failed to end stream on server:', data.message);
-          } else {
-            console.log('Stream ended successfully on server');
-          }
-        }
+  const confirmEndStream = async () => {
+    setShowEndConfirm(false);
+    try {
+      // Stop the camera/media tracks first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
 
-        // Call the onEnd callback to update parent state
-        if (onEnd) {
-          onEnd();
+      // Call backend API to end the stream
+      const streamId = streamData?.id || streamData?._id;
+      if (streamId) {
+        const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
+        const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Use cookies for authentication
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          console.error('Failed to end stream on server:', data.message);
+        } else {
+          console.log('Stream ended successfully on server');
         }
-      } catch (error) {
-        console.error('Error ending stream:', error);
-        // Still call onEnd to clean up UI even if API call fails
-        if (onEnd) {
-          onEnd();
-        }
+      }
+
+      // Call the onEnd callback to update parent state
+      if (onEnd) {
+        onEnd();
+      }
+    } catch (error) {
+      console.error('Error ending stream:', error);
+      if (onEnd) {
+        onEnd();
       }
     }
   };
@@ -538,6 +631,19 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
       {/* Main Video Area */}
       <div className="stream-main">
         <div className={`stream-video-container ${isVideoLoaded ? 'video-loaded' : ''}`} onClick={(e) => e.stopPropagation()}>
+          {/* Host confirm modal for ending stream */}
+          {showEndConfirm && isBroadcaster && (
+            <div className="end-stream-confirm" role="dialog" aria-modal="true">
+              <div className="end-stream-confirm-card">
+                <h4>End Stream</h4>
+                <p>Are you sure you want to end the stream?</p>
+                <div className="end-stream-actions">
+                  <button className="end-confirm-btn cancel" onClick={() => setShowEndConfirm(false)}>Cancel</button>
+                  <button className="end-confirm-btn confirm" onClick={confirmEndStream}>End Stream</button>
+                </div>
+              </div>
+            </div>
+          )}
           <video
             ref={videoRef}
             autoPlay

@@ -2593,16 +2593,3 @@ const Profile = ({ onClose, username: viewUsername }) => {
 };
 
 export default Profile;
-
-
-
-
-
-
-
-
-
-
-
-
-

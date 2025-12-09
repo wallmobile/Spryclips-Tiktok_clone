@@ -64,19 +64,37 @@ const LiveList = () => {
         </h1>
         <div className="live-list-categories">
           {categories.map((cat) => (
+              const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com' ;
+
+              const resolveUrl = (path) => {
+                if (!path) return '';
+                try {
+                  // If it's already an absolute URL, return as-is
+                  const u = new URL(path);
+                  return u.href;
+                } catch (e) {
+                  // Not an absolute URL — prefix with API_URL
+                  const prefix = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+                  const p = path.startsWith('/') ? path : `/${path}`;
+                  return `${prefix}${p}`;
+                }
+              };
+
+              const thumbnailSrc = stream.thumbnail ? resolveUrl(stream.thumbnail) : (stream.profilePicture ? resolveUrl(stream.profilePicture) : '/default-avatar.png');
+              const avatarSrc = stream.profilePicture ? resolveUrl(stream.profilePicture) : '/default-avatar.png';
+
+              return (
             <button
               key={cat.value}
               className={`category-btn ${selectedCategory === cat.value ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat.value)}
             >
               {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="live-list-loading">
+                  <img
+                    src={thumbnailSrc}
+                    alt={stream.title}
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                  />
           <div className="spinner"></div>
           <p>Loading live streams...</p>
         </div>
@@ -88,21 +106,20 @@ const LiveList = () => {
         </div>
       ) : (
         <div className="live-list-grid">
-          {streams.map((stream) => (
-            <div
-              key={stream.id}
-              className="live-stream-card"
-              onClick={() => handleStreamClick(stream)}
-            >
-              <div className="live-stream-thumbnail">
-                <img
+                    <img
+                      src={avatarSrc}
+                      alt={stream.username}
+                      className="live-stream-avatar"
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                    />
                   src={stream.thumbnail || stream.profilePicture || '/default-avatar.png'}
                   alt={stream.title}
                   onError={(e) => {
                     e.target.src = '/default-avatar.png';
                   }}
                 />
-                <div className="live-badge">
+              );
+            })}
                   <span className="live-dot"></span>
                   LIVE
                 </div>

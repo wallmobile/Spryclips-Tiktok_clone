@@ -28,7 +28,7 @@ const getAPIURL = (): string => {
     const origin = window.location.origin;
     // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'http://localhost:5000';
+      return 'https://spryclips.com';
     }
     // Production mode: use empty string (same origin, nginx proxies /api)
     return '';
@@ -78,6 +78,19 @@ const processQueue = (error: unknown = null) => {
 api.interceptors.request.use(
   (config: RetryableRequestConfig) => {
     config.withCredentials = true;
+    // Attach access token from localStorage (if present) so auth works across refresh
+    try {
+      const token = typeof window !== 'undefined' ? window.localStorage.getItem('accessToken') : null;
+      if (token) {
+        config.headers = config.headers || {};
+        // Only set Authorization if not already present
+        if (!config.headers['Authorization'] && !config.headers['authorization']) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
     return config;
   },
   (requestError) => Promise.reject(requestError)

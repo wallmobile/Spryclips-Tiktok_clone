@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LiveStreamSetup from './LiveStreamSetup';
 import LiveStreamPlayer from './LiveStreamPlayer';
+import { useSocket } from '../hooks/useSocket';
+import { getActiveLiveStreams } from '../api/live';
 import './LIVE.css';
 
 const SAMPLE_STREAMS = [
@@ -60,12 +62,15 @@ const CATEGORIES = [
 const LIVE = ({ onClose = () => {} }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [activeFilter, setActiveFilter] = useState('all');
   const [showSetup, setShowSetup] = useState(false);
   const [activeStream, setActiveStream] = useState(null);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [myActiveStream, setMyActiveStream] = useState(null);
   const [loadingMyStream, setLoadingMyStream] = useState(false);
+  const [streams, setStreams] = useState([]);
+  const [loadingStreams, setLoadingStreams] = useState(false);
 
   // Fetch user's active stream
   const fetchMyActiveStream = useCallback(async () => {
@@ -77,7 +82,7 @@ const LIVE = ({ onClose = () => {} }) => {
     
     setLoadingMyStream(true);
     try {
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
       console.log('Fetching active stream for user:', userId);
       const response = await fetch(`${API_URL}/api/live/user/${userId}?status=live`, {
         credentials: 'include'
@@ -117,6 +122,61 @@ const LIVE = ({ onClose = () => {} }) => {
   useEffect(() => {
     fetchMyActiveStream();
   }, [fetchMyActiveStream]);
+
+  // Fetch active streams for LIVE section
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStreams = async () => {
+      try {
+        setLoadingStreams(true);
+        const data = await getActiveLiveStreams(activeFilter);
+        if (!isMounted) return;
+        if (data && data.streams) {
+          setStreams(data.streams);
+        } else {
+          setStreams([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch active streams:', err);
+      } finally {
+        if (isMounted) setLoadingStreams(false);
+      }
+    };
+
+    fetchStreams();
+
+    // Polling fallback every 10s
+    const interval = setInterval(fetchStreams, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeFilter]);
+
+  // Listen for realtime stream-started events and update list
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStarted = ({ stream }) => {
+      try {
+        // If the stream matches current filter, prepend it
+        if (activeFilter === 'all' || stream.category === activeFilter) {
+          setStreams(prev => {
+            // avoid duplicates
+            if (prev.find(s => String(s.id) === String(stream.id))) return prev;
+            return [stream, ...(prev || [])].slice(0, 50);
+          });
+        }
+      } catch (e) {
+        console.error('Error handling live:stream-started', e);
+      }
+    };
+
+    socket.on('live:stream-started', handleStarted);
+    return () => {
+      socket.off('live:stream-started', handleStarted);
+    };
+  }, [socket, activeFilter]);
 
   // Handle Go Live button - check auth first
   const handleGoLive = () => {
@@ -162,7 +222,7 @@ const LIVE = ({ onClose = () => {} }) => {
         return;
       }
 
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
       const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
         method: 'POST',
         headers: {
@@ -202,9 +262,11 @@ const LIVE = ({ onClose = () => {} }) => {
   }, []);
 
   const filteredStreams = useMemo(() => {
-    if (activeFilter === 'all') return SAMPLE_STREAMS;
-    return SAMPLE_STREAMS.filter((stream) => stream.category.toLowerCase() === activeFilter);
-  }, [activeFilter]);
+    // prefer real streams fetched from API; fall back to SAMPLE_STREAMS
+    const list = (streams && streams.length > 0) ? streams : SAMPLE_STREAMS;
+    if (activeFilter === 'all') return list;
+    return list.filter((stream) => (stream.category || '').toLowerCase() === activeFilter);
+  }, [activeFilter, streams]);
 
   const formatViewerCount = (count = 0) => {
     if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;

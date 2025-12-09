@@ -1,20 +1,25 @@
-// Central API exports - import everything from one place
-export * from './auth';
-export * from './videos';
-export * from './comments';
-export * from './collections';
-export * from './products';
-export * from './creator-academy';
-export * from './moderation';
-export * from './video-features';
-export * from './hashtags';
-export * from './search';
-export * from './analytics';
-export * from './music';
-export * from './notifications';
-export * from './messages';
-export * from './drafts';
-export * from './twoFactor';
-export * from './users';
-export * from './monetization';
-export * from './verification';
+// Provide a single default axios client and namespaced API modules to avoid
+// conflicting re-exports when multiple modules export the same symbol.
+import axios from '../config/axios';
+
+export default axios;
+
+export * as auth from './auth';
+export * as videos from './videos';
+export * as comments from './comments';
+export * as collections from './collections';
+export * as products from './products';
+export * as creatorAcademy from './creator-academy';
+export * as moderation from './moderation';
+export * as videoFeatures from './video-features';
+export * as hashtags from './hashtags';
+export * as search from './search';
+export * as analytics from './analytics';
+export * as music from './music';
+export * as notifications from './notifications';
+export * as messages from './messages';
+export * as drafts from './drafts';
+export * as twoFactor from './twoFactor';
+export * as users from './users';
+export * as monetization from './monetization';
+export * as verification from './verification';

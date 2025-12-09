@@ -81,10 +81,9 @@ export const AuthProvider = ({ children }) => {
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (isMountedRef.current) {
-        console.debug('Auth check timeout - redirecting to login');
-        setUser(null);
+        console.debug('Auth check timeout - verify request taking too long; keeping cached user until a definitive response');
+        // Don't clear cached user on slow responses — keep localStorage.user so UI remains authenticated
         setLoading(false);
-        localStorage.removeItem('user');
       }
       isVerifyingRef.current = false;
     }, 5000); // 5 second timeout
@@ -137,6 +136,17 @@ export const AuthProvider = ({ children }) => {
     const hasCachedUser = localStorage.getItem('user') && 
                           localStorage.getItem('user') !== 'null' && 
                           localStorage.getItem('user') !== 'undefined';
+    // If we have an access token stored, ensure axios attaches it immediately
+    try {
+      const storedToken = localStorage.getItem('accessToken');
+      if (storedToken) {
+        api.defaults.headers = api.defaults.headers || {};
+        api.defaults.headers.common = api.defaults.headers.common || {};
+        api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
     
     if (hasCachedUser && !isAuthPage) {
       // Verify in background without blocking UI
@@ -162,6 +172,11 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         // Save user to localStorage for persistence across refreshes
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Save access token (if returned) so we can attach it to Authorization header
+        const token = response.data.token || response.data.tokens?.accessToken || response.data.accessToken;
+        if (token) {
+          try { localStorage.setItem('accessToken', token); } catch {};
+        }
       }
       console.log('Login successful');
       return { success: true };
@@ -240,6 +255,10 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         // Save user to localStorage for persistence across refreshes
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        const token = response.data.token || response.data.tokens?.accessToken || response.data.accessToken;
+        if (token) {
+          try { localStorage.setItem('accessToken', token); } catch {};
+        }
       }
       
       return result;
@@ -272,6 +291,10 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         // Save user to localStorage for persistence across refreshes
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        const token = response.data.token || response.data.tokens?.accessToken || response.data.accessToken;
+        if (token) {
+          try { localStorage.setItem('accessToken', token); } catch {};
+        }
       }
       return { success: true, message: response?.data?.message || `${provider} sign-in successful` };
     } catch (error) {
@@ -295,6 +318,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       // Clear user from localStorage
       localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
     }
   };
 
