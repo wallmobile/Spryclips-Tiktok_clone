@@ -145,6 +145,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [videosPagination, setVideosPagination] = useState({ page: 1, limit: 20, total: 0 });
   const [videosSearch, setVideosSearch] = useState('');
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
 
   // Stories
   const [stories, setStories] = useState([]);
@@ -2421,11 +2422,33 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     );
   }
 
-  const closeButton = isModal ? (
-    <button className="admin-panel-close" onClick={onClose}>×</button>
-  ) : (
-    onClose ? <button className="admin-panel-close" onClick={() => navigate('/')}>×</button> : null
-  );
+  // Close button removed - hamburger menu will handle navigation on mobile
+  const closeButton = null;
+
+  // Hide hamburger menu when any modal is open
+  useEffect(() => {
+    const hamburger = document.querySelector('.admin-sidebar-toggle');
+    const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
+    
+    if (hamburger) {
+      if (hasOpenModal) {
+        hamburger.style.display = 'none';
+        hamburger.style.visibility = 'hidden';
+        hamburger.style.opacity = '0';
+        hamburger.style.pointerEvents = 'none';
+        hamburger.style.zIndex = '-1';
+      } else {
+        // Restore hamburger visibility on mobile/tablet
+        if (typeof window !== 'undefined' && window.innerWidth < 1025) {
+          hamburger.style.display = 'flex';
+          hamburger.style.visibility = 'visible';
+          hamburger.style.opacity = '1';
+          hamburger.style.pointerEvents = 'auto';
+          hamburger.style.zIndex = '100002';
+        }
+      }
+    }
+  }, [showBlacklistModal, showBoostModal, showHashtagModal, showABTestModal]);
 
   const content = (
     <div className="admin-panel-with-sidebar">
@@ -2699,6 +2722,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   }}
                   className="admin-search-input"
                 />
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={usersStatusFilter}
                   onChange={(e) => {
@@ -2712,6 +2736,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="suspended">Suspended</option>
                   <option value="banned">Banned</option>
                 </select>
+                </div>
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={usersRoleFilter}
                   onChange={(e) => {
@@ -2725,6 +2751,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="moderator">Moderator</option>
                   <option value="admin">Admin</option>
                 </select>
+                </div>
               </div>
 
               {/* Users List */}
@@ -3323,9 +3350,26 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               ) : (
                 <>
                   <div className="admin-videos-grid">
-                    {videos.map((video) => (
+                    {videos.map((video) => {
+                      const videoUrl = video.url || video.playbackUrl || video.videoUrl;
+                      const isPlaying = playingVideoId === video._id;
+                      
+                      return (
                       <div key={video._id} className="admin-video-card">
                         <div className="admin-video-card-thumbnail">
+                          {isPlaying && videoUrl && videoUrl !== '#' ? (
+                            <video
+                              src={videoUrl}
+                              controls
+                              autoPlay
+                              className="admin-video-player"
+                              onEnded={() => setPlayingVideoId(null)}
+                              onPause={() => setPlayingVideoId(null)}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          ) : (
+                            <>
                           {video.thumbnail ? (
                             <img 
                               src={video.thumbnail} 
@@ -3340,10 +3384,20 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             </div>
                           )}
                           <div className="admin-video-card-overlay">
+                                <button className="admin-video-play-button" onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (videoUrl && videoUrl !== '#') {
+                                    setPlayingVideoId(video._id);
+                                  }
+                                }}>
+                                  <i className="fa-solid fa-play"></i>
+                                </button>
                             <span className="admin-video-duration">
                               {video.duration ? `${Math.floor(video.duration)}s` : ''}
                             </span>
                           </div>
+                            </>
+                          )}
                         </div>
                         <div className="admin-video-card-content">
                           <h4 className="admin-video-card-title" title={video.description || 'No description'}>
@@ -3392,14 +3446,25 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           </div>
                           <div className="admin-video-card-actions">
                             <button
-                              onClick={() => window.open(video.url || video.playbackUrl || '#', '_blank')}
+                              onClick={() => {
+                                const videoUrl = video.url || video.playbackUrl || video.videoUrl;
+                                if (videoUrl && videoUrl !== '#') {
+                                  setPlayingVideoId(video._id);
+                                } else {
+                                  alert('Video URL not available');
+                                }
+                              }}
                               className="admin-btn admin-btn-view admin-btn-small"
-                              title="View video"
+                              title="Play video"
+                              disabled={!video.url && !video.playbackUrl && !video.videoUrl}
                             >
-                              <i className="fa-solid fa-play"></i> View
+                              <i className="fa-solid fa-play"></i> {isPlaying ? 'Playing' : 'Play'}
                             </button>
                             <button
-                              onClick={() => handleDeleteVideo(video._id)}
+                              onClick={() => {
+                                setPlayingVideoId(null);
+                                handleDeleteVideo(video._id);
+                              }}
                               className="admin-btn admin-btn-delete admin-btn-small"
                               title="Delete video"
                             >
@@ -3408,7 +3473,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
 
                   {videosPagination.pages > 1 && (
@@ -3439,7 +3505,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {/* Video Moderation */}
               {moderationTab === 'videos' && (
                 <div className="admin-moderation-content">
-                  <div className="admin-filters">
+                  <div className="admin-filters admin-moderation-filters-wrapper">
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={moderationVideosStatus}
                       onChange={(e) => {
@@ -3453,13 +3520,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingModerationVideos ? (
                     <div className="admin-loading">Loading videos...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-moderation-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -3476,11 +3545,52 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             {moderationVideos.map((video) => (
                               <tr key={video._id}>
                                 <td>
+                                  <div style={{ position: 'relative', display: 'inline-block' }}>
                                   <img
                                     src={video.thumbnail || '/placeholder.png'}
                                     alt=""
-                                    style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
-                                  />
+                                      style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px', cursor: 'pointer' }}
+                                      onClick={() => {
+                                        if (video.url || video.playbackUrl) {
+                                          window.location.href = video.url || video.playbackUrl;
+                                        }
+                                      }}
+                                    />
+                                    {(video.url || video.playbackUrl) && (
+                                      <div
+                                        style={{
+                                          position: 'absolute',
+                                          top: '50%',
+                                          left: '50%',
+                                          transform: 'translate(-50%, -50%)',
+                                          background: 'rgba(0, 0, 0, 0.7)',
+                                          borderRadius: '50%',
+                                          width: '32px',
+                                          height: '32px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.3s'
+                                        }}
+                                        onClick={() => {
+                                          if (video.url || video.playbackUrl) {
+                                            window.location.href = video.url || video.playbackUrl;
+                                          }
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background = 'rgba(255, 0, 80, 0.9)';
+                                          e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                                          e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+                                        }}
+                                      >
+                                        <i className="fa-solid fa-play" style={{ color: 'white', fontSize: '12px', marginLeft: '2px' }}></i>
+                                      </div>
+                                    )}
+                                  </div>
                                 </td>
                                 <td>{video.description?.substring(0, 50) || 'No description'}</td>
                                 <td>{video.user?.username || 'Unknown'}</td>
@@ -3492,12 +3602,17 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                 <td>{video.hashtags?.slice(0, 3).join(', ') || 'None'}</td>
                                 <td>{new Date(video.createdAt).toLocaleDateString()}</td>
                                 <td>
-                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                  <div className="admin-moderation-actions">
                                     <button
-                                      onClick={() => setSelectedVideoForModeration(video)}
+                                      onClick={() => {
+                                        if (video.url || video.playbackUrl) {
+                                          window.location.href = video.url || video.playbackUrl;
+                                        }
+                                        setSelectedVideoForModeration(video);
+                                      }}
                                       className="admin-btn admin-btn-secondary admin-btn-small"
                                     >
-                                      Review
+                                      <i className="fa-solid fa-play"></i> Review
                                     </button>
                                     {video.moderationStatus !== 'approved' && (
                                       <button
@@ -3521,6 +3636,166 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                      
+                      {/* Mobile: Card View - All details in one card */}
+                      <div className="admin-moderation-videos-mobile">
+                        {moderationVideos.map((video) => {
+                          const videoUrl = video.url || video.playbackUrl || video.videoUrl;
+                          const isPlaying = playingVideoId === video._id;
+                          
+                          return (
+                          <div key={video._id} className="admin-moderation-video-card">
+                            {/* Video Thumbnail */}
+                            <div className="admin-moderation-video-thumbnail">
+                              <div style={{ position: 'relative', width: '100%' }}>
+                                {isPlaying && videoUrl && videoUrl !== '#' ? (
+                                  <video
+                                    src={videoUrl}
+                                    controls
+                                    autoPlay
+                                    className="admin-moderation-video-player"
+                                    onEnded={() => setPlayingVideoId(null)}
+                                    onPause={() => setPlayingVideoId(null)}
+                                    style={{
+                                      width: '100%',
+                                      height: 'auto',
+                                      minHeight: '200px',
+                                      maxHeight: '400px',
+                                      objectFit: 'contain',
+                                      borderRadius: '8px',
+                                      background: '#000',
+                                      display: 'block'
+                                    }}
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                ) : (
+                                  <>
+                                    <img
+                                      src={video.thumbnail || '/placeholder.png'}
+                                      alt=""
+                                      style={{ 
+                                        width: '100%', 
+                                        height: 'auto', 
+                                        minHeight: '200px',
+                                        maxHeight: '300px',
+                                        objectFit: 'cover', 
+                                        borderRadius: '8px', 
+                                        cursor: 'pointer',
+                                        display: 'block'
+                                      }}
+                                      onClick={() => {
+                                        if (videoUrl && videoUrl !== '#') {
+                                          setPlayingVideoId(video._id);
+                                        }
+                                      }}
+                                    />
+                                    {videoUrl && videoUrl !== '#' && (
+                                      <div
+                                        style={{
+                                          position: 'absolute',
+                                          top: '50%',
+                                          left: '50%',
+                                          transform: 'translate(-50%, -50%)',
+                                          background: 'rgba(255, 0, 80, 0.9)',
+                                          borderRadius: '50%',
+                                          width: '64px',
+                                          height: '64px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.3s',
+                                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                        }}
+                                        onClick={() => {
+                                          if (videoUrl && videoUrl !== '#') {
+                                            setPlayingVideoId(video._id);
+                                          }
+                                        }}
+                                      >
+                                        <i className="fa-solid fa-play" style={{ color: 'white', fontSize: '24px', marginLeft: '4px' }}></i>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* All Details in One Card Below Thumbnail */}
+                            <div className="admin-moderation-video-details">
+                              <h4 className="admin-moderation-video-description-heading">Description</h4>
+                              <p className="admin-moderation-video-description">
+                                {video.description || 'No description'}
+                              </p>
+                              
+                              <div className="admin-moderation-video-meta">
+                                <div className="admin-moderation-video-meta-item">
+                                  <span className="admin-moderation-video-label">User:</span>
+                                  <span className="admin-moderation-video-value">{video.user?.username || 'Unknown'}</span>
+                                </div>
+                                
+                                <div className="admin-moderation-video-meta-item">
+                                  <span className="admin-moderation-video-label">Status:</span>
+                                  <span className={`moderation-badge ${video.moderationStatus || 'pending'}`}>
+                                    {video.moderationStatus || 'pending'}
+                                  </span>
+                                </div>
+                                
+                                {video.hashtags && video.hashtags.length > 0 && (
+                                  <div className="admin-moderation-video-meta-item">
+                                    <span className="admin-moderation-video-label">Hashtags:</span>
+                                    <span className="admin-moderation-video-value">{video.hashtags.slice(0, 3).join(', ')}</span>
+                                  </div>
+                                )}
+                                
+                                <div className="admin-moderation-video-meta-item">
+                                  <span className="admin-moderation-video-label">Created:</span>
+                                  <span className="admin-moderation-video-value">{new Date(video.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              
+                              {/* Actions */}
+                              <div className="admin-moderation-video-actions">
+                                <button
+                                  onClick={() => {
+                                    const videoUrl = video.url || video.playbackUrl || video.videoUrl;
+                                    if (videoUrl && videoUrl !== '#') {
+                                      setPlayingVideoId(video._id);
+                                    }
+                                    setSelectedVideoForModeration(video);
+                                  }}
+                                  className="admin-btn admin-btn-secondary"
+                                  style={{ width: '100%', marginBottom: '8px' }}
+                                >
+                                  <i className="fa-solid fa-play" style={{ marginRight: '6px' }}></i> {isPlaying ? 'Playing' : 'Review'}
+                                </button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  {video.moderationStatus !== 'approved' && (
+                                    <button
+                                      onClick={() => handleModerateVideo(video._id, 'approve')}
+                                      className="admin-btn admin-btn-primary"
+                                      style={{ flex: 1 }}
+                                    >
+                                      Approve
+                                    </button>
+                                  )}
+                                  {video.moderationStatus !== 'rejected' && (
+                                    <button
+                                      onClick={() => handleModerateVideo(video._id, 'reject')}
+                                      className="admin-btn admin-btn-danger"
+                                      style={{ flex: 1 }}
+                                    >
+                                      Reject
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          );
+                        })}
                       </div>
 
                       {moderationVideosPagination.pages > 1 && (
@@ -3552,7 +3827,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <div className="admin-loading">Loading comments...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-moderation-comments-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -3604,6 +3880,58 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </table>
                       </div>
 
+                      {/* Mobile: Card View */}
+                      <div className="admin-moderation-comments-mobile">
+                        {moderationComments.map((comment) => (
+                          <div key={comment._id} className="admin-moderation-comment-card">
+                            <div className="admin-moderation-comment-content">
+                              <h4 className="admin-moderation-comment-text-heading">Comment</h4>
+                              <p className="admin-moderation-comment-text">{comment.text || 'No comment text'}</p>
+                            </div>
+                            <div className="admin-moderation-comment-meta">
+                              <div className="admin-moderation-comment-meta-item">
+                                <span className="admin-moderation-comment-label">User:</span>
+                                <span className="admin-moderation-comment-value">{comment.user?.username || 'Unknown'}</span>
+                              </div>
+                              <div className="admin-moderation-comment-meta-item">
+                                <span className="admin-moderation-comment-label">Video:</span>
+                                <span className="admin-moderation-comment-value">{comment.video?.description?.substring(0, 50) || 'N/A'}</span>
+                              </div>
+                              <div className="admin-moderation-comment-meta-item">
+                                <span className="admin-moderation-comment-label">Status:</span>
+                                <span className={`moderation-badge ${comment.moderationStatus || 'approved'}`}>
+                                  {comment.moderationStatus || 'approved'}
+                                </span>
+                              </div>
+                              <div className="admin-moderation-comment-meta-item">
+                                <span className="admin-moderation-comment-label">Created:</span>
+                                <span className="admin-moderation-comment-value">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="admin-moderation-comment-actions">
+                              <button
+                                onClick={() => handleModerateComment(comment._id, 'approve')}
+                                className="admin-btn admin-btn-primary admin-btn-small"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleModerateComment(comment._id, 'delete')}
+                                className="admin-btn admin-btn-danger admin-btn-small"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => handleModerateComment(comment._id, 'limit')}
+                                className="admin-btn admin-btn-secondary admin-btn-small"
+                              >
+                                Limit
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
                       {moderationCommentsPagination.pages > 1 && (
                         <div className="admin-pagination">
                           <button
@@ -3629,7 +3957,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {/* AI Flags */}
               {moderationTab === 'ai-flags' && (
                 <div className="admin-moderation-content">
-                  <div className="admin-filters">
+                  <div className="admin-filters admin-moderation-filters-wrapper">
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={aiFlagType}
                       onChange={(e) => {
@@ -3644,13 +3973,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="violence">Violence</option>
                       <option value="spam">Spam</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingAiFlags ? (
                     <div className="admin-loading">Loading AI flags...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-moderation-ai-flags-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -3718,6 +4049,74 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </table>
                       </div>
 
+                      {/* Mobile: Card View */}
+                      <div className="admin-moderation-ai-flags-mobile">
+                        {aiFlags.map((video) => {
+                          const flags = [];
+                          if (video.aiFlags?.nudity?.flagged) flags.push({ type: 'nudity', conf: video.aiFlags.nudity.confidence });
+                          if (video.aiFlags?.hate?.flagged) flags.push({ type: 'hate', conf: video.aiFlags.hate.confidence });
+                          if (video.aiFlags?.violence?.flagged) flags.push({ type: 'violence', conf: video.aiFlags.violence.confidence });
+                          if (video.aiFlags?.spam?.flagged) flags.push({ type: 'spam', conf: video.aiFlags.spam.confidence });
+
+                          return (
+                            <div key={video._id} className="admin-moderation-ai-flag-card">
+                              <div className="admin-moderation-ai-flag-thumbnail">
+                                <img
+                                  src={video.thumbnail || '/placeholder.png'}
+                                  alt=""
+                                  style={{ width: '100%', height: 'auto', minHeight: '200px', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px' }}
+                                />
+                              </div>
+                              <div className="admin-moderation-ai-flag-details">
+                                <h4 className="admin-moderation-ai-flag-description-heading">Description</h4>
+                                <p className="admin-moderation-ai-flag-description">{video.description || 'No description'}</p>
+                                <div className="admin-moderation-ai-flag-meta">
+                                  <div className="admin-moderation-ai-flag-meta-item">
+                                    <span className="admin-moderation-ai-flag-label">User:</span>
+                                    <span className="admin-moderation-ai-flag-value">{video.user?.username || 'Unknown'}</span>
+                                  </div>
+                                  <div className="admin-moderation-ai-flag-meta-item">
+                                    <span className="admin-moderation-ai-flag-label">Flags:</span>
+                                    <div className="admin-moderation-ai-flag-badges">
+                                      {flags.map((flag, idx) => (
+                                        <span key={idx} className="ai-flag-badge" style={{ marginRight: '4px', background: '#f59e0b', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', display: 'inline-block', marginBottom: '4px' }}>
+                                          {flag.type} ({(flag.conf * 100).toFixed(0)}%)
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="admin-moderation-ai-flag-meta-item">
+                                    <span className="admin-moderation-ai-flag-label">Confidence:</span>
+                                    <span className="admin-moderation-ai-flag-value">{flags[0] ? (flags[0].conf * 100).toFixed(0) + '%' : 'N/A'}</span>
+                                  </div>
+                                  <div className="admin-moderation-ai-flag-meta-item">
+                                    <span className="admin-moderation-ai-flag-label">Created:</span>
+                                    <span className="admin-moderation-ai-flag-value">{new Date(video.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                                <div className="admin-moderation-ai-flag-actions">
+                                  {flags.map((flag) => (
+                                    <button
+                                      key={flag.type}
+                                      onClick={() => handleReviewAIFlag(video._id, flag.type, 'confirm')}
+                                      className="admin-btn admin-btn-danger admin-btn-small"
+                                    >
+                                      Confirm {flag.type}
+                                    </button>
+                                  ))}
+                                  <button
+                                    onClick={() => handleReviewAIFlag(video._id, flags[0]?.type, 'dismiss')}
+                                    className="admin-btn admin-btn-secondary admin-btn-small"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
                       {aiFlagsPagination.pages > 1 && (
                         <div className="admin-pagination">
                           <button
@@ -3750,7 +4149,9 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       {liveStreams.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>No live streams currently</div>
                       ) : (
-                        <div className="admin-table-container">
+                        <>
+                          {/* Desktop: Table View */}
+                          <div className="admin-table-container admin-moderation-live-streams-table-desktop">
                           <table className="admin-table">
                             <thead>
                               <tr>
@@ -3789,6 +4190,47 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             </tbody>
                           </table>
                         </div>
+
+                        {/* Mobile: Card View */}
+                        <div className="admin-moderation-live-streams-mobile">
+                          {liveStreams.map((stream) => (
+                            <div key={stream._id} className="admin-moderation-live-stream-card">
+                              <div className="admin-moderation-live-stream-details">
+                                <h4 className="admin-moderation-live-stream-title-heading">Title</h4>
+                                <p className="admin-moderation-live-stream-title">{stream.description || 'No title'}</p>
+                                <div className="admin-moderation-live-stream-meta">
+                                  <div className="admin-moderation-live-stream-meta-item">
+                                    <span className="admin-moderation-live-stream-label">User:</span>
+                                    <span className="admin-moderation-live-stream-value">{stream.user?.username || 'Unknown'}</span>
+                                  </div>
+                                  <div className="admin-moderation-live-stream-meta-item">
+                                    <span className="admin-moderation-live-stream-label">Viewers:</span>
+                                    <span className="admin-moderation-live-stream-value">{stream.views || 0}</span>
+                                  </div>
+                                  <div className="admin-moderation-live-stream-meta-item">
+                                    <span className="admin-moderation-live-stream-label">Started:</span>
+                                    <span className="admin-moderation-live-stream-value">{new Date(stream.createdAt).toLocaleTimeString()}</span>
+                                  </div>
+                                </div>
+                                <div className="admin-moderation-live-stream-actions">
+                                  <button
+                                    onClick={() => handleModerateLiveStream(stream._id, 'end')}
+                                    className="admin-btn admin-btn-danger admin-btn-small"
+                                  >
+                                    End Stream
+                                  </button>
+                                  <button
+                                    onClick={() => handleModerateLiveStream(stream._id, 'warn')}
+                                    className="admin-btn admin-btn-secondary admin-btn-small"
+                                  >
+                                    Warn
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                       )}
                     </>
                   )}
@@ -3830,7 +4272,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <tbody>
                         {stories.map((story) => (
                           <tr key={story._id}>
-                            <td>
+                            <td data-label="Story">
                               <div className="admin-story-preview">
                                 {story.thumbnail && (
                                   <img src={story.thumbnail} alt="Story" />
@@ -3838,10 +4280,10 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                 <span>{story.text?.substring(0, 50) || 'No text'}</span>
                               </div>
                             </td>
-                            <td>{story.user?.username || 'Unknown'}</td>
-                            <td>{story.type}</td>
-                            <td>{story.views || 0}</td>
-                            <td>
+                            <td data-label="User">{story.user?.username || 'Unknown'}</td>
+                            <td data-label="Type">{story.type}</td>
+                            <td data-label="Views">{story.views || 0}</td>
+                            <td data-label="Likes">
                               <span style={{ 
                                 display: 'inline-flex', 
                                 alignItems: 'center', 
@@ -3853,7 +4295,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                 {story.reactions?.length || 0}
                               </span>
                             </td>
-                            <td>
+                            <td data-label="Comments">
                               <span style={{ 
                                 display: 'inline-flex', 
                                 alignItems: 'center', 
@@ -3865,8 +4307,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                 {story.replies?.length || 0}
                               </span>
                             </td>
-                            <td>{new Date(story.expiresAt).toLocaleString()}</td>
-                            <td>
+                            <td data-label="Expires">{new Date(story.expiresAt).toLocaleString()}</td>
+                            <td data-label="Actions">
                               <button
                                 onClick={() => handleDeleteStory(story._id)}
                                 className="admin-btn admin-btn-delete"
@@ -4063,7 +4505,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </div>
                   )}
 
-                  <div className="admin-filters">
+                  <div className="admin-filters admin-moderation-filters-wrapper">
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={reportsStatus}
                       onChange={(e) => {
@@ -4078,6 +4521,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="dismissed">Dismissed</option>
                       <option value="escalated">Escalated</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={reportsPriority}
                       onChange={(e) => {
@@ -4092,13 +4537,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="medium">Medium</option>
                       <option value="low">Low</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingReports ? (
                     <div className="admin-loading">Loading reports...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-safety-reports-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -4150,6 +4597,52 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </table>
                       </div>
 
+                      {/* Mobile: Card View */}
+                      <div className="admin-safety-reports-mobile">
+                        {reports.map((report) => (
+                          <div key={report._id} className="admin-safety-report-card">
+                            <div className="admin-safety-report-details">
+                              <h4 className="admin-safety-report-reason-heading">Reason</h4>
+                              <div className="admin-safety-report-reason">
+                                <strong>{report.reason.replace('_', ' ').toUpperCase()}</strong>
+                                {report.childSafetyConcern && <span style={{ marginLeft: '8px', background: '#f59e0b', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>CHILD</span>}
+                              </div>
+                              {report.description && <p className="admin-safety-report-description">{report.description}</p>}
+                              <div className="admin-safety-report-meta">
+                                <div className="admin-safety-report-meta-item">
+                                  <span className="admin-safety-report-label">Reporter:</span>
+                                  <span className="admin-safety-report-value">{report.reporter?.username || 'Unknown'}</span>
+                                </div>
+                                <div className="admin-safety-report-meta-item">
+                                  <span className="admin-safety-report-label">Reported User:</span>
+                                  <span className="admin-safety-report-value">{report.reportedUser?.username || 'N/A'}</span>
+                                </div>
+                                <div className="admin-safety-report-meta-item">
+                                  <span className="admin-safety-report-label">Priority:</span>
+                                  <span className={`moderation-badge ${report.priority}`}>{report.priority}</span>
+                                </div>
+                                <div className="admin-safety-report-meta-item">
+                                  <span className="admin-safety-report-label">Status:</span>
+                                  <span className={`moderation-badge ${report.status}`}>{report.status}</span>
+                                </div>
+                                <div className="admin-safety-report-meta-item">
+                                  <span className="admin-safety-report-label">Created:</span>
+                                  <span className="admin-safety-report-value">{new Date(report.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="admin-safety-report-actions">
+                                <button
+                                  onClick={() => viewReportDetails(report._id)}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                >
+                                  View
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
                       {reportsPagination.pages > 1 && (
                         <div className="admin-pagination">
                           <button
@@ -4179,7 +4672,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <div className="admin-loading">Loading spam alerts...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-safety-spam-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -4229,6 +4723,49 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             ))}
                           </tbody>
                         </table>
+                      </div>
+
+                      {/* Mobile: Card View */}
+                      <div className="admin-safety-spam-mobile">
+                        {spamAlerts.map((user) => (
+                          <div key={user._id} className="admin-safety-spam-card">
+                            <div className="admin-safety-spam-user">
+                              {user.profile?.avatar && <img src={user.profile.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                              <h4 className="admin-safety-spam-username">{user.username}</h4>
+                              <p className="admin-safety-spam-email">{user.email}</p>
+                            </div>
+                            <div className="admin-safety-spam-meta">
+                              <div className="admin-safety-spam-meta-item">
+                                <span className="admin-safety-spam-label">Spam Score:</span>
+                                <span style={{ background: user.spamScore >= 90 ? '#dc2626' : '#f59e0b', color: 'white', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' }}>
+                                  {user.spamScore}%
+                                </span>
+                              </div>
+                              <div className="admin-safety-spam-meta-item">
+                                <span className="admin-safety-spam-label">Reports:</span>
+                                <span className="admin-safety-spam-value">{user.reportCount || 0}</span>
+                              </div>
+                              <div className="admin-safety-spam-meta-item">
+                                <span className="admin-safety-spam-label">Account Created:</span>
+                                <span className="admin-safety-spam-value">{new Date(user.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="admin-safety-spam-actions">
+                              <button
+                                onClick={() => handleUserStatusChange(user._id, 'suspended')}
+                                className="admin-btn admin-btn-secondary admin-btn-small"
+                              >
+                                Suspend
+                              </button>
+                              <button
+                                onClick={() => handleUserStatusChange(user._id, 'banned')}
+                                className="admin-btn admin-btn-danger admin-btn-small"
+                              >
+                                Ban
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
 
                       {spamPagination.pages > 1 && (
@@ -4281,7 +4818,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       </div>
 
                       <h4 style={{ marginBottom: '16px' }}>Reports</h4>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-safety-child-safety-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -4314,6 +4852,46 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           </tbody>
                         </table>
                       </div>
+
+                      {/* Mobile: Card View */}
+                      <div className="admin-safety-child-safety-mobile">
+                        {childSafety.reports?.slice(0, 10).map((report) => (
+                          <div key={report._id} className="admin-safety-child-safety-card">
+                            <div className="admin-safety-child-safety-details">
+                              <h4 className="admin-safety-child-safety-reason-heading">Reason</h4>
+                              <div className="admin-safety-child-safety-reason">
+                                <strong style={{ color: '#dc2626' }}>CHILD SAFETY</strong>
+                              </div>
+                              <div className="admin-safety-child-safety-meta">
+                                <div className="admin-safety-child-safety-meta-item">
+                                  <span className="admin-safety-child-safety-label">Reporter:</span>
+                                  <span className="admin-safety-child-safety-value">{report.reporter?.username || 'Unknown'}</span>
+                                </div>
+                                <div className="admin-safety-child-safety-meta-item">
+                                  <span className="admin-safety-child-safety-label">Reported User:</span>
+                                  <span className="admin-safety-child-safety-value">{report.reportedUser?.username || 'N/A'}</span>
+                                </div>
+                                <div className="admin-safety-child-safety-meta-item">
+                                  <span className="admin-safety-child-safety-label">Priority:</span>
+                                  <span className="moderation-badge critical">{report.priority}</span>
+                                </div>
+                                <div className="admin-safety-child-safety-meta-item">
+                                  <span className="admin-safety-child-safety-label">Created:</span>
+                                  <span className="admin-safety-child-safety-value">{new Date(report.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="admin-safety-child-safety-actions">
+                                <button
+                                  onClick={() => viewReportDetails(report._id)}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                >
+                                  Review
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>No child safety violations found</div>
@@ -4328,7 +4906,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <div className="admin-loading">Loading bot detection queue...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop: Table View */}
+                      <div className="admin-table-container admin-safety-bot-detection-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -4376,6 +4955,47 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </table>
                       </div>
 
+                      {/* Mobile: Card View */}
+                      <div className="admin-safety-bot-detection-mobile">
+                        {botDetection.map((user) => (
+                          <div key={user._id} className="admin-safety-bot-card">
+                            <div className="admin-safety-bot-user">
+                              {user.profile?.avatar && <img src={user.profile.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                              <h4 className="admin-safety-bot-username">{user.username}</h4>
+                              <p className="admin-safety-bot-email">{user.email}</p>
+                            </div>
+                            <div className="admin-safety-bot-meta">
+                              <div className="admin-safety-bot-meta-item">
+                                <span className="admin-safety-bot-label">Bot Score:</span>
+                                <span style={{ background: user.botScore >= 80 ? '#dc2626' : '#f59e0b', color: 'white', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' }}>
+                                  {user.botScore}%
+                                </span>
+                              </div>
+                              <div className="admin-safety-bot-meta-item">
+                                <span className="admin-safety-bot-label">Spam Score:</span>
+                                <span className="admin-safety-bot-value">{user.spamScore || 0}%</span>
+                              </div>
+                              <div className="admin-safety-bot-meta-item">
+                                <span className="admin-safety-bot-label">Reports:</span>
+                                <span className="admin-safety-bot-value">{user.reports?.length || 0}</span>
+                              </div>
+                              <div className="admin-safety-bot-meta-item">
+                                <span className="admin-safety-bot-label">Created:</span>
+                                <span className="admin-safety-bot-value">{new Date(user.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="admin-safety-bot-actions">
+                              <button
+                                onClick={() => handleUserStatusChange(user._id, 'banned')}
+                                className="admin-btn admin-btn-danger admin-btn-small"
+                              >
+                                Ban Bot
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
                       {botPagination.pages > 1 && (
                         <div className="admin-pagination">
                           <button
@@ -4408,7 +5028,9 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       {takeoverAlerts.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>No unusual login alerts</div>
                       ) : (
-                        <div className="admin-table-container">
+                        <>
+                          {/* Desktop: Table View */}
+                          <div className="admin-table-container admin-safety-takeover-table-desktop">
                           <table className="admin-table">
                             <thead>
                               <tr>
@@ -4472,6 +5094,64 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             </tbody>
                           </table>
                         </div>
+
+                        {/* Mobile: Card View */}
+                        <div className="admin-safety-takeover-mobile">
+                          {takeoverAlerts.map((alert, idx) => (
+                            <div key={`${alert.userId}-${idx}`} className="admin-safety-takeover-card">
+                              <div className="admin-safety-takeover-user">
+                                {alert.avatar && <img src={alert.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                                <h4 className="admin-safety-takeover-username">{alert.username}</h4>
+                                <p className="admin-safety-takeover-email">{alert.email}</p>
+                              </div>
+                              <div className="admin-safety-takeover-meta">
+                                <div className="admin-safety-takeover-meta-item">
+                                  <span className="admin-safety-takeover-label">Risk Score:</span>
+                                  <span style={{ background: alert.riskScore >= 8 ? '#dc2626' : alert.riskScore >= 5 ? '#f59e0b' : '#10b981', color: 'white', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' }}>
+                                    {alert.riskScore}/10
+                                  </span>
+                                </div>
+                                <div className="admin-safety-takeover-meta-item">
+                                  <span className="admin-safety-takeover-label">IP Address:</span>
+                                  <span className="admin-safety-takeover-value">{alert.ipAddress || 'N/A'}</span>
+                                </div>
+                                <div className="admin-safety-takeover-meta-item">
+                                  <span className="admin-safety-takeover-label">Location:</span>
+                                  <span className="admin-safety-takeover-value">{alert.location || 'Unknown'}</span>
+                                </div>
+                                <div className="admin-safety-takeover-meta-item">
+                                  <span className="admin-safety-takeover-label">Timestamp:</span>
+                                  <span className="admin-safety-takeover-value">{new Date(alert.timestamp).toLocaleString()}</span>
+                                </div>
+                              </div>
+                              <div className="admin-safety-takeover-actions">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const response = await markTakeoverAlertReviewed(alert.userId, idx);
+                                      if (response.success) {
+                                        setToast({ type: 'success', message: 'Alert marked as reviewed' });
+                                        fetchTakeoverAlerts();
+                                      }
+                                    } catch (error) {
+                                      setToast({ type: 'error', message: 'Failed to mark alert as reviewed' });
+                                    }
+                                  }}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                >
+                                  Review
+                                </button>
+                                <button
+                                  onClick={() => handleUserStatusChange(alert.userId, 'suspended')}
+                                  className="admin-btn admin-btn-danger admin-btn-small"
+                                >
+                                  Suspend
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                       )}
 
                       {takeoverPagination.pages > 1 && (
@@ -4552,7 +5232,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {/* Approved Creators */}
           {monetizationTab === 'creators' && (
             <div className="admin-monetization-content">
-              <div className="admin-filters">
+              <div className="admin-filters admin-moderation-filters-wrapper">
                 <input
                   type="text"
                   placeholder="Search creators..."
@@ -4563,6 +5243,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   }}
                   className="admin-search-input"
                 />
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={creatorsStatus}
                   onChange={(e) => {
@@ -4576,13 +5257,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="rejected">Rejected</option>
                   <option value="suspended">Suspended</option>
                 </select>
+                </div>
               </div>
 
               {loadingCreators ? (
                 <div className="admin-loading">Loading creators...</div>
               ) : (
                 <>
-                  <div className="admin-table-container">
+                  {/* Desktop: Table View */}
+                  <div className="admin-table-container admin-monetization-creators-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -4646,6 +5329,73 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </table>
                   </div>
 
+                      {/* Mobile: Card View */}
+                      <div className="admin-monetization-creators-mobile">
+                        {creators.map((creator) => (
+                          <div key={creator._id} className="admin-monetization-creator-card">
+                            <div className="admin-monetization-creator-user">
+                              {creator.profile?.avatar && <img src={creator.profile.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                              <h4 className="admin-monetization-creator-username">{creator.username}</h4>
+                              <p className="admin-monetization-creator-email">{creator.email}</p>
+                            </div>
+                            <div className="admin-monetization-creator-meta">
+                              <div className="admin-monetization-creator-meta-item">
+                                <span className="admin-monetization-creator-label">Status:</span>
+                                <span className={`moderation-badge ${creator.creatorStatus}`}>
+                                  {creator.creatorStatus}
+                                </span>
+                              </div>
+                              <div className="admin-monetization-creator-meta-item">
+                                <span className="admin-monetization-creator-label">Total Earned:</span>
+                                <span className="admin-monetization-creator-value">${(creator.creatorEarnings?.totalEarned || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="admin-monetization-creator-meta-item">
+                                <span className="admin-monetization-creator-label">Available:</span>
+                                <span className="admin-monetization-creator-value">${(creator.creatorEarnings?.availableBalance || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="admin-monetization-creator-meta-item">
+                                <span className="admin-monetization-creator-label">Revenue Share:</span>
+                                <span className="admin-monetization-creator-value">{creator.creatorEarnings?.adRevenueShare || 50}%</span>
+                              </div>
+                            </div>
+                            <div className="admin-monetization-creator-actions">
+                              {creator.creatorStatus === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateCreatorStatus(creator._id, 'approved')}
+                                    className="admin-btn admin-btn-primary admin-btn-small"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateCreatorStatus(creator._id, 'rejected')}
+                                    className="admin-btn admin-btn-danger admin-btn-small"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                              {creator.creatorStatus === 'approved' && (
+                                <button
+                                  onClick={() => handleUpdateCreatorStatus(creator._id, 'suspended')}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                >
+                                  Suspend
+                                </button>
+                              )}
+                              {creator.creatorStatus === 'suspended' && (
+                                <button
+                                  onClick={() => handleUpdateCreatorStatus(creator._id, 'approved')}
+                                  className="admin-btn admin-btn-primary admin-btn-small"
+                                >
+                                  Reactivate
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                  </div>
+
                   {creatorsPagination.pages > 1 && (
                     <div className="admin-pagination">
                       <button
@@ -4675,7 +5425,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 <div className="admin-loading">Loading ad revenue data...</div>
               ) : (
                 <>
-                  <div className="admin-table-container">
+                  {/* Desktop: Table View */}
+                  <div className="admin-table-container admin-monetization-ad-revenue-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -4704,6 +5455,38 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </table>
                   </div>
 
+                  {/* Mobile: Card View */}
+                  <div className="admin-monetization-ad-revenue-mobile">
+                    {adRevenue.map((earning) => (
+                      <div key={earning._id} className="admin-monetization-ad-revenue-card">
+                        <div className="admin-monetization-ad-revenue-details">
+                          <h4 className="admin-monetization-ad-revenue-creator-heading">Creator</h4>
+                          <p className="admin-monetization-ad-revenue-creator">{earning.user?.username || 'Unknown'}</p>
+                          <div className="admin-monetization-ad-revenue-meta">
+                            <div className="admin-monetization-ad-revenue-meta-item">
+                              <span className="admin-monetization-ad-revenue-label">Amount:</span>
+                              <span className="admin-monetization-ad-revenue-value">${earning.amount?.toLocaleString() || '0'}</span>
+                            </div>
+                            <div className="admin-monetization-ad-revenue-meta-item">
+                              <span className="admin-monetization-ad-revenue-label">Type:</span>
+                              <span className="admin-monetization-ad-revenue-value">{earning.type?.replace('_', ' ').toUpperCase()}</span>
+                            </div>
+                            <div className="admin-monetization-ad-revenue-meta-item">
+                              <span className="admin-monetization-ad-revenue-label">Status:</span>
+                              <span className={`moderation-badge ${earning.status}`}>
+                                {earning.status}
+                              </span>
+                            </div>
+                            <div className="admin-monetization-ad-revenue-meta-item">
+                              <span className="admin-monetization-ad-revenue-label">Date:</span>
+                              <span className="admin-monetization-ad-revenue-value">{new Date(earning.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                   {adRevenuePagination.pages > 1 && (
                     <div className="admin-pagination">
                       <button
@@ -4729,7 +5512,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {/* Gifts & Coins Purchase Logs */}
           {monetizationTab === 'gifts-coins' && (
             <div className="admin-monetization-content">
-              <div className="admin-filters">
+              <div className="admin-filters admin-moderation-filters-wrapper">
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={giftsCoinsType}
                   onChange={(e) => {
@@ -4742,13 +5526,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="gifts">Gifts</option>
                   <option value="coins">Coins</option>
                 </select>
+                </div>
               </div>
 
               {loadingGiftsCoins ? (
                 <div className="admin-loading">Loading purchase logs...</div>
               ) : (
                 <>
-                  <div className="admin-table-container">
+                  {/* Desktop: Table View */}
+                  <div className="admin-table-container admin-monetization-gifts-coins-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -4775,6 +5561,38 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile: Card View */}
+                  <div className="admin-monetization-gifts-coins-mobile">
+                    {giftsCoins.map((purchase) => (
+                      <div key={purchase._id} className="admin-monetization-gifts-coins-card">
+                        <div className="admin-monetization-gifts-coins-details">
+                          <h4 className="admin-monetization-gifts-coins-user-heading">User</h4>
+                          <p className="admin-monetization-gifts-coins-user">{purchase.user?.username || 'Unknown'}</p>
+                          <div className="admin-monetization-gifts-coins-meta">
+                            <div className="admin-monetization-gifts-coins-meta-item">
+                              <span className="admin-monetization-gifts-coins-label">Type:</span>
+                              <span className="admin-monetization-gifts-coins-value">{purchase.type?.toUpperCase()}</span>
+                            </div>
+                            <div className="admin-monetization-gifts-coins-meta-item">
+                              <span className="admin-monetization-gifts-coins-label">Amount:</span>
+                              <span className="admin-monetization-gifts-coins-value">${purchase.amount?.toLocaleString() || '0'}</span>
+                            </div>
+                            <div className="admin-monetization-gifts-coins-meta-item">
+                              <span className="admin-monetization-gifts-coins-label">Status:</span>
+                              <span className={`moderation-badge ${purchase.status}`}>
+                                {purchase.status}
+                              </span>
+                            </div>
+                            <div className="admin-monetization-gifts-coins-meta-item">
+                              <span className="admin-monetization-gifts-coins-label">Date:</span>
+                              <span className="admin-monetization-gifts-coins-value">{new Date(purchase.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {giftsCoinsPagination.pages > 1 && (
@@ -4884,6 +5702,63 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         ))}
                       </tbody>
                     </table>
+                      </div>
+
+                  {/* Mobile: Card View */}
+                  <div className="admin-monetization-withdrawals-mobile">
+                    {withdrawals.map((withdrawal) => (
+                      <div key={withdrawal._id} className="admin-monetization-withdrawal-card">
+                        <div className="admin-monetization-withdrawal-user">
+                          {withdrawal.user?.profile?.avatar && <img src={withdrawal.user.profile.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                          <h4 className="admin-monetization-withdrawal-username">{withdrawal.user?.username || 'Unknown'}</h4>
+                          <p className="admin-monetization-withdrawal-email">{withdrawal.user?.email}</p>
+                        </div>
+                        <div className="admin-monetization-withdrawal-meta">
+                          <div className="admin-monetization-withdrawal-meta-item">
+                            <span className="admin-monetization-withdrawal-label">Amount:</span>
+                            <span className="admin-monetization-withdrawal-value">${withdrawal.amount?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-monetization-withdrawal-meta-item">
+                            <span className="admin-monetization-withdrawal-label">Payment Method:</span>
+                            <span className="admin-monetization-withdrawal-value">{withdrawal.paymentMethod?.replace('_', ' ').toUpperCase()}</span>
+                          </div>
+                          <div className="admin-monetization-withdrawal-meta-item">
+                            <span className="admin-monetization-withdrawal-label">Status:</span>
+                            <span className={`moderation-badge ${withdrawal.status}`}>
+                              {withdrawal.status}
+                            </span>
+                          </div>
+                          <div className="admin-monetization-withdrawal-meta-item">
+                            <span className="admin-monetization-withdrawal-label">Requested:</span>
+                            <span className="admin-monetization-withdrawal-value">{new Date(withdrawal.requestedAt).toLocaleDateString()}</span>
+                          </div>
+                          <div className="admin-monetization-withdrawal-meta-item">
+                            <span className="admin-monetization-withdrawal-label">Tax Doc:</span>
+                            <span className="admin-monetization-withdrawal-value">
+                              {withdrawal.taxDocumentRequired ? (
+                                withdrawal.taxDocument?.verified ? (
+                                  <span style={{ color: '#10b981', fontSize: '12px' }}>✓ Verified</span>
+                                ) : (
+                                  <span style={{ color: '#f59e0b', fontSize: '12px' }}>⚠ Required</span>
+                                )
+                              ) : (
+                                <span style={{ color: '#6c757d', fontSize: '12px' }}>N/A</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        {withdrawal.status === 'pending' && (
+                          <div className="admin-monetization-withdrawal-actions">
+                            <button
+                              onClick={() => setSelectedWithdrawal(withdrawal)}
+                              className="admin-btn admin-btn-primary admin-btn-small"
+                            >
+                              Review
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
                   {withdrawalsPagination.pages > 1 && (
@@ -4987,6 +5862,59 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         ))}
                       </tbody>
                     </table>
+                      </div>
+
+                  {/* Mobile: Card View */}
+                  <div className="admin-monetization-tax-documents-mobile">
+                    {taxDocuments.map((user) => (
+                      <div key={user._id} className="admin-monetization-tax-document-card">
+                        <div className="admin-monetization-tax-document-user">
+                          {user.profile?.avatar && <img src={user.profile.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '12px' }} />}
+                          <h4 className="admin-monetization-tax-document-username">{user.username}</h4>
+                          <p className="admin-monetization-tax-document-email">{user.email}</p>
+                        </div>
+                        <div className="admin-monetization-tax-document-meta">
+                          <div className="admin-monetization-tax-document-meta-item">
+                            <span className="admin-monetization-tax-document-label">Documents:</span>
+                            <div className="admin-monetization-tax-document-docs">
+                              {user.taxInfo?.documents?.map((doc, idx) => (
+                                <div key={idx} style={{ marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '12px' }}>{doc.type || 'Document'}</span>
+                                  {doc.verified && <span style={{ marginLeft: '8px', color: '#10b981', fontSize: '11px' }}>✓</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="admin-monetization-tax-document-meta-item">
+                            <span className="admin-monetization-tax-document-label">Status:</span>
+                            <span className="admin-monetization-tax-document-value">
+                              {user.taxInfo?.documents?.some(d => d.verified) ? (
+                                <span style={{ color: '#10b981', fontSize: '12px' }}>Verified</span>
+                              ) : (
+                                <span style={{ color: '#f59e0b', fontSize: '12px' }}>Pending</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="admin-monetization-tax-document-meta-item">
+                            <span className="admin-monetization-tax-document-label">Uploaded:</span>
+                            <span className="admin-monetization-tax-document-value">
+                              {user.taxInfo?.documents?.[0]?.uploadedAt ? new Date(user.taxInfo.documents[0].uploadedAt).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="admin-monetization-tax-document-actions">
+                          {user.taxInfo?.documents?.map((doc, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleVerifyTaxDocument(user._id, idx, !doc.verified)}
+                              className="admin-btn admin-btn-secondary admin-btn-small"
+                            >
+                              {doc.verified ? 'Unverify' : 'Verify'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {taxDocumentsPagination.pages > 1 && (
@@ -5015,6 +5943,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {monetizationTab === 'brand-deals' && (
             <div className="admin-monetization-content">
               <div className="admin-filters">
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={brandDealsStatus}
                   onChange={(e) => {
@@ -5030,13 +5959,14 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="completed">Completed</option>
                   <option value="rejected">Rejected</option>
                 </select>
+                </div>
               </div>
 
               {loadingBrandDeals ? (
                 <div className="admin-loading">Loading brand deals...</div>
               ) : (
                 <>
-                  <div className="admin-table-container">
+                  <div className="admin-table-container admin-monetization-brand-deals-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5084,6 +6014,58 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         ))}
                       </tbody>
                     </table>
+                      </div>
+
+                  {/* Mobile: Card View */}
+                  <div className="admin-monetization-brand-deals-mobile">
+                    {brandDeals.map((deal) => (
+                      <div key={deal._id} className="admin-monetization-brand-deal-card">
+                        <div className="admin-monetization-brand-deal-details">
+                          <h4 className="admin-monetization-brand-deal-creator-heading">Creator</h4>
+                          <p className="admin-monetization-brand-deal-creator">{deal.creator?.username || 'Unknown'}</p>
+                          <div className="admin-monetization-brand-deal-meta">
+                            <div className="admin-monetization-brand-deal-meta-item">
+                              <span className="admin-monetization-brand-deal-label">Brand:</span>
+                              <span className="admin-monetization-brand-deal-value">{deal.brand?.name || 'N/A'}</span>
+                            </div>
+                            <div className="admin-monetization-brand-deal-meta-item">
+                              <span className="admin-monetization-brand-deal-label">Campaign:</span>
+                              <span className="admin-monetization-brand-deal-value">{deal.campaign?.name || 'N/A'}</span>
+                            </div>
+                            <div className="admin-monetization-brand-deal-meta-item">
+                              <span className="admin-monetization-brand-deal-label">Budget:</span>
+                              <span className="admin-monetization-brand-deal-value">${deal.campaign?.budget?.toLocaleString() || '0'}</span>
+                            </div>
+                            <div className="admin-monetization-brand-deal-meta-item">
+                              <span className="admin-monetization-brand-deal-label">Status:</span>
+                              <span className={`moderation-badge ${deal.status}`}>
+                                {deal.status.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <div className="admin-monetization-brand-deal-meta-item">
+                              <span className="admin-monetization-brand-deal-label">Start Date:</span>
+                              <span className="admin-monetization-brand-deal-value">{deal.campaign?.startDate ? new Date(deal.campaign.startDate).toLocaleDateString() : 'N/A'}</span>
+                            </div>
+                          </div>
+                          {deal.status === 'pending_approval' && (
+                            <div className="admin-monetization-brand-deal-actions">
+                              <button
+                                onClick={() => handleUpdateBrandDealStatus(deal._id, 'approved')}
+                                className="admin-btn admin-btn-primary admin-btn-small"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleUpdateBrandDealStatus(deal._id, 'rejected')}
+                                className="admin-btn admin-btn-danger admin-btn-small"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {brandDealsPagination.pages > 1 && (
@@ -5297,7 +6279,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 <div className="admin-loading">Loading retention data...</div>
               ) : retentionData ? (
                 <>
-                  <div className="admin-stats-grid" style={{ marginBottom: '20px' }}>
+                  <div className="admin-stats-grid admin-retention-stats-grid" style={{ marginBottom: '20px' }}>
                     <div className="admin-stat-card">
                       <h3>Avg Day 1 Retention</h3>
                       <p className="stat-value">{retentionData.avgRetention?.day1 || '0'}%</p>
@@ -5311,7 +6293,9 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <p className="stat-value">{retentionData.avgRetention?.day30 || '0'}%</p>
                     </div>
                   </div>
-                  <div className="admin-table-container">
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-retention-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5335,6 +6319,36 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       </tbody>
                     </table>
                   </div>
+                  
+                  {/* Mobile Card Layout */}
+                  <div className="admin-retention-mobile">
+                    {retentionData.retentionData?.map((item, idx) => (
+                      <div key={idx} className="admin-retention-card">
+                        <div className="admin-retention-card-header">
+                          <h4 className="admin-retention-cohort-date-heading">Cohort Date</h4>
+                          <p className="admin-retention-cohort-date-value">{item.cohortDate}</p>
+                        </div>
+                        <div className="admin-retention-card-meta">
+                          <div className="admin-retention-meta-item">
+                            <span className="admin-retention-label">Cohort Size:</span>
+                            <span className="admin-retention-value">{item.cohortSize}</span>
+                          </div>
+                          <div className="admin-retention-meta-item">
+                            <span className="admin-retention-label">Day 1 %:</span>
+                            <span className="admin-retention-value">{item.day1}%</span>
+                          </div>
+                          <div className="admin-retention-meta-item">
+                            <span className="admin-retention-label">Day 7 %:</span>
+                            <span className="admin-retention-value">{item.day7}%</span>
+                          </div>
+                          <div className="admin-retention-meta-item">
+                            <span className="admin-retention-label">Day 30 %:</span>
+                            <span className="admin-retention-value">{item.day30}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </>
               ) : (
                 <div className="admin-error">Failed to load retention data</div>
@@ -5349,14 +6363,16 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 <div className="admin-loading">Loading completion data...</div>
               ) : completionData ? (
                 <>
-                  <div className="admin-stat-card" style={{ marginBottom: '20px' }}>
+                  <div className="admin-stat-card admin-completion-stat-card" style={{ marginBottom: '20px' }}>
                     <h3>Average Completion Rate</h3>
                     <p className="stat-value">{completionData.completionStats?.averageCompletion || '0'}%</p>
                     <p className="stat-subtitle">Based on {completionData.totalVideos || 0} videos</p>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>Drop Points</h4>
-                  <div className="admin-table-container" style={{ marginBottom: '20px' }}>
+                  <h4 className="admin-completion-section-heading">Drop Points</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-completion-drop-points-table-desktop" style={{ marginBottom: '20px' }}>
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5375,8 +6391,26 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </table>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>By Category</h4>
-                  <div className="admin-table-container" style={{ marginBottom: '20px' }}>
+                  {/* Mobile Card Layout - Drop Points */}
+                  <div className="admin-completion-drop-points-mobile" style={{ marginBottom: '20px' }}>
+                    {completionData.completionStats?.dropPoints && Object.entries(completionData.completionStats.dropPoints).map(([range, count]) => (
+                      <div key={range} className="admin-completion-drop-point-card">
+                        <div className="admin-completion-drop-point-item">
+                          <span className="admin-completion-drop-point-label">Completion Range:</span>
+                          <span className="admin-completion-drop-point-value">{range}%</span>
+                        </div>
+                        <div className="admin-completion-drop-point-item">
+                          <span className="admin-completion-drop-point-label">Number of Videos:</span>
+                          <span className="admin-completion-drop-point-value">{count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <h4 className="admin-completion-section-heading">By Category</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-completion-category-table-desktop" style={{ marginBottom: '20px' }}>
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5395,8 +6429,26 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </table>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>By Duration</h4>
-                  <div className="admin-table-container">
+                  {/* Mobile Card Layout - By Category */}
+                  <div className="admin-completion-category-mobile" style={{ marginBottom: '20px' }}>
+                    {completionData.completionStats?.byCategory && Object.entries(completionData.completionStats.byCategory).map(([cat, rate]) => (
+                      <div key={cat} className="admin-completion-category-card">
+                        <div className="admin-completion-category-item">
+                          <span className="admin-completion-category-label">Category:</span>
+                          <span className="admin-completion-category-value">{cat.toUpperCase()}</span>
+                        </div>
+                        <div className="admin-completion-category-item">
+                          <span className="admin-completion-category-label">Avg Completion %:</span>
+                          <span className="admin-completion-category-value">{typeof rate === 'object' ? rate : rate}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <h4 className="admin-completion-section-heading">By Duration</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-completion-duration-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5414,6 +6466,22 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       </tbody>
                     </table>
                   </div>
+                  
+                  {/* Mobile Card Layout - By Duration */}
+                  <div className="admin-completion-duration-mobile">
+                    {completionData.completionStats?.byDuration && Object.entries(completionData.completionStats.byDuration).map(([range, rate]) => (
+                      <div key={range} className="admin-completion-duration-card">
+                        <div className="admin-completion-duration-item">
+                          <span className="admin-completion-duration-label">Duration Range:</span>
+                          <span className="admin-completion-duration-value">{range}</span>
+                        </div>
+                        <div className="admin-completion-duration-item">
+                          <span className="admin-completion-duration-label">Avg Completion %:</span>
+                          <span className="admin-completion-duration-value">{typeof rate === 'object' ? rate : rate}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </>
               ) : (
                 <div className="admin-error">Failed to load completion data</div>
@@ -5425,6 +6493,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {analyticsTab === 'hashtags' && (
             <div className="admin-analytics-content">
               <div className="admin-filters">
+                <div className="admin-filter-select-wrapper">
                 <select
                   value={trendingPeriod}
                   onChange={(e) => {
@@ -5436,12 +6505,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   <option value="30">Last 30 days</option>
                   <option value="90">Last 90 days</option>
                 </select>
+                </div>
               </div>
 
               {loadingTrending ? (
                 <div className="admin-loading">Loading trending hashtags...</div>
               ) : (
-                <div className="admin-table-container">
+                <>
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-trending-hashtags-table-desktop">
                   <table className="admin-table">
                     <thead>
                       <tr>
@@ -5467,6 +6539,41 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </tbody>
                   </table>
                 </div>
+                  
+                  {/* Mobile Card Layout */}
+                  <div className="admin-trending-hashtags-mobile">
+                    {trendingHashtags.map((tag, idx) => (
+                      <div key={idx} className="admin-trending-hashtag-card">
+                        <div className="admin-trending-hashtag-header">
+                          <h4 className="admin-trending-hashtag-rank">Rank</h4>
+                          <p className="admin-trending-hashtag-rank-value">#{idx + 1}</p>
+                        </div>
+                        <div className="admin-trending-hashtag-meta">
+                          <div className="admin-trending-hashtag-meta-item">
+                            <span className="admin-trending-hashtag-label">Hashtag:</span>
+                            <span className="admin-trending-hashtag-value"><strong>#{tag.name}</strong></span>
+                          </div>
+                          <div className="admin-trending-hashtag-meta-item">
+                            <span className="admin-trending-hashtag-label">Videos:</span>
+                            <span className="admin-trending-hashtag-value">{tag.count}</span>
+                          </div>
+                          <div className="admin-trending-hashtag-meta-item">
+                            <span className="admin-trending-hashtag-label">Total Views:</span>
+                            <span className="admin-trending-hashtag-value">{tag.totalViews?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-trending-hashtag-meta-item">
+                            <span className="admin-trending-hashtag-label">Avg Views:</span>
+                            <span className="admin-trending-hashtag-value">{tag.avgViews?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-trending-hashtag-meta-item">
+                            <span className="admin-trending-hashtag-label">Total Likes:</span>
+                            <span className="admin-trending-hashtag-value">{tag.totalLikes?.toLocaleString() || '0'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -5477,7 +6584,9 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {loadingCategory ? (
                 <div className="admin-loading">Loading category performance...</div>
               ) : (
-                <div className="admin-table-container">
+                <>
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-category-performance-table-desktop">
                   <table className="admin-table">
                     <thead>
                       <tr>
@@ -5503,6 +6612,41 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </tbody>
                   </table>
                 </div>
+                  
+                  {/* Mobile Card Layout */}
+                  <div className="admin-category-performance-mobile">
+                    {categoryPerformance.map((cat, idx) => (
+                      <div key={idx} className="admin-category-performance-card">
+                        <div className="admin-category-performance-header">
+                          <h4 className="admin-category-performance-name-heading">Category</h4>
+                          <p className="admin-category-performance-name-value"><strong>{cat.category.toUpperCase()}</strong></p>
+                        </div>
+                        <div className="admin-category-performance-meta">
+                          <div className="admin-category-performance-meta-item">
+                            <span className="admin-category-performance-label">Videos:</span>
+                            <span className="admin-category-performance-value">{cat.videoCount}</span>
+                          </div>
+                          <div className="admin-category-performance-meta-item">
+                            <span className="admin-category-performance-label">Total Views:</span>
+                            <span className="admin-category-performance-value">{cat.totalViews?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-category-performance-meta-item">
+                            <span className="admin-category-performance-label">Avg Views:</span>
+                            <span className="admin-category-performance-value">{cat.avgViews?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-category-performance-meta-item">
+                            <span className="admin-category-performance-label">Total Likes:</span>
+                            <span className="admin-category-performance-value">{cat.totalLikes?.toLocaleString() || '0'}</span>
+                          </div>
+                          <div className="admin-category-performance-meta-item">
+                            <span className="admin-category-performance-label">Engagement %:</span>
+                            <span className="admin-category-performance-value">{cat.engagementRate}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -5552,8 +6696,10 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 <div className="admin-loading">Loading device/network stats...</div>
               ) : deviceNetworkStats !== null ? (
                 <>
-                  <h4 style={{ marginBottom: '12px' }}>Device Types</h4>
-                  <div className="admin-table-container" style={{ marginBottom: '20px' }}>
+                  <h4 className="admin-completion-section-heading">Device Types</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-device-types-table-desktop" style={{ marginBottom: '20px' }}>
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5571,15 +6717,37 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No device data available</td>
+                            <td colSpan="2" className="admin-no-data-message">No device data available</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>Operating Systems</h4>
-                  <div className="admin-table-container" style={{ marginBottom: '20px' }}>
+                  {/* Mobile Card Layout - Device Types */}
+                  <div className="admin-device-types-mobile" style={{ marginBottom: '20px' }}>
+                    {deviceNetworkStats.devices && deviceNetworkStats.devices.length > 0 ? (
+                      deviceNetworkStats.devices.map((device, idx) => (
+                        <div key={idx} className="admin-device-card">
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Device Type:</span>
+                            <span className="admin-device-value">{device.name || 'Unknown'}</span>
+                          </div>
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Count:</span>
+                            <span className="admin-device-value">{device.count?.toLocaleString() || '0'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="admin-no-data-card">No device data available</div>
+                    )}
+                  </div>
+
+                  <h4 className="admin-completion-section-heading">Operating Systems</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-os-table-desktop" style={{ marginBottom: '20px' }}>
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5597,15 +6765,37 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No OS data available</td>
+                            <td colSpan="2" className="admin-no-data-message">No OS data available</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>Browsers</h4>
-                  <div className="admin-table-container" style={{ marginBottom: '20px' }}>
+                  {/* Mobile Card Layout - OS */}
+                  <div className="admin-os-mobile" style={{ marginBottom: '20px' }}>
+                    {deviceNetworkStats.os && deviceNetworkStats.os.length > 0 ? (
+                      deviceNetworkStats.os.map((os, idx) => (
+                        <div key={idx} className="admin-device-card">
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">OS:</span>
+                            <span className="admin-device-value">{os.name || 'Unknown'}</span>
+                          </div>
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Count:</span>
+                            <span className="admin-device-value">{os.count?.toLocaleString() || '0'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="admin-no-data-card">No OS data available</div>
+                    )}
+                  </div>
+
+                  <h4 className="admin-completion-section-heading">Browsers</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-browsers-table-desktop" style={{ marginBottom: '20px' }}>
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5623,15 +6813,37 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No browser data available</td>
+                            <td colSpan="2" className="admin-no-data-message">No browser data available</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
 
-                  <h4 style={{ marginBottom: '12px' }}>Networks</h4>
-                  <div className="admin-table-container">
+                  {/* Mobile Card Layout - Browsers */}
+                  <div className="admin-browsers-mobile" style={{ marginBottom: '20px' }}>
+                    {deviceNetworkStats.browsers && deviceNetworkStats.browsers.length > 0 ? (
+                      deviceNetworkStats.browsers.map((browser, idx) => (
+                        <div key={idx} className="admin-device-card">
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Browser:</span>
+                            <span className="admin-device-value">{browser.name || 'Unknown'}</span>
+                          </div>
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Count:</span>
+                            <span className="admin-device-value">{browser.count?.toLocaleString() || '0'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="admin-no-data-card">No browser data available</div>
+                    )}
+                  </div>
+
+                  <h4 className="admin-completion-section-heading">Networks</h4>
+                  
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-networks-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5649,11 +6861,31 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="2" style={{ textAlign: 'center', padding: '20px' }}>No network data available</td>
+                            <td colSpan="2" className="admin-no-data-message">No network data available</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
+                  </div>
+                  
+                  {/* Mobile Card Layout - Networks */}
+                  <div className="admin-networks-mobile">
+                    {deviceNetworkStats.networks && deviceNetworkStats.networks.length > 0 ? (
+                      deviceNetworkStats.networks.map((network, idx) => (
+                        <div key={idx} className="admin-device-card">
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Network:</span>
+                            <span className="admin-device-value">{network.name || 'Unknown'}</span>
+                          </div>
+                          <div className="admin-device-item">
+                            <span className="admin-device-label">Count:</span>
+                            <span className="admin-device-value">{network.count?.toLocaleString() || '0'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="admin-no-data-card">No network data available</div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -5670,8 +6902,9 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {/* Blacklist */}
           {searchTab === 'blacklist' && (
             <div className="admin-search-content">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="admin-blacklist-filters-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div className="admin-filters">
+                  <div className="admin-filter-select-wrapper">
                   <select
                     value={blacklistType}
                     onChange={(e) => {
@@ -5686,6 +6919,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <option value="username">Username</option>
                     <option value="domain">Domain</option>
                   </select>
+                  </div>
+                  <div className="admin-filter-select-wrapper">
                   <select
                     value={blacklistActive}
                     onChange={(e) => {
@@ -5698,6 +6933,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     <option value="false">Inactive</option>
                     <option value="all">All</option>
                   </select>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowBlacklistModal(true)}
@@ -5711,14 +6947,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 <div className="admin-loading">Loading blacklist...</div>
               ) : blacklistItems.length === 0 ? (
                 <div className="admin-empty-state">
-                  <p>No blacklist items found.</p>
+                  <p><strong>No blacklist items found.</strong></p>
                   <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
                     Click "+ Add Blacklist Item" to add your first item.
                   </p>
                 </div>
               ) : (
                 <>
-                  <div className="admin-table-container">
+                  {/* Desktop Table */}
+                  <div className="admin-table-container admin-blacklist-table-desktop">
                     <table className="admin-table">
                       <thead>
                         <tr>
@@ -5786,6 +7023,76 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  
+                  {/* Mobile Card Layout */}
+                  <div className="admin-blacklist-mobile">
+                    {blacklistItems.map((item) => (
+                      <div key={item._id} className="admin-blacklist-card">
+                        <div className="admin-blacklist-card-header">
+                          <h4 className="admin-blacklist-type-heading">Type</h4>
+                          <p className="admin-blacklist-type-value">{item.type}</p>
+                        </div>
+                        <div className="admin-blacklist-card-meta">
+                          <div className="admin-blacklist-meta-item">
+                            <span className="admin-blacklist-label">Value:</span>
+                            <span className="admin-blacklist-value"><strong>{item.value}</strong></span>
+                          </div>
+                          <div className="admin-blacklist-meta-item">
+                            <span className="admin-blacklist-label">Severity:</span>
+                            <span className={`moderation-badge ${item.severity}`}>
+                              {item.severity}
+                            </span>
+                          </div>
+                          <div className="admin-blacklist-meta-item">
+                            <span className="admin-blacklist-label">Reason:</span>
+                            <span className="admin-blacklist-value">{item.reason || 'N/A'}</span>
+                          </div>
+                          <div className="admin-blacklist-meta-item">
+                            <span className="admin-blacklist-label">Status:</span>
+                            <span className={`moderation-badge ${item.active ? 'approved' : 'rejected'}`}>
+                              {item.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <div className="admin-blacklist-meta-item">
+                            <span className="admin-blacklist-label">Added By:</span>
+                            <span className="admin-blacklist-value">{item.addedBy?.username || 'Unknown'}</span>
+                          </div>
+                        </div>
+                        <div className="admin-blacklist-actions">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await updateBlacklistItem(item._id, { active: !item.active });
+                                setToast({ type: 'success', message: 'Updated' });
+                                fetchBlacklist();
+                              } catch (error) {
+                                setToast({ type: 'error', message: 'Failed to update' });
+                              }
+                            }}
+                            className="admin-btn admin-btn-secondary admin-btn-small"
+                          >
+                            {item.active ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Delete this blacklist item?')) {
+                                try {
+                                  await deleteBlacklistItem(item._id);
+                                  setToast({ type: 'success', message: 'Item deleted' });
+                                  fetchBlacklist();
+                                } catch (error) {
+                                  setToast({ type: 'error', message: 'Failed to delete' });
+                                }
+                              }
+                            }}
+                            className="admin-btn admin-btn-danger admin-btn-small"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {blacklistPagination.pages > 1 && (
@@ -6156,7 +7463,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {systemTab === 'video-processing' && (
                 <div className="admin-system-content">
                   {videoProcessingStats && (
-                    <div className="admin-dashboard-stats" style={{ marginBottom: '20px' }}>
+                    <div className="admin-dashboard-stats admin-video-processing-stats-grid" style={{ marginBottom: '20px' }}>
                       <div className="admin-stat-card">
                         <div className="admin-stat-value">{videoProcessingStats.stats?.pending || 0}</div>
                         <div className="admin-stat-label">Pending</div>
@@ -6177,6 +7484,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   )}
                   
                   <div className="admin-filters" style={{ marginBottom: '20px' }}>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={videoProcessingStatus}
                       onChange={(e) => {
@@ -6191,12 +7499,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="completed">Completed</option>
                       <option value="failed">Failed</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingVideoProcessing ? (
                     <div className="admin-loading">Loading video processing status...</div>
                   ) : (
-                    <div className="admin-table-container">
+                    <>
+                      {/* Desktop Table */}
+                      <div className="admin-table-container admin-video-processing-table-desktop">
                       <table className="admin-table">
                         <thead>
                           <tr>
@@ -6213,7 +7524,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         <tbody>
                           {videoProcessing.length === 0 ? (
                             <tr>
-                              <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>No video processing records found</td>
+                                <td colSpan="8" className="admin-no-data-message">No video processing records found</td>
                             </tr>
                           ) : (
                             videoProcessing.map((proc) => (
@@ -6327,6 +7638,137 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tbody>
                       </table>
                     </div>
+                      
+                      {/* Mobile Card Layout */}
+                      <div className="admin-video-processing-mobile">
+                        {videoProcessing.length === 0 ? (
+                          <div className="admin-no-data-card">No video processing records found</div>
+                        ) : (
+                          videoProcessing.map((proc) => (
+                            <div key={proc._id || proc.id} className="admin-video-processing-card">
+                              <div className="admin-video-processing-header">
+                                <h4 className="admin-video-processing-video-heading">Video</h4>
+                                <p className="admin-video-processing-video-value">
+                                  {proc.videoId?.title ? (
+                                    <span title={proc.videoId.title}>
+                                      {proc.videoId.title.length > 50 ? proc.videoId.title.substring(0, 50) + '...' : proc.videoId.title}
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#6c757d', fontFamily: 'monospace', fontSize: '12px' }}>
+                                      {String(proc.videoId?._id || proc.videoId || 'N/A').substring(0, 20)}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="admin-video-processing-meta">
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">User:</span>
+                                  <span className="admin-video-processing-value">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      {proc.userId?.profile?.avatar && (
+                                        <img 
+                                          src={proc.userId.profile.avatar} 
+                                          alt="" 
+                                          style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
+                                        />
+                                      )}
+                                      <span>{proc.userId?.username || proc.userId?.email || 'Unknown'}</span>
+                                    </div>
+                                  </span>
+                                </div>
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">Status:</span>
+                                  <span className={`moderation-badge status-${proc.status}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {proc.status || 'pending'}
+                                  </span>
+                                </div>
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">Progress:</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                    <div style={{ 
+                                      flex: 1,
+                                      height: '8px', 
+                                      background: '#e9ecef', 
+                                      borderRadius: '4px',
+                                      overflow: 'hidden',
+                                      maxWidth: '150px'
+                                    }}>
+                                      <div style={{
+                                        width: `${proc.uploadProgress || 0}%`,
+                                        height: '100%',
+                                        background: proc.status === 'failed' ? '#dc3545' : 
+                                                   proc.status === 'completed' ? '#28a745' : 
+                                                   'linear-gradient(135deg, #FF0050 0%, #25F4EE 100%)',
+                                        transition: 'width 0.3s'
+                                      }}></div>
+                                    </div>
+                                    <span style={{ fontSize: '12px', color: '#6c757d', minWidth: '35px' }}>
+                                      {proc.uploadProgress || 0}%
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">Stage:</span>
+                                  <span style={{ 
+                                    padding: '4px 8px', 
+                                    background: '#f8f9fa', 
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    textTransform: 'capitalize',
+                                    color: '#495057'
+                                  }}>
+                                    {proc.processingStage || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">File Size:</span>
+                                  <span className="admin-video-processing-value">
+                                    {proc.fileSize ? (
+                                      <span style={{ fontSize: '13px' }}>
+                                        {(proc.fileSize / (1024 * 1024)).toFixed(2)} MB
+                                      </span>
+                                    ) : (
+                                      <span style={{ color: '#6c757d' }}>N/A</span>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="admin-video-processing-meta-item">
+                                  <span className="admin-video-processing-label">Started:</span>
+                                  <span className="admin-video-processing-value">
+                                    {proc.startedAt ? (
+                                      <span style={{ fontSize: '12px', color: '#495057' }}>
+                                        {new Date(proc.startedAt).toLocaleString()}
+                                      </span>
+                                    ) : (
+                                      <span style={{ color: '#6c757d' }}>N/A</span>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="admin-video-processing-actions">
+                                <button
+                                  onClick={() => {
+                                    console.log('Button clicked! Video processing data:', proc);
+                                    setSelectedVideoProcessing(proc);
+                                    console.log('State set, selectedVideoProcessing should be:', proc);
+                                  }}
+                                  className="admin-btn admin-btn-secondary admin-btn-small"
+                                  style={{ width: '100%' }}
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -6759,7 +8201,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {/* Server Health */}
               {systemTab === 'server-health' && (
                 <div className="admin-system-content">
-                  <div className="admin-filters" style={{ marginBottom: '20px' }}>
+                  <div className="admin-filters">
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={serverMetricsPeriod}
                       onChange={(e) => {
@@ -6772,12 +8215,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="24h">Last 24 Hours</option>
                       <option value="7d">Last 7 Days</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingServer ? (
                     <div className="admin-loading">Loading server health...</div>
                   ) : (
-                    <div className="admin-table-container">
+                    <>
+                      {/* Desktop Table */}
+                      <div className="admin-table-container admin-server-health-table-desktop">
                       <table className="admin-table">
                         <thead>
                           <tr>
@@ -6794,7 +8240,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         <tbody>
                           {serverHealth.length === 0 ? (
                             <tr>
-                              <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>No server data available</td>
+                                <td colSpan="8" className="admin-no-data-message">No server data available</td>
                             </tr>
                           ) : (
                             serverHealth.map((server) => (
@@ -6815,6 +8261,61 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tbody>
                       </table>
                     </div>
+                      
+                      {/* Mobile Card Layout */}
+                      <div className="admin-server-health-mobile">
+                        {serverHealth.length === 0 ? (
+                          <div className="admin-no-data-card">No server data available</div>
+                        ) : (
+                          serverHealth.map((server) => (
+                            <div key={server._id} className="admin-server-health-card">
+                              <div className="admin-server-health-header">
+                                <h4 className="admin-server-health-name-heading">Server</h4>
+                                <p className="admin-server-health-name-value">{server.serverName}</p>
+                              </div>
+                              <div className="admin-server-health-meta">
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Type:</span>
+                                  <span className="admin-server-health-value">{server.serverType}</span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Status:</span>
+                                  <span className={`moderation-badge ${server.status}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {server.status}
+                                  </span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">CPU:</span>
+                                  <span className="admin-server-health-value">{server.cpu?.usage?.toFixed(1) || 0}%</span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Memory:</span>
+                                  <span className="admin-server-health-value">{server.memory?.usage?.toFixed(1) || 0}%</span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Disk:</span>
+                                  <span className="admin-server-health-value">{server.disk?.usage?.toFixed(1) || 0}%</span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Response Time:</span>
+                                  <span className="admin-server-health-value">{server.responseTime?.average?.toFixed(0) || 0}ms</span>
+                                </div>
+                                <div className="admin-server-health-meta-item">
+                                  <span className="admin-server-health-label">Requests/sec:</span>
+                                  <span className="admin-server-health-value">{server.traffic?.requestsPerSecond?.toFixed(1) || 0}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -6823,7 +8324,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {systemTab === 'error-logs' && (
                 <div className="admin-system-content">
                   {crashStats && (
-                    <div className="admin-dashboard-stats" style={{ marginBottom: '20px' }}>
+                    <div className="admin-dashboard-stats admin-error-logs-stats-grid">
                       <div className="admin-stat-card">
                         <div className="admin-stat-value">{crashStats.crashStats?.totalCrashes || 0}</div>
                         <div className="admin-stat-label">Total Crashes</div>
@@ -6835,7 +8336,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </div>
                   )}
 
-                  <div className="admin-filters" style={{ marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <div className="admin-filters admin-error-logs-filters-wrapper">
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={errorLogLevel}
                       onChange={(e) => {
@@ -6849,6 +8351,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="critical">Critical</option>
                       <option value="warning">Warning</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={errorLogType}
                       onChange={(e) => {
@@ -6862,6 +8366,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="api-error">API Error</option>
                       <option value="database-error">Database Error</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={errorLogSeverity}
                       onChange={(e) => {
@@ -6876,6 +8382,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="medium">Medium</option>
                       <option value="low">Low</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={errorLogResolved}
                       onChange={(e) => {
@@ -6888,13 +8396,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="true">Resolved</option>
                       <option value="all">All</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingErrorLogs ? (
                     <div className="admin-loading">Loading error logs...</div>
                   ) : (
                     <>
-                      <div className="admin-table-container">
+                      {/* Desktop Table */}
+                      <div className="admin-table-container admin-error-logs-table-desktop">
                         <table className="admin-table">
                           <thead>
                             <tr>
@@ -6911,7 +8421,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           <tbody>
                             {errorLogs.length === 0 ? (
                               <tr>
-                                <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>No error logs found</td>
+                                <td colSpan="8" className="admin-no-data-message">No error logs found</td>
                               </tr>
                             ) : (
                               errorLogs.map((error) => (
@@ -6947,6 +8457,82 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           </tbody>
                         </table>
                       </div>
+                      
+                      {/* Mobile Card Layout */}
+                      <div className="admin-error-logs-mobile">
+                        {errorLogs.length === 0 ? (
+                          <div className="admin-no-data-card">No error logs found</div>
+                        ) : (
+                          errorLogs.map((error) => (
+                            <div key={error._id} className="admin-error-log-card">
+                              <div className="admin-error-log-header">
+                                <h4 className="admin-error-log-level-heading">Level</h4>
+                                <span className={`moderation-badge ${error.level}`} style={{
+                                  textTransform: 'capitalize',
+                                  padding: '4px 10px',
+                                  borderRadius: '12px',
+                                  fontSize: '12px',
+                                  fontWeight: '500'
+                                }}>
+                                  {error.level}
+                                </span>
+                              </div>
+                              <div className="admin-error-log-meta">
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Type:</span>
+                                  <span className="admin-error-log-value">{error.type}</span>
+                                </div>
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Message:</span>
+                                  <span className="admin-error-log-value" title={error.message}>
+                                    {error.message && error.message.length > 60 ? error.message.substring(0, 60) + '...' : error.message}
+                                  </span>
+                                </div>
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Severity:</span>
+                                  <span className={`moderation-badge ${error.severity}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {error.severity}
+                                  </span>
+                                </div>
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Occurrences:</span>
+                                  <span className="admin-error-log-value">{error.occurrenceCount || 1}</span>
+                                </div>
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Last Occurred:</span>
+                                  <span className="admin-error-log-value">{new Date(error.lastOccurred).toLocaleString()}</span>
+                                </div>
+                                <div className="admin-error-log-meta-item">
+                                  <span className="admin-error-log-label">Status:</span>
+                                  <span className={`moderation-badge ${error.resolved ? 'resolved' : 'unresolved'}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {error.resolved ? 'Resolved' : 'Unresolved'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="admin-error-log-actions">
+                                <button
+                                  onClick={() => setSelectedErrorLog(error)}
+                                  className="admin-btn admin-btn-secondary"
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
 
                       {errorLogsPagination.total > errorLogsPagination.limit && (
                         <div className="admin-pagination">
@@ -6974,7 +8560,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
               {systemTab === 'api-requests' && (
                 <div className="admin-system-content">
                   {apiRequestStats && (
-                    <div className="admin-dashboard-stats" style={{ marginBottom: '20px' }}>
+                    <div className="admin-dashboard-stats admin-api-requests-stats-grid">
                       <div className="admin-stat-card">
                         <div className="admin-stat-value">
                           {apiRequestStats.successRate?.total ? 
@@ -6997,14 +8583,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                     </div>
                   )}
 
-                  <div className="admin-filters" style={{ marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <div className="admin-filters admin-api-requests-filters-wrapper">
                     <input
                       type="text"
                       placeholder="Search endpoint..."
                       value={apiRequestEndpoint}
                       onChange={(e) => setApiRequestEndpoint(e.target.value)}
-                      className="admin-filter-input"
+                      className="admin-search-input"
                     />
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={apiRequestMethod}
                       onChange={(e) => {
@@ -7020,6 +8607,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="PATCH">PATCH</option>
                       <option value="DELETE">DELETE</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={apiRequestStatus}
                       onChange={(e) => {
@@ -7034,6 +8623,8 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="error">Error</option>
                       <option value="timeout">Timeout</option>
                     </select>
+                    </div>
+                    <div className="admin-filter-select-wrapper">
                     <select
                       value={apiRequestPeriod}
                       onChange={(e) => {
@@ -7046,12 +8637,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                       <option value="24h">Last 24 Hours</option>
                       <option value="7d">Last 7 Days</option>
                     </select>
+                    </div>
                   </div>
 
                   {loadingAPIRequests ? (
                     <div className="admin-loading">Loading API requests...</div>
                   ) : (
-                    <div className="admin-table-container">
+                    <>
+                      {/* Desktop Table */}
+                      <div className="admin-table-container admin-api-requests-table-desktop">
                       <table className="admin-table">
                         <thead>
                           <tr>
@@ -7066,7 +8660,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         <tbody>
                           {apiRequests.length === 0 ? (
                             <tr>
-                              <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>No API requests found</td>
+                                <td colSpan="6" className="admin-no-data-message">No API requests found</td>
                             </tr>
                           ) : (
                             apiRequests.map((req) => (
@@ -7087,6 +8681,73 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </tbody>
                       </table>
                     </div>
+                      
+                      {/* Mobile Card Layout */}
+                      <div className="admin-api-requests-mobile">
+                        {apiRequests.length === 0 ? (
+                          <div className="admin-no-data-card">No API requests found</div>
+                        ) : (
+                          apiRequests.map((req) => (
+                            <div key={req._id} className="admin-api-request-card">
+                              <div className="admin-api-request-header">
+                                <h4 className="admin-api-request-endpoint-heading">Endpoint</h4>
+                                <p className="admin-api-request-endpoint-value" title={req.endpoint}>
+                                  {req.endpoint && req.endpoint.length > 50 ? req.endpoint.substring(0, 50) + '...' : req.endpoint}
+                                </p>
+                              </div>
+                              <div className="admin-api-request-meta">
+                                <div className="admin-api-request-meta-item">
+                                  <span className="admin-api-request-label">Method:</span>
+                                  <span className="admin-api-request-value">{req.method}</span>
+                                </div>
+                                <div className="admin-api-request-meta-item">
+                                  <span className="admin-api-request-label">Status:</span>
+                                  <span className={`moderation-badge ${req.status}`} style={{
+                                    textTransform: 'capitalize',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                  }}>
+                                    {req.statusCode || req.status}
+                                  </span>
+                                </div>
+                                <div className="admin-api-request-meta-item">
+                                  <span className="admin-api-request-label">Response Time:</span>
+                                  <span className="admin-api-request-value">{req.responseTime}ms</span>
+                                </div>
+                                <div className="admin-api-request-meta-item">
+                                  <span className="admin-api-request-label">User:</span>
+                                  <span className="admin-api-request-value">{req.userId?.username || 'Anonymous'}</span>
+                                </div>
+                                <div className="admin-api-request-meta-item">
+                                  <span className="admin-api-request-label">Timestamp:</span>
+                                  <span className="admin-api-request-value">{new Date(req.timestamp).toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      
+                      {apiRequestPagination.total > apiRequestPagination.limit && (
+                        <div className="admin-pagination">
+                          <button
+                            disabled={apiRequestPagination.page === 1}
+                            onClick={() => setApiRequestPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                          >
+                            Previous
+                          </button>
+                          <span>Page {apiRequestPagination.page} of {Math.ceil(apiRequestPagination.total / apiRequestPagination.limit)}</span>
+                          <button
+                            disabled={apiRequestPagination.page >= Math.ceil(apiRequestPagination.total / apiRequestPagination.limit)}
+                            onClick={() => setApiRequestPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -7096,25 +8757,12 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
           {/* Support & Help Tab */}
           {activeTab === 'support' && (
-            <div className="admin-support-content" style={{ 
-              width: '100%', 
-              minHeight: 'calc(100vh - 80px)', 
-              maxHeight: 'calc(100vh - 80px)',
-              overflowY: 'auto !important', 
-              overflowX: 'hidden !important',
-              background: '#f8f9fa',
-              position: 'relative'
-            }}>
+            <div className="admin-support-content">
               {supportTab === 'tickets' && (
-                <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100%', overflowY: 'visible', overflowX: 'hidden' }}>
+                <div className="admin-support-tickets-content">
                   {/* Stats Cards */}
                   {ticketStats && Object.keys(ticketStats).length > 0 && (
-                    <div className="admin-dashboard-stats" style={{ 
-                      marginBottom: '30px', 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
-                      gap: '20px' 
-                    }}>
+                    <div className="admin-dashboard-stats admin-tickets-stats-grid">
                       {Object.entries(ticketStats).map(([status, count]) => {
                         const statusConfig = {
                           'open': { gradient: 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)', icon: '🔓' },
@@ -7189,35 +8837,11 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   )}
 
                   {/* Filters */}
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '24px', 
-                    flexWrap: 'wrap', 
-                    gap: '16px',
-                    background: 'white',
-                    padding: '20px 24px',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: '1px solid #e9ecef'
-                  }}>
-                    <div className="admin-filters" style={{ 
-                      display: 'flex', 
-                      gap: '16px', 
-                      flexWrap: 'wrap',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ 
-                          fontSize: '12px', 
-                          fontWeight: '600', 
-                          color: '#495057',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Status
-                        </label>
+                  <div className="admin-tickets-filters-wrapper">
+                    <div className="admin-filters admin-tickets-filters">
+                      <div className="admin-tickets-filter-item">
+                        <label className="admin-tickets-filter-label">Status</label>
+                        <div className="admin-filter-select-wrapper">
                         <select
                           value={ticketStatus}
                           onChange={(e) => {
@@ -7225,30 +8849,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             setTicketsPagination({ ...ticketsPagination, page: 1 });
                           }}
                           className="admin-filter-select"
-                          style={{
-                            padding: '12px 20px',
-                            borderRadius: '10px',
-                            border: '2px solid #e0e0e0',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            background: 'white',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            minWidth: '180px',
-                            outline: 'none'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = '#e0e0e0';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
                         >
                           <option value="all">All Status</option>
                           <option value="open">Open</option>
@@ -7257,16 +8857,10 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           <option value="closed">Closed</option>
                         </select>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ 
-                          fontSize: '12px', 
-                          fontWeight: '600', 
-                          color: '#495057',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Priority
-                        </label>
+                      </div>
+                      <div className="admin-tickets-filter-item">
+                        <label className="admin-tickets-filter-label">Priority</label>
+                        <div className="admin-filter-select-wrapper">
                         <select
                           value={ticketPriority}
                           onChange={(e) => {
@@ -7274,30 +8868,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             setTicketsPagination({ ...ticketsPagination, page: 1 });
                           }}
                           className="admin-filter-select"
-                          style={{
-                            padding: '12px 20px',
-                            borderRadius: '10px',
-                            border: '2px solid #e0e0e0',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            background: 'white',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            minWidth: '180px',
-                            outline: 'none'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = '#e0e0e0';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
                         >
                           <option value="all">All Priority</option>
                           <option value="low">Low</option>
@@ -7306,16 +8876,10 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                           <option value="urgent">Urgent</option>
                         </select>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ 
-                          fontSize: '12px', 
-                          fontWeight: '600', 
-                          color: '#495057',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Category
-                        </label>
+                      </div>
+                      <div className="admin-tickets-filter-item">
+                        <label className="admin-tickets-filter-label">Category</label>
+                        <div className="admin-filter-select-wrapper">
                         <select
                           value={ticketCategory}
                           onChange={(e) => {
@@ -7323,30 +8887,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             setTicketsPagination({ ...ticketsPagination, page: 1 });
                           }}
                           className="admin-filter-select"
-                          style={{
-                            padding: '12px 20px',
-                            borderRadius: '10px',
-                            border: '2px solid #e0e0e0',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            background: 'white',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            minWidth: '180px',
-                            outline: 'none'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = '#e0e0e0';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                          }}
                         >
                           <option value="all">All Categories</option>
                           <option value="technical">Technical</option>
@@ -7357,83 +8897,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </select>
                       </div>
                     </div>
-                    <div style={{ 
-                      fontSize: '15px', 
-                      color: '#495057', 
-                      fontWeight: '600',
-                      padding: '12px 20px',
-                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                      borderRadius: '10px',
-                      border: '1px solid #dee2e6'
-                    }}>
-                      📊 Total: <span style={{ color: '#667eea', fontSize: '18px' }}>{ticketsPagination.total || 0}</span> tickets
+                    </div>
+                    <div className="admin-tickets-total">
+                      📊 Total: <span className="admin-tickets-total-value">{ticketsPagination.total || 0}</span> tickets
                     </div>
                   </div>
 
                   {loadingTickets ? (
-                    <div className="admin-loading" style={{ 
-                      textAlign: 'center', 
-                      padding: '80px 20px',
-                      background: 'white',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                    }}>
-                      <div style={{ 
-                        fontSize: '48px', 
-                        marginBottom: '20px',
-                        animation: 'spin 1s linear infinite'
-                      }}>⏳</div>
-                      <div style={{ 
-                        fontSize: '18px', 
-                        fontWeight: '600',
-                        color: '#495057',
-                        marginBottom: '8px'
-                      }}>Loading tickets...</div>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: '#6c757d'
-                      }}>Please wait while we fetch the data</div>
-                    </div>
+                    <div className="admin-loading">Loading tickets...</div>
                   ) : tickets.length === 0 ? (
-                    <div style={{ 
-                      textAlign: 'center', 
-                      padding: '100px 40px', 
-                      background: 'white',
-                      borderRadius: '16px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      border: '2px dashed #e9ecef'
-                    }}>
-                      <div style={{ 
-                        fontSize: '80px', 
-                        marginBottom: '24px',
-                        opacity: 0.7,
-                        filter: 'grayscale(20%)'
-                      }}>🎫</div>
-                      <div style={{ 
-                        fontSize: '24px', 
-                        fontWeight: '700', 
-                        marginBottom: '12px',
-                        color: '#212529',
-                        letterSpacing: '-0.5px'
-                      }}>No tickets found</div>
-                      <div style={{ 
-                        fontSize: '15px', 
-                        color: '#6c757d',
-                        maxWidth: '450px',
-                        margin: '0 auto',
-                        lineHeight: '1.6'
-                      }}>User tickets will appear here when users submit support requests. Check back later or adjust your filters.</div>
+                    <div className="admin-empty-state">
+                      <div className="admin-empty-state-icon">🎫</div>
+                      <div className="admin-empty-state-title">No tickets found</div>
+                      <div className="admin-empty-state-message">User tickets will appear here when users submit support requests. Check back later or adjust your filters.</div>
                     </div>
                   ) : (
                     <>
-                      <div className="admin-table-container" style={{
-                        background: 'white',
-                        borderRadius: '12px',
-                        padding: '0',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                        border: '1px solid #e9ecef',
-                        overflow: 'hidden'
-                      }}>
+                      {/* Desktop Table */}
+                      <div className="admin-table-container admin-tickets-table-desktop">
                         <div style={{
                           padding: '20px 24px',
                           background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
@@ -7758,6 +9239,119 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                         </div>
                       </div>
 
+                      {/* Mobile Card Layout */}
+                      <div className="admin-tickets-mobile">
+                        {tickets.map((ticket) => {
+                          const priorityColors = {
+                            'urgent': { bg: '#dc3545', text: 'white', icon: '🚨' },
+                            'high': { bg: '#fd7e14', text: 'white', icon: '⚠️' },
+                            'medium': { bg: '#ffc107', text: '#212529', icon: '⚡' },
+                            'low': { bg: '#28a745', text: 'white', icon: '✅' }
+                          };
+                          const statusColors = {
+                            'open': { bg: '#17a2b8', text: 'white', icon: '🔓' },
+                            'in-progress': { bg: '#007bff', text: 'white', icon: '⚙️' },
+                            'resolved': { bg: '#28a745', text: 'white', icon: '✅' },
+                            'closed': { bg: '#6c757d', text: 'white', icon: '🔒' }
+                          };
+                          const priority = priorityColors[ticket.priority] || priorityColors['medium'];
+                          const status = statusColors[ticket.status] || statusColors['open'];
+                          return (
+                            <div key={ticket._id} className="admin-ticket-card">
+                              <div className="admin-ticket-header">
+                                <h4 className="admin-ticket-id-heading">Ticket ID</h4>
+                                <p className="admin-ticket-id-value">#{ticket.ticketId || ticket._id.toString().slice(-6)}</p>
+                              </div>
+                              <div className="admin-ticket-meta">
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">User:</span>
+                                  <span className="admin-ticket-value">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      {ticket.user?.profile?.avatar && (
+                                        <img 
+                                          src={ticket.user.profile.avatar} 
+                                          alt={ticket.user.username}
+                                          style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                        />
+                                      )}
+                                      <span>{ticket.user?.username || ticket.user?.email || 'Unknown'}</span>
+                                    </div>
+                                  </span>
+                                </div>
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">Subject:</span>
+                                  <span className="admin-ticket-value" title={ticket.subject}>
+                                    {ticket.subject && ticket.subject.length > 50 ? ticket.subject.substring(0, 50) + '...' : ticket.subject}
+                                  </span>
+                                </div>
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">Category:</span>
+                                  <span className="admin-ticket-value" style={{ textTransform: 'capitalize' }}>{ticket.category || 'N/A'}</span>
+                                </div>
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">Priority:</span>
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500',
+                                    background: priority.bg,
+                                    color: priority.text,
+                                    display: 'inline-block'
+                                  }}>
+                                    {priority.icon} {ticket.priority || 'medium'}
+                                  </span>
+                                </div>
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">Status:</span>
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: '500',
+                                    background: status.bg,
+                                    color: status.text,
+                                    display: 'inline-block'
+                                  }}>
+                                    {status.icon} {ticket.status || 'open'}
+                                  </span>
+                                </div>
+                                <div className="admin-ticket-meta-item">
+                                  <span className="admin-ticket-label">Created:</span>
+                                  <span className="admin-ticket-value">{new Date(ticket.createdAt).toLocaleString()}</span>
+                                </div>
+                              </div>
+                              <div className="admin-ticket-actions">
+                                <button
+                                  onClick={() => fetchTicketDetails(ticket._id)}
+                                  className="admin-btn admin-btn-secondary"
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {ticketsPagination.total > ticketsPagination.limit && (
+                        <div className="admin-pagination">
+                          <button
+                            disabled={ticketsPagination.page === 1}
+                            onClick={() => setTicketsPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                          >
+                            Previous
+                          </button>
+                          <span>Page {ticketsPagination.page} of {Math.ceil(ticketsPagination.total / ticketsPagination.limit)}</span>
+                          <button
+                            disabled={ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit)}
+                            onClick={() => setTicketsPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+
                     {/* Ticket Details Modal */}
                     {selectedTicket && (
                       <div className="admin-ticket-modal-overlay" style={{
@@ -7898,99 +9492,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-
-                      {/* Pagination */}
-                      {ticketsPagination.total > ticketsPagination.limit && (
-                        <div className="admin-pagination" style={{
-                          marginTop: '24px',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: '16px',
-                          padding: '20px',
-                          background: 'white',
-                          borderRadius: '12px',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                        }}>
-                          <button
-                            disabled={ticketsPagination.page === 1}
-                            onClick={() => setTicketsPagination({ ...ticketsPagination, page: ticketsPagination.page - 1 })}
-                            style={{
-                              padding: '12px 24px',
-                              borderRadius: '10px',
-                              border: '2px solid',
-                              borderColor: ticketsPagination.page === 1 ? '#e9ecef' : '#667eea',
-                              background: ticketsPagination.page === 1 ? '#f8f9fa' : 'white',
-                              color: ticketsPagination.page === 1 ? '#adb5bd' : '#667eea',
-                              cursor: ticketsPagination.page === 1 ? 'not-allowed' : 'pointer',
-                              fontWeight: '600',
-                              fontSize: '14px',
-                              transition: 'all 0.2s',
-                              opacity: ticketsPagination.page === 1 ? 0.5 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                              if (ticketsPagination.page !== 1) {
-                                e.currentTarget.style.background = '#667eea';
-                                e.currentTarget.style.color = 'white';
-                                e.currentTarget.style.transform = 'translateX(-2px)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (ticketsPagination.page !== 1) {
-                                e.currentTarget.style.background = 'white';
-                                e.currentTarget.style.color = '#667eea';
-                                e.currentTarget.style.transform = 'translateX(0)';
-                              }
-                            }}
-                          >
-                            ← Previous
-                          </button>
-                          <span style={{ 
-                            fontWeight: '600', 
-                            color: '#495057',
-                            fontSize: '15px',
-                            padding: '12px 20px',
-                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                            borderRadius: '10px',
-                            border: '1px solid #dee2e6'
-                          }}>
-                            Page <strong style={{ color: '#667eea' }}>{ticketsPagination.page}</strong> of <strong>{Math.ceil(ticketsPagination.total / ticketsPagination.limit)}</strong>
-                          </span>
-                          <button
-                            disabled={ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit)}
-                            onClick={() => setTicketsPagination({ ...ticketsPagination, page: ticketsPagination.page + 1 })}
-                            style={{
-                              padding: '12px 24px',
-                              borderRadius: '10px',
-                              border: '2px solid',
-                              borderColor: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#e9ecef' : '#667eea',
-                              background: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#f8f9fa' : 'white',
-                              color: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? '#adb5bd' : '#667eea',
-                              cursor: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? 'not-allowed' : 'pointer',
-                              fontWeight: '600',
-                              fontSize: '14px',
-                              transition: 'all 0.2s',
-                              opacity: ticketsPagination.page >= Math.ceil(ticketsPagination.total / ticketsPagination.limit) ? 0.5 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                              if (ticketsPagination.page < Math.ceil(ticketsPagination.total / ticketsPagination.limit)) {
-                                e.currentTarget.style.background = '#667eea';
-                                e.currentTarget.style.color = 'white';
-                                e.currentTarget.style.transform = 'translateX(2px)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (ticketsPagination.page < Math.ceil(ticketsPagination.total / ticketsPagination.limit)) {
-                                e.currentTarget.style.background = 'white';
-                                e.currentTarget.style.color = '#667eea';
-                                e.currentTarget.style.transform = 'translateX(0)';
-                              }
-                            }}
-                          >
-                            Next →
-                          </button>
                         </div>
                       )}
                     </>
