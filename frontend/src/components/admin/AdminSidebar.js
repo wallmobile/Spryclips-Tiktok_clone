@@ -8,38 +8,42 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // On desktop/tablet (>= 769px), sidebar should always be open. On mobile, it can be toggled.
+  // On desktop (>= 1025px), sidebar should always be open. On mobile/tablet (< 1025px), it should be closed by default and accessible via hamburger.
+  // On refresh, keep sidebar closed on mobile/tablet to show the current page
   const [isOpen, setIsOpen] = useState(() => {
     if (typeof window !== 'undefined') {
-      const isDesktop = window.innerWidth >= 769;
-      console.log('AdminSidebar: Initial isOpen state:', isDesktop, 'window width:', window.innerWidth);
-      return isDesktop; // Always open on desktop/tablet
+      const isDesktop = window.innerWidth >= 1025; // Desktop only, tablets and mobile should use hamburger
+      // On mobile/tablet, always start closed (even on refresh) to show current page
+      // On desktop only, always start open
+      const initialState = isDesktop;
+      console.log('AdminSidebar: Initial isOpen state:', initialState, 'window width:', window.innerWidth, 'isDesktop:', isDesktop);
+      return initialState;
     }
-    console.log('AdminSidebar: Defaulting to open (window undefined)');
-    return true; // Default to open
+    console.log('AdminSidebar: Defaulting to closed (window undefined)');
+    return false; // Default to closed on mobile/tablet
   });
   
-  // Keep sidebar open on desktop/tablet when window resizes
+  // Keep sidebar open on desktop only when window resizes
   useEffect(() => {
-    // Ensure sidebar is open on desktop/tablet on mount
+    // Ensure sidebar is open on desktop only on mount
     if (typeof window !== 'undefined') {
-      const isDesktop = window.innerWidth >= 769;
+      const isDesktop = window.innerWidth >= 1025; // Desktop only (>= 1025px)
       console.log('AdminSidebar: useEffect - isDesktop:', isDesktop, 'window width:', window.innerWidth, 'current isOpen:', isOpen);
       if (isDesktop && !isOpen) {
-        console.log('AdminSidebar: Setting isOpen to true (desktop)');
+        console.log('AdminSidebar: Setting isOpen to true (desktop only)');
         setIsOpen(true);
       }
     }
     
     const handleResize = () => {
-      const isDesktop = window.innerWidth >= 769;
+      const isDesktop = window.innerWidth >= 1025; // Desktop only (>= 1025px)
       console.log('AdminSidebar: Resize - isDesktop:', isDesktop, 'window width:', window.innerWidth, 'current isOpen:', isOpen);
       if (isDesktop && !isOpen) {
-        // On desktop, ensure it's open (but don't force if user explicitly closed it)
+        // On desktop only, ensure it's open (but don't force if user explicitly closed it)
         console.log('AdminSidebar: Resize - setting isOpen to true');
         setIsOpen(true);
       }
-      // On mobile, allow user to toggle - don't force state
+      // On mobile/tablet, allow user to toggle - don't force state
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -186,28 +190,52 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button
-        className="admin-sidebar-toggle"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Toggle button clicked, current isOpen:', isOpen);
-          setIsOpen(prev => {
-            const newState = !prev;
-            console.log('Setting isOpen to:', newState);
-            return newState;
-          });
-        }}
-        aria-label="Toggle sidebar"
-        style={{ zIndex: 100000, pointerEvents: 'auto', cursor: 'pointer' }}
-      >
-        <i className={`fa-solid ${isOpen ? 'fa-times' : 'fa-bars'}`}></i>
-      </button>
+      {/* Mobile/Tablet Hamburger Toggle Button - Always visible on mobile/tablet (< 1025px), positioned on top right */}
+      {typeof window !== 'undefined' && window.innerWidth < 1025 && (
+        <button
+          className="admin-sidebar-toggle"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Hamburger toggle button clicked, current isOpen:', isOpen);
+            setIsOpen(prev => {
+              const newState = !prev;
+              console.log('Setting isOpen to:', newState);
+              return newState;
+            });
+          }}
+          aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+          style={{ 
+            zIndex: 100002, 
+            pointerEvents: 'auto', 
+            cursor: 'pointer',
+            display: 'flex',
+            position: 'fixed',
+            top: '8px',
+            right: '8px',
+            left: 'auto',
+            width: '32px',
+            height: '32px',
+            margin: 0,
+            padding: 0,
+            background: 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            color: 'white',
+            fontSize: '14px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+          }}
+          className="admin-sidebar-toggle"
+        >
+          <i className={isOpen ? "fa-solid fa-times" : "fa-solid fa-bars"}></i>
+        </button>
+      )}
 
-      {/* Sidebar - Force visible on desktop/tablet */}
+      {/* Sidebar - Visible on desktop (>= 1025px), toggleable on mobile/tablet */}
       {(() => {
-        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 769;
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1025; // Desktop only (>= 1025px)
         const shouldShow = isDesktop || isOpen;
         console.log('AdminSidebar: Rendering - isDesktop:', isDesktop, 'isOpen:', isOpen, 'shouldShow:', shouldShow);
         return (
@@ -223,9 +251,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
               zIndex: 99999,
               display: 'flex',
               flexDirection: 'column',
-              transform: shouldShow ? 'translateX(0)' : 'translateX(-100%)',
-              visibility: shouldShow ? 'visible' : 'hidden',
-              opacity: shouldShow ? 1 : 0,
+              // Let CSS handle transform/visibility for mobile responsiveness
               borderRight: '2px solid #e9ecef',
               boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',
               pointerEvents: shouldShow ? 'auto' : 'none'
@@ -236,22 +262,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
             <i className="fa-solid fa-shield-halved"></i>
             <span>Admin Panel</span>
           </div>
-          <button 
-            className="admin-sidebar-close" 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const isMobile = window.innerWidth < 769;
-              if (isMobile) {
-                setIsOpen(false);
-              }
-              // On desktop, don't close - just log
-              console.log('Close button clicked, isMobile:', isMobile);
-            }}
-            style={{ pointerEvents: 'auto' }}
-          >
-            <i className="fa-solid fa-times"></i>
-          </button>
         </div>
 
         <div className="admin-sidebar-content">
@@ -284,13 +294,16 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Menu item clicked:', item.id, 'isActive:', isActive, 'hasSubItems:', hasSubItems);
-                        const isMobile = window.innerWidth < 769;
+                        const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1025;
                         if (!hasSubItems) {
                           console.log('No sub-items, setting activeTab to:', item.id);
                           if (setActiveTab) {
                             setActiveTab(item.id);
                           }
-                          if (isMobile) {
+                          // Always close sidebar on mobile/tablet when clicking a menu item
+                          const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1025;
+                          if (isMobileOrTablet) {
+                            console.log('Closing sidebar on mobile/tablet after menu item click');
                             setIsOpen(false);
                           }
                         } else {
@@ -334,7 +347,10 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                               navigate('/admin/security-settings?tab=roles');
                               if (setActiveSubTab) setActiveSubTab('roles');
                             }
-                            if (isMobile) {
+                            // Always close sidebar on mobile/tablet when opening submenu
+                            const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1025;
+                            if (isMobileOrTablet) {
+                              console.log('Closing sidebar on mobile/tablet after submenu click');
                               setIsOpen(false);
                             }
                           }
@@ -367,26 +383,35 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                           e.preventDefault();
                           e.stopPropagation(); // Prevent parent click
                           
-                          // Only close sidebar on mobile (screen width < 1024px)
-                          const isMobile = window.innerWidth < 769;
+                          // Always close sidebar on mobile/tablet when clicking submenu items
+                          const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1025;
                           
                           try {
                             if (subItem.id === 'age-restrictions' || subItem.id === 'regional-laws' || subItem.id === 'legal-hold' || subItem.id === 'law-enforcement') {
                               navigate(`/admin/policy-compliance?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
-                              if (isMobile) setIsOpen(false);
+                              if (isMobile) {
+                                console.log('Closing sidebar on mobile after submenu navigation');
+                                setIsOpen(false);
+                              }
                               return;
                             }
                             if (subItem.id === 'roles' || subItem.id === 'activity-logs' || subItem.id === 'sessions') {
                               navigate(`/admin/security-settings?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
-                              if (isMobile) setIsOpen(false);
+                              if (isMobile) {
+                                console.log('Closing sidebar on mobile after submenu navigation');
+                                setIsOpen(false);
+                              }
                               return;
                             }
                             if (subItem.id === 'push-campaigns' || subItem.id === 'warnings') {
                               navigate(`/admin/notifications-control?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
-                              if (isMobile) setIsOpen(false);
+                              if (isMobile) {
+                                console.log('Closing sidebar on mobile after submenu navigation');
+                                setIsOpen(false);
+                              }
                               return;
                             }
                             
@@ -401,7 +426,11 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                             if (setActiveSubTab && subTabId) {
                               setActiveSubTab(subTabId);
                             }
-                            if (isMobile) setIsOpen(false);
+                            // Always close sidebar on mobile/tablet after clicking submenu item
+                            if (isMobileOrTablet) {
+                              console.log('Closing sidebar on mobile/tablet after submenu item click');
+                              setIsOpen(false);
+                            }
                           } catch (error) {
                             console.error('Error handling sub-item click:', error);
                           }
@@ -453,9 +482,26 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         );
       })()}
 
-      {/* Overlay for mobile */}
-      {isOpen && typeof window !== 'undefined' && window.innerWidth < 769 && (
-        <div className="admin-sidebar-overlay" onClick={() => setIsOpen(false)}></div>
+      {/* Overlay for mobile - shows when sidebar is open */}
+      {isOpen && typeof window !== 'undefined' && window.innerWidth < 1025 && (
+        <div 
+          className="admin-sidebar-overlay" 
+          onClick={() => {
+            console.log('Overlay clicked, closing sidebar');
+            setIsOpen(false);
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 99998,
+            backdropFilter: 'blur(4px)',
+            display: 'block'
+          }}
+        ></div>
       )}
     </>
   );
