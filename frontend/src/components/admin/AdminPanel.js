@@ -2353,6 +2353,32 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const cachedUser = getCachedUser();
   const currentUser = user || cachedUser;
   
+  // Hide hamburger menu when any modal is open
+  // This useEffect must be before any conditional returns to follow React hooks rules
+  useEffect(() => {
+    const hamburger = document.querySelector('.admin-sidebar-toggle');
+    const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
+    
+    if (hamburger) {
+      if (hasOpenModal) {
+        hamburger.style.display = 'none';
+        hamburger.style.visibility = 'hidden';
+        hamburger.style.opacity = '0';
+        hamburger.style.pointerEvents = 'none';
+        hamburger.style.zIndex = '-1';
+      } else {
+        // Restore hamburger visibility on mobile/tablet
+        if (typeof window !== 'undefined' && window.innerWidth < 1025) {
+          hamburger.style.display = 'flex';
+          hamburger.style.visibility = 'visible';
+          hamburger.style.opacity = '1';
+          hamburger.style.pointerEvents = 'auto';
+          hamburger.style.zIndex = '100002';
+        }
+      }
+    }
+  }, [showBlacklistModal, showBoostModal, showHashtagModal, showABTestModal]);
+  
   // If we have a cached admin user, show panel immediately (don't wait for authLoading)
   if (cachedUser && cachedUser.role === 'admin') {
     // Allow render to continue - panel will show
@@ -2421,12 +2447,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       </div>
     );
   }
-
-  // Close button removed - hamburger menu will handle navigation on mobile
-  const closeButton = null;
-
-  // Hide hamburger menu when any modal is open
-  useEffect(() => {
     const hamburger = document.querySelector('.admin-sidebar-toggle');
     const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
     
@@ -11418,7 +11438,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   </button>
                   <button
                     onClick={() => {
-                      handleUpdateCDNIssue(selectedCDNIssue._id || selectedCDNIssue.id, {
+                      updateCDNIssue(selectedCDNIssue._id || selectedCDNIssue.id, {
                         status: selectedCDNIssue.status,
                         priority: selectedCDNIssue.priority,
                         adminNotes: selectedCDNIssue.adminNotes

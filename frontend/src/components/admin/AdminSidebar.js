@@ -385,6 +385,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                           
                           // Always close sidebar on mobile/tablet when clicking submenu items
                           const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1025;
+                          const isMobile = isMobileOrTablet;
                           
                           try {
                             if (subItem.id === 'age-restrictions' || subItem.id === 'regional-laws' || subItem.id === 'legal-hold' || subItem.id === 'law-enforcement') {
