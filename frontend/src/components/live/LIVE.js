@@ -15,8 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LiveStreamSetup from './LiveStreamSetup';
 import LiveStreamPlayer from './LiveStreamPlayer';
-import { useSocket } from '../hooks/useSocket';
-import { getActiveLiveStreams } from '../api/live';
+import { useSocket } from '../../hooks/useSocket';
+import { getActiveLiveStreams } from '../../api/live';
 import './LIVE.css';
 
 const SAMPLE_STREAMS = [
