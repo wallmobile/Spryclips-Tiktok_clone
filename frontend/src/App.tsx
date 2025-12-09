@@ -52,7 +52,7 @@ const NotificationCenter = lazy(() => import('./components/social/NotificationCe
 const NotificationSettings = lazy(() => import('./components/settings/NotificationSettings'));
 const PrivacySettings = lazy(() => import('./components/settings/PrivacySettings'));
 const Balance = lazy(() => import('./components/common/Balance'));
-const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel') as Promise<{ default: React.ComponentType<any> }>);
 const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
 const PolicyCompliance = lazy(() => import('./components/admin/PolicyCompliance'));
 const SecuritySettings = lazy(() => import('./components/admin/SecuritySettings'));
