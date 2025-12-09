@@ -4,7 +4,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 
 async function checkAdminUser() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tiktok_clone';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tiktok-clone';
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB\n');
 
