@@ -230,8 +230,7 @@ const videoSchema = new mongoose.Schema({
   copyrightDispute: {
     type: {
       type: String,
-      enum: ['dmca', 'trademark', 'other'],
-      default: null
+      enum: ['dmca', 'trademark', 'other']
     },
     reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
