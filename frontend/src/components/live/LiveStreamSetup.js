@@ -1,3 +1,15 @@
+/**
+ * Live Stream Setup Component
+ * 
+ * Recent Changes:
+ * - Added camera preview functionality
+ * - Implemented stream title and category selection
+ * - Added thumbnail upload support
+ * - Enhanced camera/microphone controls in preview
+ * - Improved error handling for camera access
+ * - Added stream creation API integration with roomId generation
+ */
+
 import React, { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './LiveStreamSetup.css';

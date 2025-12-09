@@ -1,3 +1,15 @@
+/**
+ * Live Stream Watch Component (Viewer Mode)
+ * 
+ * Recent Changes:
+ * - Implemented WebRTC viewer connection to host
+ * - Added support for roomId-based stream access
+ * - Enhanced connection state management
+ * - Added real-time chat functionality
+ * - Improved error handling and reconnection logic
+ * - Added viewer count display
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../hooks/useSocket';

@@ -1,3 +1,15 @@
+/**
+ * Live Streaming Main Component
+ * 
+ * Recent Changes:
+ * - Added support for fetching and displaying user's active stream
+ * - Implemented stream resumption functionality
+ * - Enhanced stream filtering by category
+ * - Added real-time stream updates via WebSocket
+ * - Improved stream card UI with viewer count and duration
+ * - Added end stream functionality from stream card
+ */
+
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

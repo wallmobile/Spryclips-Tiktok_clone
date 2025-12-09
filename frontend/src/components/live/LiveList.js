@@ -1,3 +1,13 @@
+/**
+ * Live Stream List Component
+ * 
+ * Recent Changes:
+ * - Added category filtering for live streams
+ * - Enhanced image URL resolution with API_URL support
+ * - Improved error handling for missing thumbnails
+ * - Added real-time stream updates with polling
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getActiveLiveStreams } from '../../api/live';

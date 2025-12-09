@@ -1,3 +1,13 @@
+/**
+ * User Profile Component
+ * 
+ * Recent Changes:
+ * - Enhanced profile viewing and editing functionality
+ * - Improved image upload handling
+ * - Added support for live streaming features
+ * - Enhanced user interaction features (follow, like, etc.)
+ */
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AccountSettings from '../settings/AccountSettings';

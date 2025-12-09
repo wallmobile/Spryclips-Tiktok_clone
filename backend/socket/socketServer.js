@@ -1,3 +1,14 @@
+/**
+ * Socket.IO Server Configuration
+ * 
+ * Recent Changes:
+ * - Enhanced authentication middleware to support anonymous connections
+ * - Added support for WebRTC-based live streaming handlers
+ * - Improved CORS configuration with environment-based allowed origins
+ * - Added backward compatibility for legacy live stream events
+ * - Enhanced error handling for authentication failures
+ */
+
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');

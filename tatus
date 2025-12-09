@@ -1,20 +1,18 @@
-[33m443de37[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mTesting[m[33m)[m Add admin panel URL and login credentials docs
-[33mf043849[m Add admin panel features documentation file
-[33md547f56[m Add CDN issues API functions for frontend
-[33m2637949[m Add CDN issues routes for user reporting
-[33m55d669c[m Add law enforcement request model for requests
-[33m8ae4644[m Add legal hold model for legal compliance
-[33m2d6b7a8[m Add regional law model for compliance management
-[33m6a49789[m Add CDN issue model for user-reported issues
-[33m37b6721[m Add push campaign model for notification campaigns
-[33mffd552f[m Add warning settings model for auto-send config
-[33m835852b[m Add warning message model for user warnings
-[33mc7b9a2d[m Add session model for tracking active sessions
-[33m48cfda7[m Add role model for role-based access control
-[33ma3028be[m Add activity log model for tracking user actions
-[33m293e3b2[m Add admin routes for all panel features
-[33m6ca7bee[m Add admin API functions for all endpoints
-[33m878c872[m Add notifications control page styles and cards
-[33m16244ba[m Add security settings page styles and tables
-[33m7ccb1fd[m Add policy compliance page styles and forms
-[33m753f66e[m Add admin login page styles and animations
+DEPLOYMENT.md
+backend/routes/live.js
+backend/socket/socketServer.js
+backend/websocket/liveStreamHandler.js
+frontend/public/config.js
+frontend/src/api/index.js
+frontend/src/components/live/LIVE.js
+frontend/src/components/live/LiveList.js
+frontend/src/components/live/LiveStreamPlayer.css
+frontend/src/components/live/LiveStreamPlayer.js
+frontend/src/components/live/LiveStreamSetup.js
+frontend/src/components/live/LiveStreamWatch.js
+frontend/src/components/live/WatchLive.css
+frontend/src/components/live/WatchLive.js
+frontend/src/components/profile/Profile.js
+frontend/src/config/axios.ts
+frontend/src/context/AuthContext.js
+frontend/src/hooks/useSocket.js

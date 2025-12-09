@@ -1,5 +1,14 @@
-// Runtime API Configuration
-// Is file ko edit karke apni backend API URL set karein
+/**
+ * Runtime API Configuration
+ * 
+ * Recent Changes:
+ * - Added support for production deployment with Nginx proxy
+ * - Configured for spryclips.com deployment
+ * - Added UPLOADS_BASE_URL configuration
+ * - Supports empty API_URL for same-origin requests
+ * 
+ * Is file ko edit karke apni backend API URL set karein
+ */
 // 
 // PRODUCTION CONFIGURATION:
 // For spryclips.com deployment, set empty string for API_URL

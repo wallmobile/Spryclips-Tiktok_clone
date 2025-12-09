@@ -1,3 +1,15 @@
+/**
+ * Socket.IO Hook for Real-time Communication
+ * 
+ * Recent Changes:
+ * - Enhanced socket URL resolution with runtime config support
+ * - Added support for window.APP_CONFIG for dynamic socket URL
+ * - Improved authentication token handling for socket connections
+ * - Added support for anonymous socket connections
+ * - Enhanced connection state management
+ * - Added live stream WebSocket support
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';

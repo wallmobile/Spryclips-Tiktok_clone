@@ -1,3 +1,14 @@
+/**
+ * Axios Configuration
+ * 
+ * Recent Changes:
+ * - Enhanced API URL resolution with runtime config support
+ * - Added support for window.APP_CONFIG for dynamic API URL
+ * - Improved error handling and retry logic
+ * - Enhanced authentication token management
+ * - Added timeout configuration for slow connections
+ */
+
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { broadcastAxiosError, normalizeAxiosError } from '../utils/apiError';
 

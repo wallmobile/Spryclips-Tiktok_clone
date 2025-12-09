@@ -1,3 +1,16 @@
+/**
+ * WebRTC Live Stream WebSocket Handlers
+ * 
+ * Recent Changes:
+ * - Implemented WebRTC-based peer-to-peer live streaming
+ * - Added support for host, viewer, and guest roles
+ * - Enhanced room management with activeRooms Map
+ * - Added WebRTC signaling handlers (offer, answer, ICE candidates)
+ * - Implemented guest connection request/accept/reject flow
+ * - Added real-time chat and reaction features
+ * - Improved disconnect handling and cleanup
+ */
+
 const LiveStream = require('../models/LiveStream');
 const User = require('../models/User');
 const LiveChat = require('../models/LiveChat');

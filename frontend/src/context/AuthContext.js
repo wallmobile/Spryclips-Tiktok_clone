@@ -1,3 +1,15 @@
+/**
+ * Authentication Context Provider
+ * 
+ * Recent Changes:
+ * - Enhanced user persistence with localStorage
+ * - Improved authentication verification flow
+ * - Added support for access token storage
+ * - Enhanced error handling for login/register
+ * - Added timeout protection for auth verification
+ * - Improved loading state management
+ */
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import api from '../config/axios';
 

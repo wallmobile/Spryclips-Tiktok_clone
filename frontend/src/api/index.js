@@ -1,3 +1,12 @@
+/**
+ * API Module Exports
+ * 
+ * Recent Changes:
+ * - Added live streaming API exports
+ * - Maintained backward compatibility with existing API modules
+ * - Centralized API client configuration
+ */
+
 // Provide a single default axios client and namespaced API modules to avoid
 // conflicting re-exports when multiple modules export the same symbol.
 import axios from '../config/axios';

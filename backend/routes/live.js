@@ -1,3 +1,15 @@
+/**
+ * Live Stream Routes
+ * 
+ * Recent Changes:
+ * - Added roomId support for WebRTC-based live streaming
+ * - Enhanced notification system for live stream start events
+ * - Improved error handling and defensive programming for streamer population
+ * - Added room-based stream lookup endpoint for shareable links
+ * - Enhanced viewer count tracking and management
+ * - Improved gift system integration with transactions
+ */
+
 const express = require('express');
 const LiveStream = require('../models/LiveStream');
 const LiveChat = require('../models/LiveChat');

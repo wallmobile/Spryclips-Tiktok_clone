@@ -1,3 +1,16 @@
+/**
+ * Live Stream Player Component (Broadcaster & Viewer)
+ * 
+ * Recent Changes:
+ * - Implemented WebRTC-based peer-to-peer streaming
+ * - Added support for broadcaster and viewer modes
+ * - Enhanced camera/microphone controls
+ * - Added real-time chat and gift features
+ * - Implemented share functionality with shareable roomId links
+ * - Added stream duration tracking and viewer count updates
+ * - Improved error handling for camera access
+ */
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
