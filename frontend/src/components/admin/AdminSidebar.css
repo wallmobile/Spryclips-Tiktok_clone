@@ -3,24 +3,28 @@
 
 .admin-sidebar-toggle {
   display: none;
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 100000 !important; /* Higher than sidebar - always on top */
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
-  border: none;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  touch-action: manipulation;
+  position: fixed !important;
+  top: 8px !important; /* Align with header */
+  right: 8px !important; /* Hamburger button on right side */
+  left: auto !important;
+  z-index: 100002 !important; /* Higher than header - always on top */
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  border: none !important;
+  color: white !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  touch-action: manipulation !important;
   pointer-events: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
 }
 
 .admin-sidebar-toggle:hover {
@@ -28,21 +32,88 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-@media (max-width: 768px) {
+.admin-sidebar-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Mobile/Tablet: Show hamburger toggle button and hide sidebar by default */
+@media (max-width: 1024px) {
   .admin-sidebar-toggle {
-    display: flex;
+    display: flex !important;
+    position: fixed !important;
+    top: 8px !important; /* Align with header padding */
+    right: 8px !important; /* Hamburger button on right */
+    left: auto !important;
+    z-index: 100002 !important; /* Above header */
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+  }
+  
+  /* Hide hamburger when modal is open - CRITICAL FIX */
+  body:has(.admin-modal-overlay) .admin-sidebar-toggle,
+  .admin-modal-overlay ~ .admin-sidebar-toggle,
+  .admin-modal-overlay + * .admin-sidebar-toggle {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Ensure hamburger is NOT inside any card - force it to be fixed to viewport */
+  .admin-moderation-video-card .admin-sidebar-toggle,
+  .admin-video-card .admin-sidebar-toggle,
+  .admin-moderation-video-thumbnail .admin-sidebar-toggle,
+  .admin-video-card-thumbnail .admin-sidebar-toggle,
+  .admin-moderation-video-actions .admin-sidebar-toggle,
+  .admin-video-card-actions .admin-sidebar-toggle,
+  /* Hide hamburger inside modals/forms */
+  .admin-modal-overlay .admin-sidebar-toggle,
+  .admin-modal-content .admin-sidebar-toggle,
+  .admin-modal-header .admin-sidebar-toggle,
+  .admin-modal-body .admin-sidebar-toggle,
+  .admin-modal-footer .admin-sidebar-toggle {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Force hamburger to be fixed to viewport, not relative to any parent */
+  .admin-sidebar-toggle {
+    position: fixed !important;
+    top: 8px !important;
+    right: 8px !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
   }
 
   .admin-sidebar {
-    transform: translateX(-100%);
+    transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   .admin-sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .admin-sidebar-overlay {
-    display: block;
+    display: block !important;
+  }
+  
+  /* Hide close icon in sidebar header on mobile */
+  .admin-sidebar-close {
+    display: none !important;
   }
 }
 
@@ -69,8 +140,8 @@
   opacity: 1 !important; /* Ensure it's not transparent */
 }
 
-/* Desktop & Tablet: Sidebar always visible */
-@media (min-width: 769px) {
+/* Desktop & Tablet (including iPad 768px+): Sidebar always visible */
+@media (min-width: 1025px) {
   .admin-sidebar {
     transform: translateX(0) !important;
     position: fixed;
@@ -79,21 +150,36 @@
   .admin-sidebar-toggle {
     display: none !important;
   }
+  
+  /* Show close icon on desktop/tablet (768px+) */
+  .admin-sidebar-close {
+    display: flex;
+  }
 }
 
-/* Mobile: Sidebar can be toggled */
-@media (max-width: 768px) {
+/* Mobile/Tablet: Sidebar hidden by default, shown when .open class is added */
+@media (max-width: 1024px) {
   .admin-sidebar {
     transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    transition: transform 0.3s ease, visibility 0.3s ease, opacity 0.3s ease !important;
   }
 
   .admin-sidebar.open {
     transform: translateX(0) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure close icon is hidden on mobile/tablet */
+  .admin-sidebar-header .admin-sidebar-close {
+    display: none !important;
   }
 }
 
-/* Ensure sidebar is always visible on desktop/tablet - override any mobile rules */
-@media (min-width: 769px) {
+/* Ensure sidebar is always visible on desktop/tablet (including iPad 768px+) - override any mobile rules */
+@media (min-width: 1025px) {
   .admin-sidebar {
     transform: translateX(0) !important;
     visibility: visible !important;
@@ -145,7 +231,15 @@
   transform: scale(1.1);
 }
 
+/* Hide close button on mobile - use back button instead */
 @media (max-width: 1024px) {
+  .admin-sidebar-close {
+    display: none !important;
+  }
+}
+
+/* Show close button only on desktop/tablet (1025px+) */
+@media (min-width: 1025px) {
   .admin-sidebar-close {
     display: flex;
   }
@@ -163,27 +257,26 @@
 }
 
 .admin-sidebar-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px; /* Thinner scrollbar */
 }
 
 .admin-sidebar-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: transparent; /* Hide track */
 }
 
 .admin-sidebar-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2); /* Subtle thumb */
+  border-radius: 3px;
 }
 
 .admin-sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(0, 0, 0, 0.3); /* Slightly darker on hover */
 }
 
 /* Firefox scrollbar */
 .admin-sidebar-content {
   scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; /* Subtle, transparent track */
 }
 
 .admin-sidebar-nav {
@@ -421,5 +514,116 @@
 @media (max-width: 1024px) {
   .admin-panel-main-content {
     margin-left: 0;
+  }
+}
+
+/* ==================== COMPREHENSIVE SIDEBAR RESPONSIVE ==================== */
+
+/* Mobile Phones (320px - 480px) */
+@media (max-width: 480px) {
+  .admin-sidebar {
+    width: 100% !important;
+    max-width: 280px !important;
+  }
+
+  .admin-sidebar-header {
+    padding: 16px !important;
+  }
+
+  .admin-sidebar-logo {
+    font-size: 16px !important;
+  }
+
+  .admin-sidebar-close {
+    display: flex !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .admin-sidebar-link {
+    padding: 14px 16px !important;
+    font-size: 14px !important;
+    min-height: 48px; /* Touch-friendly */
+  }
+
+  .admin-sidebar-link i {
+    width: 22px !important;
+    font-size: 18px !important;
+  }
+
+  .admin-sidebar-sublink {
+    padding: 12px 16px 12px 52px !important;
+    font-size: 13px !important;
+    min-height: 44px; /* Touch-friendly */
+  }
+
+  .admin-sidebar-action {
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+    min-height: 44px; /* Touch-friendly */
+  }
+
+  .admin-sidebar-footer {
+    padding: 12px 16px !important;
+  }
+
+  .admin-sidebar-toggle {
+    width: 32px !important;
+    height: 32px !important;
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 14px !important;
+    z-index: 100002 !important;
+    border-radius: 6px !important;
+  }
+}
+
+/* Small Tablets (481px - 767px) - Note: 768px is iPad, treated as desktop */
+@media (min-width: 481px) and (max-width: 767px) {
+  .admin-sidebar {
+    width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  .admin-sidebar-link {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+
+  .admin-sidebar-toggle {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
+
+/* Small Tablets & iPad (768px - 1024px) */
+/* Tablet styles - sidebar should be hidden, accessible via hamburger */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .admin-sidebar {
+    width: 280px !important;
+    max-width: 280px !important;
+  }
+
+  .admin-sidebar-link {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+
+  .admin-sidebar-link span {
+    font-size: 13px !important;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .admin-sidebar-link,
+  .admin-sidebar-sublink,
+  .admin-sidebar-action {
+    min-height: 44px;
+  }
+
+  .admin-sidebar-link:active,
+  .admin-sidebar-sublink:active {
+    background: rgba(255, 0, 80, 0.15) !important;
   }
 }
