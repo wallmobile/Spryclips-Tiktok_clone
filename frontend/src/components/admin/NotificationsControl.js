@@ -256,20 +256,10 @@ const NotificationsControl = ({ onClose }) => {
   // ProtectedRoute handles authentication - don't block rendering
 
   return (
-    <div className="admin-panel-page-container" style={{ width: '100%', height: '100vh', overflow: 'hidden', position: 'relative' }}>
-      <div className="admin-panel-with-sidebar" style={{ width: '100%', height: '100vh', display: 'flex', position: 'relative' }}>
+    <div className="admin-panel-page-container notifications-control-page">
+      <div className="admin-panel-with-sidebar">
         {/* Sidebar - Fixed position, always on top */}
-        <div style={{ 
-          position: 'fixed', 
-          left: 0, 
-          top: 0, 
-          width: '280px', 
-          height: '100vh', 
-          zIndex: 99999,
-          pointerEvents: 'auto',
-          overflow: 'visible',
-          isolation: 'isolate'
-        }}>
+        <div className="notifications-sidebar-wrapper">
           <AdminSidebar 
             activeTab="notifications"
             setActiveTab={(tab) => {
@@ -302,123 +292,52 @@ const NotificationsControl = ({ onClose }) => {
             onClose={onClose} 
           />
         </div>
-        <div className="admin-panel-main-content" style={{ 
-          flex: 1, 
-          marginLeft: '280px', 
-          width: 'calc(100% - 280px)', 
-          height: '100vh', 
-          overflow: 'hidden', 
-          display: 'flex', 
-          flexDirection: 'column',
-          position: 'relative',
-          zIndex: 1
-        }}>
-          <div className="notifications-control" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div className="admin-page-header" style={{ 
-              background: 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
-              color: 'white',
-              padding: '16px 20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0,
-              zIndex: 1000
-            }}>
+        <div className="admin-panel-main-content notifications-main-content">
+          <div className="notifications-control">
+            <div className="admin-page-header notifications-header">
               <h2>
                 Notifications Control
                 {activeTab === 'push-campaigns' && ' → Push Campaigns'}
                 {activeTab === 'warnings' && ' → Warning Messages'}
               </h2>
-          <button className="admin-close-btn" onClick={onClose}>
-            <i className="fa-solid fa-times"></i>
-          </button>
         </div>
 
-            <div className="admin-content-area" style={{ 
-              overflowY: 'auto', 
-              flex: 1,
-              padding: '24px', 
-              background: '#f8f9fa',
-              height: 'calc(100vh - 80px)',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+            <div className="admin-content-area notifications-content-area">
           {(activeTab === 'push-campaigns' || !activeTab || activeTab === '') && (
-            <div className="push-campaigns-tab" style={{ 
-              background: 'white', 
-              borderRadius: '12px', 
-              padding: '24px', 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              width: '100%'
-            }}>
-              <h3 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px', fontWeight: '700', color: '#212529' }}>Push Campaign Sends</h3>
+            <div className="push-campaigns-tab notifications-content-wrapper">
+              <h3 className="notifications-section-heading">Push Campaign Sends</h3>
               
-              <div className="campaign-form-section" style={{ 
-                marginBottom: '24px', 
-                padding: '20px', 
-                background: '#f8f9fa', 
-                borderRadius: '8px', 
-                border: '2px solid #e9ecef' 
-              }}>
-                <h4 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px', fontWeight: '600', color: '#212529' }}>Create New Push Campaign</h4>
-                <div className="campaign-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Campaign Title *</label>
+              <div className="campaign-form-section">
+                <h4 className="notifications-form-heading">Create New Push Campaign</h4>
+                <div className="campaign-form">
+                  <div className="form-group">
+                    <label className="notifications-form-label">Campaign Title *</label>
                     <input
                       type="text"
                       value={newCampaign.title}
                       onChange={(e) => setNewCampaign({ ...newCampaign, title: e.target.value })}
                       placeholder="Enter campaign title"
-                      style={{ 
-                        padding: '12px', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '6px', 
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                      onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                      className="notifications-form-input"
                     />
                   </div>
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Message *</label>
+                  <div className="form-group">
+                    <label className="notifications-form-label">Message *</label>
                     <textarea
                       value={newCampaign.message}
                       onChange={(e) => setNewCampaign({ ...newCampaign, message: e.target.value })}
                       placeholder="Enter message content"
                       rows="4"
-                      style={{ 
-                        padding: '12px', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '6px', 
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        outline: 'none',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                      onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                      className="notifications-form-textarea"
                     />
                   </div>
-                  <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Target Audience</label>
+                  <div className="form-row notifications-form-row">
+                    <div className="form-group">
+                      <label className="notifications-form-label">Target Audience</label>
+                      <div className="admin-filter-select-wrapper">
                       <select
                         value={newCampaign.targetAudience}
                         onChange={(e) => setNewCampaign({ ...newCampaign, targetAudience: e.target.value })}
-                        style={{ 
-                          padding: '12px', 
-                          border: '2px solid #e9ecef', 
-                          borderRadius: '6px', 
-                          fontSize: '14px',
-                          outline: 'none',
-                          transition: 'border-color 0.2s',
-                          background: 'white'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                          className="admin-filter-select"
                       >
                         <option value="all">All Users</option>
                         <option value="active">Active Users</option>
@@ -426,22 +345,14 @@ const NotificationsControl = ({ onClose }) => {
                         <option value="new">New Users</option>
                       </select>
                     </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Campaign Type</label>
+                    </div>
+                    <div className="form-group">
+                      <label className="notifications-form-label">Campaign Type</label>
+                      <div className="admin-filter-select-wrapper">
                       <select
                         value={newCampaign.type}
                         onChange={(e) => setNewCampaign({ ...newCampaign, type: e.target.value })}
-                        style={{ 
-                          padding: '12px', 
-                          border: '2px solid #e9ecef', 
-                          borderRadius: '6px', 
-                          fontSize: '14px',
-                          outline: 'none',
-                          transition: 'border-color 0.2s',
-                          background: 'white'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                          className="admin-filter-select"
                       >
                         <option value="promotional">Promotional</option>
                         <option value="update">Update</option>
@@ -450,87 +361,46 @@ const NotificationsControl = ({ onClose }) => {
                       </select>
                     </div>
                   </div>
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Schedule Time (Optional)</label>
+                  </div>
+                  <div className="form-group">
+                    <label className="notifications-form-label">Schedule Time (Optional)</label>
                     <input
                       type="datetime-local"
                       value={newCampaign.scheduledTime}
                       onChange={(e) => setNewCampaign({ ...newCampaign, scheduledTime: e.target.value })}
-                      style={{ 
-                        padding: '12px', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '6px', 
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                      onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                      className="notifications-form-input"
                     />
                   </div>
                   <button
-                    className="admin-btn admin-btn-primary"
+                    className="admin-btn admin-btn-primary notifications-form-submit"
                     onClick={handleSendCampaign}
                     disabled={loading}
-                    style={{ 
-                      padding: '12px 24px', 
-                      background: loading ? '#ccc' : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      transition: 'opacity 0.2s',
-                      alignSelf: 'flex-start'
-                    }}
                   >
                     {loading ? 'Sending...' : 'Send Campaign'}
                   </button>
                 </div>
               </div>
 
-              <div className="campaigns-list-section" style={{ marginTop: '24px' }}>
-                <h4 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px', fontWeight: '600', color: '#212529' }}>Campaign History</h4>
+              <div className="campaigns-list-section">
+                <h4 className="notifications-list-heading">Campaign History</h4>
                 {campaigns.length === 0 ? (
-                  <div className="empty-state" style={{ 
-                    textAlign: 'center', 
-                    padding: '60px 20px', 
-                    background: '#f8f9fa',
-                    borderRadius: '12px',
-                    color: '#6c757d',
-                    fontSize: '14px'
-                  }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.6 }}>📢</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>No campaigns sent yet</div>
-                    <div>Create and send your first push campaign above</div>
+                  <div className="admin-empty-state">
+                    <div className="admin-empty-state-icon">📢</div>
+                    <div className="admin-empty-state-title">No campaigns sent yet</div>
+                    <div className="admin-empty-state-message">Create and send your first push campaign above</div>
                   </div>
                 ) : (
-                  <div className="campaigns-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="campaigns-list">
                     {campaigns.map((campaign) => (
-                      <div key={campaign.id || campaign._id} className="campaign-item" style={{ 
-                        padding: '20px', 
-                        background: 'white', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                      }}>
-                        <div className="campaign-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <h5 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#212529' }}>{campaign.title || 'Untitled Campaign'}</h5>
-                          <span className={`campaign-status status-${campaign.status || 'sent'}`} style={{ 
-                            padding: '6px 12px', 
-                            borderRadius: '12px', 
-                            fontSize: '12px', 
-                            fontWeight: '600', 
-                            textTransform: 'capitalize',
-                            background: campaign.status === 'sent' ? '#d1fae5' : campaign.status === 'scheduled' ? '#dbeafe' : '#fee2e2',
-                            color: campaign.status === 'sent' ? '#065f46' : campaign.status === 'scheduled' ? '#1e40af' : '#991b1b'
-                          }}>
+                      <div key={campaign.id || campaign._id} className="campaign-item notifications-campaign-card">
+                        <div className="campaign-header">
+                          <h5 className="notifications-campaign-title">{campaign.title || 'Untitled Campaign'}</h5>
+                          <span className={`campaign-status status-${campaign.status || 'sent'}`}>
                             {campaign.status || 'sent'}
                           </span>
                         </div>
-                        <p className="campaign-message" style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#6c757d', lineHeight: '1.5' }}>{campaign.message || campaign.content || 'No message'}</p>
-                        <div className="campaign-details" style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#6c757d', flexWrap: 'wrap' }}>
+                        <p className="campaign-message">{campaign.message || campaign.content || 'No message'}</p>
+                        <div className="campaign-details">
                           <span><strong>Audience:</strong> {campaign.targetAudience || 'all'}</span>
                           <span><strong>Recipients:</strong> {campaign.recipients || campaign.recipientCount || 0}</span>
                           <span><strong>Sent:</strong> {campaign.sentDate ? new Date(campaign.sentDate).toLocaleDateString() : (campaign.createdAt ? new Date(campaign.createdAt).toLocaleDateString() : 'N/A')}</span>
@@ -544,87 +414,36 @@ const NotificationsControl = ({ onClose }) => {
           )}
 
           {activeTab === 'warnings' && (
-            <div className="warnings-tab" style={{ 
-              background: 'white', 
-              borderRadius: '12px', 
-              padding: '24px', 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              width: '100%'
-            }}>
-              <h3 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px', fontWeight: '700', color: '#212529' }}>Warning Messages to Rule Breakers</h3>
+            <div className="warnings-tab notifications-content-wrapper">
+              <h3 className="notifications-section-heading">Warning Messages to Rule Breakers</h3>
               
-              <div className="warning-settings-section" style={{ 
-                marginBottom: '24px', 
-                padding: '20px', 
-                background: '#f8f9fa', 
-                borderRadius: '8px', 
-                border: '2px solid #e9ecef' 
-              }}>
-                <h4 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px', fontWeight: '600', color: '#212529' }}>Warning Settings</h4>
-                <div className="settings-grid" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div className="setting-item" style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '16px', 
-                    background: 'white', 
-                    borderRadius: '6px', 
-                    border: '1px solid #e9ecef' 
-                  }}>
-                    <div className="setting-info" style={{ flex: 1 }}>
-                      <h5 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '600', color: '#212529' }}>Auto-Send Warnings</h5>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>Automatically send warnings when violations are detected</p>
+              <div className="warning-settings-section">
+                <h4 className="notifications-form-heading">Warning Settings</h4>
+                <div className="settings-grid">
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <h5 className="notifications-setting-title">Auto-Send Warnings</h5>
+                      <p className="notifications-setting-description">Automatically send warnings when violations are detected</p>
                     </div>
-                    <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '50px', height: '24px' }}>
+                    <label className={`toggle-switch ${settingsLoading || !warningSettings ? 'disabled' : ''}`}>
                       <input
                         type="checkbox"
                         checked={warningSettings?.autoSendEnabled ?? true}
                         disabled={settingsLoading || !warningSettings}
                         onChange={(e) => handleSettingsChange({ ...warningSettings, autoSendEnabled: e.target.checked })}
-                        style={{ opacity: 0, width: 0, height: 0 }}
                       />
-                      <span className="toggle-slider" style={{
-                        position: 'absolute',
-                        cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: (warningSettings?.autoSendEnabled ?? true) ? '#FF0050' : '#ccc',
-                        transition: '0.4s',
-                        borderRadius: '24px',
-                        opacity: settingsLoading ? 0.5 : 1
-                      }}>
-                        <span style={{
-                          position: 'absolute',
-                          content: '""',
-                          height: '18px',
-                          width: '18px',
-                          left: '3px',
-                          bottom: '3px',
-                          backgroundColor: 'white',
-                          transition: '0.4s',
-                          borderRadius: '50%',
-                          transform: (warningSettings?.autoSendEnabled ?? true) ? 'translateX(26px)' : 'translateX(0)'
-                        }}></span>
+                      <span className={`toggle-slider ${(warningSettings?.autoSendEnabled ?? true) ? 'checked' : ''} ${settingsLoading ? 'loading' : ''}`}>
+                        <span className="toggle-slider-thumb"></span>
                       </span>
                     </label>
                   </div>
-                  <div className="setting-item" style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '16px', 
-                    background: 'white', 
-                    borderRadius: '6px', 
-                    border: '1px solid #e9ecef' 
-                  }}>
-                    <div className="setting-info" style={{ flex: 1 }}>
-                      <h5 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '600', color: '#212529' }}>Severity Levels</h5>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>Select which violation levels trigger warnings</p>
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <h5 className="notifications-setting-title">Severity Levels</h5>
+                      <p className="notifications-setting-description">Select which violation levels trigger warnings</p>
                     </div>
-                    <div className="severity-checkboxes" style={{ display: 'flex', gap: '16px' }}>
-                      <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer' }}>
+                    <div className="severity-checkboxes">
+                      <label className="checkbox-label">
                         <input
                           type="checkbox"
                           checked={warningSettings?.severityLevels?.minor ?? true}
@@ -636,11 +455,10 @@ const NotificationsControl = ({ onClose }) => {
                               minor: e.target.checked
                             }
                           })}
-                          style={{ width: '18px', height: '18px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer', opacity: settingsLoading ? 0.5 : 1 }}
                         />
                         <span>Minor</span>
                       </label>
-                      <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer' }}>
+                      <label className="checkbox-label">
                         <input
                           type="checkbox"
                           checked={warningSettings?.severityLevels?.moderate ?? true}
@@ -652,11 +470,10 @@ const NotificationsControl = ({ onClose }) => {
                               moderate: e.target.checked
                             }
                           })}
-                          style={{ width: '18px', height: '18px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer', opacity: settingsLoading ? 0.5 : 1 }}
                         />
                         <span>Moderate</span>
                       </label>
-                      <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer' }}>
+                      <label className="checkbox-label">
                         <input
                           type="checkbox"
                           checked={warningSettings?.severityLevels?.severe ?? true}
@@ -668,7 +485,6 @@ const NotificationsControl = ({ onClose }) => {
                               severe: e.target.checked
                             }
                           })}
-                          style={{ width: '18px', height: '18px', cursor: settingsLoading || !warningSettings ? 'wait' : 'pointer', opacity: settingsLoading ? 0.5 : 1 }}
                         />
                         <span>Severe</span>
                       </label>
@@ -677,115 +493,61 @@ const NotificationsControl = ({ onClose }) => {
                 </div>
               </div>
 
-              <div className="send-warning-section" style={{ 
-                marginBottom: '24px', 
-                padding: '20px', 
-                background: '#f8f9fa', 
-                borderRadius: '8px', 
-                border: '2px solid #e9ecef' 
-              }}>
-                <h4 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px', fontWeight: '600', color: '#212529' }}>Send Warning Message</h4>
-                <form onSubmit={handleSendWarning} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>User ID *</label>
+              <div className="send-warning-section campaign-form-section">
+                <h4 className="notifications-form-heading">Send Warning Message</h4>
+                <form onSubmit={handleSendWarning} className="campaign-form">
+                  <div className="form-group">
+                    <label className="notifications-form-label">User ID *</label>
                     <input
                       type="text"
                       value={newWarning.userId}
                       onChange={(e) => setNewWarning({ ...newWarning, userId: e.target.value })}
                       placeholder="Enter user ID or username"
                       required
-                      style={{ 
-                        padding: '12px', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '6px', 
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                      onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                      className="notifications-form-input"
                     />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Severity *</label>
+                  <div className="form-row notifications-form-row">
+                    <div className="form-group">
+                      <label className="notifications-form-label">Severity *</label>
+                      <div className="admin-filter-select-wrapper">
                       <select
                         value={newWarning.severity}
                         onChange={(e) => setNewWarning({ ...newWarning, severity: e.target.value })}
                         required
-                        style={{ 
-                          padding: '12px', 
-                          border: '2px solid #e9ecef', 
-                          borderRadius: '6px', 
-                          fontSize: '14px',
-                          outline: 'none',
-                          transition: 'border-color 0.2s',
-                          background: 'white'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                          className="admin-filter-select"
                       >
                         <option value="minor">Minor</option>
                         <option value="moderate">Moderate</option>
                         <option value="severe">Severe</option>
                       </select>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Violation Type</label>
+                    </div>
+                    <div className="form-group">
+                      <label className="notifications-form-label">Violation Type</label>
                       <input
                         type="text"
                         value={newWarning.violationType}
                         onChange={(e) => setNewWarning({ ...newWarning, violationType: e.target.value })}
                         placeholder="e.g., Spam, Harassment, etc."
-                        style={{ 
-                          padding: '12px', 
-                          border: '2px solid #e9ecef', 
-                          borderRadius: '6px', 
-                          fontSize: '14px',
-                          outline: 'none',
-                          transition: 'border-color 0.2s'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                        className="notifications-form-input"
                       />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#212529' }}>Message (Optional)</label>
+                  <div className="form-group">
+                    <label className="notifications-form-label">Message (Optional)</label>
                     <textarea
                       value={newWarning.message}
                       onChange={(e) => setNewWarning({ ...newWarning, message: e.target.value })}
                       placeholder="Enter custom warning message (leave empty for default message)"
                       rows="3"
-                      style={{ 
-                        padding: '12px', 
-                        border: '2px solid #e9ecef', 
-                        borderRadius: '6px', 
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        outline: 'none',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#FF0050'}
-                      onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                      className="notifications-form-textarea"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={loading}
-                    style={{ 
-                      padding: '12px 24px', 
-                      background: loading ? '#ccc' : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      transition: 'opacity 0.2s',
-                      alignSelf: 'flex-start'
-                    }}
+                    className="admin-btn admin-btn-primary notifications-form-submit"
                   >
                     {loading ? 'Sending...' : 'Send Warning'}
                   </button>
