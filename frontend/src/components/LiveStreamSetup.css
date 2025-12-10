@@ -103,6 +103,28 @@
   background: #ffffff !important;
 }
 
+/* Two-column layout container: preview (left) + form (right) */
+.setup-main {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.preview-section {
+  flex: 1 1 60%;
+  min-width: 300px;
+}
+
+.setup-form {
+  flex: 0 0 36%;
+  min-width: 260px;
+}
+
+.video-preview-container {
+  min-height: 360px; /* ensures preview area is prominent */
+}
+
 /* Preview Section */
 .preview-section {
   position: relative;
@@ -601,6 +623,19 @@
 @media (max-width: 768px) {
   .live-stream-setup-overlay {
     padding: 0 !important; /* No padding for full screen on mobile */
+  }
+
+  /* Stack preview and form on small screens */
+  .setup-main {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .preview-section,
+  .setup-form {
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   .live-stream-setup-modal {

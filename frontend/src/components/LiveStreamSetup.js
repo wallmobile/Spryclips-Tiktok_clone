@@ -219,6 +219,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
         </div>
 
         <div className="setup-content">
+          <div className="setup-main">
           {/* Preview Section */}
           <div className="preview-section">
             <div className={`video-preview-container ${streamPreview ? 'has-stream' : ''}`}>
@@ -380,6 +381,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
             </div>
           </div>
 
+          </div>
           {/* Action Buttons */}
           <div className="setup-actions">
             <button className="cancel-btn" onClick={handleClose}>
