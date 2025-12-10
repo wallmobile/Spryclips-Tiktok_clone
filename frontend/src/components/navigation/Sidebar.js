@@ -124,35 +124,13 @@ const Sidebar = () => {
       )}
 
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="logo">
-            TikTok
-          </div>
-        </div>
+            <div className="sidebar-header">
+              <div className="logo">
+                TikTok
+              </div>
+            </div>
 
-        <div className="sidebar-search">
-          <i className="fa-solid fa-magnifying-glass"></i>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowSearchModal(true);
-              setIsMobileMenuOpen(false);
-            }}
-            onFocus={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowSearchModal(true);
-              setIsMobileMenuOpen(false);
-            }}
-            readOnly
-          />
-        </div>
-
-        <nav className="sidebar-nav">
+            <nav className="sidebar-nav">
           {navItems.map(item => (
             <div
               key={item.id}

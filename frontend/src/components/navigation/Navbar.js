@@ -36,55 +36,53 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Navbar only shows when NOT authenticated */}
-      {!isAuthenticated && (
-        <nav className="navbar">
-          <div className="navbar-container">
-            {/* Left side - Logo placeholder (if needed) */}
-            <div className="nav-left"></div>
-            
-            {/* Center/Right - Search Bar */}
-            <div className="nav-center">
-              <div className="navbar-search" onClick={() => setShowSearchPage(true)}>
-                <div className="navbar-search-icon">
-                  <i className="fa-solid fa-search"></i>
-                </div>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  className="navbar-search-input"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowSearchPage(true)}
-                  readOnly
-                />
+      {/* Navbar shows for both authenticated and unauthenticated users */}
+      <nav className="navbar">
+        <div className="navbar-container">
+          {/* Left side - Logo placeholder (if needed) */}
+          <div className="nav-left"></div>
+          
+          {/* Center/Right - Search Bar */}
+          <div className="nav-center">
+            <div className="navbar-search" onClick={() => setShowSearchPage(true)}>
+              <div className="navbar-search-icon">
+                <i className="fa-solid fa-search"></i>
               </div>
-            </div>
-            
-            {/* Right side - Get Coins and Sign up */}
-            <div className="nav-right">
-              <div className="nav-top-bar">
-                <button 
-                  className="nav-top-btn get-coins-btn"
-                  onClick={() => toggleOverlay('balance')}
-                  title="Get Coins"
-                >
-                  <i className="fa-solid fa-music"></i>
-                  <span>Get Coins</span>
-                </button>
-                <div className="nav-separator"></div>
-                <button 
-                  className="nav-top-btn nav-top-btn--primary signup-btn"
-                  onClick={() => toggleOverlay('signup')}
-                >
-                  Sign up
-                </button>
-              </div>
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="navbar-search-input"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSearchPage(true)}
+                readOnly
+              />
             </div>
           </div>
-        </nav>
-      )}
+          
+          {/* Right side - Same content for both authenticated and unauthenticated users */}
+          <div className="nav-right">
+            <div className="nav-top-bar">
+              <button 
+                className="nav-top-btn get-coins-btn"
+                onClick={() => toggleOverlay('balance')}
+                title="Get Coins"
+              >
+                <i className="fa-solid fa-music"></i>
+                <span>Get Coins</span>
+              </button>
+              <div className="nav-separator"></div>
+              <button 
+                className="nav-top-btn nav-top-btn--primary signup-btn"
+                onClick={() => isAuthenticated ? toggleOverlay('profile') : toggleOverlay('signup')}
+              >
+                {isAuthenticated ? 'Profile' : 'Sign up'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {activeOverlay === 'login' && (
         <Login 

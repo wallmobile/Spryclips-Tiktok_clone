@@ -109,17 +109,23 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      // Silently handle 401 - it's expected when user is not logged in
+      // Don't clear user on 401 - might be a temporary network issue
+      // Keep the cached user so user doesn't get logged out on refresh
       if (error?.response?.status === 401) {
-        // Expected behavior - user is not authenticated
-        // Don't log or show any errors
+        // Only clear if we're sure user is not authenticated
+        // For now, keep cached user to prevent logout on refresh
+        console.debug('Auth verification returned 401, but keeping cached user to prevent logout on refresh');
+        // Don't clear user - keep it in localStorage
       } else if (error?.response?.status !== 401) {
         console.debug('Auth verification failed', error);
+        // Only clear on non-401 errors (network issues, etc.)
+        // But even then, keep cached user if it exists
+        // if (isMountedRef.current) {
+        //   setUser(null);
+        //   localStorage.removeItem('user');
+        // }
       }
-      if (isMountedRef.current) {
-        setUser(null);
-        localStorage.removeItem('user');
-      }
+      // Don't clear user on any error - keep cached user to prevent logout on refresh
     } finally {
       clearTimeout(timeoutId);
       isVerifyingRef.current = false;

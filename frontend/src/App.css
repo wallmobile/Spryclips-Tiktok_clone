@@ -87,28 +87,28 @@ button[class*="close-btn"].balance-close-btn:hover {
   min-height: 0;
 }
 
-/* Only add minimal padding when navbar is visible (home page and NOT authenticated) */
+/* Add padding when navbar is visible (for both authenticated and unauthenticated users) */
 .app-content:has(.navbar) .app-outlet {
-  padding-top: 48.5px; /* Minimal space - just enough to clear navbar */
+  padding-top: 60px !important; /* Space to clear navbar */
+  margin-top: 0 !important;
 }
 
-/* Remove all padding when navbar is not present (user is logged in) */
-.app-content:not(:has(.navbar)) .app-outlet,
-.user-authenticated .app-outlet {
+/* Remove all padding when navbar is not present */
+.app-content:not(:has(.navbar)) .app-outlet {
   padding-top: 0 !important;
   margin-top: 0 !important;
 }
 
-/* Remove all spacing when user is authenticated */
-.user-authenticated .for-you-feed {
+/* When navbar is present, keep padding even if for-you-feed is there */
+.app-content:has(.navbar):has(.for-you-feed) .app-outlet {
+  padding-top: 60px !important; /* Keep navbar clearance */
   margin-top: 0 !important;
-  padding-top: 0 !important;
 }
 
-/* Remove top padding on mobile when for-you-feed is present */
+/* Remove top padding on mobile when for-you-feed is present AND navbar is NOT present */
 @media (max-width: 48rem) {
-  .app-content:has(.for-you-feed) .app-outlet,
-  .app-outlet:has(.for-you-feed) {
+  .app-content:has(.for-you-feed):not(:has(.navbar)) .app-outlet,
+  .app-outlet:has(.for-you-feed):not(:has(.navbar)) {
     padding-top: 0 !important;
     margin-top: 0 !important;
   }

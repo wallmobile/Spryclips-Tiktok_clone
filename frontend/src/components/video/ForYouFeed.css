@@ -6,7 +6,7 @@
   scroll-snap-type: y mandatory;
   background: #000;
   -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
-  padding: 0px 0px 0px 25px;
+  padding: 0px 0px 0px 6rem; /* Increased left padding to 6rem (96px) for clearly visible space from sidebar */
   margin: 0;
   padding-top: 0 !important;
   padding-bottom: 0 !important;

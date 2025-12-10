@@ -9,9 +9,9 @@
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0.75rem 1.5rem !important;
-  gap: 1rem !important;
-  z-index: 10000 !important;
+  padding: 0.75rem 1rem !important; /* Reduced padding from 1.5rem to 1rem */
+  gap: 0.5rem !important; /* Reduced gap from 1rem to 0.5rem */
+  z-index: 10005 !important; /* Lower than sidebar (10010) so sidebar stays visible */
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px) !important;
   border-bottom: 1px solid rgba(255, 0, 80, 0.1) !important;
@@ -20,6 +20,8 @@
   overflow: visible;
   pointer-events: auto !important;
 }
+
+/* Navbar should be visible for both authenticated and unauthenticated users */
 
 .navbar > * {
   pointer-events: auto; /* Re-enable pointer events for navbar children */
@@ -35,7 +37,7 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  gap: 1.5rem;
+  gap: 0.75rem; /* Reduced gap from 1.5rem to 0.75rem for less space */
 }
 
 .nav-left {
@@ -43,7 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  min-width: 120px;
+  min-width: 0; /* Reduced from 120px to 0 for less space */
+  width: auto;
 }
 
 .navbar-search {
@@ -168,9 +171,11 @@ body.page-overlay-open .navbar {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Changed from center to flex-start to align left */
   max-width: 500px;
-  margin: 0 auto;
+  margin: 0;
+  margin-left: 17.5rem; /* Exactly sidebar width - search bar starts right after sidebar */
+  margin-right: 0.5rem; /* Reduced right margin for less space between search and buttons */
 }
 
 .nav-right {
@@ -189,7 +194,7 @@ body.page-overlay-open .navbar {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem; /* Increased gap from 0.75rem to 1rem for more space between buttons */
   width: auto;
   min-width: fit-content;
   background: transparent !important;
@@ -198,11 +203,74 @@ body.page-overlay-open .navbar {
   box-shadow: none;
   margin: 0;
   flex-wrap: nowrap;
-  justify-content: flex-end;
+}
+
+.nav-profile-btn {
   position: relative;
-  white-space: nowrap;
-  pointer-events: auto;
-  z-index: 10000;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-profile-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 0, 80, 0.2);
+  object-fit: cover;
+  transition: all 0.2s ease;
+}
+
+.nav-profile-avatar:hover {
+  border-color: rgba(255, 0, 80, 0.5);
+  transform: scale(1.05);
+}
+
+.nav-profile-avatar-placeholder {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  border: 2px solid rgba(255, 0, 80, 0.2);
+  transition: all 0.2s ease;
+}
+
+.nav-profile-avatar-placeholder:hover {
+  border-color: rgba(255, 0, 80, 0.5);
+  transform: scale(1.05);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  background: #FF0050;
+  color: white;
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  border: 2px solid white;
+  z-index: 10;
 }
 
 .nav-top-btn {
@@ -235,13 +303,30 @@ body.page-overlay-open .navbar {
   background: #FF0050 !important;
   color: #ffffff !important;
   font-weight: 600;
-  padding: 0.5rem 1.25rem;
+  padding: 0.625rem 1.5rem; /* Increased padding for more space inside button */
   border-radius: 20px;
   font-size: 0.8125rem;
+  min-height: 2.75rem; /* Increased height */
+  min-width: 8rem; /* Slightly increased width for more space */
+  width: 8rem; /* Slightly increased width */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .nav-top-btn--primary:hover {
   background: #FE2C55 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3);
+}
+
+.nav-top-btn--primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(255, 0, 80, 0.2);
 }
 
 .nav-top-btn--primary i {
@@ -252,7 +337,7 @@ body.page-overlay-open .navbar {
   width: 1px;
   height: 1rem;
   background: #E0F2FE;
-  margin: 0 0.125rem;
+  margin: 0 0.5rem; /* Increased margin for more space between buttons */
 }
 
 .nav-actions-group {
@@ -329,15 +414,32 @@ body.page-overlay-open .navbar {
 }
 
 .get-coins-btn {
-  color: #1e293b !important; /* Original text color */
+  color: #ffffff !important; /* White text color */
+  background: #FF0050 !important; /* Red background - same as Profile button */
+  border-radius: 20px !important; /* Same rounded shape as Profile button */
+  padding: 0.625rem 1.5rem !important; /* Increased padding for more space inside button */
+  font-weight: 600 !important; /* Same font weight */
+  font-size: 0.8125rem !important; /* Same font size */
+  min-height: 2.75rem !important; /* Increased height */
+  min-width: 8rem !important; /* Slightly increased width for more space */
+  width: 8rem !important; /* Slightly increased width */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
 }
 
 .get-coins-btn i {
-  color: #0f172a !important; /* Original icon color */
+  color: #ffffff !important; /* White icon color */
 }
 
 .get-coins-btn:hover {
-  background: rgba(0, 0, 0, 0.05) !important; /* Original hover */
+  background: #FE2C55 !important; /* Same hover color as Profile button */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3);
 }
 
 .get-app-btn {

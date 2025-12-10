@@ -344,11 +344,6 @@ const ExplorePage: React.FC = () => {
   return <Explore mode="overlay" onClose={() => navigate('/', { replace: true })} />;
 };
 
-const SearchPageRoute: React.FC = () => {
-  const navigate = useNavigate();
-  return <SearchPage onClose={() => navigate('/', { replace: true })} />;
-};
-
 const FollowingPage: React.FC = () => {
   return <Following />;
 };
@@ -690,8 +685,8 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const showHomeChrome = location.pathname === '/';
-  // Only show navbar when on home page AND user is NOT authenticated
-  const showNavbar = showHomeChrome && !isAuthenticated;
+  // Show navbar on home page for both authenticated and unauthenticated users
+  const showNavbar = showHomeChrome;
 
   // Add class to body when user is authenticated to remove navbar spacing
   useEffect(() => {
@@ -737,7 +732,7 @@ const AppRoutes: React.FC = () => (
       {/* Public Routes - No Login Required */}
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
-      <Route path="search" element={<SearchPageRoute />} />
+      {/* Search route removed - search is now a modal */}
       <Route path="live" element={<LivePage />} />
       <Route path="more" element={<MorePage />} />
       
