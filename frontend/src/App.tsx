@@ -684,9 +684,14 @@ const SignupPage: React.FC = () => {
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const showHomeChrome = location.pathname === '/';
-  // Show navbar on home page for both authenticated and unauthenticated users
-  const showNavbar = showHomeChrome;
+  // Show navbar ONLY on home page (For You page) - hide on all other pages including profile
+  // Only show on exact root path '/', hide everywhere else
+  const showNavbar = location.pathname === '/' || location.pathname === '';
+  
+  // Debug: Log pathname to verify (remove in production)
+  useEffect(() => {
+    console.log('[Navbar Visibility] Pathname:', location.pathname, 'Show Navbar:', showNavbar);
+  }, [location.pathname, showNavbar]);
 
   // Add class to body when user is authenticated to remove navbar spacing
   useEffect(() => {
@@ -699,6 +704,19 @@ const MainLayout: React.FC = () => {
       document.body.classList.remove('user-authenticated');
     };
   }, [isAuthenticated]);
+
+  // Add class to body when on profile page to hide navbar
+  useEffect(() => {
+    const isProfilePage = location.pathname.startsWith('/profile') || location.pathname.startsWith('/user/');
+    if (isProfilePage) {
+      document.body.classList.add('profile-page-open');
+    } else {
+      document.body.classList.remove('profile-page-open');
+    }
+    return () => {
+      document.body.classList.remove('profile-page-open');
+    };
+  }, [location.pathname]);
 
   return (
     <div className={`app ${isAuthenticated ? 'user-authenticated' : ''}`}>

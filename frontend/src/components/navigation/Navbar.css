@@ -163,6 +163,11 @@ body.signup-page-open .navbar {
   display: none !important;
 }
 
+/* Hide navbar when profile page is open */
+body.profile-page-open .navbar {
+  display: none !important;
+}
+
 /* Hide navbar when overlay page is open */
 body.page-overlay-open .navbar {
   left: 0;
