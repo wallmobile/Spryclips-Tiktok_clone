@@ -598,6 +598,31 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     }
   }, [activeTab, safetyTab, reportsPagination.page, reportsStatus, reportsPriority, spamPagination.page, botPagination.page, takeoverPagination.page]);
 
+  // Handle hamburger menu visibility when modals are open
+  useEffect(() => {
+    const hamburger = document.querySelector('.admin-sidebar-toggle');
+    const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
+    
+    if (hamburger) {
+      if (hasOpenModal) {
+        hamburger.style.display = 'none';
+        hamburger.style.visibility = 'hidden';
+        hamburger.style.opacity = '0';
+        hamburger.style.pointerEvents = 'none';
+        hamburger.style.zIndex = '-1';
+      } else {
+        // Restore hamburger visibility on mobile/tablet
+        if (typeof window !== 'undefined' && window.innerWidth < 1025) {
+          hamburger.style.display = 'flex';
+          hamburger.style.visibility = 'visible';
+          hamburger.style.opacity = '1';
+          hamburger.style.pointerEvents = 'auto';
+          hamburger.style.zIndex = '100002';
+        }
+      }
+    }
+  }, [showBlacklistModal, showBoostModal, showHashtagModal, showABTestModal]);
+
   // Fetch Monetization data
   useEffect(() => {
     if (activeTab === 'monetization') {
@@ -2448,30 +2473,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     );
   }
 
-  useEffect(() => {
-    const hamburger = document.querySelector('.admin-sidebar-toggle');
-    const hasOpenModal = showBlacklistModal || showBoostModal || showHashtagModal || showABTestModal;
-    
-    if (hamburger) {
-      if (hasOpenModal) {
-        hamburger.style.display = 'none';
-        hamburger.style.visibility = 'hidden';
-        hamburger.style.opacity = '0';
-        hamburger.style.pointerEvents = 'none';
-        hamburger.style.zIndex = '-1';
-      } else {
-        // Restore hamburger visibility on mobile/tablet
-        if (typeof window !== 'undefined' && window.innerWidth < 1025) {
-          hamburger.style.display = 'flex';
-          hamburger.style.visibility = 'visible';
-          hamburger.style.opacity = '1';
-          hamburger.style.pointerEvents = 'auto';
-          hamburger.style.zIndex = '100002';
-        }
-      }
-    }
-  }, [showBlacklistModal, showBoostModal, showHashtagModal, showABTestModal]);
-
   const content = (
     <div className="admin-panel-with-sidebar">
       <AdminSidebar 
@@ -2610,7 +2611,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                 return getTabTitle();
               })()}
             </h2>
-            {closeButton}
+            {isModal && onClose && (
+              <button 
+                className="admin-panel-close" 
+                onClick={onClose}
+                aria-label="Close admin panel"
+              >
+                ×
+              </button>
+            )}
           </div>
 
           {/* Tabs - Keep for desktop, hide on mobile when sidebar is visible - REMOVED FROM LAYOUT */}
