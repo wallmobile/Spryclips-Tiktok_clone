@@ -1,14 +1,5 @@
-/**
- * Runtime API Configuration
- * 
- * Recent Changes:
- * - Added support for production deployment with Nginx proxy
- * - Configured for spryclips.com deployment
- * - Added UPLOADS_BASE_URL configuration
- * - Supports empty API_URL for same-origin requests
- * 
- * Is file ko edit karke apni backend API URL set karein
- */
+// Runtime API Configuration
+// Is file ko edit karke apni backend API URL set karein
 // 
 // PRODUCTION CONFIGURATION:
 // For spryclips.com deployment, set empty string for API_URL
@@ -26,7 +17,7 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'http://localhost:5000',  // Local development - Backend server URL
+  API_URL: '',  // Empty for Nginx proxy - Production deployment for spryclips.com
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'http://localhost:5000/uploads'  // Local development
+  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Production: 'https://spryclips.com/uploads'
 };
