@@ -32,6 +32,18 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     { id: 'travel', label: 'Travel', icon: '✈️' },
   ];
 
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const categoryRef = useRef(null);
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -321,19 +333,38 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
               <span className="char-count">{streamTitle.length}/100</span>
             </div>
 
-            <div className="form-group">
+            <div className="form-group" ref={categoryRef}>
               <label>Category</label>
-              <div className="category-grid">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(cat.id)}
-                  >
-                    <span className="category-icon">{cat.icon}</span>
-                    <span className="category-label">{cat.label}</span>
-                  </button>
-                ))}
+              <div className="category-select-wrapper">
+                <button
+                  type="button"
+                  className="category-select"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  aria-haspopup="listbox"
+                  aria-expanded={showCategoryDropdown}
+                >
+                  <span className="category-icon">{categories.find(c => c.id === selectedCategory)?.icon}</span>
+                  <span className="category-label">{categories.find(c => c.id === selectedCategory)?.label}</span>
+                  <i className="fa-solid fa-chevron-down category-select-caret"></i>
+                </button>
+
+                {showCategoryDropdown && (
+                  <div className="category-dropdown" role="listbox">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        className={`category-dropdown-item ${selectedCategory === cat.id ? 'active' : ''}`}
+                        onClick={() => { setSelectedCategory(cat.id); setShowCategoryDropdown(false); }}
+                        role="option"
+                        aria-selected={selectedCategory === cat.id}
+                      >
+                        <span className="category-icon">{cat.icon}</span>
+                        <span className="category-label">{cat.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
