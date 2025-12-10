@@ -45,8 +45,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  min-width: 0; /* Reduced from 120px to 0 for less space */
-  width: auto;
+  min-width: 0;
+  width: 0; /* No width to eliminate empty space */
+  display: none; /* Hide nav-left completely to remove empty space */
 }
 
 .navbar-search {
@@ -174,8 +175,15 @@ body.page-overlay-open .navbar {
   justify-content: flex-start; /* Changed from center to flex-start to align left */
   max-width: 500px;
   margin: 0;
-  margin-left: 17.5rem; /* Exactly sidebar width - search bar starts right after sidebar */
+  margin-left: 17.5rem; /* Sidebar width - search bar starts right after sidebar */
+  padding-left: 0; /* No padding to eliminate empty space */
   margin-right: 0.5rem; /* Reduced right margin for less space between search and buttons */
+}
+
+/* Remove empty space on left side of search bar */
+.navbar-search {
+  margin-left: 0 !important;
+  padding-left: 0.875rem !important; /* Keep internal padding but no external margin */
 }
 
 .nav-right {
