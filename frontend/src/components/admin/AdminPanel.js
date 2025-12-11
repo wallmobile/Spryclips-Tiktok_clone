@@ -397,7 +397,6 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       try {
         const cachedUser = localStorage.getItem('user');
         if (cachedUser && cachedUser !== 'null' && cachedUser !== 'undefined') {
-<<<<<<< HEAD
           const parsed = JSON.parse(cachedUser);
           // Validate user object has required fields
           if (parsed && parsed._id && parsed.role) {
@@ -409,21 +408,12 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
         console.error('Error parsing cached user:', e);
       }
       return null;
-=======
-          return JSON.parse(cachedUser);
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-      return <></>;
->>>>>>> origin/main
     };
 
     // Check localStorage for cached user FIRST (priority over context user)
     const cachedUser = getCachedUser();
     let currentUser = user || cachedUser;
     
-<<<<<<< HEAD
     // Validate current user object has required fields
     if (currentUser && (!currentUser._id || !currentUser.role)) {
       console.warn('Invalid user object detected - missing _id or role');
@@ -436,20 +426,12 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     
     // If we have a cached admin user, DON'T redirect (allow access immediately)
     if (cachedUser && cachedUser.role === 'admin' && cachedUser._id) {
-=======
-    // If we have a cached admin user, DON'T redirect (allow access immediately)
-    if (cachedUser && cachedUser.role === 'admin') {
->>>>>>> origin/main
       // Admin user is cached - allow access, don't redirect
       return;
     }
     
     // If we have a user (from context or cache), check role
-<<<<<<< HEAD
     if (currentUser && currentUser._id) {
-=======
-    if (currentUser) {
->>>>>>> origin/main
       if (currentUser.role !== 'admin') {
         // User exists but is not admin - redirect
         navigate('/admin/login', { replace: true });
@@ -465,11 +447,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       const timeout = setTimeout(() => {
         // Double check after timeout - maybe cached user was added
         const finalCheck = getCachedUser();
-<<<<<<< HEAD
         if (!finalCheck || !finalCheck._id || finalCheck.role !== 'admin') {
-=======
-        if (!finalCheck || finalCheck.role !== 'admin') {
->>>>>>> origin/main
           navigate('/admin/login', { replace: true });
         }
       }, 2000); // 2 second timeout
@@ -477,11 +455,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     }
     
     // Auth loading complete but no user - redirect to login
-<<<<<<< HEAD
     if (!currentUser || !currentUser._id) {
-=======
-    if (!currentUser) {
->>>>>>> origin/main
       navigate('/admin/login', { replace: true });
       return;
     }

@@ -441,11 +441,7 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
               <div key={suggestion.id} className="more-page__suggestion-card" style={{ 
                 borderLeft: `4px solid ${priorityStyle.bg}`,
                 background: '#fff',
-<<<<<<< HEAD
-                      borderRadius: '12px',
-=======
                 borderRadius: '12px',
->>>>>>> origin/main
                 padding: '1.5rem',
                 marginBottom: '1rem',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
@@ -480,17 +476,10 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
                         boxShadow: `0 2px 4px ${priorityStyle.border}`,
                         whiteSpace: 'nowrap',
                         flexShrink: 0
-<<<<<<< HEAD
-                    }}>
-                      {suggestion.priority}
-                    </span>
-                    {suggestion.category && (
-=======
                       }}>
                         {suggestion.priority}
                       </span>
                       {suggestion.category && (
->>>>>>> origin/main
                         <span className="more-page__category-badge" style={{ 
                           fontSize: '0.7rem', 
                           padding: '0.35rem 0.75rem', 
@@ -501,19 +490,11 @@ const GrowthToolsHub = ({ onClose = () => {} }) => {
                           border: '1px solid #e0e0e0',
                           whiteSpace: 'nowrap',
                           flexShrink: 0
-<<<<<<< HEAD
-                      }}>
-                        {suggestion.category}
-                      </span>
-                    )}
-                  </div>
-=======
                         }}>
                           {suggestion.category}
                         </span>
                       )}
                     </div>
->>>>>>> origin/main
                   </div>
                   <p style={{ 
                     margin: 0, 
