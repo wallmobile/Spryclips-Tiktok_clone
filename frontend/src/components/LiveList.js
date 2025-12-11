@@ -11,91 +11,86 @@ const LiveList = () => {
 
   const categories = [
     { value: 'all', label: 'All' },
+    { value: 'entertainment', label: 'Entertainment' },
     { value: 'dance', label: 'Dance' },
     { value: 'gaming', label: 'Gaming' },
     { value: 'food', label: 'Food' },
     { value: 'comedy', label: 'Comedy' },
     { value: 'music', label: 'Music' },
-    { value: 'talk', label: 'Talk' },
-    { value: 'beauty', label: 'Beauty' },
     { value: 'fitness', label: 'Fitness' },
-    { value: 'fashion', label: 'Fashion' }
+    { value: 'education', label: 'Education' },
+    { value: 'lifestyle', label: 'Lifestyle' },
+    { value: 'travel', label: 'Travel' }
   ];
 
   useEffect(() => {
     fetchStreams();
-    // Refresh every 10 seconds
     const interval = setInterval(fetchStreams, 10000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
   const fetchStreams = async () => {
     try {
       setLoading(true);
-      const response = await getActiveLiveStreams(selectedCategory);
-      if (response.success) {
-        setStreams(response.streams || []);
+      const resp = await getActiveLiveStreams(selectedCategory);
+      if (resp && resp.success) {
+        setStreams(resp.streams || []);
+      } else {
+        setStreams([]);
       }
-    } catch (error) {
-      console.error('Error fetching streams:', error);
+    } catch (err) {
+      console.error('Error fetching live streams', err);
+      setStreams([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const resolveUrl = (path) => {
+    const API_URL = window.APP_CONFIG?.API_URL || '';
+    if (!path) return '';
+    try {
+      // already absolute
+      const u = new URL(path);
+      return u.href;
+    } catch (e) {
+      if (!API_URL) return path;
+      const prefix = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+      const p = path.startsWith('/') ? path : `/${path}`;
+      return `${prefix}${p}`;
+    }
+  };
+
   const handleStreamClick = (stream) => {
-    navigate(`/live/${stream.id}`, { state: { stream } });
+    navigate(`/live/watch/${stream.roomId || stream.id || stream._id}` , { state: { stream } });
   };
 
   const formatViewerCount = (count) => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
+    if (!count) return '0';
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+    return String(count);
   };
 
   return (
     <div className="live-list-container">
       <div className="live-list-header">
-        <h1 className="live-list-title">
-          <i className="fa-solid fa-broadcast-tower"></i> Live Now
-        </h1>
+        <h1 className="live-list-title"><i className="fa-solid fa-broadcast-tower"></i> Live Now</h1>
         <div className="live-list-categories">
-          {categories.map((cat) => (
-              const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
-
-              const resolveUrl = (path) => {
-                if (!path) return '';
-                try {
-                  // If it's already an absolute URL, return as-is
-                  const u = new URL(path);
-                  return u.href;
-                } catch (e) {
-                  // Not an absolute URL — prefix with API_URL
-                  const prefix = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-                  const p = path.startsWith('/') ? path : `/${path}`;
-                  return `${prefix}${p}`;
-                }
-              };
-
-              const thumbnailSrc = stream.thumbnail ? resolveUrl(stream.thumbnail) : (stream.profilePicture ? resolveUrl(stream.profilePicture) : '/default-avatar.png');
-              const avatarSrc = stream.profilePicture ? resolveUrl(stream.profilePicture) : '/default-avatar.png';
-
-              return (
+          {categories.map(cat => (
             <button
               key={cat.value}
               className={`category-btn ${selectedCategory === cat.value ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat.value)}
-            >
-              {cat.label}
-                  <img
-                    src={thumbnailSrc}
-                    alt={stream.title}
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
-                  />
-          <div className="spinner"></div>
+            >{cat.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="live-list-loading">
+          <div className="spinner" />
           <p>Loading live streams...</p>
         </div>
       ) : streams.length === 0 ? (
@@ -106,46 +101,27 @@ const LiveList = () => {
         </div>
       ) : (
         <div className="live-list-grid">
-                    <img
-                      src={avatarSrc}
-                      alt={stream.username}
-                      className="live-stream-avatar"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
-                    />
-                  src={stream.thumbnail || stream.profilePicture || '/default-avatar.png'}
-                  alt={stream.title}
-                  onError={(e) => {
-                    e.target.src = '/default-avatar.png';
-                  }}
-                />
-              );
-            })}
-                  <span className="live-dot"></span>
-                  LIVE
+          {streams.map(stream => {
+            const thumbnail = resolveUrl(stream.thumbnail || stream.profilePicture || '/default-avatar.png');
+            return (
+              <div key={stream.id || stream._id} className="live-stream-card" onClick={() => handleStreamClick(stream)}>
+                <div className="live-stream-thumb">
+                  <img src={thumbnail} alt={stream.title || 'Live'} onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+                  <div className="live-badge"><span className="live-dot" /> LIVE</div>
+                  <div className="live-viewer-count"><i className="fa-solid fa-eye"></i> {formatViewerCount(stream.viewerCount)}</div>
                 </div>
-                <div className="live-viewer-count">
-                  <i className="fa-solid fa-eye"></i>
-                  {formatViewerCount(stream.viewerCount)}
-                </div>
-              </div>
-              <div className="live-stream-info">
-                <div className="live-stream-user">
-                  <img
-                    src={stream.profilePicture || '/default-avatar.png'}
-                    alt={stream.username}
-                    className="live-stream-avatar"
-                    onError={(e) => {
-                      e.target.src = '/default-avatar.png';
-                    }}
-                  />
-                  <div className="live-stream-user-info">
-                    <h3 className="live-stream-username">{stream.username}</h3>
-                    <p className="live-stream-title">{stream.title}</p>
+                <div className="live-stream-info">
+                  <div className="live-stream-user">
+                    <img className="live-stream-avatar" src={resolveUrl(stream.profilePicture || '/default-avatar.png')} alt={stream.username} onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+                    <div className="live-stream-user-info">
+                      <h3 className="live-stream-username">{stream.username}</h3>
+                      <p className="live-stream-title">{stream.title}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
