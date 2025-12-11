@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,27 +10,49 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = '/login' }) => {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
+  const [timedOut, setTimedOut] = useState(false);
 
   // Check if there's a cached user in localStorage for instant access
   const hasCachedUser = React.useMemo(() => {
     try {
       const savedUser = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
-      // User is considered cached if we have both user data and token
-      return (!!savedUser && savedUser !== 'null' && savedUser !== 'undefined') || !!token;
+      return !!savedUser && savedUser !== 'null' && savedUser !== 'undefined';
     } catch {
       return false;
     }
   }, []);
 
-  // PRIORITY 1: If we have a cached user OR a user from context, render children immediately
-  // This ensures page stays on refresh
-  if (hasCachedUser || user || isAuthenticated) {
+  // Timeout after 2 seconds - don't wait forever
+  useEffect(() => {
+    // If we have cached user, don't even start the timeout
+    if (hasCachedUser || user) {
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      if (loading && !user && !hasCachedUser) {
+        setTimedOut(true);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [loading, user, hasCachedUser]);
+
+  // If we have a cached user OR a user from context, render children immediately
+  if (hasCachedUser || user) {
     return children;
   }
 
-  // PRIORITY 2: Still loading - show brief loading spinner
-  if (loading) {
+  // If timed out and still loading with no user, redirect to login
+  if (timedOut && loading && !user) {
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
+  // Show brief loading only if no cached user - with very short timeout
+  if (loading && !timedOut && !hasCachedUser) {
+    // For admin routes, don't show loading - render immediately
+    if (location.pathname.startsWith('/admin')) {
+      return children; // Render immediately for admin routes
+    }
     return (
       <div style={{
         display: 'flex',
@@ -56,8 +78,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
     );
   }
 
-  // PRIORITY 3: Not authenticated and no cached user - redirect to login
-  return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  // Not authenticated and no cached user - redirect to login
+  if (!isAuthenticated && !user && !hasCachedUser) {
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

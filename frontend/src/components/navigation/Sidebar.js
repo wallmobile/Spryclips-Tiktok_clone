@@ -124,13 +124,13 @@ const Sidebar = () => {
       )}
 
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="logo">
-            TikTok
-          </div>
-        </div>
+            <div className="sidebar-header">
+              <div className="logo">
+                TikTok
+              </div>
+            </div>
 
-        <nav className="sidebar-nav">
+            <nav className="sidebar-nav">
           {navItems.map(item => (
             <div
               key={item.id}

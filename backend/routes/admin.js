@@ -298,6 +298,7 @@ router.patch('/users/:id/profile', async (req, res) => {
     const { username, email, phone, displayName, bio, avatar, website } = req.body;
     
     const updateData = {};
+<<<<<<< HEAD
     
     // Validate username if provided
     if (username !== undefined && username !== null) {
@@ -317,6 +318,9 @@ router.patch('/users/:id/profile', async (req, res) => {
       updateData.username = trimmedUsername.toLowerCase();
     }
     
+=======
+    if (username) updateData.username = username;
+>>>>>>> origin/main
     if (email) updateData.email = email;
     if (phone !== undefined) updateData.phone = phone;
     

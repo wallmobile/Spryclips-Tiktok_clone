@@ -107,6 +107,7 @@ const issueAuthSuccess = async ({
       console.warn('⚠️ Continuing without refresh token...');
     }
 
+<<<<<<< HEAD
     // Create Session entry for tracking (non-blocking, production-safe)
     // This runs in background and won't block login response
     setImmediate(async () => {
@@ -165,6 +166,57 @@ const issueAuthSuccess = async ({
         }
       }
     });
+=======
+    // Create Session entry for tracking
+    try {
+      const userAgent = req.get('user-agent') || '';
+      let device = 'Unknown';
+      let browser = 'Unknown';
+      let os = 'Unknown';
+      
+      // Simple device detection from user agent
+      if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+        device = 'Mobile';
+      } else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) {
+        device = 'Tablet';
+      } else {
+        device = 'Desktop';
+      }
+      
+      if (userAgent.includes('Chrome')) browser = 'Chrome';
+      else if (userAgent.includes('Firefox')) browser = 'Firefox';
+      else if (userAgent.includes('Safari')) browser = 'Safari';
+      else if (userAgent.includes('Edge')) browser = 'Edge';
+      
+      if (userAgent.includes('Windows')) os = 'Windows';
+      else if (userAgent.includes('Mac')) os = 'macOS';
+      else if (userAgent.includes('Linux')) os = 'Linux';
+      else if (userAgent.includes('Android')) os = 'Android';
+      else if (userAgent.includes('iOS') || userAgent.includes('iPhone')) os = 'iOS';
+      
+      const session = new Session({
+        user: user._id,
+        token: accessToken,
+        refreshToken: refreshTokenValue,
+        ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
+        userAgent: userAgent,
+        device: device,
+        browser: browser,
+        os: os,
+        location: 'Unknown', // Can be enhanced with IP geolocation
+        isActive: true,
+        lastActivity: new Date(),
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days (matches token expiry)
+      });
+      await session.save();
+      console.log('✅ Session created for tracking');
+    } catch (sessionError) {
+      console.error('⚠️ Failed to create session:', sessionError.message);
+      console.error('Session error details:', sessionError);
+      console.error('Session error stack:', sessionError.stack);
+      // Don't fail login if session creation fails - this is optional tracking
+    }
+>>>>>>> origin/main
 
     const cookieOptions = getCookieOptions();
 

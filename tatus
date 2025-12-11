@@ -1,0 +1,5 @@
+[33m095023a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Merge Admin-Testing changes into main: Update routes, components, configs, and socket implementation
+[33m879a6e1[m Merge branch 'main' of https://github.com/wallmobile/Tiktok_clone
+[33mbb0ea57[m Add latest features with full backend integration:
+[33m8ae7552[m Add latest features: Business Tools, Ad Manager, Product Catalog, Business Messaging, Activity Center, Manage Account, Delete Account with full backend integration
+[33mbad0c2b[m Production config update: Set API_URL to empty for Nginx proxy and UPLOADS_BASE_URL to spryclips.com - Added complete Business Tools, Ad Manager, Product Catalog, Business Messaging, Activity Center, Manage Account, Delete Account, and all backend integrations with database connectivity

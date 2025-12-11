@@ -1,3 +1,14 @@
+/**
+ * Axios Configuration
+ * 
+ * Recent Changes:
+ * - Enhanced API URL resolution with runtime config support
+ * - Added support for window.APP_CONFIG for dynamic API URL
+ * - Improved error handling and retry logic
+ * - Enhanced authentication token management
+ * - Added timeout configuration for slow connections
+ */
+
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { broadcastAxiosError, normalizeAxiosError } from '../utils/apiError';
 
@@ -28,7 +39,7 @@ const getAPIURL = (): string => {
     const origin = window.location.origin;
     // Development mode: use localhost:5000
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
-      return 'http://localhost:5000';
+      return 'https://spryclips.com';
     }
     // Production mode: use empty string (same origin, nginx proxies /api)
     return '';
@@ -47,7 +58,7 @@ const createClient = (overrides?: Partial<AxiosRequestConfig>) =>
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     },
-    timeout: 10000,
+    timeout: 30000, // Increased to 30 seconds for slow connections and backend processing
     maxRedirects: 3,
     validateStatus: (status) => status >= 200 && status < 300,
     withCredentials: true,
@@ -78,6 +89,19 @@ const processQueue = (error: unknown = null) => {
 api.interceptors.request.use(
   (config: RetryableRequestConfig) => {
     config.withCredentials = true;
+    // Attach access token from localStorage (if present) so auth works across refresh
+    try {
+      const token = typeof window !== 'undefined' ? window.localStorage.getItem('accessToken') : null;
+      if (token) {
+        config.headers = config.headers || {};
+        // Only set Authorization if not already present
+        if (!config.headers['Authorization'] && !config.headers['authorization']) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
     return config;
   },
   (requestError) => Promise.reject(requestError)
@@ -107,6 +131,17 @@ api.interceptors.response.use(
 
     // Suppress 404 errors to prevent noise - these are often non-critical
     const shouldSuppress404 = status === 404;
+    
+    // Suppress 408 timeout errors for analytics endpoints - handled locally
+    const isAnalyticsEndpoint = originalRequest?.url?.includes('/api/analytics');
+    const shouldSuppress408 = status === 408 && isAnalyticsEndpoint;
+    
+    // Suppress 400 "Invalid user ID" errors for follow endpoint - handled locally with validation
+    const isFollowEndpoint = originalRequest?.url?.includes('/api/users/') && originalRequest?.url?.includes('/follow');
+    const isInvalidUserIdError = status === 400 && isFollowEndpoint && 
+      (error?.response?.data?.message?.toLowerCase().includes('invalid user id') ||
+       error?.response?.data?.message?.toLowerCase().includes('invalid user'));
+    const shouldSuppress400Follow = isInvalidUserIdError;
 
     if (status === 401 && !originalRequest._retry && !isAuthRefresh && !isAuthVerify) {
       // Check if user has any stored auth data - if not, skip refresh attempt
@@ -150,8 +185,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Don't broadcast expected 401 errors for auth endpoints or 404 errors
-    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401 && !shouldSuppress404) {
+    // Don't broadcast expected 401 errors for auth endpoints, 404 errors, 408 analytics timeouts, or 400 invalid user ID for follow
+    if (isAxiosError(error) && !hasBeenBroadcast(error) && !shouldSuppress401 && !shouldSuppress404 && !shouldSuppress408 && !shouldSuppress400Follow) {
       broadcastAxiosError(error);
     }
 

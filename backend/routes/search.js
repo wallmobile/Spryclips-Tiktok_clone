@@ -521,7 +521,11 @@ router.get('/:query', async (req, res) => {
       const ensureAbsoluteUrl = (url) => {
         if (!url || typeof url !== 'string') return '';
         if (/^(https?:|data:|blob:)/i.test(url)) return url;
+<<<<<<< HEAD
         const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : `http://localhost:${process.env.PORT || 5000}`);
+=======
+        const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+>>>>>>> origin/main
         return `${baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
       };
 
