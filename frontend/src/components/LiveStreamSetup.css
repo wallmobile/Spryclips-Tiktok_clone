@@ -145,6 +145,16 @@
   box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
 }
 
+/* Reveal animation for preview when stream starts */
+.video-preview-container.has-stream {
+  animation: previewReveal 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes previewReveal {
+  from { transform: translateY(6px) scale(0.995); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 .preview-video {
   width: 100%;
   height: 100%;
@@ -302,6 +312,16 @@
   pointer-events: auto;
 }
 
+/* Fade/slide-in for preview controls */
+.video-preview-container.has-stream .preview-controls {
+  animation: controlsIn 360ms cubic-bezier(0.2,0.9,0.2,1) both;
+}
+
+@keyframes controlsIn {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .preview-control-btn {
   width: 48px;
   height: 48px;
@@ -410,11 +430,85 @@
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
 }
 
+/* Preview action buttons (Cancel + Go Live) shown under the preview area */
+.preview-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  align-items: center;
+}
+
+/* Animations for preview action area */
+.preview-actions.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 240ms ease, transform 240ms cubic-bezier(0.2,0.9,0.2,1);
+}
+
+.preview-actions.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 320ms ease, transform 320ms cubic-bezier(0.2,0.9,0.2,1);
+}
+
+.preview-actions .cancel-btn {
+  flex: 1 1 auto;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.preview-actions .go-live-btn {
+  flex: 0 0 220px;
+  padding: 12px 20px;
+  border-radius: 12px;
+}
+
+/* Subtle hover + gradient shift for Go Live button */
+.go-live-btn {
+  background-size: 200% 100%;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-position 400ms linear;
+}
+
+.go-live-btn:hover:not(:disabled) {
+  transform: translateY(-4px);
+  background-position: 100% 0;
+  box-shadow: 0 10px 30px rgba(255, 0, 80, 0.18);
+}
+
+.cancel-btn {
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.cancel-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+@media (max-width: 768px) {
+  .preview-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .preview-actions .go-live-btn {
+    width: 100% !important;
+    flex: none;
+  }
+
+  .preview-actions .cancel-btn {
+    width: 100% !important;
+    flex: none;
+  }
+}
+
 /* Setup Form */
 .setup-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .form-group {

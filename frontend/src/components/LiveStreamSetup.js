@@ -316,6 +316,29 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
                 Stop Preview & Close Camera
               </button>
             )}
+            {/* Action Buttons placed under preview as requested */}
+            <div className={`preview-actions ${streamPreview ? 'visible' : 'hidden'}`}>
+              <button className="cancel-btn" onClick={handleClose}>
+                Cancel
+              </button>
+              <button
+                className="go-live-btn"
+                onClick={handleStartLive}
+                disabled={!streamTitle.trim() || isStarting || !streamPreview}
+              >
+                {isStarting ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-video"></i>
+                    Go Live
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Setup Form */}
@@ -412,29 +435,6 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
             </div>
           </div>
 
-          </div>
-          {/* Action Buttons */}
-          <div className="setup-actions">
-            <button className="cancel-btn" onClick={handleClose}>
-              Cancel
-            </button>
-            <button
-              className="go-live-btn"
-              onClick={handleStartLive}
-              disabled={!streamTitle.trim() || isStarting || !streamPreview}
-            >
-              {isStarting ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin"></i>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-video"></i>
-                  Go Live
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
