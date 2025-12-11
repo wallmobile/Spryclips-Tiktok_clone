@@ -40,3 +40,23 @@ export const updateExperiencePreferences = async (payload) => {
   return response.data;
 };
 
+export const createSupportTicket = async (ticketData) => {
+  const response = await api.post('/api/more/support/tickets', ticketData);
+  return response.data;
+};
+
+export const getUserTickets = async () => {
+  const response = await api.get('/api/more/support/tickets');
+  return response.data;
+};
+
+export const getTicketDetails = async (ticketId) => {
+  const response = await api.get(`/api/more/support/tickets/${ticketId}`);
+  return response.data;
+};
+
+export const sendTicketMessage = async (ticketId, message) => {
+  const response = await api.post(`/api/more/support/tickets/${ticketId}/message`, { message });
+  return response.data;
+};
+

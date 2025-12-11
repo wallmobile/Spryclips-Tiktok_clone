@@ -57,10 +57,28 @@ router.get('/', asyncHandler(async (req, res) => {
     cache.delete(cacheKey);
   }
 
+  // Filter to only show videos from spryclips server
+  // Exclude videos with external URLs (YouTube, Vimeo, etc.)
+  // Allow: spryclips.com, localhost, and relative paths
+  const videoQuery = {
+    status: 'ready',
+    isPrivate: false,
+    $or: [
+      // Videos from spryclips.com
+      { url: { $regex: /spryclips\.com/i } },
+      // Videos from localhost (development)
+      { url: { $regex: /localhost|127\.0\.0\.1/i } },
+      // Relative paths (uploads/, processed/)
+      { url: { $regex: /^(uploads|processed)\// } },
+      // Videos without http/https (relative paths)
+      { url: { $not: { $regex: /^https?:\/\//i } } }
+    ]
+  };
+
   const videos = await cache.getOrSet(
     cacheKey,
     async () =>
-      Video.find({ status: 'ready', isPrivate: false })
+      Video.find(videoQuery)
         .populate('user', 'username profile')
         .select('-processedVideos')
         .sort({ [sortBy]: sortOrder })
@@ -70,7 +88,7 @@ router.get('/', asyncHandler(async (req, res) => {
     60 // Reduced cache time to 1 minute for faster updates
   );
 
-  const total = await Video.countDocuments({ status: 'ready', isPrivate: false });
+  const total = await Video.countDocuments(videoQuery);
 
   sendPaginated(res, videos, { page, limit, total }, 'Videos retrieved successfully');
 }));
@@ -266,7 +284,7 @@ router.get('/:id/embed', asyncHandler(async (req, res) => {
     throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : 'http://localhost:3000');
   const embedUrl = `${frontendUrl}/embed/${video._id}`;
   const embedCode = `<iframe src="${embedUrl}" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
 

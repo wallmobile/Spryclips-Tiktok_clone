@@ -1,0 +1,549 @@
+/* Admin login page styles and animations */
+.admin-login-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff; /* Website white background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .admin-login-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-login-page {
+    padding: 12px;
+    padding-top: 15px;
+  }
+}
+
+.admin-login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.admin-login-shapes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.05;
+  animation: float 25s infinite ease-in-out;
+}
+
+.shape-1 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  top: -50px;
+  left: -50px;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  bottom: -80px;
+  right: -80px;
+  animation-delay: 8s;
+}
+
+.shape-3 {
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, #ec4899 0%, #f59e0b 100%);
+  top: 40%;
+  right: 15%;
+  animation-delay: 15s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(30px, -30px) rotate(120deg);
+  }
+  66% {
+    transform: translate(-20px, 20px) rotate(240deg);
+  }
+}
+
+.admin-login-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+}
+
+@media (max-width: 768px) {
+  .admin-login-wrapper {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-login-wrapper {
+    max-width: 100%;
+  }
+}
+
+.admin-login-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06),
+              0 0 0 1px rgba(224, 242, 254, 0.5);
+  border: 1px solid #E0F2FE; /* Website light blue border */
+}
+
+@media (max-width: 768px) {
+  .admin-login-card {
+    padding: 22px 24px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-login-card {
+    padding: 20px 18px;
+    border-radius: 12px;
+  }
+}
+
+.admin-login-logo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+  .admin-login-logo {
+    margin-bottom: 24px;
+  }
+}
+
+.admin-shield-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.25); /* TikTok pink shadow */
+}
+
+@media (max-width: 768px) {
+  .admin-shield-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-shield-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 10px;
+  }
+}
+
+.admin-login-title {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 25%, #25F4EE 75%, #25F4EE 100%); /* TikTok gradient text */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
+}
+
+@media (max-width: 768px) {
+  .admin-login-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-login-title {
+    font-size: 22px;
+    margin-bottom: 5px;
+  }
+}
+
+.admin-login-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .admin-login-subtitle {
+    font-size: 13px;
+  }
+}
+
+.admin-error-alert {
+  background: #fee2e2;
+  border: 1px solid #f87171;
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .admin-error-alert {
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-bottom: 18px;
+    gap: 8px;
+  }
+}
+
+.admin-error-alert svg {
+  flex-shrink: 0;
+}
+
+.admin-login-form-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .admin-login-form-main {
+    gap: 16px;
+  }
+}
+
+.admin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-input-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .admin-input-label {
+    font-size: 13px;
+    gap: 6px;
+  }
+}
+
+.admin-input-label svg {
+  color: #64748b;
+}
+
+.admin-input-field {
+  padding: 12px 14px;
+  border: 2px solid #E0F2FE; /* Website light blue border */
+  border-radius: 10px;
+  font-size: 14px;
+  background: #ffffff;
+  color: #0F172A; /* Website dark text */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+@media (max-width: 480px) {
+  .admin-input-field {
+    padding: 14px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 8px;
+  }
+}
+
+.admin-input-field:focus {
+  outline: none;
+  border-color: #2563EB; /* Website primary blue */
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.1); /* Website blue shadow */
+  transform: translateY(-1px);
+}
+
+.admin-input-field::placeholder {
+  color: #94a3b8;
+}
+
+.admin-input-field:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.admin-forgot-password-link {
+  margin-top: 6px;
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: #FF0050; /* TikTok pink */
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.admin-forgot-password-link:hover {
+  color: #FE2C55;
+  text-decoration: underline;
+}
+
+.admin-forgot-password-link:active {
+  color: #FF0050;
+}
+
+.admin-login-submit-btn {
+  margin-top: 2px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%); /* TikTok gradient */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(255, 0, 80, 0.3); /* TikTok pink shadow */
+  font-family: inherit;
+  min-height: 42px; /* Touch target size */
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .admin-login-submit-btn {
+    padding: 14px 20px;
+    font-size: 16px;
+    min-height: 48px; /* Larger touch target for mobile */
+    border-radius: 8px;
+  }
+}
+
+.admin-login-submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.admin-login-submit-btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.admin-login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.4);
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 40%, #25F4EE 100%);
+}
+
+.admin-login-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 0, 80, 0.3);
+}
+
+.admin-login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-login-submit-btn svg {
+  flex-shrink: 0;
+}
+
+.admin-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+.admin-login-footer-links {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .admin-forgot-password-link {
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  .admin-login-footer-links {
+    margin-top: 20px;
+    font-size: 12px;
+    gap: 8px;
+    flex-direction: column;
+  }
+  
+  .admin-footer-separator {
+    display: none;
+  }
+}
+
+.admin-footer-link {
+  color: #FF0050; /* TikTok pink */
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.admin-footer-link:hover {
+  color: #FE2C55;
+  text-decoration: underline;
+}
+
+.admin-footer-separator {
+  color: #cbd5e1;
+}
+
+.admin-login-security-note {
+  margin-top: 14px;
+  padding: 8px 12px;
+  background: #F9FAFB; /* Website light gray */
+  border-radius: 8px;
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #E0F2FE; /* Website light blue border */
+}
+
+@media (max-width: 480px) {
+  .admin-login-security-note {
+    margin-top: 18px;
+    padding: 10px 12px;
+    font-size: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+}
+
+.admin-login-security-note svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+/* Responsive - Hide shapes on all devices (clean website look) */
+.shape-1,
+.shape-2,
+.shape-3 {
+  display: none;
+}
+
+/* Tablet responsive */
+@media (min-width: 481px) and (max-width: 768px) {
+  .admin-login-wrapper {
+    max-width: 420px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .admin-login-page {
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+  
+  .admin-login-wrapper {
+    max-width: 100%;
+  }
+
+  .admin-login-card {
+    padding: 24px 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Very small devices */
+@media (max-width: 360px) {
+  .admin-login-card {
+    padding: 20px 16px;
+  }
+  
+  .admin-login-title {
+    font-size: 20px;
+  }
+  
+  .admin-shield-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .admin-login-page {
+    padding-top: 20px;
+    align-items: center;
+  }
+  
+  .admin-login-card {
+    padding: 24px 28px;
+  }
+}

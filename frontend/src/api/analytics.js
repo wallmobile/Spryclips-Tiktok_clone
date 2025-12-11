@@ -30,13 +30,13 @@ export const getVideoDemographics = async (videoId) => {
 
 // Get creator analytics overview
 export const getCreatorAnalytics = async () => {
-  const response = await api.get('/api/analytics/creator');
+  const response = await api.get('/api/analytics/creator', { timeout: 30000 }); // 30 seconds timeout
   return response.data;
 };
 
 // Get creator analytics summary
 export const getCreatorAnalyticsSummary = async () => {
-  const response = await api.get('/api/analytics/creator/summary');
+  const response = await api.get('/api/analytics/creator/summary', { timeout: 30000 }); // 30 seconds timeout
   return response.data;
 };
 

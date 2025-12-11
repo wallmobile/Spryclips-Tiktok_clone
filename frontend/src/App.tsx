@@ -5,11 +5,12 @@ import {
   Route,
   Routes,
   useLocation,
-  useNavigate
+  useNavigate,
+  useParams
 } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import './App.css';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -18,37 +19,45 @@ import { RecommendationProvider } from './context/RecommendationContext';
 import { getAllVideos } from './api/videos';
 import { videos as sampleVideos } from './data/sampleData';
 import ProtectedRoute from './routes/ProtectedRoute';
-import ErrorToasts from './components/ErrorToasts';
+import ErrorToasts from './components/common/ErrorToasts';
 
-const ForYouFeed = lazy(() => import('./components/ForYouFeed'));
-const Navbar = lazy(() => import('./components/Navbar'));
-const Sidebar = lazy(() => import('./components/Sidebar'));
-const SystemNotificationBanner = lazy(() => import('./components/SystemNotificationBanner'));
-const Explore = lazy(() => import('./components/Explore'));
-const Following = lazy(() => import('./components/Following'));
-const Live = lazy(() => import('./components/LIVE'));
-const LiveStreamWatch = lazy(() => import('./components/LiveStreamWatch'));
-const WatchLater = lazy(() => import('./components/WatchLater'));
-const PlaylistsManager = lazy(() => import('./components/PlaylistsManager'));
-const VideoQAInbox = lazy(() => import('./components/VideoQAInbox'));
-const UploadPage = lazy(() => import('./components/UploadPage'));
-const Profile = lazy(() => import('./components/Profile'));
-const More = lazy(() => import('./components/More'));
-const Login = lazy(() => import('./components/Login'));
-const Signup = lazy(() => import('./components/Signup'));
-const TikTokStudio = lazy(() => import('./components/TikTokStudio'));
-const EffectsLab = lazy(() => import('./components/EffectsLab'));
-const SellerDashboard = lazy(() => import('./components/SellerDashboard'));
-const GrowthToolsHub = lazy(() => import('./components/GrowthToolsHub'));
-const SupportCenter = lazy(() => import('./components/SupportCenter'));
-const BusinessSuite = lazy(() => import('./components/BusinessSuite'));
-const AdManager = lazy(() => import('./components/AdManager'));
-const ProductCatalog = lazy(() => import('./components/ProductCatalog'));
-const BusinessMessaging = lazy(() => import('./components/BusinessMessaging'));
-const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
-const NotificationSettings = lazy(() => import('./components/NotificationSettings'));
-const PrivacySettings = lazy(() => import('./components/PrivacySettings'));
-const AppSettings = lazy(() => import('./components/AppSettings'));
+const ForYouFeed = lazy(() => import('./components/video/ForYouFeed'));
+const Navbar = lazy(() => import('./components/navigation/Navbar'));
+const Sidebar = lazy(() => import('./components/navigation/Sidebar'));
+const SystemNotificationBanner = lazy(() => import('./components/common/SystemNotificationBanner'));
+const Explore = lazy(() => import('./components/feed/Explore'));
+const SearchPage = lazy(() => import('./components/feed/SearchPage'));
+const Following = lazy(() => import('./components/feed/Following'));
+// StoriesBar removed - Stories only show around profile picture
+const StoryViewer = lazy(() => import('./components/stories/StoryViewer'));
+const StoryCreator = lazy(() => import('./components/stories/StoryCreator'));
+const Live = lazy(() => import('./components/live/LIVE'));
+const WatchLater = lazy(() => import('./components/playlist/WatchLater'));
+const PlaylistsManager = lazy(() => import('./components/playlist/PlaylistsManager'));
+const VideoQAInbox = lazy(() => import('./components/video/VideoQAInbox'));
+const UploadPage = lazy(() => import('./components/upload/UploadPage'));
+const Profile = lazy(() => import('./components/profile/Profile'));
+const More = lazy(() => import('./components/common/More'));
+const Login = lazy(() => import('./components/auth/Login'));
+const Signup = lazy(() => import('./components/auth/Signup'));
+const TikTokStudio = lazy(() => import('./components/creator/TikTokStudio'));
+const EffectsLab = lazy(() => import('./components/creator/EffectsLab'));
+const SellerDashboard = lazy(() => import('./components/business/SellerDashboard'));
+const GrowthToolsHub = lazy(() => import('./components/creator/GrowthToolsHub'));
+const SupportCenter = lazy(() => import('./components/common/SupportCenter'));
+const BusinessSuite = lazy(() => import('./components/business/BusinessSuite'));
+const AdManager = lazy(() => import('./components/business/AdManager'));
+const ProductCatalog = lazy(() => import('./components/business/ProductCatalog'));
+const BusinessMessaging = lazy(() => import('./components/business/BusinessMessaging'));
+const NotificationCenter = lazy(() => import('./components/social/NotificationCenter'));
+const NotificationSettings = lazy(() => import('./components/settings/NotificationSettings'));
+const PrivacySettings = lazy(() => import('./components/settings/PrivacySettings'));
+const Balance = lazy(() => import('./components/common/Balance'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel') as Promise<{ default: React.ComponentType<any> }>);
+const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
+const PolicyCompliance = lazy(() => import('./components/admin/PolicyCompliance'));
+const SecuritySettings = lazy(() => import('./components/admin/SecuritySettings'));
+const NotificationsControl = lazy(() => import('./components/admin/NotificationsControl'));
 
 interface VideoUserProfile {
   avatar?: string;
@@ -189,9 +198,11 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const HomeFeed: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // Story viewer and creator removed from HomeFeed - only available from Profile
   const fallbackVideos = useMemo(
     () => sampleVideos.map((video) => normalizeVideoData(video as Record<string, unknown>, 'sample')),
     []
@@ -310,6 +321,8 @@ const HomeFeed: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  // Story handling removed - stories only accessible from Profile page
+
   if (error && feedItems.length === 0) {
     return (
       <div className="feed-error">
@@ -318,7 +331,12 @@ const HomeFeed: React.FC = () => {
     );
   }
 
-  return <ForYouFeed items={feedItems} />;
+  return (
+    <>
+      {/* StoriesBar removed - Stories only show around profile picture ring */}
+      <ForYouFeed items={feedItems} />
+    </>
+  );
 };
 
 const ExplorePage: React.FC = () => {
@@ -332,11 +350,17 @@ const FollowingPage: React.FC = () => {
 
 const LivePage: React.FC = () => {
   const navigate = useNavigate();
-  return <Live onClose={() => navigate('/')} />;
-};
-
-const LiveStreamWatchPage: React.FC = () => {
-  return <LiveStreamWatch />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools';
+  
+  return <Live onClose={() => {
+    if (fromCreatorTools) {
+      sessionStorage.setItem('openCreatorTools', 'true');
+      navigate('/profile', { replace: true, state: { openCreatorTools: true } });
+    } else {
+      navigate('/');
+    }
+  }} />;
 };
 
 const WatchLaterPage: React.FC = () => {
@@ -354,12 +378,35 @@ const VideoQAPage: React.FC = () => {
 
 const UploadPageRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <UploadPage onClose={() => navigate('/')} />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools' || 
+                           document.referrer.includes('profile') ||
+                           sessionStorage.getItem('fromCreatorTools') === 'true';
+  
+  // Store in sessionStorage when navigating from Creator Tools
+  React.useEffect(() => {
+    if (location.state?.from === 'creator-tools') {
+      sessionStorage.setItem('fromCreatorTools', 'true');
+    }
+  }, [location.state]);
+  
+  const handleClose = () => {
+    if (fromCreatorTools) {
+      sessionStorage.setItem('openCreatorTools', 'true');
+      navigate('/profile', { replace: true, state: { openCreatorTools: true } });
+    } else {
+      sessionStorage.removeItem('openCreatorTools');
+      navigate('/');
+    }
+  };
+  
+  return <UploadPage onClose={handleClose} />;
 };
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  return <Profile onClose={() => navigate('/')} />;
+  const { username } = useParams<{ username?: string }>();
+  return <Profile onClose={() => navigate('/')} username={username} />;
 };
 
 const MorePage: React.FC = () => {
@@ -369,12 +416,26 @@ const MorePage: React.FC = () => {
 
 const TikTokStudioPage: React.FC = () => {
   const navigate = useNavigate();
-  return <TikTokStudio onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  const fromCreatorTools = location.state?.from === 'creator-tools';
+  
+  return <TikTokStudio onClose={() => {
+    if (fromCreatorTools) {
+      navigate('/profile', { replace: true });
+    } else {
+      navigate('/profile');
+    }
+  }} />;
 };
 
 const EffectsLabPage: React.FC = () => {
   const navigate = useNavigate();
-  return <EffectsLab onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  
+  return <EffectsLab onClose={() => {
+    // Always navigate back to More page
+    navigate('/more', { replace: true });
+  }} />;
 };
 
 const SellerDashboardPage: React.FC = () => {
@@ -384,46 +445,96 @@ const SellerDashboardPage: React.FC = () => {
 
 const GrowthToolsPage: React.FC = () => {
   const navigate = useNavigate();
-  return <GrowthToolsHub onClose={() => navigate('/profile')} />;
+  return <GrowthToolsHub onClose={() => navigate('/more')} />;
 };
 
 const BusinessSuitePage: React.FC = () => {
   const navigate = useNavigate();
-  return <BusinessSuite onClose={() => navigate('/profile')} />;
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
+  return <BusinessSuite onClose={() => {
+    if (fromBusinessTools) {
+      sessionStorage.setItem('openBusinessTools', 'true');
+      navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+    } else {
+      navigate('/profile');
+    }
+  }} />;
 };
 
 const AdManagerPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <AdManager onClose={() => navigate('/profile')} />
+      <AdManager onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const ProductCatalogPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <ProductCatalog onClose={() => navigate('/profile')} />
+      <ProductCatalog onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const BusinessMessagingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBusinessTools = location.state?.from === 'business-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <BusinessMessaging onClose={() => navigate('/profile')} />
+      <BusinessMessaging onClose={() => {
+        if (fromBusinessTools) {
+          sessionStorage.setItem('openBusinessTools', 'true');
+          navigate('/profile', { replace: true, state: { openBusinessTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
 
 const ActivityCenterPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPersonalTools = location.state?.from === 'personal-tools';
+  
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <NotificationCenter onClose={() => navigate('/profile')} />
+      <NotificationCenter onClose={() => {
+        if (fromPersonalTools) {
+          sessionStorage.setItem('openPersonalTools', 'true');
+          navigate('/profile', { replace: true, state: { openPersonalTools: true } });
+        } else {
+          navigate('/profile');
+        }
+      }} />
     </Suspense>
   );
 };
@@ -446,43 +557,70 @@ const PrivacySettingsPage: React.FC = () => {
   );
 };
 
-const AppSettingsPage: React.FC = () => {
+const BalancePage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <AppSettings onClose={() => navigate('/profile')} />
+      <Balance onClose={() => navigate(-1)} />
     </Suspense>
   );
 };
 
 const SupportCenterPage: React.FC = () => {
   const navigate = useNavigate();
-  return <SupportCenter onClose={() => navigate('/profile')} />;
+  return <SupportCenter onClose={() => navigate('/more')} />;
 };
 
-const GoogleAuthCallback = lazy(() => import('./components/GoogleAuthCallback'));
+const GoogleAuthCallback = lazy(() => import('./components/auth/GoogleAuthCallback'));
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const from = ((location.state as { from?: Location })?.from?.pathname) || '/';
+  const hasRedirectedRef = React.useRef(false);
+  const isInitialMountRef = React.useRef(true);
 
+  // Redirect after login if user was trying to access a protected route
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    // Skip redirect on initial mount (refresh case) - let user stay on page
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
-  }, [isAuthenticated, from, navigate]);
+
+    // Redirect if user is authenticated AND not loading AND not on initial mount
+    // This handles both cases: already authenticated when page loads, and just logged in
+    if (!loading && isAuthenticated && !hasRedirectedRef.current && user) {
+      // Small delay to prevent race condition with state updates
+      const redirectTimer = setTimeout(() => {
+        if (!hasRedirectedRef.current && isAuthenticated) {
+          hasRedirectedRef.current = true;
+          // If user came from a specific page (like /admin), redirect there
+          if (from && from !== '/login' && from !== '/signup') {
+            navigate(from, { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isAuthenticated, loading, from, navigate, user]);
 
   const handleClose = () => {
-    // If there's a previous page in history, go back, otherwise go to home
-    if (window.history.length > 1 && from !== '/') {
+    // If user was redirected from a specific page (like /admin), redirect there after login
+    if (from && from !== '/login' && from !== '/signup') {
+      navigate(from, { replace: true });
+    } else if (window.history.length > 1 && from !== '/') {
       navigate(-1);
     } else {
       navigate('/', { replace: true });
     }
   };
 
+  // Always show login page - don't redirect automatically
   return (
     <div className="auth-page">
       <Suspense fallback={<LoadingSpinner />}>
@@ -498,19 +636,39 @@ const LoginPage: React.FC = () => {
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const from = ((location.state as { from?: Location })?.from?.pathname) || '/';
+  const hasRedirectedRef = React.useRef(false);
+  const isInitialMountRef = React.useRef(true);
 
+  // Allow user to stay on signup page even if authenticated - don't force redirect on refresh
+  // Only redirect if they explicitly navigate here while authenticated (not on initial mount/refresh)
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    // Skip redirect on initial mount (refresh case) - let user stay on page
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
-  }, [isAuthenticated, from, navigate]);
+
+    // Only redirect if user is authenticated AND not loading AND not on initial mount
+    if (!loading && isAuthenticated && !hasRedirectedRef.current && user) {
+      // Small delay to prevent race condition with state updates
+      const redirectTimer = setTimeout(() => {
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
+          navigate(from, { replace: true });
+        }
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isAuthenticated, loading, from, navigate, user]);
 
   const handleClose = () => {
     navigate(from, { replace: true });
   };
 
+  // Always show signup page - don't redirect automatically
   return (
     <div className="auth-page">
       <Suspense fallback={<LoadingSpinner />}>
@@ -525,15 +683,48 @@ const SignupPage: React.FC = () => {
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  const showHomeChrome = location.pathname === '/';
+  const { isAuthenticated } = useAuth();
+  // Show navbar ONLY on home page (For You page) - hide on all other pages including profile
+  // Only show on exact root path '/', hide everywhere else
+  const showNavbar = location.pathname === '/' || location.pathname === '';
+  
+  // Debug: Log pathname to verify (remove in production)
+  useEffect(() => {
+    console.log('[Navbar Visibility] Pathname:', location.pathname, 'Show Navbar:', showNavbar);
+  }, [location.pathname, showNavbar]);
+
+  // Add class to body when user is authenticated to remove navbar spacing
+  useEffect(() => {
+    if (isAuthenticated) {
+      document.body.classList.add('user-authenticated');
+    } else {
+      document.body.classList.remove('user-authenticated');
+    }
+    return () => {
+      document.body.classList.remove('user-authenticated');
+    };
+  }, [isAuthenticated]);
+
+  // Add class to body when on profile page to hide navbar
+  useEffect(() => {
+    const isProfilePage = location.pathname.startsWith('/profile') || location.pathname.startsWith('/user/');
+    if (isProfilePage) {
+      document.body.classList.add('profile-page-open');
+    } else {
+      document.body.classList.remove('profile-page-open');
+    }
+    return () => {
+      document.body.classList.remove('profile-page-open');
+    };
+  }, [location.pathname]);
 
   return (
-    <div className="app">
+    <div className={`app ${isAuthenticated ? 'user-authenticated' : ''}`}>
       <Suspense fallback={<LoadingSpinner />}>
         <Sidebar />
       </Suspense>
-      <div className="app-content">
-        {showHomeChrome && (
+      <div className={`app-content ${isAuthenticated ? 'user-authenticated' : ''}`}>
+        {showNavbar && (
           <>
             <Suspense fallback={<div style={{ height: '60px' }}></div>}>
               <Navbar />
@@ -559,8 +750,8 @@ const AppRoutes: React.FC = () => (
       {/* Public Routes - No Login Required */}
       <Route index element={<HomeFeed />} />
       <Route path="explore" element={<ExplorePage />} />
+      {/* Search route removed - search is now a modal */}
       <Route path="live" element={<LivePage />} />
-      <Route path="live/watch/:roomId" element={<LiveStreamWatchPage />} />
       <Route path="more" element={<MorePage />} />
       
       {/* Protected Routes - Login Required */}
@@ -576,6 +767,8 @@ const AppRoutes: React.FC = () => (
       <Route path="more/shop" element={<ProtectedRoute><SellerDashboardPage /></ProtectedRoute>} />
       <Route path="more/growth-tools" element={<ProtectedRoute><GrowthToolsPage /></ProtectedRoute>} />
       <Route path="more/support" element={<ProtectedRoute><SupportCenterPage /></ProtectedRoute>} />
+      <Route path="balance" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
+      <Route path="wallet" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
     </Route>
     {/* Full Screen Routes - No Sidebar */}
     <Route path="/more/business-suite" element={
@@ -601,8 +794,38 @@ const AppRoutes: React.FC = () => (
     <Route path="/more/privacy-settings" element={
       <ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>
     } />
-    <Route path="/more/app-settings" element={
-      <ProtectedRoute><AppSettingsPage /></ProtectedRoute>
+    <Route path="/admin/login" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <AdminLogin />
+      </Suspense>
+    } />
+    <Route path="/admin" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <ProtectedRoute>
+          <AdminPanel mode="page" onClose={() => window.history.back()} />
+        </ProtectedRoute>
+      </Suspense>
+    } />
+    <Route path="/admin/policy-compliance" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <ProtectedRoute>
+          <PolicyCompliance onClose={() => window.history.back()} />
+        </ProtectedRoute>
+      </Suspense>
+    } />
+    <Route path="/admin/security-settings" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <ProtectedRoute>
+          <SecuritySettings onClose={() => window.history.back()} />
+        </ProtectedRoute>
+      </Suspense>
+    } />
+    <Route path="/admin/notifications-control" element={
+      <Suspense fallback={<LoadingSpinner />}>
+        <ProtectedRoute>
+          <NotificationsControl onClose={() => window.history.back()} />
+        </ProtectedRoute>
+      </Suspense>
     } />
     {/* Auth Routes */}
     <Route path="/login" element={<LoginPage />} />

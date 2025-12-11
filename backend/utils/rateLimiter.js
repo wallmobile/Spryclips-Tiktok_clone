@@ -22,15 +22,25 @@ const generalLimiter =
   process.env.NODE_ENV === 'production'
     ? rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // Limit each IP to 100 requests per windowMs
+        max: 1000, // Increased to 1000 requests per 15 minutes in production
         message: {
           success: false,
           message: 'Too many requests, please try again later'
         },
         standardHeaders: true,
         legacyHeaders: false,
+        skip: (req) => {
+          // Skip forgot-password route completely (no rate limiting at all)
+          // Check multiple possible path formats (with/without /api prefix)
+          const path = req.path || req.originalUrl || '';
+          if (path.includes('/forgot-password') || path.includes('forgot-password')) {
+            return true;
+          }
+          // Skip rate limiting for localhost/development IPs even in production
+          return req.ip === '::1' || req.ip === '127.0.0.1' || req.ip?.includes('127.0.0.1') || req.ip?.includes('localhost');
+        }
       })
-    : (req, res, next) => next(); // In non-production environments, disable rate limiting for smoother local testing
+    : (req, res, next) => next(); // In non-production environments, disable rate limiting completely
 
 // Strict rate limiter for upload routes
 const uploadLimiter = rateLimit({
@@ -44,22 +54,48 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter for password reset
-const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Limit each IP to 3 password reset requests per hour
-  message: {
-    success: false,
-    message: 'Too many password reset attempts, please try again after 1 hour'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Rate limiter for password reset (sending code to email) - VERY LENIENT
+// Note: Database tracks failed attempts per email, so rate limiter is minimal
+const passwordResetLimiter = 
+  process.env.NODE_ENV === 'production'
+    ? rateLimit({
+        windowMs: 60 * 60 * 1000, // 1 hour
+        max: 50, // Allow 50 email requests per hour in production (very lenient)
+        message: {
+          success: false,
+          message: 'Too many password reset requests. Please try again after 1 hour.'
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        skipSuccessfulRequests: true, // Don't count successful email sends
+        skip: (req) => {
+          // Skip for localhost/development IPs even in production
+          return req.ip === '::1' || req.ip === '127.0.0.1' || req.ip?.includes('127.0.0.1') || req.ip?.includes('localhost');
+        }
+      })
+    : (req, res, next) => next(); // Skip rate limiting completely in development
+
+// Rate limiter for code verification attempts (15 attempts per 10 hours)
+const codeVerificationLimiter = 
+  process.env.NODE_ENV === 'production'
+    ? rateLimit({
+        windowMs: 10 * 60 * 60 * 1000, // 10 hours (maximum cooldown as requested)
+        max: 15, // Allow 15 code verification attempts per 10 hours
+        message: {
+          success: false,
+          message: 'Too many verification attempts. Please try again after 10 hours.'
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        skipSuccessfulRequests: true, // Don't count successful verifications
+      })
+    : (req, res, next) => next(); // Skip rate limiting in development (tracking handled by database)
 
 module.exports = {
   authLimiter,
   generalLimiter,
   uploadLimiter,
-  passwordResetLimiter
+  passwordResetLimiter,
+  codeVerificationLimiter
 };
 

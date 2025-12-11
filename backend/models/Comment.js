@@ -56,7 +56,23 @@ const commentSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  // Moderation fields
+  moderationStatus: {
+    type: String,
+    enum: ['approved', 'deleted', 'flagged', 'limited'],
+    default: 'approved'
+  },
+  isHidden: {
+    type: Boolean,
+    default: false
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: Date,
+  moderationNotes: String
 }, {
   timestamps: true
 });
@@ -66,6 +82,10 @@ commentSchema.index({ video: 1, createdAt: -1 });
 commentSchema.index({ user: 1, createdAt: -1 });
 commentSchema.index({ parentComment: 1 });
 commentSchema.index({ video: 1, user: 1 });
+// Moderation indexes
+commentSchema.index({ moderationStatus: 1, createdAt: -1 });
+commentSchema.index({ isHidden: 1 });
+commentSchema.index({ reviewedBy: 1, reviewedAt: -1 });
 
 module.exports = mongoose.model('Comment', commentSchema);
 

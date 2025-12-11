@@ -48,13 +48,25 @@ export const handleFollowRequest = async (requestId, action) => {
   return response.data;
 };
 
+// Follow/Unfollow user
+export const followUser = async (userId) => {
+  try {
+    const response = await api.post(`/api/users/${userId}/follow`);
+    return response.data;
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+};
+
 const usersApi = {
   updateProfile,
   blockUser,
   getBlockedUsers,
   pinVideo,
   getFollowRequests,
-  handleFollowRequest
+  handleFollowRequest,
+  followUser
 };
 
 export default usersApi;

@@ -24,6 +24,9 @@ dist/
 .env.test.local
 .env.production.local
 
+# Frontend config (each environment has its own)
+frontend/public/config.js
+
 # Uploaded files
 uploads/
 backend/uploads/

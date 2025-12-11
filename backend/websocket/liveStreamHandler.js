@@ -1,3 +1,16 @@
+/**
+ * WebRTC Live Stream WebSocket Handlers
+ * 
+ * Recent Changes:
+ * - Implemented WebRTC-based peer-to-peer live streaming
+ * - Added support for host, viewer, and guest roles
+ * - Enhanced room management with activeRooms Map
+ * - Added WebRTC signaling handlers (offer, answer, ICE candidates)
+ * - Implemented guest connection request/accept/reject flow
+ * - Added real-time chat and reaction features
+ * - Improved disconnect handling and cleanup
+ */
+
 const LiveStream = require('../models/LiveStream');
 const User = require('../models/User');
 const LiveChat = require('../models/LiveChat');
@@ -25,24 +38,27 @@ const initializeLiveStreamHandlers = (io) => {
     // ==================== JOIN LIVE ROOM ====================
     socket.on('live:join', async (data) => {
       try {
-        const { roomId, role } = data; // role: 'host', 'viewer', 'guest'
-        
-        if (!roomId) {
+        const { roomId: providedRoomId, role } = data; // role: 'host', 'viewer', 'guest'
+
+        if (!providedRoomId) {
           return socket.emit('live:error', { message: 'Room ID is required' });
         }
 
+        // Accept either the Mongo _id or the public roomId field. Find the live stream by either.
         const liveStream = await LiveStream.findOne({ 
-          _id: roomId,
-          status: 'live' 
+          $or: [ { _id: providedRoomId }, { roomId: providedRoomId } ],
+          status: 'live'
         }).populate('streamer', 'username profile');
 
         if (!liveStream) {
           return socket.emit('live:error', { message: 'Live stream not found or not active' });
         }
 
-        // Initialize room if it doesn't exist
-        if (!activeRooms.has(roomId)) {
-          activeRooms.set(roomId, {
+        const canonicalRoomId = liveStream._id.toString();
+
+        // Initialize room if it doesn't exist (keyed by canonical Mongo _id)
+        if (!activeRooms.has(canonicalRoomId)) {
+          activeRooms.set(canonicalRoomId, {
             host: null,
             viewers: new Set(),
             guests: new Map(),
@@ -50,37 +66,37 @@ const initializeLiveStreamHandlers = (io) => {
           });
         }
 
-        const room = activeRooms.get(roomId);
+        const room = activeRooms.get(canonicalRoomId);
 
         // Handle different roles
         if (role === 'host') {
           // Verify host ownership
-          if (liveStream.streamer._id.toString() !== socket.userId) {
+          if (socket.userId && liveStream.streamer._id.toString() !== socket.userId) {
             return socket.emit('live:error', { message: 'Not authorized as host' });
           }
           room.host = socket.id;
-          socket.join(`live:${roomId}:host`);
-          socket.emit('live:joined', { roomId, role: 'host' });
-          
+          socket.join(`live:${canonicalRoomId}:host`);
+          socket.emit('live:joined', { roomId: canonicalRoomId, role: 'host' });
+
           // Notify all viewers that host is online
-          ioInstance.to(`live:${roomId}:viewers`).emit('live:host-online', { roomId });
+          ioInstance.to(`live:${canonicalRoomId}:viewers`).emit('live:host-online', { roomId: canonicalRoomId });
         } else if (role === 'viewer') {
           room.viewers.add(socket.id);
-          socket.join(`live:${roomId}:viewers`);
+          socket.join(`live:${canonicalRoomId}:viewers`);
           
           // Update viewer count
           liveStream.viewers = room.viewers.size;
           await liveStream.save();
-          
+
           socket.emit('live:joined', { 
-            roomId, 
+            roomId: canonicalRoomId, 
             role: 'viewer',
             viewerCount: liveStream.viewers,
             hostSocketId: room.host // Send host socket ID to viewer
           });
-          
+
           // Broadcast updated viewer count to host
-          ioInstance.to(`live:${roomId}:host`).emit('live:viewer-count', { 
+          ioInstance.to(`live:${canonicalRoomId}:host`).emit('live:viewer-count', { 
             count: liveStream.viewers 
           });
 
@@ -88,6 +104,7 @@ const initializeLiveStreamHandlers = (io) => {
           if (room.host) {
             const hostSocket = ioInstance.sockets.sockets.get(room.host);
             if (hostSocket) {
+              console.log(`[LiveStream] Notifying host ${room.host} of viewer ${socket.id} (${socket.userId})`);
               hostSocket.emit('live:viewer-request', {
                 viewerId: socket.userId,
                 viewerSocketId: socket.id
@@ -131,7 +148,8 @@ const initializeLiveStreamHandlers = (io) => {
           if (room.host) {
             const hostSocket = ioInstance.sockets.sockets.get(room.host);
             if (hostSocket) {
-              hostSocket.emit('live:viewer-left', {
+              console.log(`[LiveStream] Notifying host ${room.host} of viewer ${socket.id} (${socket.userId})`);
+              hostSocket.emit('live:viewer-request', {
                 viewerId: socket.userId,
                 viewerSocketId: socket.id
               });
@@ -141,9 +159,9 @@ const initializeLiveStreamHandlers = (io) => {
           // Update viewer count
           const liveStream = await LiveStream.findById(roomId);
           if (liveStream) {
-            liveStream.viewers = Math.max(0, room.viewers.size);
-            await liveStream.save();
-            
+
+        // Store socket info using canonical room id
+        socket.roomId = canonicalRoomId;
             // Broadcast updated viewer count
             ioInstance.to(`live:${roomId}:host`).emit('live:viewer-count', { 
               count: liveStream.viewers 
@@ -183,12 +201,15 @@ const initializeLiveStreamHandlers = (io) => {
 
         // Forward offer to target (host or guest)
         const targetSocket = ioInstance.sockets.sockets.get(targetId);
+        console.log(`[WebRTC] Offer from ${socket.id} -> target ${targetId} (room ${roomId})`);
         if (targetSocket) {
           targetSocket.emit('webrtc:offer', {
             offer,
             fromId: socket.id,
             fromUserId: socket.userId
           });
+        } else {
+          console.warn('[WebRTC] Target socket not found for offer:', targetId);
         }
       } catch (error) {
         console.error('[WebRTC] Error handling offer:', error);
@@ -208,12 +229,15 @@ const initializeLiveStreamHandlers = (io) => {
 
         // Forward answer to target
         const targetSocket = ioInstance.sockets.sockets.get(targetId);
+        console.log(`[WebRTC] Answer from ${socket.id} -> target ${targetId} (room ${roomId})`);
         if (targetSocket) {
           targetSocket.emit('webrtc:answer', {
             answer,
             fromId: socket.id,
             fromUserId: socket.userId
           });
+        } else {
+          console.warn('[WebRTC] Target socket not found for answer:', targetId);
         }
       } catch (error) {
         console.error('[WebRTC] Error handling answer:', error);
@@ -233,12 +257,15 @@ const initializeLiveStreamHandlers = (io) => {
 
         // Forward ICE candidate to target
         const targetSocket = ioInstance.sockets.sockets.get(targetId);
+        console.log(`[WebRTC] ICE from ${socket.id} -> target ${targetId} (room ${roomId})`);
         if (targetSocket) {
           targetSocket.emit('webrtc:ice-candidate', {
             candidate,
             fromId: socket.id,
             fromUserId: socket.userId
           });
+        } else {
+          console.warn('[WebRTC] Target socket not found for ICE candidate:', targetId);
         }
       } catch (error) {
         console.error('[WebRTC] Error handling ICE candidate:', error);

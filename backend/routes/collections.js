@@ -30,7 +30,7 @@ const ensureAbsoluteUrl = (url) => {
     return trimmed;
   }
   // Make relative URL absolute
-  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : `http://localhost:${process.env.PORT || 5000}`);
   const normalizedBase = baseUrl.replace(/\/+$/, '');
   const normalizedPath = trimmed.replace(/^\/+/, '');
   return `${normalizedBase}/${normalizedPath}`;
@@ -41,13 +41,25 @@ const populateWatchLaterEntries = async (userDoc) => {
     return [];
   }
 
+  // Get raw watchLater array length for logging
+  const rawCount = userDoc.watchLater?.length || 0;
+  console.log(`[Watch Later] User ${userDoc._id} has ${rawCount} raw entries in watchLater array`);
+
   await userDoc.populate({
     path: 'watchLater.video',
-    select: 'thumbnail description url duration createdAt user processedUrl transcoded',
+    select: 'thumbnail description url duration createdAt user processedUrl transcoded status isPrivate',
     populate: { path: 'user', select: 'username profile' }
   });
 
-  return (userDoc.watchLater || [])
+  const entries = (userDoc.watchLater || [])
+    .map((entry, index) => {
+      // Log entries that don't have video populated
+      if (!entry?.video) {
+        console.warn(`[Watch Later] Entry ${index} has no video (videoId: ${entry?.video})`);
+        return null;
+      }
+      return entry;
+    })
     .filter((entry) => Boolean(entry?.video))
     .sort(
       (a, b) =>
@@ -55,6 +67,10 @@ const populateWatchLaterEntries = async (userDoc) => {
     )
     .map((entry) => {
       const video = toPlainObject(entry.video);
+      if (!video) {
+        return null;
+      }
+      
       if (video?.user) {
         video.user = toPlainObject(video.user);
       }
@@ -73,7 +89,11 @@ const populateWatchLaterEntries = async (userDoc) => {
         video,
         addedAt: entry?.addedAt || entry?.createdAt || new Date().toISOString()
       };
-    });
+    })
+    .filter(Boolean); // Remove any null entries
+    
+  console.log(`[Watch Later] After filtering, ${entries.length} valid entries remain`);
+  return entries;
 };
 
 const respondWithServerError = (res, error, fallbackMessage) => {
@@ -337,7 +357,15 @@ router.post('/watch-later', authMiddleware, async (req, res) => {
     await user.save();
 
     const watchLater = await populateWatchLaterEntries(user);
-    return res.json({ message: 'Added to Watch Later', watchLater });
+    
+    console.log(`[Watch Later] Added video ${videoId} to user ${req.user._id}'s watch later. Total: ${watchLater.length}`);
+    
+    return res.json({ 
+      success: true,
+      message: 'Added to Watch Later', 
+      watchLater: watchLater || [],
+      count: watchLater?.length || 0
+    });
   } catch (error) {
     return respondWithServerError(res, error, 'Unable to add video to Watch Later right now.');
   }
@@ -352,8 +380,18 @@ router.get('/watch-later', authMiddleware, async (req, res) => {
     }
 
     const watchLater = await populateWatchLaterEntries(user);
-    return res.json({ watchLater });
+    
+    // Log for debugging
+    console.log(`[Watch Later] User ${req.user._id} has ${watchLater.length} videos in watch later`);
+    
+    // Return in consistent format
+    return res.json({ 
+      success: true,
+      watchLater: watchLater || [],
+      count: watchLater?.length || 0
+    });
   } catch (error) {
+    console.error('[Watch Later] Error fetching watch later:', error);
     return respondWithServerError(res, error, 'Unable to load your Watch Later list right now.');
   }
 });

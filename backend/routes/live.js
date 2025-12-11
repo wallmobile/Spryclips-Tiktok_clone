@@ -1,3 +1,15 @@
+/**
+ * Live Stream Routes
+ * 
+ * Recent Changes:
+ * - Added roomId support for WebRTC-based live streaming
+ * - Enhanced notification system for live stream start events
+ * - Improved error handling and defensive programming for streamer population
+ * - Added room-based stream lookup endpoint for shareable links
+ * - Enhanced viewer count tracking and management
+ * - Improved gift system integration with transactions
+ */
+
 const express = require('express');
 const LiveStream = require('../models/LiveStream');
 const LiveChat = require('../models/LiveChat');
@@ -9,6 +21,7 @@ const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
 const crypto = require('crypto');
 const router = express.Router();
+const { emitNotification } = require('../socket/socketServer');
 
 // ==================== START LIVE STREAM ====================
 router.post('/start', authMiddleware, async (req, res) => {
@@ -53,6 +66,38 @@ router.post('/start', authMiddleware, async (req, res) => {
 
     await liveStream.save();
     await liveStream.populate('streamer', 'username profile');
+
+    // Notify followers that streamer started a live
+    try {
+      const streamer = await User.findById(userId).select('username followers');
+      if (streamer && Array.isArray(streamer.followers) && streamer.followers.length > 0) {
+        const notification = {
+          type: 'live_started',
+          stream: {
+            id: liveStream._id,
+            roomId: liveStream.roomId,
+            title: liveStream.title,
+            thumbnail: liveStream.thumbnail || ''
+          },
+          streamer: {
+            id: streamer._id,
+            username: streamer.username
+          },
+          createdAt: new Date()
+        };
+
+        streamer.followers.forEach(followerId => {
+          try {
+            emitNotification(followerId.toString(), notification);
+          } catch (err) {
+            // Non-fatal: continue notifying other followers
+            console.error('Failed to emit live_started notification to', followerId, err?.message || err);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error sending live-started notifications:', err);
+    }
 
     res.status(201).json({
       success: true,
@@ -137,18 +182,29 @@ router.get('/active', async (req, res) => {
       .sort({ viewers: -1, createdAt: -1 })
       .limit(50);
 
-    // Format response for frontend
-    const formattedStreams = activeStreams.map(stream => ({
-      id: stream._id,
-      roomId: stream.roomId,
-      username: stream.streamer.username,
-      profilePicture: stream.streamer.profile?.profilePicture || '',
-      title: stream.title,
-      thumbnail: stream.thumbnail || stream.streamer.profile?.profilePicture || '',
-      viewerCount: stream.viewers,
-      category: stream.category,
-      createdAt: stream.createdAt
-    }));
+    // Format response for frontend (defensive: streamer may be null)
+    const formattedStreams = activeStreams.map(stream => {
+      const streamer = stream.streamer || {};
+      const username = streamer.username || 'Unknown';
+      const profilePicture = streamer.profile?.profilePicture || '';
+      const thumbnail = stream.thumbnail || profilePicture || '';
+
+      if (!stream.streamer) {
+        console.warn(`Live stream ${stream._id} missing populated streamer field`);
+      }
+
+      return {
+        id: stream._id,
+        roomId: stream.roomId,
+        username,
+        profilePicture,
+        title: stream.title,
+        thumbnail,
+        viewerCount: stream.viewers,
+        category: stream.category,
+        createdAt: stream.createdAt
+      };
+    });
 
     res.json({
       success: true,

@@ -511,13 +511,27 @@ router.get('/:query', async (req, res) => {
         status: 'ready',
         isPrivate: false
       })
-        .populate('user', 'username profile.avatar profile.displayName')
+        .populate('user', 'username profile.avatar profile.displayName profile.followers')
         .sort({ views: -1, likes: -1 })
         .limit(limit)
-        .select('url thumbnail description hashtags likes comments shares views createdAt')
+        .select('url thumbnail description hashtags likes comments shares views createdAt user music category')
         .lean();
 
-      results.videos = videos;
+      // Ensure absolute URLs for videos
+      const ensureAbsoluteUrl = (url) => {
+        if (!url || typeof url !== 'string') return '';
+        if (/^(https?:|data:|blob:)/i.test(url)) return url;
+        const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : `http://localhost:${process.env.PORT || 5000}`);
+        return `${baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+      };
+
+      results.videos = videos.map(video => ({
+        ...video,
+        videoUrl: ensureAbsoluteUrl(video.url || video.videoUrl || ''),
+        thumbnail: ensureAbsoluteUrl(video.thumbnail || ''),
+        _id: video._id,
+        id: video._id
+      }));
     }
 
     // Search Users

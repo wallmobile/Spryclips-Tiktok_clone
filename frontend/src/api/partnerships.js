@@ -2,13 +2,13 @@ import api from '../config/axios';
 
 // Get all partnerships for current user
 export const getPartnerships = async () => {
-  const response = await api.get('/api/partnerships');
+  const response = await api.get('/api/partnerships', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 
 // Get partnership statistics
 export const getPartnershipStats = async () => {
-  const response = await api.get('/api/partnerships/stats');
+  const response = await api.get('/api/partnerships/stats', { timeout: 20000 }); // 20 seconds
   return response.data;
 };
 

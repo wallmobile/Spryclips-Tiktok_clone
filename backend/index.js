@@ -66,12 +66,19 @@ const validateEnvironment = () => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET is missing from .env file!');
+    console.error('💡 Please add JWT_SECRET=your-random-secret-string to .env file');
     if (isProduction) {
       missingVars.push('JWT_SECRET');
     } else {
-      process.env.JWT_SECRET = 'dev-secret-key-change-me';
-      console.warn('JWT_SECRET not configured. Falling back to a development-only default value.');
+      // Generate a random secret for development
+      const randomSecret = require('crypto').randomBytes(32).toString('hex');
+      process.env.JWT_SECRET = randomSecret;
+      console.warn('⚠️ JWT_SECRET not configured. Using temporary development secret.');
+      console.warn('💡 Add JWT_SECRET to .env file for persistent configuration.');
     }
+  } else {
+    console.log('✅ JWT_SECRET: Configured');
   }
 
   if (!process.env.MONGODB_URI) {
@@ -352,6 +359,8 @@ app.use('/api/effects', require('./routes/effects'));
 app.use('/api/video-qa', require('./routes/video-qa'));
 app.use('/api/collaborations', require('./routes/collaborations'));
 app.use('/api/more', require('./routes/more'));
+app.use('/api/cdn-issues', require('./routes/cdn-issues'));
+app.use('/api/admin', require('./routes/admin'));
 
 // 404 handler
 const { AppError, sendErrorResponse, handleMongooseError, handleJWTError } = require('./utils/errorHandler');
