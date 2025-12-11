@@ -30,7 +30,16 @@ export const AuthProvider = ({ children }) => {
       const savedUser = localStorage.getItem('user');
       if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
         const parsed = JSON.parse(savedUser);
-        return parsed && parsed._id ? parsed : null;
+        // Normalize user object: ensure _id exists (use id if _id not present)
+        if (parsed && (parsed._id || parsed.id)) {
+          return {
+            ...parsed,
+            _id: parsed._id || parsed.id,
+            id: parsed.id || parsed._id,
+            role: parsed.role || 'user'
+          };
+        }
+        return null;
       }
       return null;
     } catch {
@@ -104,8 +113,15 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/api/auth/verify');
       clearTimeout(timeoutId);
       if (isMountedRef.current && response?.data?.user) {
-        setUser(response.data.user);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Normalize user object: ensure _id exists (use id if _id not present)
+        const userData = {
+          ...response.data.user,
+          _id: response.data.user._id || response.data.user.id,
+          id: response.data.user.id || response.data.user._id,
+          role: response.data.user.role || 'user'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
       }
     } catch (error) {
       clearTimeout(timeoutId);
@@ -187,9 +203,16 @@ export const AuthProvider = ({ children }) => {
       console.log('Attempting login with email:', email);
       const response = await api.post('/api/auth/login', { email, password });
       if (response?.data?.user) {
-        setUser(response.data.user);
+        // Normalize user object: ensure _id exists (use id if _id not present)
+        const userData = {
+          ...response.data.user,
+          _id: response.data.user._id || response.data.user.id,
+          id: response.data.user.id || response.data.user._id,
+          role: response.data.user.role || 'user'
+        };
+        setUser(userData);
         // Save user to localStorage for persistence across refreshes
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(userData));
         // Save access token (if returned) so we can attach it to Authorization header
         const token = response.data.token || response.data.tokens?.accessToken || response.data.accessToken;
         if (token) {

@@ -37,7 +37,7 @@ const getAPIURL = (): string => {
   // Priority 3: Auto-detect based on current location
   if (isBrowser && window.location?.origin) {
     const origin = window.location.origin;
-    // Development mode: use localhost:5000
+    // If running on localhost, use production API
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(origin)) {
       return 'https://spryclips.com';
     }
