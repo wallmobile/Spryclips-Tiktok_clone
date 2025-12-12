@@ -131,7 +131,7 @@ If something goes wrong:
 
 3. **Or manually reset admin user using MongoDB**:
    ```bash
-   mongosh "mongodb+srv://admin:tR0hD8ODPxICuafh@cluster0.q6qrciv.mongodb.net/tiktok-clone"
+   mongosh "YOUR_MONGODB_URI_FROM_ENV"
    ```
    
    Then in MongoDB shell:
@@ -139,6 +139,10 @@ If something goes wrong:
    use tiktok-clone
    db.users.findOne({ email: "admin@spryclips.com" })
    // Manually update if needed
+   db.users.updateOne(
+     { email: "admin@spryclips.com" },
+     { $set: { failedLoginAttempts: 0, lockUntil: null, accountStatus: "active" }}
+   )
    ```
 
 ## Troubleshooting
@@ -159,8 +163,9 @@ NODE_ENV=production node scripts/verifyAdminLogin.js
 ### Issue: MongoDB connection failed
 **Verify**:
 - MongoDB Atlas is accessible
-- Credentials are correct in `.env.production`
+- Credentials are correct in `.env.production` (check MONGODB_URI)
 - Network firewall allows connection
+- IP address is whitelisted in MongoDB Atlas
 
 ### Issue: Changes not taking effect
 **Clear cache and restart**:
@@ -193,10 +198,15 @@ pm2 monit
 Ensure these are set in `.env.production`:
 ```env
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://admin:tR0hD8ODPxICuafh@cluster0.q6qrciv.mongodb.net/tiktok-clone?retryWrites=true&w=majority&appName=Cluster0
-JWT_SECRET=spryclips-production-secret-key-change-this-random-string-xyz123
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@cluster0.xxxxx.mongodb.net/tiktok-clone?retryWrites=true&w=majority
+JWT_SECRET=your-secure-random-secret-key
 PORT=5000
 FRONTEND_URL=https://spryclips.com
+
+# Optional: Override default admin credentials
+ADMIN_EMAIL=admin@spryclips.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=YourSecureAdminPassword
 ```
 
 ## Post-Deployment Testing

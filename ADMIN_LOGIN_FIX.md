@@ -81,9 +81,18 @@ node backend/scripts/verifyAdminLogin.js
 
 ## Admin Credentials
 
+**Default credentials** (can be overridden with environment variables):
+
 **Email**: `admin@spryclips.com`  
 **Password**: `Admin@123456`  
 **Role**: `admin`
+
+**Security Note**: For production, it's recommended to set custom admin credentials using environment variables:
+```env
+ADMIN_EMAIL=your-admin@email.com
+ADMIN_USERNAME=youradmin
+ADMIN_PASSWORD=YourSecurePassword123!
+```
 
 ## How to Verify the Fix
 
@@ -171,8 +180,9 @@ Ensures `authProvider` is set to `'local'` (not 'google', 'facebook', or 'oidc')
 ### Issue: Script can't connect to MongoDB
 **Solution**: Ensure MongoDB URI is correct in `.env.production`:
 ```env
-MONGODB_URI=mongodb+srv://admin:tR0hD8ODPxICuafh@cluster0.q6qrciv.mongodb.net/tiktok-clone?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@your-cluster.mongodb.net/tiktok-clone?retryWrites=true&w=majority
 ```
+Replace `USERNAME`, `PASSWORD`, and `your-cluster` with your actual MongoDB Atlas credentials.
 
 ### Issue: Admin user still can't login
 **Solution**: Run the diagnostic script:

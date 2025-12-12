@@ -1,8 +1,10 @@
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
-const ADMIN_EMAIL = 'admin@spryclips.com';
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'Admin@123456';
+// Admin credentials from environment or defaults
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@spryclips.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123456';
 
 /**
  * Ensures that an admin user exists in the database
@@ -52,10 +54,29 @@ async function ensureAdminUser() {
         needsUpdate = true;
       }
       
-      // Always reset password to ensure it's correct
-      // This is safe because we're only doing this for the specific admin account
-      adminUser.password = ADMIN_PASSWORD;
-      needsUpdate = true;
+      // Only reset password if it doesn't match (avoid overwriting intentional password changes)
+      // Test if current password is correct
+      let passwordNeedsReset = false;
+      if (adminUser.password) {
+        try {
+          const isPasswordCorrect = await bcrypt.compare(ADMIN_PASSWORD, adminUser.password);
+          if (!isPasswordCorrect) {
+            passwordNeedsReset = true;
+          }
+        } catch (error) {
+          // If password comparison fails, reset it to be safe
+          passwordNeedsReset = true;
+        }
+      } else {
+        // No password set, needs reset
+        passwordNeedsReset = true;
+      }
+      
+      if (passwordNeedsReset) {
+        adminUser.password = ADMIN_PASSWORD;
+        needsUpdate = true;
+        console.log('🔑 Admin password has been reset to default');
+      }
       
       if (needsUpdate) {
         await adminUser.save();

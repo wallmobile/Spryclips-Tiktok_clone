@@ -78,9 +78,9 @@ async function verifyAdminLogin() {
 
     // Test password
     if (admin.password) {
-      console.log('\n🔐 Testing password...');
+      console.log('\n🔐 Testing default password...');
       const isMatch = await bcrypt.compare(TEST_PASSWORD, admin.password);
-      console.log(`   Password "${TEST_PASSWORD}": ${isMatch ? '✅ CORRECT' : '❌ WRONG'}`);
+      console.log(`   Default password match: ${isMatch ? '✅ CORRECT' : '❌ WRONG'}`);
       
       if (!isMatch) {
         console.log('\n⚠️  Password does NOT match!');
