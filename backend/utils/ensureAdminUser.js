@@ -89,7 +89,7 @@ async function ensureAdminUser() {
     
     console.log('✅ Admin user created successfully!');
     console.log(`📧 Email: ${ADMIN_EMAIL}`);
-    console.log(`🔑 Password: ${ADMIN_PASSWORD}`);
+    console.log('🔑 Password has been set (check ADMIN_LOGIN_FIX.md for credentials)');
     
     return adminUser;
   } catch (error) {

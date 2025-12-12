@@ -21,7 +21,9 @@ async function verifyAdminLogin() {
     }
 
     console.log('🔌 Connecting to MongoDB Atlas...');
-    console.log(`   URI: ${mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`);
+    // Mask password in URI for security
+    const maskedUri = mongoUri.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:****@');
+    console.log(`   URI: ${maskedUri}`);
     
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB Atlas\n');
@@ -53,9 +55,9 @@ async function verifyAdminLogin() {
       
       await newAdmin.save();
       console.log('✅ Admin user created successfully!\n');
-      console.log('📧 LOGIN CREDENTIALS:');
+      console.log('📧 ADMIN ACCOUNT DETAILS:');
       console.log(`   Email: ${ADMIN_EMAIL}`);
-      console.log(`   Password: ${TEST_PASSWORD}`);
+      console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)`);
       console.log(`   Role: admin\n`);
       
       await mongoose.disconnect();
@@ -96,14 +98,14 @@ async function verifyAdminLogin() {
         await admin.save();
         
         console.log('✅ Admin password reset successfully!');
-        console.log('\n📧 NEW LOGIN CREDENTIALS:');
+        console.log('\n📧 ADMIN ACCOUNT DETAILS:');
         console.log(`   Email: ${ADMIN_EMAIL}`);
-        console.log(`   Password: ${TEST_PASSWORD}`);
+        console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)`);
         console.log(`   Role: admin\n`);
       } else {
         console.log('\n✅ Admin login should work with these credentials:');
         console.log(`   Email: ${ADMIN_EMAIL}`);
-        console.log(`   Password: ${TEST_PASSWORD}\n`);
+        console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)\n`);
       }
     } else {
       console.log('\n❌ Admin user has NO password!');
@@ -121,9 +123,9 @@ async function verifyAdminLogin() {
       await admin.save();
       
       console.log('✅ Admin password set successfully!');
-      console.log('\n📧 LOGIN CREDENTIALS:');
+      console.log('\n📧 ADMIN ACCOUNT DETAILS:');
       console.log(`   Email: ${ADMIN_EMAIL}`);
-      console.log(`   Password: ${TEST_PASSWORD}\n`);
+      console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)\n`);
     }
 
     await mongoose.disconnect();

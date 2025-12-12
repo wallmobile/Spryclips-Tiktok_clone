@@ -45,7 +45,7 @@ async function checkAdminUser() {
       await newAdmin.save();
       console.log('✅ Admin user created!\n');
       console.log('📧 Email: admin@spryclips.com');
-      console.log('🔑 Password: Admin@123456\n');
+      console.log('🔑 Password: ******** (check ADMIN_LOGIN_FIX.md)\n');
     } else {
       console.log('✅ Admin user EXISTS:');
       console.log(`   Email: ${admin.email}`);
@@ -90,9 +90,9 @@ async function checkAdminUser() {
         console.log('✅ Admin password set successfully!');
       }
       
-      console.log(`\n📧 LOGIN CREDENTIALS:`);
+      console.log(`\n📧 ADMIN ACCOUNT:`);
       console.log(`   Email: admin@spryclips.com`);
-      console.log(`   Password: Admin@123456`);
+      console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)`);
     }
 
     await mongoose.disconnect();

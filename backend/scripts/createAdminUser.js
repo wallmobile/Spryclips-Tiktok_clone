@@ -49,10 +49,10 @@ async function createAdminUser() {
       await adminUser.save();
       
       console.log('\n✅ Updated existing user to admin with correct configuration');
-      console.log(`\n📧 ADMIN LOGIN CREDENTIALS:`);
+      console.log(`\n📧 ADMIN ACCOUNT DETAILS:`);
       console.log(`   Email: ${ADMIN_EMAIL}`);
       console.log(`   Username: ${ADMIN_USERNAME}`);
-      console.log(`   Password: ${ADMIN_PASSWORD}`);
+      console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)`);
       
       await mongoose.disconnect();
       return adminUser;
@@ -77,10 +77,10 @@ async function createAdminUser() {
     await adminUser.save();
     
     console.log('\n✅ Admin user created successfully!');
-    console.log(`\n📧 ADMIN LOGIN CREDENTIALS:`);
+    console.log(`\n📧 ADMIN ACCOUNT DETAILS:`);
     console.log(`   Email: ${ADMIN_EMAIL}`);
     console.log(`   Username: ${ADMIN_USERNAME}`);
-    console.log(`   Password: ${ADMIN_PASSWORD}`);
+    console.log(`   Password: ******** (check ADMIN_LOGIN_FIX.md)`);
 
     await mongoose.disconnect();
     return adminUser;
