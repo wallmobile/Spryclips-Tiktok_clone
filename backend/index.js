@@ -250,6 +250,12 @@ const connectDB = async () => {
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
     
+    // Ensure admin user exists (non-blocking)
+    const ensureAdminUser = require('./utils/ensureAdminUser');
+    ensureAdminUser().catch(err => {
+      console.warn('⚠️ Admin user initialization failed:', err.message);
+    });
+    
     // Seed sample data (non-blocking)
     seedSampleData().catch(err => {
       console.warn('⚠️ Sample data seeding failed:', err.message);
