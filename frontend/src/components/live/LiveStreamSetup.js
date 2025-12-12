@@ -22,6 +22,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
 
   const [streamTitle, setStreamTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('entertainment');
+  const [isCatOpen, setIsCatOpen] = useState(false);
   const [thumbnail, setThumbnail] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -43,6 +44,8 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     { id: 'lifestyle', label: 'Lifestyle', icon: '✨' },
     { id: 'travel', label: 'Travel', icon: '✈️' },
   ];
+
+  const selectedCat = categories.find((c) => c.id === selectedCategory) || categories[0];
 
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
@@ -231,191 +234,237 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
         </div>
 
         <div className="setup-content">
-          {/* Preview Section */}
-          <div className="preview-section">
-            <div className={`video-preview-container ${streamPreview ? 'has-stream' : ''}`}>
-              <video
-                ref={videoPreviewRef}
-                autoPlay
-                muted
-                playsInline
-                className="preview-video"
-              />
-              
-              {/* Camera Loading State */}
-              {isLoadingCamera && (
-                <div className="preview-loading">
-                  <div className="preview-loading-spinner"></div>
-                  <p>Accessing camera...</p>
-                </div>
-              )}
-              
-              {/* Camera Error State */}
-              {cameraError && !isLoadingCamera && (
-                <div className="preview-error">
-                  <i className="fa-solid fa-video-slash"></i>
-                  <p>{cameraError}</p>
-                  <button className="retry-btn" onClick={startPreview}>
-                    <i className="fa-solid fa-refresh"></i>
-                    Try Again
-                  </button>
-                </div>
-              )}
-              
-              {/* No Camera State */}
-              {!streamPreview && !isLoadingCamera && !cameraError && (
-                <div className="preview-placeholder">
-                  <i className="fa-solid fa-video"></i>
-                  <p>Click "Start Preview" to enable camera</p>
-                </div>
-              )}
-              
-              <div className="preview-overlay">
+          <div className="left-column">
+            {/* Preview Section */}
+            <div className="preview-section">
+              <div className={`video-preview-container ${streamPreview ? 'has-stream' : ''}`}>
+                <video
+                  ref={videoPreviewRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="preview-video"
+                />
+
+                {isLoadingCamera && (
+                  <div className="preview-loading">
+                    <div className="preview-loading-spinner"></div>
+                    <p>Accessing camera...</p>
+                  </div>
+                )}
+
+                {cameraError && !isLoadingCamera && (
+                  <div className="preview-error">
+                    <i className="fa-solid fa-video-slash"></i>
+                    <p>{cameraError}</p>
+                    <button className="retry-btn" onClick={startPreview}>
+                      <i className="fa-solid fa-refresh"></i>
+                      Try Again
+                    </button>
+                  </div>
+                )}
+
+                {!streamPreview && !isLoadingCamera && !cameraError && (
+                  <div className="preview-placeholder">
+                    <i className="fa-solid fa-video"></i>
+                    <p>Click "Start Preview" to enable camera</p>
+                  </div>
+                )}
+
+                <div className="preview-overlay" />
+
+                {streamPreview && (
+                  <div className="preview-controls">
+                    <button
+                      className={`preview-control-btn ${isCameraOn ? 'active' : 'inactive'}`}
+                      onClick={toggleCamera}
+                      title={isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+                    >
+                      <i className={`fa-solid ${isCameraOn ? 'fa-video' : 'fa-video-slash'}`}></i>
+                    </button>
+                    <button
+                      className={`preview-control-btn ${!isMicMuted ? 'active' : 'inactive'}`}
+                      onClick={toggleMicrophone}
+                      title={isMicMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+                    >
+                      <i className={`fa-solid ${isMicMuted ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
+                    </button>
+                  </div>
+                )}
               </div>
-              {streamPreview && (
-                <div className="preview-controls">
-                  <button
-                    className={`preview-control-btn ${isCameraOn ? 'active' : 'inactive'}`}
-                    onClick={toggleCamera}
-                    title={isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
-                  >
-                    <i className={`fa-solid ${isCameraOn ? 'fa-video' : 'fa-video-slash'}`}></i>
-                  </button>
-                  <button
-                    className={`preview-control-btn ${!isMicMuted ? 'active' : 'inactive'}`}
-                    onClick={toggleMicrophone}
-                    title={isMicMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-                  >
-                    <i className={`fa-solid ${isMicMuted ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
-                  </button>
-                </div>
+
+              {!streamPreview ? (
+                <button
+                  className="start-preview-btn"
+                  onClick={startPreview}
+                  disabled={isLoadingCamera}
+                >
+                  {isLoadingCamera ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      Accessing Camera...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-video"></i>
+                      Start Preview
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button className="stop-preview-btn" onClick={stopPreview}>
+                  <i className="fa-solid fa-stop"></i>
+                  Stop Preview & Close Camera
+                </button>
               )}
             </div>
-            {!streamPreview ? (
-              <button 
-                className="start-preview-btn" 
-                onClick={startPreview}
-                disabled={isLoadingCamera}
+
+            {/* Action Buttons placed directly under preview */}
+            <div className="setup-actions left-column-inline">
+              <button className="cancel-btn" onClick={handleClose}>
+                Cancel
+              </button>
+              <button
+                className="go-live-btn"
+                onClick={handleStartLive}
+                disabled={!streamTitle.trim() || isStarting || !streamPreview}
               >
-                {isLoadingCamera ? (
+                {isStarting ? (
                   <>
                     <i className="fa-solid fa-spinner fa-spin"></i>
-                    Accessing Camera...
+                    Starting...
                   </>
                 ) : (
                   <>
                     <i className="fa-solid fa-video"></i>
-                    Start Preview
+                    Go Live
                   </>
                 )}
               </button>
-            ) : (
-              <button className="stop-preview-btn" onClick={stopPreview}>
-                <i className="fa-solid fa-stop"></i>
-                Stop Preview & Close Camera
-              </button>
-            )}
+            </div>
+
           </div>
 
           {/* Setup Form */}
-          <div className="setup-form">
-            <div className="form-group">
-              <label>Stream Title *</label>
-              <input
-                type="text"
-                placeholder="What's your stream about?"
-                value={streamTitle}
-                onChange={(e) => setStreamTitle(e.target.value)}
-                maxLength={100}
-                className="title-input"
-              />
-              <span className="char-count">{streamTitle.length}/100</span>
-            </div>
-
-            <div className="form-group">
-              <label>Category</label>
-              <div className="category-grid">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(cat.id)}
-                  >
-                    <span className="category-icon">{cat.icon}</span>
-                    <span className="category-label">{cat.label}</span>
-                  </button>
-                ))}
+          <div className="right-column">
+            <div className="setup-form">
+              <div className="form-group">
+                <label>Stream Title *</label>
+                <input
+                  type="text"
+                  placeholder="What's your stream about?"
+                  value={streamTitle}
+                  onChange={(e) => setStreamTitle(e.target.value)}
+                  maxLength={100}
+                  className="title-input"
+                />
+                <span className="char-count">{streamTitle.length}/100</span>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Thumbnail (Optional)</label>
-              <div className="thumbnail-section">
-                {thumbnailPreview ? (
-                  <div className="thumbnail-preview-container">
-                    <img src={thumbnailPreview} alt="Thumbnail" className="thumbnail-preview" />
-                    {thumbnail && (
-                      <div className="thumbnail-meta">
-                        <span className="thumbnail-name">{thumbnail.name}</span>
-                        <span className="thumbnail-size">
-                          {(thumbnail.size / 1024).toFixed(0)} KB
-                        </span>
+              <div className="form-group">
+                <label>Category</label>
+                <div className="category-select-wrapper">
+                  <div
+                    className="category-dropdown"
+                    tabIndex={0}
+                    role="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={isCatOpen}
+                    onClick={() => setIsCatOpen(!isCatOpen)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIsCatOpen(!isCatOpen);
+                      } else if (e.key === 'Escape') {
+                        setIsCatOpen(false);
+                      }
+                    }}
+                  >
+                    <div className="category-display">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span className="category-icon-preview">{selectedCat.icon}</span>
+                        <span className="category-label-preview">{selectedCat.label}</span>
+                      </div>
+                      <i className={`fa-solid fa-chevron-${isCatOpen ? 'up' : 'down'}`} style={{ color: '#6B7280' }}></i>
+                    </div>
+
+                    {isCatOpen && (
+                      <div className="category-options" role="listbox">
+                        {categories.map((cat) => (
+                          <div
+                            key={cat.id}
+                            role="option"
+                            tabIndex={0}
+                            className={`category-option ${cat.id === selectedCategory ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedCategory(cat.id);
+                              setIsCatOpen(false);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedCategory(cat.id);
+                                setIsCatOpen(false);
+                              }
+                            }}
+                          >
+                            <span className="category-icon">{cat.icon}</span>
+                            <span className="category-label">{cat.label}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
-                    <button
-                      className="remove-thumbnail-btn"
-                      onClick={() => {
-                        setThumbnail(null);
-                        setThumbnailPreview(null);
-                      }}
-                    >
-                      <i className="fa-solid fa-times"></i>
-                    </button>
                   </div>
-                ) : (
-                  <button
-                    className="upload-thumbnail-btn"
-                    onClick={() => thumbnailInputRef.current?.click()}
-                  >
-                    <i className="fa-solid fa-image"></i>
-                    <span>Upload Thumbnail</span>
-                  </button>
-                )}
-                <input
-                  ref={thumbnailInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleThumbnailChange}
-                  style={{ display: 'none' }}
-                />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Thumbnail (Optional)</label>
+                <div className="thumbnail-section">
+                  {thumbnailPreview ? (
+                    <div className="thumbnail-preview-container">
+                      <img src={thumbnailPreview} alt="Thumbnail" className="thumbnail-preview" />
+                      {thumbnail && (
+                        <div className="thumbnail-meta">
+                          <span className="thumbnail-name">{thumbnail.name}</span>
+                          <span className="thumbnail-size">
+                            {(thumbnail.size / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        className="remove-thumbnail-btn"
+                        onClick={() => {
+                          setThumbnail(null);
+                          setThumbnailPreview(null);
+                        }}
+                      >
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="upload-thumbnail-btn"
+                      onClick={() => thumbnailInputRef.current?.click()}
+                    >
+                      <i className="fa-solid fa-image"></i>
+                      <span>Upload Thumbnail</span>
+                    </button>
+                  )}
+                  <input
+                    ref={thumbnailInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    style={{ display: 'none' }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="setup-actions">
-            <button className="cancel-btn" onClick={handleClose}>
-              Cancel
-            </button>
-            <button
-              className="go-live-btn"
-              onClick={handleStartLive}
-              disabled={!streamTitle.trim() || isStarting || !streamPreview}
-            >
-              {isStarting ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin"></i>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-video"></i>
-                  Go Live
-                </>
-              )}
-            </button>
-          </div>
         </div>
+
+        {/* left-column-actions removed; actions are rendered inline below preview */}
       </div>
     </div>
   );
