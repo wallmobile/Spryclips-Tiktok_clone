@@ -183,9 +183,28 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
     if (onClose) onClose();
   };
 
-  const handleBackToApp = () => {
-    navigate('/');
-    if (onClose) onClose();
+  const handleBackToApp = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('Back to App clicked - navigating to home');
+    try {
+      // Use navigate with replace to ensure proper navigation
+      navigate('/', { replace: true });
+      // Also update window location as fallback
+      setTimeout(() => {
+        if (window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      window.location.href = '/';
+    }
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (
@@ -470,7 +489,20 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         </div>
 
         <div className="admin-sidebar-footer">
-          <button className="admin-sidebar-action" onClick={handleBackToApp}>
+          <button 
+            className="admin-sidebar-action" 
+            onClick={handleBackToApp}
+            onMouseDown={(e) => e.preventDefault()}
+            type="button"
+            style={{ 
+              pointerEvents: 'auto', 
+              cursor: 'pointer',
+              zIndex: 1000,
+              position: 'relative',
+              userSelect: 'none',
+              WebkitUserSelect: 'none'
+            }}
+          >
             <i className="fa-solid fa-home"></i>
             <span>Back to App</span>
           </button>
