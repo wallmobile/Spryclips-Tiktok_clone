@@ -341,27 +341,27 @@
 
 .start-preview-btn {
   margin-top: 16px !important;
-  padding: 12px 24px !important;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  padding: 18px 28px !important;
+  background: linear-gradient(90deg, #FF0050 0%, #FE2C55 40%, #25F4EE 100%) !important;
   border: none !important;
-  border-radius: 24px !important;
+  border-radius: 36px !important;
   color: #fff !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
   cursor: pointer !important;
-  transition: all 0.3s ease !important;
+  transition: transform 0.22s cubic-bezier(.2,.9,.2,1), box-shadow 0.22s ease !important;
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 12px !important;
   width: 100% !important;
   justify-content: center !important;
-  box-shadow: 0 4px 16px rgba(255, 0, 80, 0.3) !important;
+  box-shadow: 0 18px 40px rgba(255, 0, 80, 0.18) !important;
 }
 
 .start-preview-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.4) !important;
-  filter: brightness(1.05) !important;
+  transform: translateY(-6px) !important;
+  box-shadow: 0 28px 60px rgba(255, 0, 80, 0.22) !important;
+  filter: brightness(1.03) !important;
 }
 
 .stop-preview-btn {
@@ -441,6 +441,106 @@
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
 }
+
+/* Select-style category control (custom display with native select overlay) */
+.category-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Custom dropdown styles to match provided screenshot */
+.category-dropdown {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+}
+.category-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.03);
+  cursor: pointer;
+}
+.category-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(16,24,40,0.08);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 40;
+  padding: 8px;
+}
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  color: #0F172A;
+}
+.category-option + .category-option { margin-top: 6px; }
+.category-option:hover { transform: translateY(-1px); }
+.category-option .category-icon { font-size: 18px; }
+.category-option .category-label { font-weight: 700; }
+
+/* Gradient highlight for hovered or selected option to match screenshot */
+.category-option:hover,
+.category-option.selected {
+  background: linear-gradient(90deg, rgba(255,0,80,0.12), rgba(254,44,85,0.08) 40%, rgba(37,244,238,0.06));
+  box-shadow: 0 6px 18px rgba(255,0,80,0.06);
+}
+
+/* scrollbar styling */
+.category-options::-webkit-scrollbar { width: 8px; }
+.category-options::-webkit-scrollbar-track { background: transparent; }
+.category-options::-webkit-scrollbar-thumb { background: rgba(16,24,40,0.08); border-radius: 8px; }
+
+.category-select-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.03);
+  cursor: pointer;
+}
+
+.category-icon-preview {
+  font-size: 20px;
+}
+
+.category-label-preview {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.category-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+/* Make select options show emoji in supported browsers */
+.category-select option { padding: 8px; }
 
 .category-btn {
   padding: 16px !important;
@@ -557,45 +657,37 @@
 
 .cancel-btn,
 .go-live-btn {
-  padding: 12px 24px;
+  padding: 10px 18px;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .cancel-btn {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 1.5px solid rgba(0, 0, 0, 0.1) !important;
+  background: #fff !important;
+  border: 1.5px solid rgba(16,24,40,0.06) !important;
   color: #0F172A !important;
+  box-shadow: 0 8px 20px rgba(16,24,40,0.04);
 }
 
-.cancel-btn:hover {
-  background: rgba(0, 0, 0, 0.08) !important;
-  border-color: rgba(255, 0, 80, 0.3) !important;
-}
+.cancel-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(16,24,40,0.06); }
 
 .go-live-btn {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  background: linear-gradient(90deg, #FF6B9A 0%, #FE7A8F 30%, #25F4EE 100%) !important;
   color: #fff !important;
-  box-shadow: 0 4px 16px rgba(255, 0, 80, 0.3) !important;
+  box-shadow: 0 20px 50px rgba(37, 99, 235, 0.12) !important;
+  padding: 12px 20px;
 }
 
-.go-live-btn:hover:not(:disabled) {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(255, 0, 80, 0.4) !important;
-  filter: brightness(1.05) !important;
-}
+.go-live-btn:hover:not(:disabled) { transform: translateY(-6px); box-shadow: 0 30px 70px rgba(37, 99, 235, 0.14) !important; }
 
-.go-live-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.go-live-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -645,8 +737,67 @@
 @media (min-width: 64.0625rem) {
   .setup-content {
     max-width: 1400px; /* Wider content area on desktop */
+    /* Layout: preview left, form right */
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 2.5rem !important;
+    padding: 32px !important;
   }
+  /* Left and right columns: left contains preview + actions, right contains form */
+  .left-column {
+    flex: 2 1 0%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .right-column {
+    flex: 1 1 360px;
+    max-width: 480px;
+    min-width: 280px;
+    box-sizing: border-box;
+    align-self: flex-start;
+  }
+  .preview-section { width: 100%; }
+  /* Ensure preview-area uses full width of its column */
+  .video-preview-container { width: 100%; }
 }
+
+/* Desktop tweaks: place actions under preview */
+@media (min-width: 64.0625rem) {
+  .left-column-actions { display: flex; justify-content: flex-start; }
+  .left-column-actions .setup-actions { margin-top: 8px; }
+  .setup-actions { display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
+  .left-column .setup-actions { justify-content: flex-start; }
+  .setup-actions .cancel-btn { margin-right: 12px; }
+
+  /* Inline actions under preview (no border-top like form actions) */
+  .left-column-inline {
+    padding-top: 12px;
+    border-top: none !important;
+    justify-content: flex-start !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+  .left-column-inline .cancel-btn { margin-right: 8px; }
+}
+
+/* Focus/hover styling for the category display */
+.category-select-wrapper { position: relative; width: 100%; }
+.category-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.category-select:focus + .category-select-display,
+.category-select:hover + .category-select-display { border-color: rgba(37,99,235,0.85); box-shadow: 0 6px 20px rgba(37,99,235,0.12); }
+.category-select option:hover { background: #2563EB; color: #fff; }
+
+/* Dropdown small refinements */
+.category-display { min-height: 52px; }
+.category-icon-preview { font-size: 18px; background: rgba(246,247,249,0.9); padding: 6px; border-radius: 8px; }
+.category-label-preview { font-weight: 700; }
+.category-options { animation: dropdownIn 140ms cubic-bezier(.2,.9,.2,1); }
+@keyframes dropdownIn { from { opacity: 0; transform: translateY(-6px) scale(0.995);} to { opacity: 1; transform: translateY(0) scale(1);} }
+.category-option.selected { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03); }
 
 /* Dark Mode Styles */
 body.dark-mode .live-stream-setup-overlay {
