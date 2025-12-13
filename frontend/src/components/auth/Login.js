@@ -54,6 +54,7 @@ const Login = ({ onClose, onSwitchToSignup }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Sync DOM values to React state (for browser automation compatibility)
   useEffect(() => {
@@ -221,18 +222,29 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             <label htmlFor="login-password" className="input-label">
               Password
             </label>
-            <input
-              id="login-password"
-              type="password"
-              value={formState.password}
-              onChange={(e) => {
-                setFormState((prev) => ({ ...prev, password: e.target.value }));
-                setError('');
-              }}
-              required
-              placeholder="Your password"
-              className="tiktok-input"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={formState.password}
+                onChange={(e) => {
+                  setFormState((prev) => ({ ...prev, password: e.target.value }));
+                  setError('');
+                }}
+                required
+                placeholder="Your password"
+                className="tiktok-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={0}
+              >
+                <i className={showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'}></i>
+              </button>
+            </div>
             <button
               type="button"
               className="auth-forgot-password"
@@ -253,6 +265,33 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             {loading ? 'Signing in…' : 'Log In'}
           </button>
         </form>
+
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <span style={{ color: '#6B7280', fontSize: '14px' }}>Don't have an account? </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (onSwitchToSignup) {
+                onSwitchToSignup();
+              } else {
+                window.location.href = '/signup';
+              }
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#FF0050',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              padding: 0,
+              margin: 0
+            }}
+          >
+            Sign up
+          </button>
+        </div>
 
       </div>
 

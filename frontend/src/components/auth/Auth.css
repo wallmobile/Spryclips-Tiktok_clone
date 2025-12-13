@@ -1202,7 +1202,7 @@
 }
 
 .auth-forgot-password:hover {
-  color: #ffffff;
+  color: #FF0050 !important;
 }
 
 /* Social Provider Unavailable */
@@ -1691,7 +1691,7 @@ body.dark-mode .auth-forgot-password {
 }
 
 body.dark-mode .auth-forgot-password:hover {
-  color: #F9FAFB !important;
+  color: #FF0050 !important;
 }
 
 body.dark-mode .social-provider-unavailable {
