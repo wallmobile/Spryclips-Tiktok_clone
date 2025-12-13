@@ -21,17 +21,20 @@ const Balance = ({ onClose }) => {
   const handleClose = () => {
     if (isRoute) {
       // Check if we came from profile/AccountSettings
-      const fromProfile = document.referrer.includes('/profile') || 
+      const fromProfile = (document.referrer && document.referrer.includes('/profile')) || 
                          location.state?.from === '/profile' ||
-                         document.referrer.includes('profile');
+                         (document.referrer && document.referrer.includes('profile'));
       
-      if (fromProfile || !document.referrer) {
+      // Only redirect if we have a valid referrer and came from profile
+      // On page refresh, document.referrer is empty - DO NOT REDIRECT, stay on page
+      if (fromProfile && document.referrer && document.referrer.length > 0) {
         // Navigate to profile page to show AccountSettings
         navigate('/profile', { replace: true });
-      } else {
-        // Go back in history
+      } else if (document.referrer && document.referrer.length > 0 && window.history.length > 1) {
+        // Go back in history only if we have valid referrer and history
         navigate(-1);
       }
+      // If no referrer (page refresh) - DO NOTHING, stay on current page
     } else if (onClose) {
       onClose(); // Modal close
     }
@@ -222,7 +225,7 @@ const Balance = ({ onClose }) => {
   );
 
   return (
-    <div className="balance-overlay" onClick={handleClose}>
+    <div className="balance-overlay" onClick={isRoute ? undefined : handleClose}>
       <div className="balance-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="balance-header">
@@ -376,29 +379,29 @@ const Balance = ({ onClose }) => {
           <div className="card-body">
             <div className="earnings-breakdown-grid">
               <div className="earnings-item">
-                <span className="earnings-label">
-                  <i className="fa-solid fa-gift"></i>
+                <span className="earnings-label" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                  <i className="fa-solid fa-gift" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
                   Gifts
                 </span>
                 <span className="earnings-value">{formatCurrency(earningsBreakdown.gifts)}</span>
               </div>
               <div className="earnings-item">
-                <span className="earnings-label">
-                  <i className="fa-solid fa-video"></i>
+                <span className="earnings-label" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                  <i className="fa-solid fa-video" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
                   Live Streaming
                 </span>
                 <span className="earnings-value">{formatCurrency(earningsBreakdown.liveStreaming)}</span>
               </div>
               <div className="earnings-item">
-                <span className="earnings-label">
-                  <i className="fa-solid fa-eye"></i>
+                <span className="earnings-label" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                  <i className="fa-solid fa-eye" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
                   Video Views
                 </span>
                 <span className="earnings-value">{formatCurrency(earningsBreakdown.videoViews)}</span>
               </div>
               <div className="earnings-item">
-                <span className="earnings-label">
-                  <i className="fa-solid fa-users"></i>
+                <span className="earnings-label" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                  <i className="fa-solid fa-users" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
                   Referrals
                 </span>
                 <span className="earnings-value">{formatCurrency(earningsBreakdown.referrals)}</span>
@@ -563,33 +566,33 @@ const Balance = ({ onClose }) => {
                   
                   <div className="earnings-breakdown">
                     <div className="earnings-item">
-                      <div className="earnings-source">
-                        <i className="fa-solid fa-gift"></i>
-                        <span>Gifts Received</span>
+                      <div className="earnings-source" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                        <i className="fa-solid fa-gift" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
+                        <span style={{ marginLeft: '0px', marginRight: '0px', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', paddingBottom: '0px', display: 'block' }}>Gifts Received</span>
                       </div>
                       <span className="earnings-amount">{formatCurrency(earningsBreakdown.gifts)}</span>
                     </div>
                     
                     <div className="earnings-item">
-                      <div className="earnings-source">
-                        <i className="fa-solid fa-video"></i>
-                        <span>Live Streaming</span>
+                      <div className="earnings-source" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                        <i className="fa-solid fa-video" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
+                        <span style={{ marginLeft: '0px', marginRight: '0px', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', paddingBottom: '0px', display: 'block' }}>Live Streaming</span>
                       </div>
                       <span className="earnings-amount">{formatCurrency(earningsBreakdown.liveStreaming)}</span>
                     </div>
                     
                     <div className="earnings-item">
-                      <div className="earnings-source">
-                        <i className="fa-solid fa-eye"></i>
-                        <span>Video Views</span>
+                      <div className="earnings-source" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                        <i className="fa-solid fa-eye" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
+                        <span style={{ marginLeft: '0px', marginRight: '0px', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', paddingBottom: '0px', display: 'block' }}>Video Views</span>
                       </div>
                       <span className="earnings-amount">{formatCurrency(earningsBreakdown.videoViews)}</span>
                     </div>
                     
                     <div className="earnings-item">
-                      <div className="earnings-source">
-                        <i className="fa-solid fa-users"></i>
-                        <span>Referrals</span>
+                      <div className="earnings-source" style={{ display: 'flex', alignItems: 'center', gap: '0px', justifyContent: 'flex-start' }}>
+                        <i className="fa-solid fa-users" style={{ marginRight: '48px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', paddingRight: '0px', paddingLeft: '0px', paddingTop: '0px', paddingBottom: '0px', flexShrink: 0, display: 'block', width: 'auto', minWidth: 'auto', maxWidth: 'none' }}></i>
+                        <span style={{ marginLeft: '0px', marginRight: '0px', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', paddingBottom: '0px', display: 'block' }}>Referrals</span>
                       </div>
                       <span className="earnings-amount">{formatCurrency(earningsBreakdown.referrals)}</span>
                     </div>

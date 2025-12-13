@@ -898,20 +898,61 @@ button[class*="close-btn"].balance-close-btn:hover {
 }
 
 .earnings-source {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem; /* 12px */
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important; /* Use margin instead of gap */
+  justify-content: flex-start !important;
 }
 
 .earnings-source i {
-  font-size: 1.25rem; /* 20px */
-  color: #2563EB; /* Website primary blue */
+  font-size: 1.25rem !important; /* 20px */
+  color: #2563EB !important; /* Website primary blue */
+  margin-right: 48px !important; /* 48px spacing after icon - FORCE SPACING */
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  flex-shrink: 0 !important; /* Prevent icon from shrinking */
+  display: block !important;
+  width: auto !important;
+  min-width: auto !important;
 }
 
 .earnings-source span {
-  font-size: 0.9375rem; /* 15px */
-  font-weight: 600;
-  color: #1F2937;
+  font-size: 0.9375rem !important; /* 15px */
+  font-weight: 600 !important;
+  color: #1F2937 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: block !important;
+}
+
+.earnings-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  justify-content: flex-start !important;
+}
+
+.earnings-label i {
+  margin-right: 48px !important; /* 48px spacing after icon */
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
 }
 
 .earnings-amount {
