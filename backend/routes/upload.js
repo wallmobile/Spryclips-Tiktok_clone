@@ -200,6 +200,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     twitter: parseBoolean(shareTargets.twitter ?? req.body.shareToTwitter, false)
   };
 
+  const allowComments = parseBoolean(metadata.allowComments ?? req.body.allowComments, true);
   const allowDuet = parseBoolean(metadata.allowDuet ?? req.body.allowDuet, true);
   const allowStitch = parseBoolean(metadata.allowStitch ?? req.body.allowStitch, true);
 
@@ -237,6 +238,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     ageRestriction,
     autoCaptions: autoCaptionsEnabled,
     shareTo,
+    commentsDisabled: !allowComments,
     duetDisabled: !allowDuet,
     stitchDisabled: !allowStitch,
     metadataSnapshot: metadata || undefined,

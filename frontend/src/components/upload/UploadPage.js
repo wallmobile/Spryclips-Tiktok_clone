@@ -59,13 +59,34 @@ const UploadPage = ({ onClose }) => {
   const [uploadSuccess, setUploadSuccess] = useState(null);
   const [textInput, setTextInput] = useState('');
   
+  // Load preferences from localStorage or use defaults
+  const getInitialPrivacy = () => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('upload_privacy_preference');
+      if (saved && ['public', 'friends', 'private'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'public';
+  };
+
+  const getInitialBool = (key, defaultValue) => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`upload_${key}_preference`);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    }
+    return defaultValue;
+  };
+
   const [videoData, setVideoData] = useState({
     caption: '',
     hashtags: '',
-    privacy: 'public',
-    allowComments: true,
-    allowDuet: true,
-    allowStitch: true,
+    privacy: getInitialPrivacy(),
+    allowComments: getInitialBool('allowComments', true),
+    allowDuet: getInitialBool('allowDuet', true),
+    allowStitch: getInitialBool('allowStitch', true),
     location: '',
     music: null,
     coverImage: null,
@@ -1162,7 +1183,13 @@ const UploadPage = ({ onClose }) => {
                 <div className="privacy-options">
                   <div 
                     className={`privacy-option ${videoData.privacy === 'public' ? 'selected' : ''}`}
-                    onClick={() => setVideoData({...videoData, privacy: 'public'})}
+                    onClick={() => {
+                      const newPrivacy = 'public';
+                      setVideoData({...videoData, privacy: newPrivacy});
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('upload_privacy_preference', newPrivacy);
+                      }
+                    }}
                   >
                     <i className="fa-solid fa-globe"></i>
                     <div className="privacy-info">
@@ -1172,7 +1199,13 @@ const UploadPage = ({ onClose }) => {
                   </div>
                   <div 
                     className={`privacy-option ${videoData.privacy === 'friends' ? 'selected' : ''}`}
-                    onClick={() => setVideoData({...videoData, privacy: 'friends'})}
+                    onClick={() => {
+                      const newPrivacy = 'friends';
+                      setVideoData({...videoData, privacy: newPrivacy});
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('upload_privacy_preference', newPrivacy);
+                      }
+                    }}
                   >
                     <i className="fa-solid fa-users"></i>
                     <div className="privacy-info">
@@ -1182,7 +1215,13 @@ const UploadPage = ({ onClose }) => {
                   </div>
                   <div 
                     className={`privacy-option ${videoData.privacy === 'private' ? 'selected' : ''}`}
-                    onClick={() => setVideoData({...videoData, privacy: 'private'})}
+                    onClick={() => {
+                      const newPrivacy = 'private';
+                      setVideoData({...videoData, privacy: newPrivacy});
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('upload_privacy_preference', newPrivacy);
+                      }
+                    }}
                   >
                     <i className="fa-solid fa-lock"></i>
                     <div className="privacy-info">
@@ -1201,7 +1240,13 @@ const UploadPage = ({ onClose }) => {
                     <span>Comment</span>
                     <div 
                       className={`toggle-switch ${videoData.allowComments ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, allowComments: !videoData.allowComments})}
+                      onClick={() => {
+                        const newValue = !videoData.allowComments;
+                        setVideoData({...videoData, allowComments: newValue});
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('upload_allowComments_preference', String(newValue));
+                        }
+                      }}
                     >
                       <div className="toggle-slider"></div>
                     </div>
@@ -1210,7 +1255,13 @@ const UploadPage = ({ onClose }) => {
                     <span>Duet</span>
                     <div 
                       className={`toggle-switch ${videoData.allowDuet ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, allowDuet: !videoData.allowDuet})}
+                      onClick={() => {
+                        const newValue = !videoData.allowDuet;
+                        setVideoData({...videoData, allowDuet: newValue});
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('upload_allowDuet_preference', String(newValue));
+                        }
+                      }}
                     >
                       <div className="toggle-slider"></div>
                     </div>
@@ -1219,7 +1270,13 @@ const UploadPage = ({ onClose }) => {
                     <span>Stitch</span>
                     <div 
                       className={`toggle-switch ${videoData.allowStitch ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, allowStitch: !videoData.allowStitch})}
+                      onClick={() => {
+                        const newValue = !videoData.allowStitch;
+                        setVideoData({...videoData, allowStitch: newValue});
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('upload_allowStitch_preference', String(newValue));
+                        }
+                      }}
                     >
                       <div className="toggle-slider"></div>
                     </div>
@@ -1277,133 +1334,6 @@ const UploadPage = ({ onClose }) => {
                 )}
               </div>
 
-              {/* Age Restriction */}
-              <div className="form-group">
-                <label>Age Restriction</label>
-                <div className="privacy-options">
-                  <div 
-                    className={`privacy-option ${videoData.ageRestriction === 'all' ? 'selected' : ''}`}
-                    onClick={() => setVideoData({...videoData, ageRestriction: 'all'})}
-                  >
-                    <i className="fa-solid fa-users"></i>
-                    <div className="privacy-info">
-                      <h4>All Ages</h4>
-                      <p>Everyone can watch</p>
-                    </div>
-                  </div>
-                  <div 
-                    className={`privacy-option ${videoData.ageRestriction === '18+' ? 'selected' : ''}`}
-                    onClick={() => setVideoData({...videoData, ageRestriction: '18+'})}
-                  >
-                    <i className="fa-solid fa-circle-exclamation"></i>
-                    <div className="privacy-info">
-                      <h4>18+ Only</h4>
-                      <p>Mature content</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Auto Captions */}
-              <div className="form-group">
-                <label>Accessibility</label>
-                <div className="setting-item">
-                  <span>Auto Captions</span>
-                  <div 
-                    className={`toggle-switch ${videoData.autoCaptions ? 'active' : ''}`}
-                    onClick={() => setVideoData({...videoData, autoCaptions: !videoData.autoCaptions})}
-                  >
-                    <div className="toggle-slider"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Share to Other Apps */}
-              <div className="form-group">
-                <label>Share to Other Apps</label>
-                <div className="share-options">
-                  <div className="setting-item">
-                    <span>
-                      <i className="fa-brands fa-instagram"></i> Instagram
-                    </span>
-                    <div 
-                      className={`toggle-switch ${videoData.shareToInstagram ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, shareToInstagram: !videoData.shareToInstagram})}
-                    >
-                      <div className="toggle-slider"></div>
-                    </div>
-                  </div>
-                  <div className="setting-item">
-                    <span>
-                      <i className="fa-brands fa-whatsapp"></i> WhatsApp
-                    </span>
-                    <div 
-                      className={`toggle-switch ${videoData.shareToWhatsApp ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, shareToWhatsApp: !videoData.shareToWhatsApp})}
-                    >
-                      <div className="toggle-slider"></div>
-                    </div>
-                  </div>
-                  <div className="setting-item">
-                    <span>
-                      <i className="fa-brands fa-facebook"></i> Facebook
-                    </span>
-                    <div 
-                      className={`toggle-switch ${videoData.shareToFacebook ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, shareToFacebook: !videoData.shareToFacebook})}
-                    >
-                      <div className="toggle-slider"></div>
-                    </div>
-                  </div>
-                  <div className="setting-item">
-                    <span>
-                      <i className="fa-brands fa-twitter"></i> Twitter/X
-                    </span>
-                    <div 
-                      className={`toggle-switch ${videoData.shareToTwitter ? 'active' : ''}`}
-                      onClick={() => setVideoData({...videoData, shareToTwitter: !videoData.shareToTwitter})}
-                    >
-                      <div className="toggle-slider"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="schedule-settings">
-                <div className="schedule-header">
-                  <div className="schedule-copy">
-                    <h4>Schedule</h4>
-                    <p>Pick a time to publish automatically.</p>
-                  </div>
-                  <div
-                    className={`toggle-switch ${scheduleEnabled ? 'active' : ''}`}
-                    onClick={() => {
-                      setScheduleEnabled((prev) => {
-                        if (prev) {
-                          setScheduleDate('');
-                        }
-                        return !prev;
-                      });
-                    }}
-                  >
-                    <div className="toggle-slider"></div>
-                  </div>
-                </div>
-                {scheduleEnabled && (
-                  <div className="schedule-inputs">
-                    <label htmlFor="schedule-date">Publish at</label>
-                    <input
-                      id="schedule-date"
-                      type="datetime-local"
-                      value={scheduleDate}
-                      min={getMinScheduleValue()}
-                      onChange={(e) => setScheduleDate(e.target.value)}
-                    />
-                    <small>Times use your local timezone.</small>
-                  </div>
-                )}
-              </div>
-
               {/* Action Buttons - Moved here */}
               <div className="location-action-buttons">
                 <button 
@@ -1429,14 +1359,6 @@ const UploadPage = ({ onClose }) => {
                 >
                   <i className="fa-solid fa-paper-plane"></i>
                   Post
-                </button>
-                <button 
-                  className="promote-btn-location"
-                  onClick={handlePromote}
-                  disabled={!uploadedVideo || isUploading}
-                >
-                  <i className="fa-solid fa-fire"></i>
-                  Promote
                 </button>
               </div>
 

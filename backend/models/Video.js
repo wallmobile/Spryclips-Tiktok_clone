@@ -196,6 +196,10 @@ const videoSchema = new mongoose.Schema({
     enum: ['original', 'duet', 'stitch'],
     default: 'original'
   },
+  commentsDisabled: {
+    type: Boolean,
+    default: false
+  },
   duetDisabled: {
     type: Boolean,
     default: false

@@ -487,9 +487,10 @@ body.upload-page-open {
 }
 
 .privacy-option.selected {
-  border-color: rgba(255, 0, 80, 0.4) !important;
-  background: rgba(37, 99, 235, 0.1) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+  border-color: #FF0050 !important;
+  border-width: 2px !important;
+  background: rgba(255, 0, 80, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(255, 0, 80, 0.15) !important;
 }
 
 .privacy-option i {
@@ -497,6 +498,10 @@ body.upload-page-open {
   color: #2563EB;
   width: 24px;
   text-align: center;
+}
+
+.privacy-option.selected i {
+  color: #FF0050 !important;
 }
 
 .privacy-info h4 {
@@ -507,7 +512,8 @@ body.upload-page-open {
 }
 
 .privacy-option.selected .privacy-info h4 {
-  color: #2563EB !important;
+  color: #FF0050 !important;
+  font-weight: 700 !important;
 }
 
 .privacy-info p {
@@ -517,7 +523,7 @@ body.upload-page-open {
 }
 
 .privacy-option.selected .privacy-info p {
-  color: #2563EB !important;
+  color: #FF0050 !important;
 }
 
 /* Interaction Settings */
