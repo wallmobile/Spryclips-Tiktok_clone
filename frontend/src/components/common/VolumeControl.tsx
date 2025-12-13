@@ -98,9 +98,9 @@ const VolumeControl = React.memo(function VolumeControl({
       });
     }
     
-    // Show slider when mute/unmute (TikTok style)
-    showSliderWithAutoHide();
-  }, [isActive, videoRef, globalMute, globalVolume, lastVolume, setGlobalMute, setGlobalVolume, setLastVolume, showSliderWithAutoHide]);
+    // Don't show slider on click - only on hover
+    // Slider will remain visible if already hovered
+  }, [isActive, videoRef, globalMute, globalVolume, lastVolume, setGlobalMute, setGlobalVolume, setLastVolume]);
 
   // Handle volume button click - toggle mute (TikTok style)
   const handleVolumeButtonClick = useCallback((e: React.MouseEvent) => {
@@ -164,8 +164,8 @@ const VolumeControl = React.memo(function VolumeControl({
     const newVolume = parseInt(e.target.value) || 0;
     setLocalVolume(newVolume); // Update local state immediately for smooth UI
     
-    // Show slider when volume changes (TikTok style)
-    showSliderWithAutoHide();
+    // Keep slider visible during interaction (already visible on hover)
+    // No need to show/hide on volume change - hover handles it
     
     // Update video volume in real-time during drag (smooth TikTok-like experience)
     if (isActive && videoRef.current) {
@@ -187,7 +187,7 @@ const VolumeControl = React.memo(function VolumeControl({
     
     // Update global volume immediately for smooth feedback
     setGlobalVolume(newVolume);
-  }, [isActive, globalMute, videoRef, setGlobalMute, setGlobalVolume, setLastVolume, showSliderWithAutoHide]);
+  }, [isActive, globalMute, videoRef, setGlobalMute, setGlobalVolume, setLastVolume]);
 
   // Handle slider change (when drag ends)
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,8 +200,9 @@ const VolumeControl = React.memo(function VolumeControl({
   // Handle slider drag start
   const handleSliderMouseDown = useCallback(() => {
     setIsDragging(true);
-    showSliderWithAutoHide(); // Show slider when dragging starts
-  }, [showSliderWithAutoHide]);
+    // Keep slider visible during drag (already visible on hover)
+    setShowSlider(true);
+  }, []);
 
   // Handle global mouse up to ensure drag ends properly
   useEffect(() => {
@@ -325,13 +326,37 @@ const VolumeControl = React.memo(function VolumeControl({
   
   const iconSize = 20;
 
+  // Handle mouse enter - show slider on hover
+  const handleMouseEnter = useCallback(() => {
+    // Clear any existing hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setShowSlider(true);
+  }, []);
+
+  // Handle mouse leave - hide slider on hover out (unless dragging)
+  const handleMouseLeave = useCallback(() => {
+    if (!isDragging) {
+      // Clear any existing timeout
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+      setShowSlider(false);
+    }
+  }, [isDragging]);
+
   return (
     <div
       ref={containerRef}
       className={`volume-control ${className}`}
       onClick={(e) => e.stopPropagation()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* Icon Button - Click to toggle slider (TikTok style) */}
+      {/* Icon Button - Click to toggle mute, hover to show slider */}
       <button
         className={`volume-icon-btn ${showSlider ? 'active' : ''}`}
         onClick={(e) => {
@@ -346,7 +371,7 @@ const VolumeControl = React.memo(function VolumeControl({
         <Icon size={iconSize} strokeWidth={2} />
       </button>
 
-      {/* Slider Container - Shows on click (TikTok style) */}
+      {/* Slider Container - Shows on hover */}
       <div
         className={`volume-slider-container ${showSlider ? 'visible' : ''} ${isDragging ? 'dragging' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -391,8 +416,8 @@ const VolumeControl = React.memo(function VolumeControl({
               if (newVolume !== localVolume) {
                 setLocalVolume(newVolume);
                 
-                // Show slider during drag (TikTok style)
-                showSliderWithAutoHide();
+                // Keep slider visible during drag (already visible on hover)
+                setShowSlider(true);
                 
                 // Update video volume in real-time during drag (throttled)
                 if (isActive && videoRef.current) {
@@ -478,7 +503,8 @@ const VolumeControl = React.memo(function VolumeControl({
             const percent = (e.clientX - rect.left) / rect.width;
             const newVolume = Math.round(Math.max(0, Math.min(100, percent * 100)));
             setLocalVolume(newVolume);
-            showSliderWithAutoHide(); // Show slider when clicking on track
+            // Keep slider visible (already visible on hover)
+            setShowSlider(true);
             handleSliderChange({
               target: { value: newVolume.toString() }
             } as React.ChangeEvent<HTMLInputElement>);
