@@ -1106,18 +1106,39 @@ router.post('/follow-requests/:requestId/:action', authMiddleware, async (req, r
 // Get user's videos
 router.get('/:id/videos', async (req, res) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+    const userId = req.params.id;
+    
+    // Try to find user by ID or username
+    let user;
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId);
+    } else {
+      user = await User.findOne({ username: userId });
     }
     
-    const videos = await Video.find({ user: req.params.id })
-      .populate('user', 'username profile')
-      .sort({ isPinned: -1, createdAt: -1 });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Find videos for this user - include all statuses except deleted
+    const videos = await Video.find({ 
+      user: user._id,
+      status: { $ne: 'deleted' } // Exclude deleted videos
+    })
+      .populate('user', 'username profile displayName')
+      .sort({ isPinned: -1, createdAt: -1 })
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music category transcoded status isPrivate isPinned duration processedVideos');
 
-    res.json(videos);
+    console.log(`📹 Found ${videos.length} videos for user ${user.username} (${user._id})`);
+    
+    res.json({
+      success: true,
+      videos: videos,
+      count: videos.length
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching user videos:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

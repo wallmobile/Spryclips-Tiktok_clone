@@ -232,18 +232,18 @@ router.get('/trending', async (req, res) => {
     let dateFilter = {};
     // Only apply date filter if timeRange is explicitly provided
     if (timeRange) {
-      const now = new Date();
-      switch (timeRange) {
-        case '7d':
-          dateFilter = { createdAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
-          break;
-        case '30d':
-          dateFilter = { createdAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
-          break;
+    const now = new Date();
+    switch (timeRange) {
+      case '7d':
+        dateFilter = { createdAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
+        break;
+      case '30d':
+        dateFilter = { createdAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
+        break;
         case '24h':
           dateFilter = { createdAt: { $gte: new Date(now - 24 * 60 * 60 * 1000) } };
           break;
-        default:
+      default:
           // No date filter for 'all' or invalid values
           dateFilter = {};
       }
@@ -282,7 +282,7 @@ router.get('/trending', async (req, res) => {
           { category: categoryFilter }, // Original case match
           { hashtags: { $elemMatch: { $regex: new RegExp(categoryLower, 'i') } } },
           { hashtags: { $in: [categoryLower, categoryFilter] } }, // Direct hashtag match
-          { description: { $regex: hashtagRegex } }
+        { description: { $regex: hashtagRegex } }
         ]
       });
       console.log(`[Trending] Category filter applied: ${categoryFilter} (searching for: ${categoryLower})`);
