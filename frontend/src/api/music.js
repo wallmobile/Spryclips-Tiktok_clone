@@ -94,3 +94,16 @@ export const getSoundsByCategory = async (category, limit = 20) => {
   }
 };
 
+// ==================== SEARCH ONLINE MUSIC ====================
+export const searchOnlineMusic = async (query, limit = 20) => {
+  try {
+    const response = await api.get('/api/music/search-online', {
+      params: { q: query, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching online music:', error);
+    throw error;
+  }
+};
+

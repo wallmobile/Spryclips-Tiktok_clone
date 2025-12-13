@@ -511,7 +511,7 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
       // Call backend API to end the stream
       const streamId = streamData?.id || streamData?._id;
       if (streamId) {
-        const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
+        const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
         const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
           method: 'POST',
           headers: {

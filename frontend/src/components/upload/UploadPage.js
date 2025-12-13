@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { uploadVideo, promoteVideo } from '../../api/videos';
 import { saveDraft, scheduleVideo } from '../../api/drafts';
-import { searchSounds } from '../../api/music';
+import { searchSounds, getTrendingSounds, searchOnlineMusic } from '../../api/music';
 import { searchMusic } from '../../api/search';
 import './UploadPage.css';
 
@@ -18,8 +18,11 @@ const UploadPage = ({ onClose }) => {
   const fileInputRef = useRef(null);
   const videoPlayerRef = useRef(null);
   const editVideoPlayerRef = useRef(null);
+  const musicAudioRef = useRef(null);
+  const musicPreviewAudioRef = useRef(null);
   const voiceoverInputRef = useRef(null);
   const feedbackRef = useRef(null);
+  const musicFileInputRef = useRef(null);
   
   const [uploadedVideo, setUploadedVideo] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
@@ -30,10 +33,14 @@ const UploadPage = ({ onClose }) => {
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [cropStart, setCropStart] = useState(0);
   const [cropEnd, setCropEnd] = useState(0);
-  const [musicSearchQuery, setMusicSearchQuery] = useState('');
-  const [searchingMusic, setSearchingMusic] = useState(false);
-  const [onlineMusicResults, setOnlineMusicResults] = useState([]);
-  const [showOnlineTab, setShowOnlineTab] = useState(false);
+  const [selectedMusicCategory, setSelectedMusicCategory] = useState('trending');
+  const [musicLibrary, setMusicLibrary] = useState([]);
+  const [loadingMusic, setLoadingMusic] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState(null); // Temporary selection before save
+  const [musicSearchQuery, setMusicSearchQuery] = useState(''); // Online search query
+  const [searchingMusic, setSearchingMusic] = useState(false); // Loading state for search
+  const [onlineMusicResults, setOnlineMusicResults] = useState([]); // Online search results
+  const clickTimeoutRef = useRef(null); // For handling single vs double click
   
   // Advanced Editor states
   const [activeEditTab, setActiveEditTab] = useState('trim');
@@ -54,6 +61,7 @@ const UploadPage = ({ onClose }) => {
   const [uploadError, setUploadError] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(null);
   const [textInput, setTextInput] = useState('');
+  const [playingMusicId, setPlayingMusicId] = useState(null);
   
   // Load preferences from localStorage or use defaults
   const getInitialPrivacy = () => {
@@ -157,7 +165,78 @@ const UploadPage = ({ onClose }) => {
       const numericSpeed = parseFloat(selectedSpeed) || 1;
       editVideoPlayerRef.current.playbackRate = numericSpeed;
     }
+    // Sync music audio with video speed
+    if (musicAudioRef.current) {
+      const numericSpeed = parseFloat(selectedSpeed) || 1;
+      musicAudioRef.current.playbackRate = numericSpeed;
+    }
   }, [selectedSpeed]);
+
+  // Sync music audio with video playback
+  useEffect(() => {
+    if (!videoPlayerRef.current || !videoData.music) {
+      // Stop audio if no music selected
+      if (musicAudioRef.current) {
+        musicAudioRef.current.pause();
+        musicAudioRef.current.src = '';
+      }
+      return;
+    }
+
+    const video = videoPlayerRef.current;
+    
+    // If music has audioUrl, set it up
+    if (videoData.music.audioUrl && musicAudioRef.current) {
+      const audio = musicAudioRef.current;
+      audio.src = videoData.music.audioUrl;
+      audio.volume = 0.7; // Set volume to 70%
+      audio.load();
+
+      const handleVideoPlay = () => {
+        audio.currentTime = video.currentTime;
+        audio.play().catch((err) => {
+          // Autoplay might be blocked - user needs to interact first
+          console.log('Audio autoplay blocked:', err);
+        });
+      };
+
+      const handleVideoPause = () => {
+        audio.pause();
+      };
+
+      const handleVideoTimeUpdate = () => {
+        if (!audio.paused && !video.paused) {
+          // Keep audio in sync with video (within 0.2s tolerance)
+          if (Math.abs(audio.currentTime - video.currentTime) > 0.2) {
+            audio.currentTime = video.currentTime;
+          }
+        }
+      };
+
+      const handleVideoSeeked = () => {
+        audio.currentTime = video.currentTime;
+      };
+
+      const handleVideoEnded = () => {
+        audio.pause();
+        audio.currentTime = 0;
+      };
+
+      video.addEventListener('play', handleVideoPlay);
+      video.addEventListener('pause', handleVideoPause);
+      video.addEventListener('timeupdate', handleVideoTimeUpdate);
+      video.addEventListener('seeked', handleVideoSeeked);
+      video.addEventListener('ended', handleVideoEnded);
+
+      return () => {
+        video.removeEventListener('play', handleVideoPlay);
+        video.removeEventListener('pause', handleVideoPause);
+        video.removeEventListener('timeupdate', handleVideoTimeUpdate);
+        video.removeEventListener('seeked', handleVideoSeeked);
+        video.removeEventListener('ended', handleVideoEnded);
+      };
+    }
+  }, [videoData.music, videoPreview]);
 
   // Apply effects/transitions to video preview (both main and edit panel)
   useEffect(() => {
@@ -333,6 +412,74 @@ const UploadPage = ({ onClose }) => {
     // Reset the file input
     if (voiceoverInputRef.current) {
       voiceoverInputRef.current.value = '';
+    }
+  };
+
+  // Handle music file selection from gallery
+  const handleMusicFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      setUploadError('Please select a valid audio file (MP3, WAV, etc.)');
+      setTimeout(() => setUploadError(null), 3000);
+      if (musicFileInputRef.current) {
+        musicFileInputRef.current.value = '';
+      }
+      return;
+    }
+    
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError('Audio file size must be less than 50MB');
+      setTimeout(() => setUploadError(null), 3000);
+      if (musicFileInputRef.current) {
+        musicFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Create blob URL for preview
+    const audioUrl = URL.createObjectURL(file);
+    
+    // Get audio duration
+    const audio = new Audio(audioUrl);
+    audio.addEventListener('loadedmetadata', () => {
+      const duration = Math.round(audio.duration);
+      const minutes = Math.floor(duration / 60);
+      const seconds = duration % 60;
+      const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+      // Create music object from selected file
+      const selectedMusic = {
+        id: Date.now(), // Unique ID
+        name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+        artist: 'My Music',
+        duration: durationStr,
+        isTrending: false,
+        category: 'gallery',
+        audioUrl: audioUrl,
+        file: file // Store file for upload
+      };
+
+      // Set as selected music
+      setVideoData({...videoData, music: selectedMusic});
+      setUploadSuccess(`Music selected: ${selectedMusic.name}`);
+      setTimeout(() => {
+        setUploadSuccess(null);
+        setShowMusicLibrary(false);
+      }, 1500);
+
+      // Clean up
+      audio.removeEventListener('loadedmetadata', () => {});
+    });
+
+    // Reset file input
+    if (musicFileInputRef.current) {
+      musicFileInputRef.current.value = '';
     }
   };
 
@@ -922,85 +1069,6 @@ const UploadPage = ({ onClose }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Online Music Search Function - Using Backend API
-  const searchOnlineMusic = async (query) => {
-    if (!query || query.length < 2) {
-      setOnlineMusicResults([]);
-      return;
-    }
-
-    setSearchingMusic(true);
-    try {
-      // Use backend API to search music - Try /api/music/search first
-      let response;
-      try {
-        response = await searchSounds(query, 20, 'all');
-        
-        if (response && response.success && response.sounds && response.sounds.length > 0) {
-          const musicResults = response.sounds.map((sound, index) => ({
-            id: sound._id || sound.id,
-            name: sound.name || 'Unknown',
-            artist: sound.artist || 'Unknown Artist',
-            duration: sound.formattedDuration || sound.duration || '0:00',
-            thumbnail: sound.coverImage || sound.thumbnail || '',
-            isTrending: sound.isTrending || index < 3,
-            plays: sound.plays || 0,
-            saves: sound.saves || 0,
-            genre: sound.genre || '',
-            audioUrl: sound.audioUrl || sound.url || ''
-          }));
-          
-          setOnlineMusicResults(musicResults);
-          return;
-        }
-      } catch (musicError) {
-        console.log('Music API search failed, trying search API:', musicError);
-      }
-      
-      // If no results or error, try /api/search/music as fallback
-      try {
-        const searchResponse = await searchMusic(query, { limit: 20 });
-        
-        if (searchResponse && searchResponse.success && searchResponse.music && searchResponse.music.length > 0) {
-          const musicResults = searchResponse.music.map((music, index) => ({
-            id: music._id || music.id,
-            name: music.name || 'Unknown',
-            artist: music.artist || 'Unknown Artist',
-            duration: music.formattedDuration || music.duration || '0:00',
-            thumbnail: music.coverImage || music.thumbnail || '',
-            isTrending: music.isTrending || index < 3,
-            plays: music.plays || 0,
-            audioUrl: music.audioUrl || music.url || ''
-          }));
-          
-          setOnlineMusicResults(musicResults);
-          return;
-        }
-      } catch (searchError) {
-        console.log('Search API also failed:', searchError);
-      }
-      
-      // If both APIs fail or return no results
-      setOnlineMusicResults([]);
-    } catch (error) {
-      console.error('Error searching music:', error);
-      setOnlineMusicResults([]);
-    } finally {
-      setSearchingMusic(false);
-    }
-  };
-
-  // Handle music search input
-  const handleMusicSearch = (e) => {
-    const query = e.target.value;
-    setMusicSearchQuery(query);
-    
-    // Debounce search
-    clearTimeout(window.musicSearchTimeout);
-    window.musicSearchTimeout = setTimeout(() => {
-      searchOnlineMusic(query);
-    }, 500);
-  };
 
 
 
@@ -1035,15 +1103,150 @@ const UploadPage = ({ onClose }) => {
 
   const suggestedHashtags = ['#fyp', '#viral', '#trending', '#tiktok', '#foryou', '#dance', '#comedy', '#music'];
 
-  // Music Library Data
-  const musicLibrary = [
-    { id: 1, name: 'Trending Sound #1', artist: 'Artist Name', duration: '0:30', isTrending: true },
-    { id: 2, name: 'Trending Sound #2', artist: 'Another Artist', duration: '0:25', isTrending: true },
-    { id: 3, name: 'Epic Music', artist: 'Music Creator', duration: '1:00', isTrending: false },
-    { id: 4, name: 'Happy Vibes', artist: 'Sound Maker', duration: '0:45', isTrending: false },
-    { id: 5, name: 'Dance Beat', artist: 'DJ Producer', duration: '1:15', isTrending: true },
-    { id: 6, name: 'Chill Sounds', artist: 'Music Mixer', duration: '0:50', isTrending: false }
-  ];
+  // Fallback Punjabi Songs (25+ songs)
+  const getFallbackPunjabiSongs = () => {
+    return [
+      { id: 1, name: 'Brown Munde', artist: 'AP Dhillon', duration: '3:15', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 2, name: 'Insane', artist: 'AP Dhillon', duration: '2:45', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 3, name: 'Excuses', artist: 'AP Dhillon', duration: '2:55', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 4, name: 'Dil Nu', artist: 'AP Dhillon', duration: '3:20', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 5, name: 'Summer High', artist: 'AP Dhillon', duration: '2:50', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 6, name: 'Desires', artist: 'AP Dhillon', duration: '3:05', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 7, name: 'Tere Te', artist: 'AP Dhillon', duration: '2:40', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 8, name: 'Arrogant', artist: 'AP Dhillon', duration: '3:10', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 9, name: 'Sakhiyaan', artist: 'Maninder Buttar', duration: '3:25', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 10, name: 'Jatt Da Muqabala', artist: 'Sidhu Moose Wala', duration: '3:15', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 11, name: '295', artist: 'Sidhu Moose Wala', duration: '3:30', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 12, name: 'So High', artist: 'Sidhu Moose Wala', duration: '3:20', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 13, name: 'Same Beef', artist: 'Bohemia', duration: '3:45', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 14, name: 'Dil Diyaan Gallan', artist: 'Atif Aslam', duration: '3:50', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 15, name: 'Lamberghini', artist: 'Guru Randhawa', duration: '3:10', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 16, name: 'High Rated Gabru', artist: 'Guru Randhawa', duration: '3:25', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 17, name: 'Suit Suit', artist: 'Guru Randhawa', duration: '3:15', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 18, name: 'Naah', artist: 'Jassie Gill', duration: '3:05', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 19, name: 'Proper Patola', artist: 'Diljit Dosanjh', duration: '3:20', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 20, name: 'Lak 28 Kudi Da', artist: 'Diljit Dosanjh', duration: '3:30', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 21, name: 'Do You Know', artist: 'Diljit Dosanjh', duration: '3:15', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' },
+      { id: 22, name: 'Patiala Peg', artist: 'Diljit Dosanjh', duration: '3:40', isTrending: false, category: 'popular', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 23, name: 'Jatt Da Muqabala', artist: 'Sidhu Moose Wala', duration: '3:15', isTrending: false, category: 'recent', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3' },
+      { id: 24, name: 'Kala Chashma', artist: 'Badshah', duration: '3:25', isTrending: false, category: 'recent', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg' },
+      { id: 25, name: 'Tareefan', artist: 'Badshah', duration: '3:20', isTrending: true, category: 'trending', audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3' }
+    ];
+  };
+
+  // Fetch music from backend API when music library modal opens
+  useEffect(() => {
+    const loadMusicFromBackend = async () => {
+      if (!showMusicLibrary) return;
+      
+      setLoadingMusic(true);
+      try {
+        console.log('🔄 Fetching music from backend...');
+        // Fetch trending sounds from backend
+        const response = await getTrendingSounds(50, 'all');
+        
+        if (response && response.success && response.sounds && response.sounds.length > 0) {
+          const musicList = response.sounds.map((sound, index) => ({
+            id: sound._id || sound.id || `sound-${index}`,
+            name: sound.name || 'Unknown',
+            artist: sound.artist || 'Unknown Artist',
+            duration: sound.formattedDuration || sound.duration || '0:00',
+            isTrending: sound.isTrending || false,
+            category: sound.genre || 'trending',
+            audioUrl: sound.audioUrl || sound.url || '',
+            thumbnail: sound.coverImage || sound.thumbnail || ''
+          }));
+          
+          setMusicLibrary(musicList);
+          console.log('✅ Music loaded from database:', musicList.length, 'sounds');
+        } else {
+          // Fallback to hardcoded music if API fails - 20+ Punjabi Songs
+          console.warn('⚠️ API returned no music, using fallback');
+          setMusicLibrary(getFallbackPunjabiSongs());
+        }
+      } catch (error) {
+        console.error('❌ Error loading music from backend:', error);
+        // Fallback to hardcoded music on error - 20+ Punjabi Songs
+        setMusicLibrary(getFallbackPunjabiSongs());
+      } finally {
+        setLoadingMusic(false);
+      }
+    };
+
+    loadMusicFromBackend();
+  }, [showMusicLibrary]);
+
+  // Handle online music search
+  const handleMusicSearch = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setOnlineMusicResults([]);
+      return;
+    }
+
+    setSearchingMusic(true);
+    try {
+      console.log('🔍 Searching online music for:', query);
+      const response = await searchOnlineMusic(query, 30);
+      
+      if (response && response.success && response.sounds) {
+        const formattedResults = response.sounds.map((sound, index) => ({
+          id: sound._id || sound.id || `online-${index}`,
+          name: sound.name || 'Unknown',
+          artist: sound.artist || 'Unknown Artist',
+          duration: sound.formattedDuration || sound.duration || '0:00',
+          isTrending: sound.isTrending || false,
+          category: sound.genre || 'trending',
+          audioUrl: sound.audioUrl || sound.url || '',
+          thumbnail: sound.coverImage || sound.thumbnail || '',
+          isOnline: sound.isOnline || false,
+          source: sound.source || 'online'
+        }));
+        
+        setOnlineMusicResults(formattedResults);
+        console.log('✅ Online music search results:', formattedResults.length);
+      } else {
+        setOnlineMusicResults([]);
+      }
+    } catch (error) {
+      console.error('❌ Error searching online music:', error);
+      setOnlineMusicResults([]);
+    } finally {
+      setSearchingMusic(false);
+    }
+  };
+
+  // Debounced search function
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (musicSearchQuery.trim().length >= 2) {
+        handleMusicSearch(musicSearchQuery.trim());
+      } else {
+        setOnlineMusicResults([]);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [musicSearchQuery]);
+
+  // Filter music based on selected category
+  const getFilteredMusic = () => {
+    // If searching online, return online results
+    if (musicSearchQuery.trim().length >= 2 && onlineMusicResults.length > 0) {
+      return onlineMusicResults;
+    }
+
+    // Otherwise, filter by category
+    if (selectedMusicCategory === 'trending') {
+      return musicLibrary.filter(music => music.isTrending);
+    } else if (selectedMusicCategory === 'popular') {
+      return musicLibrary.filter(music => music.category === 'popular');
+    } else if (selectedMusicCategory === 'recent') {
+      return musicLibrary.filter(music => music.category === 'recent');
+    } else if (selectedMusicCategory === 'gallery') {
+      return musicLibrary.filter(music => music.category === 'gallery');
+    }
+    return musicLibrary;
+  };
 
   const handleOverlayClick = (e) => {
     // Only close if clicking directly on overlay, not on container
@@ -1085,6 +1288,15 @@ const UploadPage = ({ onClose }) => {
                     }}
                     poster=""
                   />
+                  {/* Hidden audio element for music playback */}
+                  {videoData.music && (
+                    <audio
+                      ref={musicAudioRef}
+                      preload="auto"
+                      style={{ display: 'none' }}
+                      volume={0.7}
+                    />
+                  )}
                   {textOverlays.length > 0 && (
                     <div 
                       className="text-overlays-preview"
@@ -1144,6 +1356,64 @@ const UploadPage = ({ onClose }) => {
                       ))}
                     </div>
                   )}
+                  
+                  {/* Music Info Overlay - REMOVED: Now using checkmark icon in music list instead */}
+                  {/* {(selectedMusic || videoData.music) && (
+                    <div className="music-info-overlay" style={{
+                      position: 'absolute',
+                      bottom: '80px',
+                      left: '16px',
+                      right: '16px',
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      zIndex: 15,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        background: '#FF0050',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: '18px'
+                      }}>
+                        <i className="fa-solid fa-music"></i>
+                      </div>
+                      <div style={{ flex: 1, color: '#fff' }}>
+                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{(selectedMusic || videoData.music).name}</div>
+                        <div style={{ fontSize: '12px', opacity: 0.8 }}>{(selectedMusic || videoData.music).artist}</div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedMusic(null);
+                          setVideoData({...videoData, music: null});
+                        }}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                        title="Remove music"
+                      >
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                  )} */}
                   
                   <div className="video-info-overlay">
                     <div className="video-stats">
@@ -1529,13 +1799,61 @@ const UploadPage = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Hidden File Input */}
+        {/* Hidden audio element for music preview */}
+        <audio
+          ref={musicPreviewAudioRef}
+          preload="auto"
+          style={{ display: 'none' }}
+          crossOrigin="anonymous"
+          onEnded={() => {
+            console.log('🎵 Music playback ended');
+            setPlayingMusicId(null);
+          }}
+          onError={(e) => {
+            console.error('❌ Audio playback error:', e);
+            console.error('Error details:', {
+              code: e.target.error?.code,
+              message: e.target.error?.message,
+              src: e.target.src
+            });
+            setPlayingMusicId(null);
+          }}
+          onLoadedData={() => {
+            console.log('✅ Audio data loaded');
+          }}
+          onCanPlay={() => {
+            console.log('✅ Audio can play');
+          }}
+          onLoadStart={() => {
+            console.log('🔄 Audio loading started');
+          }}
+        />
+
+        {/* Hidden File Input for Video */}
         <input
           ref={fileInputRef}
           id="video-upload-input"
           type="file"
           accept="video/*"
           onChange={handleFileInputChange}
+          style={{ 
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+          multiple={false}
+        />
+
+        {/* Hidden File Input for Music from Gallery */}
+        <input
+          ref={musicFileInputRef}
+          id="music-upload-input"
+          type="file"
+          accept="audio/*"
+          onChange={handleMusicFileChange}
           style={{ 
             position: 'absolute',
             width: '1px',
@@ -1564,121 +1882,243 @@ const UploadPage = ({ onClose }) => {
               <div className="music-modal-split">
                 {/* Video Preview on Left */}
                 {videoPreview && (
-                  <div className="music-modal-preview">
-                    <video src={videoPreview} className="music-preview-video" style={{ filter: selectedFilterStyle }} />
+                  <div className="music-modal-preview" style={{ position: 'relative' }}>
+                    <video src={videoPreview} className="music-preview-video" style={{ 
+                      filter: getCompleteFilterStyle(),
+                      transform: getCompleteTransformStyle(),
+                      transition: transitions.length > 0 ? 'all 0.3s ease-in-out' : 'none',
+                      ...getAspectRatioStyle(),
+                      objectFit: 'contain'
+                    }} />
+                    {/* Music Info Overlay in Modal - REMOVED: Using checkmark icon in list instead */}
                   </div>
                 )}
                 
                 {/* Music List on Right */}
-                <div className="modal-body music-library-body">
-                {/* Tabs */}
-                <div className="music-tabs">
-                  <button 
-                    className={`music-tab ${!showOnlineTab ? 'active' : ''}`}
-                    onClick={() => setShowOnlineTab(false)}
-                  >
-                    <i className="fa-solid fa-folder"></i> Library
-                  </button>
-                  <button 
-                    className={`music-tab ${showOnlineTab ? 'active' : ''}`}
-                    onClick={() => setShowOnlineTab(true)}
-                  >
-                    <i className="fa-solid fa-globe"></i> Online
-                  </button>
-                </div>
+                <div className="modal-body music-library-body" style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  height: '100%',
+                  maxHeight: '100%',
+                  overflow: 'hidden',
+                  padding: 0,
+                  position: 'relative'
+                }}>
+                  {/* Scrollable Content Area */}
+                  <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    padding: '24px',
+                    paddingBottom: '120px', // Extra padding so buttons are visible when scrolling
+                    WebkitOverflowScrolling: 'touch',
+                    minHeight: 0,
+                    height: 'calc(100% - 80px)', // Reserve space for buttons
+                    maxHeight: 'calc(100% - 80px)' // Reserve space for buttons
+                  }}>
+                    {/* Online Search Bar */}
+                    <div className="music-library-search" style={{ marginBottom: '16px' }}>
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        <i className="fa-solid fa-search" style={{
+                          position: 'absolute',
+                          left: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: '#8e8e8e',
+                          fontSize: '14px'
+                        }}></i>
+                        <input
+                          type="text"
+                          placeholder="Search songs online..."
+                          value={musicSearchQuery}
+                          onChange={(e) => setMusicSearchQuery(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px 10px 40px',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0',
+                            fontSize: '14px',
+                            outline: 'none',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#FF0050';
+                            e.target.style.boxShadow = '0 0 0 2px rgba(255, 0, 80, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#e0e0e0';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        />
+                        {musicSearchQuery && (
+                          <button
+                            onClick={() => {
+                              setMusicSearchQuery('');
+                              setOnlineMusicResults([]);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#8e8e8e',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              padding: '4px'
+                            }}
+                          >
+                            <i className="fa-solid fa-times"></i>
+                          </button>
+                        )}
+                      </div>
+                      {searchingMusic && (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '8px', 
+                          color: '#8e8e8e',
+                          fontSize: '12px'
+                        }}>
+                          <i className="fa-solid fa-spinner fa-spin"></i> Searching...
+                        </div>
+                      )}
+                    </div>
 
-                {/* Search Bar */}
-                {showOnlineTab && (
-                  <div className="music-library-search">
-                    <i className="fa-solid fa-magnifying-glass"></i>
-                    <input 
-                      type="text" 
-                      placeholder="Search music online (e.g., 'Shape of You', 'Blinding Lights')..."
-                      value={musicSearchQuery}
-                      onChange={handleMusicSearch}
-                    />
-                    {searchingMusic && (
-                      <i className="fa-solid fa-spinner fa-spin"></i>
-                    )}
-                  </div>
-                )}
-
-                {!showOnlineTab && (
-                  <>
+                    {/* Music Categories */}
+                    {musicSearchQuery.trim().length < 2 && (
                     <div className="music-categories">
-                      <button className="category-btn active">
+                      <button 
+                        className={`category-btn ${selectedMusicCategory === 'trending' ? 'active' : ''}`}
+                        onClick={() => setSelectedMusicCategory('trending')}
+                      >
                         <i className="fa-solid fa-fire"></i> Trending
                       </button>
-                      <button className="category-btn">
+                      <button 
+                        className={`category-btn ${selectedMusicCategory === 'popular' ? 'active' : ''}`}
+                        onClick={() => setSelectedMusicCategory('popular')}
+                      >
                         <i className="fa-solid fa-heart"></i> Popular
                       </button>
-                      <button className="category-btn">
+                      <button 
+                        className={`category-btn ${selectedMusicCategory === 'recent' ? 'active' : ''}`}
+                        onClick={() => setSelectedMusicCategory('recent')}
+                      >
                         <i className="fa-solid fa-clock"></i> Recent
                       </button>
-                      <button className="category-btn">
+                      <button 
+                        className={`category-btn ${selectedMusicCategory === 'gallery' ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedMusicCategory('gallery');
+                          // Trigger file picker for gallery music
+                          if (musicFileInputRef.current) {
+                            musicFileInputRef.current.click();
+                          }
+                        }}
+                      >
                         <i className="fa-solid fa-images"></i> My Gallery
                       </button>
                     </div>
+                    )}
                     <div className="music-list">
-                      {musicLibrary.map((music) => (
+                      {musicSearchQuery.trim().length >= 2 && onlineMusicResults.length === 0 && !searchingMusic && (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '40px 20px',
+                          color: '#8e8e8e'
+                        }}>
+                          <i className="fa-solid fa-music" style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.3 }}></i>
+                          <p>No songs found for "{musicSearchQuery}"</p>
+                          <p style={{ fontSize: '12px', marginTop: '8px' }}>Try a different search term</p>
+                        </div>
+                      )}
+                      {getFilteredMusic().map((music) => {
+                        // Checkmark only shows when music is actually selected in videoData (not just selectedMusic)
+                        const isSelected = videoData.music?.id === music.id;
+                        const isCurrentlySelected = selectedMusic?.id === music.id;
+                        return (
                         <div 
                           key={music.id} 
-                          className={`music-item ${videoData.music?.id === music.id ? 'selected' : ''}`}
-                          onClick={() => {
-                            setVideoData({...videoData, music: music});
-                            setShowMusicLibrary(false);
+                          className={`music-item ${isSelected ? 'selected' : ''}`}
+                          onClick={(e) => {
+                            // Clear any existing timeout
+                            if (clickTimeoutRef.current) {
+                              clearTimeout(clickTimeoutRef.current);
+                            }
+                            
+                            // Set a timeout to detect if it's a single click
+                            clickTimeoutRef.current = setTimeout(() => {
+                              // Single click: Select the music
+                              const updatedMusic = {
+                                ...music,
+                                audioUrl: music.audioUrl || music.url || ''
+                              };
+                              setSelectedMusic(updatedMusic);
+                              // Update video preview immediately for live preview
+                              setVideoData({...videoData, music: updatedMusic});
+                              clickTimeoutRef.current = null;
+                            }, 300); // 300ms delay to detect double click
                           }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            
+                            // Clear the single click timeout
+                            if (clickTimeoutRef.current) {
+                              clearTimeout(clickTimeoutRef.current);
+                              clickTimeoutRef.current = null;
+                            }
+                            
+                            // Double click: Remove music
+                            if (isSelected || isCurrentlySelected) {
+                              setSelectedMusic(null);
+                              setVideoData({...videoData, music: null});
+                              // Stop music if playing
+                              if (musicPreviewAudioRef.current) {
+                                musicPreviewAudioRef.current.pause();
+                                musicPreviewAudioRef.current.currentTime = 0;
+                              }
+                              setPlayingMusicId(null);
+                              setUploadSuccess('Music removed');
+                              setTimeout(() => setUploadSuccess(null), 2000);
+                            } else {
+                              // If not selected, double click should also remove if there's any selection
+                              setSelectedMusic(null);
+                              setVideoData({...videoData, music: null});
+                              if (musicPreviewAudioRef.current) {
+                                musicPreviewAudioRef.current.pause();
+                                musicPreviewAudioRef.current.currentTime = 0;
+                              }
+                              setPlayingMusicId(null);
+                            }
+                          }}
+                          title={isSelected ? 'Double click to remove' : 'Click to select, double click to remove'}
                         >
                           <div className="music-cover">
                             <i className="fa-solid fa-music"></i>
                             {music.isTrending && <span className="trending-badge">🔥</span>}
-                          </div>
-                          <div className="music-info">
-                            <h4>{music.name}</h4>
-                            <p>{music.artist}</p>
-                          </div>
-                          <div className="music-duration">
-                            <span>{music.duration}</span>
-                            <button 
-                              className="preview-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                alert(`Playing: ${music.name} by ${music.artist}`);
-                              }}
-                            >
-                              <i className="fa-solid fa-play"></i>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {showOnlineTab && (
-                  <div className="music-list">
-                    {onlineMusicResults.length > 0 ? (
-                      onlineMusicResults.map((music) => (
-                        <div 
-                          key={music.id} 
-                          className={`music-item ${videoData.music?.id === music.id ? 'selected' : ''}`}
-                          onClick={() => {
-                            setVideoData({...videoData, music: music});
-                            setShowMusicLibrary(false);
-                          }}
-                        >
-                          {music.thumbnail ? (
-                            <div className="music-cover" style={{ backgroundImage: `url(${music.thumbnail})` }}>
-                              <div className="music-cover-overlay">
-                                <i className="fa-solid fa-music"></i>
+                            {/* Checkmark icon - only show when music is actually selected in videoData */}
+                            {isSelected && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '4px',
+                                right: '4px',
+                                width: '20px',
+                                height: '20px',
+                                background: '#FF0050',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontSize: '12px',
+                                zIndex: 10,
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                              }}>
+                                <i className="fa-solid fa-check"></i>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="music-cover">
-                              <i className="fa-solid fa-music"></i>
-                              {music.isTrending && <span className="trending-badge">🔥</span>}
-                            </div>
-                          )}
+                            )}
+                          </div>
                           <div className="music-info">
                             <h4>{music.name}</h4>
                             <p>{music.artist}</p>
@@ -1689,23 +2129,174 @@ const UploadPage = ({ onClose }) => {
                               className="preview-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                alert(`Playing: ${music.name} by ${music.artist}`);
+                                
+                                // If same music is playing, stop it
+                                if (playingMusicId === music.id && musicPreviewAudioRef.current) {
+                                  musicPreviewAudioRef.current.pause();
+                                  musicPreviewAudioRef.current.currentTime = 0;
+                                  setPlayingMusicId(null);
+                                  setUploadSuccess(`Stopped: ${music.name}`);
+                                  setTimeout(() => setUploadSuccess(null), 2000);
+                                  return;
+                                }
+
+                                // Stop any currently playing music
+                                if (musicPreviewAudioRef.current) {
+                                  musicPreviewAudioRef.current.pause();
+                                  musicPreviewAudioRef.current.currentTime = 0;
+                                }
+
+                                // If music has audioUrl, play it
+                                if (music.audioUrl && music.audioUrl !== '' && !music.audioUrl.includes('example.com')) {
+                                  if (musicPreviewAudioRef.current) {
+                                    try {
+                                      console.log('🎵 Attempting to play:', music.name, 'URL:', music.audioUrl);
+                                      
+                                      const audio = musicPreviewAudioRef.current;
+                                      
+                                      // Set audio properties
+                                      audio.crossOrigin = 'anonymous';
+                                      audio.volume = 0.8; // Set volume to 80%
+                                      audio.src = music.audioUrl;
+                                      
+                                      // Add event listeners for better debugging
+                                      const handleCanPlay = () => {
+                                        console.log('✅ Audio can play now');
+                                        audio.play().then(() => {
+                                          console.log('✅ Music playing successfully');
+                                          setPlayingMusicId(music.id);
+                                          setUploadSuccess(`Playing: ${music.name}`);
+                                          setTimeout(() => setUploadSuccess(null), 2000);
+                                        }).catch((err) => {
+                                          console.error('❌ Play error:', err);
+                                          setPlayingMusicId(music.id);
+                                          setUploadSuccess(`Selected: ${music.name} (Preview unavailable)`);
+                                          setTimeout(() => setUploadSuccess(null), 2000);
+                                        });
+                                      };
+                                      
+                                      const handleError = (e) => {
+                                        console.error('❌ Audio error:', e, 'URL:', music.audioUrl);
+                                        setPlayingMusicId(music.id);
+                                        setUploadSuccess(`Selected: ${music.name} (Preview unavailable)`);
+                                        setTimeout(() => setUploadSuccess(null), 2000);
+                                      };
+                                      
+                                      // Remove old listeners
+                                      audio.removeEventListener('canplay', handleCanPlay);
+                                      audio.removeEventListener('error', handleError);
+                                      
+                                      // Add new listeners
+                                      audio.addEventListener('canplay', handleCanPlay, { once: true });
+                                      audio.addEventListener('error', handleError, { once: true });
+                                      
+                                      // Load the audio
+                                      audio.load();
+                                      
+                                    } catch (err) {
+                                      console.error('❌ Setup error:', err);
+                                      setPlayingMusicId(music.id);
+                                      setUploadSuccess(`Selected: ${music.name}`);
+                                      setTimeout(() => setUploadSuccess(null), 2000);
+                                    }
+                                  } else {
+                                    console.error('❌ Audio ref not available');
+                                    setPlayingMusicId(music.id);
+                                    setUploadSuccess(`Selected: ${music.name}`);
+                                    setTimeout(() => setUploadSuccess(null), 2000);
+                                  }
+                                } else {
+                                  // If no valid audioUrl, just select it
+                                  console.log('⚠️ No valid audioUrl for:', music.name);
+                                  setPlayingMusicId(music.id);
+                                  setUploadSuccess(`Selected: ${music.name} by ${music.artist}`);
+                                  setTimeout(() => setUploadSuccess(null), 2000);
+                                }
                               }}
                             >
-                              <i className="fa-solid fa-play"></i>
+                              <i className={`fa-solid ${playingMusicId === music.id ? 'fa-pause' : 'fa-play'}`}></i>
                             </button>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="empty-music-state">
-                        <i className="fa-solid fa-music"></i>
-                        <p>Search for your favorite music online</p>
-                        <span>Try searching for: "Shape of You", "Blinding Lights", "Watermelon Sugar"...</span>
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
+
+                  {/* Save/Cancel Buttons - Fixed at bottom, outside scrollable area */}
+                  <div className="music-library-actions" style={{
+                    flexShrink: 0,
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: '#F5F7FA',
+                    borderTop: '2px solid rgba(0, 0, 0, 0.1)',
+                    padding: '10px 16px',
+                    display: 'flex',
+                    gap: '8px',
+                    zIndex: 100,
+                    boxShadow: '0 -4px 15px rgba(0, 0, 0, 0.15)',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}>
+                      <button
+                        className="cancel-music-btn"
+                        onClick={() => {
+                          // Cancel - revert to original music
+                          if (selectedMusic) {
+                            // Revert to previous music
+                            const previousMusic = videoData.music;
+                            setVideoData({...videoData, music: previousMusic});
+                          }
+                          setSelectedMusic(null);
+                          setShowMusicLibrary(false);
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          background: '#E0F2FE',
+                          color: '#0F172A',
+                          border: '1px solid #E0F2FE',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="save-music-btn"
+                        onClick={() => {
+                          // Save - confirm music selection
+                          if (selectedMusic) {
+                            setVideoData({...videoData, music: selectedMusic});
+                            setUploadSuccess(`Music saved: ${selectedMusic.name}`);
+                            setTimeout(() => setUploadSuccess(null), 2000);
+                          }
+                          setSelectedMusic(null);
+                          setShowMusicLibrary(false);
+                        }}
+                        disabled={!selectedMusic}
+                        style={{
+                          flex: 1,
+                          padding: '8px 16px',
+                          background: selectedMusic ? '#FF0050' : '#ccc',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: selectedMusic ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.3s ease',
+                          opacity: selectedMusic ? 1 : 0.6
+                        }}
+                      >
+                        Save
+                      </button>
+                    </div>
                 </div>
               </div>
             </div>

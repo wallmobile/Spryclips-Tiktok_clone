@@ -3077,10 +3077,13 @@ body.upload-page-open {
     max-width: 100% !important;
     min-width: 0 !important;
     overflow-x: hidden !important;
-    overflow-y: visible !important;
-    padding: 1rem !important;
-    padding-bottom: 1rem !important;
+    overflow-y: hidden !important;
+    padding: 0 !important;
     margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    position: relative !important;
   }
 
   .music-library-search {
@@ -3172,6 +3175,7 @@ body.upload-page-open {
     font-size: 1.25rem !important;
     flex-shrink: 0 !important;
     border-radius: 6px !important;
+    position: relative !important;
   }
 
   .music-info {
@@ -3671,8 +3675,13 @@ body.upload-page-open {
 }
 
 .category-btn.active {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  background: #FF0050 !important; /* Solid Red */
   border-color: transparent;
+  color: #FFFFFF !important; /* White text for active state */
+}
+
+.category-btn.active i {
+  color: #FFFFFF !important; /* White icon for active state */
 }
 
 .category-btn:hover {
@@ -4362,8 +4371,67 @@ body.upload-page-open {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px;
+  padding-bottom: 100px; /* Space for buttons */
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Music Library Actions - Save/Cancel Buttons */
+.music-library-actions {
+  flex-shrink: 0 !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: #F5F7FA !important;
+  border-top: 2px solid rgba(0, 0, 0, 0.1) !important;
+  padding: 10px 16px !important;
+  display: flex !important;
+  gap: 8px !important;
+  z-index: 100 !important;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.15) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-top: 0 !important;
+}
+
+.cancel-music-btn,
+.save-music-btn {
+  flex: 1 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+}
+
+.cancel-music-btn {
+  background: #E0F2FE !important;
+  color: #0F172A !important;
+  border: 1px solid #E0F2FE !important;
+}
+
+.cancel-music-btn:hover {
+  background: #BAE6FD !important;
+}
+
+.save-music-btn {
+  background: #FF0050 !important;
+  color: #fff !important;
+}
+
+.save-music-btn:hover:not(:disabled) {
+  background: #FE2C55 !important;
+}
+
+.save-music-btn:disabled {
+  background: #ccc !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
 
 /* Music modal body in split layout */
@@ -4610,7 +4678,7 @@ body.dark-mode .category-btn:hover {
 }
 
 body.dark-mode .category-btn.active {
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important;
+  background: #FF0050 !important; /* Solid Red */
   color: #fff !important;
 }
 

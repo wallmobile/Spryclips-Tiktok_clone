@@ -161,7 +161,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     setIsStarting(true);
     try {
       // Call backend API to create stream and get unique roomId
-      const API_URL = window.APP_CONFIG?.API_URL || 'https://spryclips.com';
+      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
       
       const response = await fetch(`${API_URL}/api/live/start`, {
         method: 'POST',
