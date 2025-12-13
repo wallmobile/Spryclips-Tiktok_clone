@@ -5,7 +5,6 @@ import { uploadVideo, promoteVideo } from '../../api/videos';
 import { saveDraft, scheduleVideo } from '../../api/drafts';
 import { searchSounds } from '../../api/music';
 import { searchMusic } from '../../api/search';
-import faceDetection from '../../utils/faceDetection';
 import './UploadPage.css';
 
 const MAX_VIDEO_MB = 100;
@@ -18,9 +17,8 @@ const UploadPage = ({ onClose }) => {
   const location = useLocation();
   const fileInputRef = useRef(null);
   const videoPlayerRef = useRef(null);
+  const editVideoPlayerRef = useRef(null);
   const voiceoverInputRef = useRef(null);
-  const autoCropIntervalRef = useRef(null);
-  const previousFaceBoxRef = useRef(null);
   const feedbackRef = useRef(null);
   
   const [uploadedVideo, setUploadedVideo] = useState(null);
@@ -37,21 +35,19 @@ const UploadPage = ({ onClose }) => {
   const [onlineMusicResults, setOnlineMusicResults] = useState([]);
   const [showOnlineTab, setShowOnlineTab] = useState(false);
   
-  // Smart Auto-Crop states
-  const [autoCropEnabled, setAutoCropEnabled] = useState(false);
-  const [isModelLoading, setIsModelLoading] = useState(false);
-  const [faceBox, setFaceBox] = useState(null);
-  const [isDetecting, setIsDetecting] = useState(false);
-  
   // Advanced Editor states
   const [activeEditTab, setActiveEditTab] = useState('trim');
   const [textOverlays, setTextOverlays] = useState([]);
+  const [selectedTextStyle, setSelectedTextStyle] = useState(null);
   const [stickers, setStickers] = useState([]);
+  const [draggingElement, setDraggingElement] = useState(null); // {type: 'text'|'sticker', id: number}
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedFilter, setSelectedFilter] = useState('None');
   const [selectedEffectId, setSelectedEffectId] = useState(null);
   const [selectedSpeed, setSelectedSpeed] = useState('1x');
   const [transitions, setTransitions] = useState([]);
   const [voiceover, setVoiceover] = useState(null);
+  const [voiceoverFile, setVoiceoverFile] = useState(null);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState('9:16');
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
@@ -130,12 +126,55 @@ const UploadPage = ({ onClose }) => {
     }
   }, [location.state]);
 
+  // Calculate complete filter style including transitions
+  const getCompleteFilterStyle = () => {
+    let filter = selectedFilterStyle;
+    if (transitions.includes('Blur')) {
+      filter += (filter !== 'none' ? ' ' : '') + 'blur(2px)';
+    }
+    return filter || 'none';
+  };
+
+  // Calculate complete transform style including transitions
+  const getCompleteTransformStyle = () => {
+    let transforms = [];
+    if (transitions.includes('Zoom')) {
+      transforms.push('scale(1.1)');
+    }
+    if (transitions.includes('Shake')) {
+      transforms.push('translateX(5px)');
+    }
+    return transforms.length > 0 ? transforms.join(' ') : 'none';
+  };
+
   useEffect(() => {
     if (videoPlayerRef.current) {
       const numericSpeed = parseFloat(selectedSpeed) || 1;
       videoPlayerRef.current.playbackRate = numericSpeed;
     }
+    // Also apply to edit panel video
+    if (editVideoPlayerRef.current) {
+      const numericSpeed = parseFloat(selectedSpeed) || 1;
+      editVideoPlayerRef.current.playbackRate = numericSpeed;
+    }
   }, [selectedSpeed]);
+
+  // Apply effects/transitions to video preview (both main and edit panel)
+  useEffect(() => {
+    if (videoPlayerRef.current) {
+      const video = videoPlayerRef.current;
+      video.style.transform = getCompleteTransformStyle();
+      video.style.filter = getCompleteFilterStyle();
+      video.style.transition = transitions.length > 0 ? 'all 0.3s ease-in-out' : 'none';
+    }
+    // Also apply to edit panel video for live preview
+    if (editVideoPlayerRef.current) {
+      const video = editVideoPlayerRef.current;
+      video.style.transform = getCompleteTransformStyle();
+      video.style.filter = getCompleteFilterStyle();
+      video.style.transition = transitions.length > 0 ? 'all 0.3s ease-in-out' : 'none';
+    }
+  }, [transitions, selectedFilter, selectedFilterStyle]);
 
   useEffect(() => {
     return () => {
@@ -144,6 +183,19 @@ const UploadPage = ({ onClose }) => {
       }
     };
   }, [voiceover]);
+
+  // Get text style classes based on style name
+  const getTextStyleClass = (style) => {
+    const styleMap = {
+      'Bold': 'text-bold',
+      'Italic': 'text-italic',
+      'Outline': 'text-outline',
+      'Shadow': 'text-shadow',
+      'Neon': 'text-neon',
+      'Rainbow': 'text-rainbow'
+    };
+    return styleMap[style] || '';
+  };
 
   const handleAddTextOverlay = () => {
     const content = textInput.trim();
@@ -154,18 +206,86 @@ const UploadPage = ({ onClose }) => {
       ...prev,
       {
         id: Date.now(),
-        content
+        content,
+        style: selectedTextStyle,
+        x: 50, // Default center position (percentage)
+        y: 20 + (prev.length * 15) // Stagger vertically
       }
     ]);
     setTextInput('');
+    setSelectedTextStyle(null); // Reset style after adding
   };
 
   const handleRemoveTextOverlay = (id) => {
     setTextOverlays((prev) => prev.filter((overlay) => overlay.id !== id));
   };
 
+  const handleRemoveSticker = (id) => {
+    setStickers((prev) => prev.filter((sticker) => sticker.id !== id));
+  };
+
   const toggleSticker = (emoji) => {
-    setStickers((prev) => (prev.includes(emoji) ? prev.filter((item) => item !== emoji) : [...prev, emoji]));
+    setStickers((prev) => {
+      const existingIndex = prev.findIndex(s => s.emoji === emoji);
+      if (existingIndex >= 0) {
+        // Remove if already exists
+        return prev.filter((_, index) => index !== existingIndex);
+      } else {
+        // Add new sticker with position
+        return [...prev, {
+          id: Date.now(),
+          emoji,
+          x: 20 + (prev.length % 3) * 30, // Grid positioning
+          y: 20 + Math.floor(prev.length / 3) * 20
+        }];
+      }
+    });
+  };
+
+  // Drag handlers for text and stickers
+  const handleMouseDown = (e, type, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setDraggingElement({ type, id });
+    setDragOffset({ x, y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!draggingElement) return;
+    
+    const videoContainer = e.currentTarget.closest('.video-preview, .edit-modal-preview');
+    if (!videoContainer) return;
+    
+    const rect = videoContainer.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    if (draggingElement.type === 'text') {
+      setTextOverlays((prev) =>
+        prev.map((overlay) =>
+          overlay.id === draggingElement.id
+            ? { ...overlay, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+            : overlay
+        )
+      );
+    } else if (draggingElement.type === 'sticker') {
+      setStickers((prev) =>
+        prev.map((sticker) =>
+          sticker.id === draggingElement.id
+            ? { ...sticker, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+            : sticker
+        )
+      );
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggingElement(null);
+    setDragOffset({ x: 0, y: 0 });
   };
 
   const toggleTransition = (name) => {
@@ -177,6 +297,21 @@ const UploadPage = ({ onClose }) => {
     if (!file) {
       return;
     }
+    
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      setUploadError('Please select a valid audio file');
+      setTimeout(() => setUploadError(null), 3000);
+      return;
+    }
+    
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError('Audio file size must be less than 50MB');
+      setTimeout(() => setUploadError(null), 3000);
+      return;
+    }
+    
     if (voiceover?.src && voiceover.src.startsWith('blob:')) {
       URL.revokeObjectURL(voiceover.src);
     }
@@ -186,6 +321,7 @@ const UploadPage = ({ onClose }) => {
       name: file.name,
       size: file.size
     });
+    setVoiceoverFile(file); // Store the actual File object
   };
 
   const handleClearVoiceover = () => {
@@ -193,6 +329,11 @@ const UploadPage = ({ onClose }) => {
       URL.revokeObjectURL(voiceover.src);
     }
     setVoiceover(null);
+    setVoiceoverFile(null);
+    // Reset the file input
+    if (voiceoverInputRef.current) {
+      voiceoverInputRef.current.value = '';
+    }
   };
 
   const handleFileSelect = (file) => {
@@ -347,7 +488,7 @@ const UploadPage = ({ onClose }) => {
         transitions,
         voiceover: !!voiceover
       },
-      autoCrop: autoCropEnabled,
+      voiceoverFile: voiceoverFile, // Include the actual File object
       duration: videoInfo.duration,
       format: videoInfo.format,
       resolution: videoInfo.resolution,
@@ -413,6 +554,11 @@ const UploadPage = ({ onClose }) => {
 
     if (metadata.editor?.speed) {
       formData.append('speed', metadata.editor.speed);
+    }
+
+    // Append voiceover file if exists
+    if (metadata.voiceoverFile) {
+      formData.append('voiceover', metadata.voiceoverFile);
     }
 
     formData.append('ageRestriction', metadata.ageRestriction);
@@ -752,6 +898,24 @@ const UploadPage = ({ onClose }) => {
     }
   };
 
+  // Calculate adjusted duration based on speed
+  const getAdjustedDuration = () => {
+    if (!videoInfo.duration) return 0;
+    const speed = parseFloat(selectedSpeed) || 1;
+    return videoInfo.duration / speed;
+  };
+
+  // Calculate aspect ratio styles for video preview
+  const getAspectRatioStyle = () => {
+    const aspectRatios = {
+      '9:16': { aspectRatio: '9/16', maxWidth: '100%', maxHeight: '80vh' },
+      '1:1': { aspectRatio: '1/1', maxWidth: '60vh', maxHeight: '60vh' },
+      '16:9': { aspectRatio: '16/9', maxWidth: '100%', maxHeight: '60vh' },
+      '4:5': { aspectRatio: '4/5', maxWidth: '80%', maxHeight: '80vh' }
+    };
+    return aspectRatios[selectedAspectRatio] || aspectRatios['9:16'];
+  };
+
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -838,72 +1002,7 @@ const UploadPage = ({ onClose }) => {
     }, 500);
   };
 
-  // Load face detection model on mount
-  useEffect(() => {
-    const loadModel = async () => {
-      setIsModelLoading(true);
-      await faceDetection.loadModel();
-      setIsModelLoading(false);
-    };
-    loadModel();
-  }, []);
 
-  // Handle Auto-Crop toggle
-  const handleAutoCropToggle = async (enabled) => {
-    setAutoCropEnabled(enabled);
-    
-    if (enabled) {
-      if (!faceDetection.isModelLoaded) {
-        setIsModelLoading(true);
-        await faceDetection.loadModel();
-        setIsModelLoading(false);
-      }
-      startAutoCrop();
-    } else {
-      stopAutoCrop();
-    }
-  };
-
-  // Start auto-crop detection
-  const startAutoCrop = () => {
-    if (autoCropIntervalRef.current) {
-      stopAutoCrop();
-    }
-
-    setIsDetecting(true);
-    autoCropIntervalRef.current = setInterval(async () => {
-      if (!videoPlayerRef.current) return;
-
-      const video = videoPlayerRef.current;
-      if (video.readyState >= 2) { // HAVE_CURRENT_DATA
-        const detectedBox = await faceDetection.detectFaces(video);
-        
-        if (detectedBox) {
-          // Smooth tracking with interpolation
-          const currentBox = previousFaceBoxRef.current
-            ? faceDetection.interpolateBoxes(previousFaceBoxRef.current, detectedBox, 0.7)
-            : detectedBox;
-          
-          setFaceBox(currentBox);
-          previousFaceBoxRef.current = currentBox;
-        } else {
-          previousFaceBoxRef.current = null;
-          setFaceBox(null);
-        }
-      }
-    }, 100); // Check every 100ms for smooth tracking
-  };
-
-  // Stop auto-crop detection
-  const stopAutoCrop = () => {
-    if (autoCropIntervalRef.current) {
-      clearInterval(autoCropIntervalRef.current);
-      autoCropIntervalRef.current = null;
-    }
-    setIsDetecting(false);
-    setFaceBox(null);
-    previousFaceBoxRef.current = null;
-  };
 
   // Prevent horizontal scroll on body when upload page is open
   useEffect(() => {
@@ -913,7 +1012,6 @@ const UploadPage = ({ onClose }) => {
     return () => {
       document.body.classList.remove('upload-page-open');
       document.documentElement.classList.remove('upload-page-open');
-      stopAutoCrop();
     };
   }, []);
 
@@ -978,37 +1076,70 @@ const UploadPage = ({ onClose }) => {
                     src={videoPreview}
                     controls
                     className="preview-video"
-                    style={{ filter: selectedFilterStyle }}
+                    style={{ 
+                      filter: getCompleteFilterStyle(),
+                      transform: getCompleteTransformStyle(),
+                      transition: transitions.length > 0 ? 'all 0.3s ease-in-out' : 'none',
+                      ...getAspectRatioStyle(),
+                      objectFit: 'contain'
+                    }}
                     poster=""
                   />
-                  {/* Face Detection Bounding Box Overlay */}
-                  {faceBox && autoCropEnabled && (
+                  {textOverlays.length > 0 && (
                     <div 
-                      className="face-bounding-box"
-                      style={{
-                        position: 'absolute',
-                        left: `${faceBox.x * 100}%`,
-                        top: `${faceBox.y * 100}%`,
-                        width: `${faceBox.width * 100}%`,
-                        height: `${faceBox.height * 100}%`,
-                        border: '3px solid #00D9FF',
-                        borderRadius: '12px',
-                        pointerEvents: 'none',
-                        zIndex: 50,
-                        boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)',
-                        animation: 'pulse 2s infinite'
-                      }}
+                      className="text-overlays-preview"
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
                     >
-                      <div className="face-indicator">
-                        <i className="fa-solid fa-face-smile"></i>
-                      </div>
+                      {textOverlays.map((overlay) => (
+                        <span 
+                          key={overlay.id} 
+                          className={`text-overlay-preview-item ${overlay.style ? getTextStyleClass(overlay.style) : ''}`}
+                          style={{
+                            position: 'absolute',
+                            left: `${overlay.x || 50}%`,
+                            top: `${overlay.y || 20}%`,
+                            transform: 'translate(-50%, -50%)',
+                            cursor: draggingElement?.type === 'text' && draggingElement?.id === overlay.id ? 'grabbing' : 'grab',
+                            pointerEvents: 'auto',
+                            userSelect: 'none'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, 'text', overlay.id)}
+                        >
+                          {overlay.content}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  {textOverlays.length > 0 && (
-                    <div className="text-overlays-preview">
-                      {textOverlays.map((overlay) => (
-                        <span key={overlay.id} className="text-overlay-preview-item">
-                          {overlay.content}
+                  
+                  {/* Stickers Preview */}
+                  {stickers.length > 0 && (
+                    <div 
+                      className="stickers-preview"
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      {stickers.map((sticker) => (
+                        <span 
+                          key={sticker.id} 
+                          className="sticker-preview-item"
+                          style={{
+                            position: 'absolute',
+                            left: `${sticker.x || 20}%`,
+                            top: `${sticker.y || 20}%`,
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: '48px',
+                            cursor: draggingElement?.type === 'sticker' && draggingElement?.id === sticker.id ? 'grabbing' : 'grab',
+                            pointerEvents: 'auto',
+                            zIndex: 10,
+                            textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
+                            userSelect: 'none'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, 'sticker', sticker.id)}
+                        >
+                          {sticker.emoji}
                         </span>
                       ))}
                     </div>
@@ -1018,7 +1149,14 @@ const UploadPage = ({ onClose }) => {
                     <div className="video-stats">
                       <div className="stat-item">
                         <i className="fa-solid fa-clock"></i>
-                        <span>{formatDuration(videoInfo.duration)}</span>
+                        <span>
+                          {formatDuration(videoInfo.duration)}
+                          {selectedSpeed !== '1x' && (
+                            <span style={{ marginLeft: '8px', color: '#FF0050', fontWeight: 600 }}>
+                              ({formatDuration(getAdjustedDuration())} at {selectedSpeed})
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="stat-item">
                         <i className="fa-solid fa-file"></i>
@@ -1620,11 +1758,78 @@ const UploadPage = ({ onClose }) => {
                 {/* Video Preview on Left */}
                 <div className="edit-modal-preview">
                   <video
+                    ref={editVideoPlayerRef}
                     src={videoPreview}
                     controls
                     className="edit-preview-video"
-                    style={{ filter: selectedFilterStyle }}
+                    style={{ 
+                      filter: getCompleteFilterStyle(),
+                      transform: getCompleteTransformStyle(),
+                      transition: transitions.length > 0 ? 'all 0.3s ease-in-out' : 'none',
+                      ...getAspectRatioStyle(),
+                      objectFit: 'contain'
+                    }}
                   />
+                  {/* Text Overlays on Edit Panel Video */}
+                  {textOverlays.length > 0 && (
+                    <div 
+                      className="text-overlays-preview"
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      {textOverlays.map((overlay) => (
+                        <span 
+                          key={overlay.id} 
+                          className={`text-overlay-preview-item ${overlay.style ? getTextStyleClass(overlay.style) : ''}`}
+                          style={{
+                            position: 'absolute',
+                            left: `${overlay.x || 50}%`,
+                            top: `${overlay.y || 20}%`,
+                            transform: 'translate(-50%, -50%)',
+                            cursor: draggingElement?.type === 'text' && draggingElement?.id === overlay.id ? 'grabbing' : 'grab',
+                            pointerEvents: 'auto',
+                            userSelect: 'none'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, 'text', overlay.id)}
+                        >
+                          {overlay.content}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Stickers Preview on Edit Panel Video */}
+                  {stickers.length > 0 && (
+                    <div 
+                      className="stickers-preview"
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      {stickers.map((sticker) => (
+                        <span 
+                          key={sticker.id} 
+                          className="sticker-preview-item"
+                          style={{
+                            position: 'absolute',
+                            left: `${sticker.x || 20}%`,
+                            top: `${sticker.y || 20}%`,
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: '48px',
+                            cursor: draggingElement?.type === 'sticker' && draggingElement?.id === sticker.id ? 'grabbing' : 'grab',
+                            pointerEvents: 'auto',
+                            zIndex: 10,
+                            textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
+                            userSelect: 'none'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, 'sticker', sticker.id)}
+                        >
+                          {sticker.emoji}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Controls on Right */}
@@ -1663,34 +1868,6 @@ const UploadPage = ({ onClose }) => {
                     </div>
                   </div>
                   
-                  {/* Smart Auto-Crop Toggle */}
-                  <div className="auto-crop-controls">
-                    <div className="setting-item">
-                      <div className="setting-info">
-                        <span>
-                          <i className="fa-solid fa-robot"></i> Smart Auto-Crop
-                        </span>
-                        {isDetecting && <span className="detecting-badge">
-                          <i className="fa-solid fa-circle"></i> Detecting...
-                        </span>}
-                        {isModelLoading && <span className="loading-badge">
-                          <i className="fa-solid fa-spinner fa-spin"></i> Loading AI...
-                        </span>}
-                      </div>
-                      <div 
-                        className={`toggle-switch ${autoCropEnabled ? 'active' : ''}`}
-                        onClick={() => handleAutoCropToggle(!autoCropEnabled)}
-                      >
-                        <div className="toggle-slider"></div>
-                      </div>
-                    </div>
-                    <p className="setting-description">
-                      {autoCropEnabled 
-                        ? 'AI will automatically center and track faces in your video' 
-                        : 'Enable to automatically track and center faces'}
-                    </p>
-                  </div>
-
                   {/* Aspect Ratio Selection */}
                   <div className="aspect-ratio-section">
                     <h4>
@@ -1767,11 +1944,36 @@ const UploadPage = ({ onClose }) => {
                   )}
                   <div className="text-styles-grid">
                     {['Bold', 'Italic', 'Outline', 'Shadow', 'Neon', 'Rainbow'].map((style, idx) => (
-                      <button key={idx} className="text-style-btn">
+                      <button 
+                        key={idx} 
+                        className={`text-style-btn ${selectedTextStyle === style ? 'active' : ''}`}
+                        onClick={() => setSelectedTextStyle(selectedTextStyle === style ? null : style)}
+                      >
                         <span>{style}</span>
                       </button>
                     ))}
                   </div>
+                  {/* Added Stickers List */}
+                  {stickers.length > 0 && (
+                    <div className="text-overlay-list" style={{ marginBottom: '20px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#0F172A' }}>
+                        <i className="fa-solid fa-face-smile"></i> Added Stickers
+                      </h4>
+                      {stickers.map((sticker) => (
+                        <div key={sticker.id} className="text-overlay-item">
+                          <span style={{ fontSize: '24px' }}>{sticker.emoji}</span>
+                          <button
+                            type="button"
+                            className="remove-overlay-btn"
+                            onClick={() => handleRemoveSticker(sticker.id)}
+                          >
+                            <i className="fa-solid fa-times"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="stickers-library">
                     <h4>
                       <i className="fa-solid fa-face-smile"></i> Stickers
@@ -1780,7 +1982,7 @@ const UploadPage = ({ onClose }) => {
                       {availableStickers.map((emoji) => (
                         <button
                           key={emoji}
-                          className={`sticker-btn ${stickers.includes(emoji) ? 'active' : ''}`}
+                          className={`sticker-btn ${stickers.some(s => s.emoji === emoji) ? 'active' : ''}`}
                           onClick={() => toggleSticker(emoji)}
                           type="button"
                         >
@@ -1874,8 +2076,8 @@ const UploadPage = ({ onClose }) => {
                         onClick={() => voiceoverInputRef.current?.click()}
                         type="button"
                       >
-                        <i className="fa-solid fa-circle"></i>
-                        Upload / Record
+                        <i className="fa-solid fa-upload"></i>
+                        Upload Audio File
                       </button>
                       <input
                         ref={voiceoverInputRef}
@@ -1907,7 +2109,35 @@ const UploadPage = ({ onClose }) => {
                     Cancel
                   </button>
                   <button className="apply-edit-btn" onClick={() => {
-                    alert('Edit applied successfully! ✨');
+                    // Apply effects to video preview
+                    if (videoPlayerRef.current) {
+                      const video = videoPlayerRef.current;
+                      let transform = '';
+                      let filter = selectedFilterStyle;
+                      
+                      // Apply all selected transition effects
+                      if (transitions.includes('Zoom')) {
+                        transform += 'scale(1.1) ';
+                      }
+                      if (transitions.includes('Blur')) {
+                        filter += ' blur(2px)';
+                      }
+                      if (transitions.includes('Shake')) {
+                        transform += 'translateX(2px) ';
+                      }
+                      if (transitions.includes('Fade')) {
+                        video.style.opacity = '0.9';
+                      } else {
+                        video.style.opacity = '1';
+                      }
+                      
+                      video.style.transform = transform.trim() || 'none';
+                      video.style.filter = filter || 'none';
+                      video.style.transition = 'all 0.3s ease';
+                    }
+                    
+                    setUploadSuccess('Edit applied successfully! ✨');
+                    setTimeout(() => setUploadSuccess(null), 3000);
                     setShowEditPanel(false);
                   }}>
                     Apply Changes
