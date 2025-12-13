@@ -159,21 +159,6 @@ const Login = ({ onClose, onSwitchToSignup }) => {
 
   return (
     <div className="tiktok-signup-container">
-      <button 
-        className="close-btn-tiktok" 
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (onClose && typeof onClose === 'function') {
-            onClose();
-          }
-        }} 
-        aria-label="Close login dialog"
-        type="button"
-      >
-        ×
-      </button>
-
       <div className="signup-left">
         <div className="hero-animation" aria-hidden="true">
           <div className="floating-videos">
