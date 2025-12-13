@@ -4,7 +4,6 @@ import { getTrendingHashtags } from '../../api/hashtags';
 import { getTrendingVideos } from '../../api/recommendations';
 import { videos as sampleVideos } from '../../data/sampleData';
 import useOverlayPage from '../../hooks/useOverlayPage';
-import SearchPage from './SearchPage';
 import './Explore.css';
 import '../profile/Profile.css'; // Import for video modal styles
 
@@ -109,7 +108,6 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
   const navigate = useNavigate();
   const isOverlay = mode === 'overlay';
   const [activeFilter, setActiveFilter] = useState('all');
-  const [showSearch, setShowSearch] = useState(false);
   const [videos, setVideos] = useState([]);
   const [hashtags, setHashtags] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -363,14 +361,33 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
           }
         }
         const response = await getTrendingVideos(params);
+        console.log('[Explore] API Response:', {
+          hasResponse: !!response,
+          hasVideos: !!response?.videos,
+          videosCount: response?.videos?.length || 0,
+          responseKeys: response ? Object.keys(response) : [],
+          firstVideo: response?.videos?.[0] || null
+        });
+        
         const list = Array.isArray(response?.videos)
           ? response.videos
           : Array.isArray(response)
           ? response
           : response?.data || [];
         
+        console.log('[Explore] Processed list:', {
+          listLength: list.length,
+          firstItem: list[0] || null
+        });
+        
         if (list && list.length > 0) {
           const normalized = list.map(normalizeVideo).filter(Boolean);
+          console.log('[Explore] Normalized videos:', {
+            normalizedLength: normalized.length,
+            filteredOut: list.length - normalized.length,
+            firstNormalized: normalized[0] || null
+          });
+          
           if (normalized.length > 0) {
             setVideos(normalized);
             updateFiltersFromVideos(normalized);
@@ -379,7 +396,7 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
         }
         
         // No videos found - show empty state
-        console.log('No videos found from backend');
+        console.log('[Explore] No videos found from backend. Response:', response);
         setVideos([]);
         resetPlayerState();
         updateFiltersFromVideos([]);
@@ -446,21 +463,32 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
     >
       <div className="explore-header">
         {isOverlay && (
-          <button className="explore-close-btn" onClick={onClose} aria-label="Close explore overlay">
+          <button 
+            className="explore-close-btn" 
+            onClick={onClose} 
+            aria-label="Close explore overlay"
+            style={{
+              transition: 'none',
+              transform: 'translateY(-50%)',
+              willChange: 'auto'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.setProperty('transform', 'translateY(-50%)', 'important');
+              e.currentTarget.style.setProperty('transition', 'none', 'important');
+              e.currentTarget.style.setProperty('scale', '1', 'important');
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.setProperty('transform', 'translateY(-50%)', 'important');
+              e.currentTarget.style.setProperty('transition', 'none', 'important');
+              e.currentTarget.style.setProperty('scale', '1', 'important');
+            }}
+          >
             <i className="fa-solid fa-times"></i>
           </button>
         )}
         <h1>
           <i className="fa-solid fa-compass"></i> Explore
         </h1>
-        <button 
-          className="explore-search-btn" 
-          type="button" 
-          aria-label="Search"
-          onClick={() => setShowSearch(true)}
-        >
-          <i className="fa-solid fa-search"></i>
-        </button>
       </div>
 
       {error && (
@@ -770,9 +798,6 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
       <div className="explore-overlay" onClick={onClose} role="dialog" aria-modal="true">
         {content}
         {renderVideoModal()}
-        {showSearch && (
-          <SearchPage onClose={() => setShowSearch(false)} />
-        )}
       </div>
     );
   }
@@ -781,9 +806,6 @@ const Explore = ({ onClose = () => {}, mode = 'overlay' }) => {
     <div className="explore-page">
       {content}
       {renderVideoModal()}
-      {showSearch && (
-        <SearchPage onClose={() => setShowSearch(false)} />
-      )}
     </div>
   );
 };

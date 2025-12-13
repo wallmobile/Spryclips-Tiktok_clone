@@ -148,6 +148,126 @@ module.exports = [
         duration: '00:24'
       }
     }
+  },
+  {
+    user: {
+      username: 'musiclover',
+      email: 'music@example.com',
+      password: 'SampleMusic1!',
+      profile: {
+        displayName: 'Music Lover',
+        avatar: 'https://ui-avatars.com/api/?name=Music+Lover&background=ff0050&color=fff&bold=true',
+        bio: 'Sharing the best music vibes 🎵',
+        followers: 189000,
+        likes: 567000
+      }
+    },
+    video: {
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&auto=format&fit=crop&q=80',
+      description: 'Amazing music track 🎵 #music #vibes #trending',
+      hashtags: ['music', 'vibes', 'trending'],
+      category: 'music',
+      likes: 189000,
+      comments: 6700,
+      shares: 1800,
+      views: 856000,
+      music: {
+        name: 'Trending Track - Music Lover',
+        artist: 'Music Lover',
+        duration: '00:19'
+      }
+    }
+  },
+  {
+    user: {
+      username: 'sportsfan',
+      email: 'sports@example.com',
+      password: 'SampleSports1!',
+      profile: {
+        displayName: 'Sports Fan',
+        avatar: 'https://ui-avatars.com/api/?name=Sports+Fan&background=00f2ea&color=fff&bold=true',
+        bio: 'Best sports moments and highlights ⚽',
+        followers: 278000,
+        likes: 789000
+      }
+    },
+    video: {
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&auto=format&fit=crop&q=80',
+      description: 'Incredible sports moment! ⚽ #sports #highlights #amazing',
+      hashtags: ['sports', 'highlights', 'amazing'],
+      category: 'sports',
+      likes: 278000,
+      comments: 9800,
+      shares: 2400,
+      views: 1240000,
+      music: {
+        name: 'Sports Anthem - Sports Fan',
+        artist: 'Sports Fan',
+        duration: '00:21'
+      }
+    }
+  },
+  {
+    user: {
+      username: 'fashionista',
+      email: 'fashion@example.com',
+      password: 'SampleFashion1!',
+      profile: {
+        displayName: 'Fashionista',
+        avatar: 'https://ui-avatars.com/api/?name=Fashionista&background=ff0050&color=fff&bold=true',
+        bio: 'Latest fashion trends and styles 👗',
+        followers: 312000,
+        likes: 892000
+      }
+    },
+    video: {
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80',
+      description: 'New fashion collection launch! 👗 #fashion #style #trending',
+      hashtags: ['fashion', 'style', 'trending'],
+      category: 'fashion',
+      likes: 312000,
+      comments: 11200,
+      shares: 3200,
+      views: 1450000,
+      music: {
+        name: 'Fashion Beat - Fashionista',
+        artist: 'Fashionista',
+        duration: '00:23'
+      }
+    }
+  },
+  {
+    user: {
+      username: 'comedian',
+      email: 'comedy@example.com',
+      password: 'SampleComedy1!',
+      profile: {
+        displayName: 'The Comedian',
+        avatar: 'https://ui-avatars.com/api/?name=Comedian&background=ff0050&color=fff&bold=true',
+        bio: 'Making you laugh every day 😂',
+        followers: 445000,
+        likes: 1234000
+      }
+    },
+    video: {
+      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop&q=80',
+      description: 'Hilarious moment that will make you laugh! 😂 #comedy #funny #laugh',
+      hashtags: ['comedy', 'funny', 'laugh'],
+      category: 'comedy',
+      likes: 445000,
+      comments: 18900,
+      shares: 5600,
+      views: 1980000,
+      music: {
+        name: 'Comedy Sound - Comedian',
+        artist: 'Comedian',
+        duration: '00:17'
+      }
+    }
   }
 ];
 

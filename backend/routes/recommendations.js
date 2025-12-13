@@ -218,39 +218,74 @@ router.get('/following', authMiddleware, async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const limit = Number.parseInt(req.query.limit, 10) || 20;
-    const timeRange = req.query.range || '24h'; // 24h, 7d, 30d
+    const timeRange = req.query.range || null; // null means no date filter, 24h, 7d, 30d
+    console.log('[Trending] Request query params:', { 
+      range: req.query.range, 
+      timeRange, 
+      limit: req.query.limit,
+      allQuery: req.query 
+    });
     const categoryFilter = typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : null;
     const contentType = typeof req.query.contentType === 'string' ? req.query.contentType.trim().toLowerCase() : 'video';
     const sortBy = typeof req.query.sort === 'string' ? req.query.sort.trim().toLowerCase() : null;
 
     let dateFilter = {};
-    const now = new Date();
-    switch (timeRange) {
-      case '7d':
-        dateFilter = { createdAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
-        break;
-      case '30d':
-        dateFilter = { createdAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
-        break;
-      default:
-        dateFilter = { createdAt: { $gte: new Date(now - 24 * 60 * 60 * 1000) } };
+    // Only apply date filter if timeRange is explicitly provided
+    if (timeRange) {
+      const now = new Date();
+      switch (timeRange) {
+        case '7d':
+          dateFilter = { createdAt: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
+          break;
+        case '30d':
+          dateFilter = { createdAt: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
+          break;
+        case '24h':
+          dateFilter = { createdAt: { $gte: new Date(now - 24 * 60 * 60 * 1000) } };
+          break;
+        default:
+          // No date filter for 'all' or invalid values
+          dateFilter = {};
+      }
     }
+    // If no timeRange provided, show all videos (no date restriction)
 
+    // Build base query - simplified to show all public videos
+    // Only exclude videos that are explicitly private or rejected
     const baseQuery = {
-      status: 'ready',
-      isPrivate: false,
+      isPrivate: { $ne: true }, // Include videos where isPrivate is false or doesn't exist
+      $or: [
+        { moderationStatus: { $in: [null, 'approved', 'pending'] } },
+        { moderationStatus: { $exists: false } },
+        { moderationStatus: { $ne: 'rejected' } }
+      ],
       ...dateFilter
     };
+    
+    // Don't filter by status - show all videos regardless of status
+    // This ensures all uploaded videos appear in Explore page
 
     if (categoryFilter && categoryFilter !== 'all') {
-      const categoryRegex = new RegExp(`^${categoryFilter}$`, 'i');
-      const hashtagRegex = new RegExp(`#?${categoryFilter}`, 'i');
-      baseQuery.$or = [
-        { category: categoryFilter },
-        { category: categoryRegex },
-        { hashtags: { $elemMatch: { $regex: categoryRegex } } },
-        { description: { $regex: hashtagRegex } }
-      ];
+      // More flexible category matching - case insensitive and partial match
+      const categoryLower = categoryFilter.toLowerCase();
+      const categoryRegex = new RegExp(categoryLower, 'i');
+      const hashtagRegex = new RegExp(`#?${categoryLower}`, 'i');
+      
+      // Initialize $and if it doesn't exist
+      if (!baseQuery.$and) {
+        baseQuery.$and = [];
+      }
+      baseQuery.$and.push({
+        $or: [
+          { category: categoryLower }, // Exact lowercase match
+          { category: { $regex: categoryRegex } }, // Regex match
+          { category: categoryFilter }, // Original case match
+          { hashtags: { $elemMatch: { $regex: new RegExp(categoryLower, 'i') } } },
+          { hashtags: { $in: [categoryLower, categoryFilter] } }, // Direct hashtag match
+          { description: { $regex: hashtagRegex } }
+        ]
+      });
+      console.log(`[Trending] Category filter applied: ${categoryFilter} (searching for: ${categoryLower})`);
     }
 
     // Determine sort order based on sort parameter
@@ -275,8 +310,21 @@ router.get('/trending', async (req, res) => {
       .populate('user', 'username profile.avatar profile.displayName profile.followers')
       .sort(sortOrder)
       .limit(limit)
-      .select('url thumbnail description hashtags likes comments shares views createdAt user music category')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music category transcoded processedUrl duration metadata cropSettings status isPrivate moderationStatus')
       .lean();
+
+    console.log(`[Trending Videos] Query params:`, { limit, timeRange, categoryFilter, contentType, sortBy });
+    console.log(`[Trending Videos] Base query:`, JSON.stringify(baseQuery, null, 2));
+    console.log(`[Trending Videos] Found ${videos.length} videos`);
+    if (videos.length > 0) {
+      console.log(`[Trending Videos] First video sample:`, {
+        id: videos[0]._id,
+        description: videos[0].description?.substring(0, 50),
+        views: videos[0].views,
+        likes: videos[0].likes,
+        url: videos[0].url ? 'Yes' : 'No'
+      });
+    }
 
     // Helper function to ensure absolute URL
     const ensureAbsoluteUrl = (url) => {
@@ -348,7 +396,7 @@ router.get('/trending', async (req, res) => {
       success: true,
       videos: videosWithTrendingScore,
       count: videosWithTrendingScore.length,
-      timeRange: timeRange
+      timeRange: timeRange || null // Return null if no timeRange was provided
     });
   } catch (error) {
     console.error('Error fetching trending videos:', error);
