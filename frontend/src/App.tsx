@@ -53,6 +53,7 @@ const NotificationCenter = lazy(() => import('./components/social/NotificationCe
 const NotificationSettings = lazy(() => import('./components/settings/NotificationSettings'));
 const PrivacySettings = lazy(() => import('./components/settings/PrivacySettings'));
 const Balance = lazy(() => import('./components/common/Balance'));
+const MessageCenter = lazy(() => import('./components/social/MessageCenter'));
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
 const PolicyCompliance = lazy(() => import('./components/admin/PolicyCompliance'));
@@ -571,6 +572,22 @@ const SupportCenterPage: React.FC = () => {
   return <SupportCenter onClose={() => navigate('/more')} />;
 };
 
+const MessageCenterPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const targetUser = searchParams.get('user');
+  
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <MessageCenter 
+        onClose={() => navigate(-1)} 
+        initialUser={targetUser || undefined}
+      />
+    </Suspense>
+  );
+};
+
 const GoogleAuthCallback = lazy(() => import('./components/auth/GoogleAuthCallback'));
 
 const LoginPage: React.FC = () => {
@@ -769,6 +786,7 @@ const AppRoutes: React.FC = () => (
       <Route path="more/support" element={<ProtectedRoute><SupportCenterPage /></ProtectedRoute>} />
       <Route path="balance" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
       <Route path="wallet" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
+      <Route path="messages" element={<ProtectedRoute><MessageCenterPage /></ProtectedRoute>} />
     </Route>
     {/* Full Screen Routes - No Sidebar */}
     <Route path="/more/business-suite" element={

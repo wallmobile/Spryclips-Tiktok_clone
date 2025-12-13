@@ -83,7 +83,7 @@ const UploadPage = ({ onClose }) => {
     }
     return defaultValue;
   };
-
+  
   const [videoData, setVideoData] = useState({
     caption: '',
     hashtags: '',
@@ -1308,8 +1308,8 @@ const UploadPage = ({ onClose }) => {
                         <span 
                           key={overlay.id} 
                           className={`text-overlay-preview-item ${overlay.style ? getTextStyleClass(overlay.style) : ''}`}
-                          style={{
-                            position: 'absolute',
+                      style={{
+                        position: 'absolute',
                             left: `${overlay.x || 50}%`,
                             top: `${overlay.y || 20}%`,
                             transform: 'translate(-50%, -50%)',
@@ -1927,10 +1927,10 @@ const UploadPage = ({ onClose }) => {
                           color: '#8e8e8e',
                           fontSize: '14px'
                         }}></i>
-                        <input
-                          type="text"
+                    <input 
+                      type="text" 
                           placeholder="Search songs online..."
-                          value={musicSearchQuery}
+                      value={musicSearchQuery}
                           onChange={(e) => setMusicSearchQuery(e.target.value)}
                           style={{
                             width: '100%',
@@ -1981,8 +1981,8 @@ const UploadPage = ({ onClose }) => {
                           fontSize: '12px'
                         }}>
                           <i className="fa-solid fa-spinner fa-spin"></i> Searching...
-                        </div>
-                      )}
+                  </div>
+                )}
                     </div>
 
                     {/* Music Categories */}
@@ -2242,7 +2242,7 @@ const UploadPage = ({ onClose }) => {
                   }}>
                       <button
                         className="cancel-music-btn"
-                        onClick={() => {
+                          onClick={() => {
                           // Cancel - revert to original music
                           if (selectedMusic) {
                             // Revert to previous music
@@ -2250,8 +2250,8 @@ const UploadPage = ({ onClose }) => {
                             setVideoData({...videoData, music: previousMusic});
                           }
                           setSelectedMusic(null);
-                          setShowMusicLibrary(false);
-                        }}
+                            setShowMusicLibrary(false);
+                          }}
                         style={{
                           flex: 1,
                           padding: '8px 16px',
@@ -2267,7 +2267,7 @@ const UploadPage = ({ onClose }) => {
                       >
                         Cancel
                       </button>
-                      <button
+                            <button 
                         className="save-music-btn"
                         onClick={() => {
                           // Save - confirm music selection
@@ -2295,10 +2295,10 @@ const UploadPage = ({ onClose }) => {
                         }}
                       >
                         Save
-                      </button>
-                    </div>
-                </div>
-              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
             </div>
           </div>
         )}
@@ -2458,7 +2458,7 @@ const UploadPage = ({ onClose }) => {
                       <span>Duration: {formatDuration((cropEnd || videoInfo.duration) - cropStart)}</span>
                     </div>
                   </div>
-                  
+
                   {/* Aspect Ratio Selection */}
                   <div className="aspect-ratio-section">
                     <h4>

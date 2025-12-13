@@ -97,7 +97,7 @@ const convertConversation = (conversation, currentUser) => {
   };
 };
 
-const MessageCenter = ({ onClose }) => {
+const MessageCenter = ({ onClose, initialUser }) => {
   const { user } = useAuth();
   
   const [conversations, setConversations] = useState([]);
@@ -210,6 +210,49 @@ const MessageCenter = ({ onClose }) => {
 
     fetchConversations();
   }, [user]);
+
+  // Auto-open conversation with initialUser if provided
+  useEffect(() => {
+    if (!initialUser || !user || conversations.length === 0 || activeChat) {
+      return;
+    }
+
+    const openInitialUserChat = async () => {
+      try {
+        // First, try to find existing conversation
+        const existingConversation = conversations.find(conv => 
+          conv.user.username === initialUser || 
+          conv.user.username === initialUser.replace('@', '')
+        );
+        
+        if (existingConversation) {
+          await openConversation(existingConversation);
+        } else {
+          // No existing conversation, search for user and create new chat
+          try {
+            const response = await searchUsers(initialUser.replace('@', ''));
+            const users = response?.users || [];
+            const targetUser = users.find(u => 
+              u.username === initialUser || 
+              u.username === initialUser.replace('@', '')
+            );
+            
+            if (targetUser) {
+              await handleStartNewChat(targetUser);
+            } else {
+              console.warn('User not found for initialUser:', initialUser);
+            }
+          } catch (error) {
+            console.error('Error searching for initial user:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error opening initial user chat:', error);
+      }
+    };
+
+    openInitialUserChat();
+  }, [initialUser, user, conversations, activeChat]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

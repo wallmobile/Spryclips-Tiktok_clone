@@ -522,18 +522,36 @@ export const getUserVideos = async (id) => {
   try {
     const response = await api.get(`/api/users/${id}/videos`);
     const payload = response.data;
+    
+    // Backend returns array directly, normalize it
+    if (Array.isArray(payload)) {
+      const normalized = normalizeVideos(payload, 'api');
+      return {
+        success: true,
+        videos: normalized
+      };
+    }
+    
+    // If it's an object, check for videos or data array
     if (payload && typeof payload === 'object') {
       const next = { ...payload };
       if (Array.isArray(next.videos)) {
         next.videos = normalizeVideos(next.videos, 'api');
+        next.success = next.success !== undefined ? next.success : true;
+        return next;
       }
       if (Array.isArray(next.data)) {
-        next.data = normalizeVideos(next.data, 'api');
+        next.videos = normalizeVideos(next.data, 'api');
+        next.success = next.success !== undefined ? next.success : true;
+        return next;
       }
-      return next;
+      // If no videos array, return empty
+      return { success: true, videos: [] };
     }
-    return payload;
+    
+    return { success: true, videos: [] };
   } catch (error) {
+    console.error('Error fetching user videos:', error);
     const key = String(id);
     const filtered = sampleVideos.filter((video) => {
       const user = video.user ?? {};
@@ -545,9 +563,13 @@ export const getUserVideos = async (id) => {
     });
     if (filtered.length > 0) {
       console.warn(`Using sample videos for user ${id}.`, error?.message ?? error);
-      return normalizeVideos(filtered, 'sample');
+      return {
+        success: true,
+        videos: normalizeVideos(filtered, 'sample')
+      };
     }
-    throw error;
+    // Return empty array on error instead of throwing
+    return { success: true, videos: [] };
   }
 };
 

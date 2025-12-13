@@ -9,9 +9,11 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AccountSettings from '../settings/AccountSettings';
-import { getMyVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
+import { getMyVideos, getUserVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
 import { updateProfile, pinVideo, followUser } from '../../api/users';
 import { getUserStories } from '../../api/stories';
 import StoryViewer from '../stories/StoryViewer';
@@ -19,6 +21,7 @@ import api, { API_URL } from '../../config/axios';
 import './Profile.css';
 
 const Profile = ({ onClose, username: viewUsername }) => {
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   // If viewUsername is provided, we're viewing another user's profile
   const isViewingOtherProfile = viewUsername && viewUsername !== user?.username;
@@ -156,6 +159,15 @@ const Profile = ({ onClose, username: viewUsername }) => {
             setViewedUser(response.data);
             setIsFollowing(response.data?.isFollowing || false);
             setIsFollowPending(response.data?.isPending || false);
+            
+            // Update stats from response.data
+            if (response.data.profile) {
+              setStats(prev => ({
+                ...prev,
+                followers: response.data.profile.followers || 0,
+                following: response.data.profile.following || 0
+              }));
+            }
           } else {
             console.warn('⚠️ Profile: User not found for username:', viewUsername);
             return; // User not found
@@ -340,18 +352,83 @@ const Profile = ({ onClose, username: viewUsername }) => {
       e.stopPropagation();
     }
 
-    if (!viewedUser) {
-      console.error('❌ No viewedUser to follow');
-      alert('User not loaded. Please refresh the page.');
-      return;
+    // Use viewUsername as fallback if viewedUser is temporarily null during refresh
+    let userId = null;
+    
+    // First priority: Use viewedUser if available
+    if (viewedUser) {
+      userId = viewedUser._id || viewedUser.id;
+      console.log('✅ Using viewedUser ID:', userId);
+    } 
+    // Second priority: Fetch user by viewUsername if viewedUser is null
+    else if (viewUsername) {
+      console.log('⚠️ viewedUser is null, fetching user data for:', viewUsername);
+      try {
+        const response = await api.get(`/api/users/${viewUsername}`);
+        const userData = response.data?.user || response.data;
+        if (userData?._id || userData?.id) {
+          setViewedUser(userData);
+          userId = userData._id || userData.id;
+          console.log('✅ Fetched user ID from username:', userId);
+        } else {
+          console.error('❌ User data found but no ID:', userData);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user data:', error);
+        // Don't return yet - will try to use username as fallback
+      }
     }
-
-    const userId = viewedUser._id || viewedUser.id;
+    
+    // Third priority: If still no userId, try using viewUsername directly (if it's an ObjectId)
+    if (!userId && viewUsername) {
+      const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+      if (objectIdPattern.test(viewUsername)) {
+        userId = viewUsername;
+        console.log('✅ Using viewUsername as ObjectId:', userId);
+      }
+    }
+    
+    // Validate userId
     if (!userId) {
-      console.error('❌ No user ID found:', viewedUser);
-      alert('User ID not found. Please refresh the page.');
+      console.error('❌ No user ID found:', { viewedUser, viewUsername, isViewingOtherProfile });
+      // Better error message
+      const errorMsg = viewUsername 
+        ? `Unable to find user "${viewUsername}". Please check the username and try again.`
+        : 'User information not available. Please refresh the page.';
+      alert(errorMsg);
       return;
     }
+    
+    // Convert userId to string and validate ObjectId format
+    userId = String(userId).trim();
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdPattern.test(userId)) {
+      console.error('❌ Invalid user ID format:', userId);
+      // Try one more time to fetch by username
+      if (viewUsername && !objectIdPattern.test(viewUsername)) {
+        try {
+          console.log('🔄 Final attempt: Fetching user by username:', viewUsername);
+          const response = await api.get(`/api/users/${viewUsername}`);
+          const userData = response.data?.user || response.data;
+          if (userData?._id || userData?.id) {
+            setViewedUser(userData);
+            userId = String(userData._id || userData.id).trim();
+            console.log('✅ Successfully fetched user ID:', userId);
+          } else {
+            throw new Error('User data not found in response');
+          }
+        } catch (error) {
+          console.error('❌ Final fetch failed:', error);
+          alert(`Unable to find user "${viewUsername}". Please check the username and try again.`);
+          return;
+        }
+      } else {
+        alert('Invalid user ID format. Please refresh the page.');
+        return;
+      }
+    }
+    
+    console.log('✅ Final userId for follow/unfollow:', userId);
 
     if (followLoading) {
       console.log('⏳ Already processing follow/unfollow...');
@@ -371,8 +448,12 @@ const Profile = ({ onClose, username: viewUsername }) => {
         viewedUserId: viewedUser._id
       });
       
-      // Call API directly to see what happens
-      const response = await followUser(userId.toString());
+      // Call API - handle both follow and unfollow
+      // Backend uses same POST endpoint for both follow and unfollow
+      let response;
+      console.log(previousIsFollowing ? '🔄 Unfollowing user:' : '🔄 Following user:', userId);
+      // Use same POST endpoint - backend handles follow/unfollow based on current state
+      response = await followUser(userId.toString());
       
       console.log('✅ API Response:', response);
       console.log('📊 Response data:', JSON.stringify(response, null, 2));
@@ -463,7 +544,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
           
           console.log('✅ Verified status:', verifiedIsFollowing);
           
-          if (userData) {
+          // Only update viewedUser if we have valid data - don't clear it on error
+          if (userData && userData._id) {
             setViewedUser(userData);
             setIsFollowing(verifiedIsFollowing);
             
@@ -474,12 +556,17 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 followers: userData.profile.followers || prev.followers
               }));
             }
+          } else {
+            console.warn('⚠️ Profile refresh returned invalid data, keeping existing viewedUser');
+            // Don't clear viewedUser - keep existing state
           }
           
           // Dispatch one more refresh event after backend confirms
           window.dispatchEvent(new Event('follow:refresh'));
         } catch (refreshError) {
           console.error('Error refreshing:', refreshError);
+          // Don't clear viewedUser on error - keep existing state
+          console.log('⚠️ Keeping existing viewedUser state after refresh error');
         } finally {
           // Re-enable useEffect checks after 3 seconds
           setTimeout(() => {
@@ -498,19 +585,30 @@ const Profile = ({ onClose, username: viewUsername }) => {
         config: error.config
       });
       
-      // Revert state
+      // Revert state to previous
       setIsFollowing(previousIsFollowing);
+      setIsFollowPending(false);
       
+      // Show user-friendly error message
       let errorMessage = 'Failed to follow user. ';
-      if (error.response?.data?.message) {
+      if (error.response?.status === 404) {
+        errorMessage = 'User not found. Please refresh the page.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Please sign in to follow users.';
+      } else if (error.response?.data?.message) {
         errorMessage += error.response.data.message;
       } else if (error.message) {
         errorMessage += error.message;
+      } else {
+        errorMessage += 'We could not find what you were looking for.';
       }
       
+      // Show error but keep button visible
       alert(errorMessage);
     } finally {
+      // Always re-enable button after error or success
       setFollowLoading(false);
+      // Ensure button stays visible - don't hide it
     }
   };
 
@@ -729,14 +827,58 @@ const Profile = ({ onClose, username: viewUsername }) => {
   }, []);
 
   const fetchVideos = useCallback(async () => {
-    if (!user) {
+    // If viewing another user's profile, we need user to be loaded first
+    if (isViewingOtherProfile && !viewedUser) {
+      console.log('⏳ Waiting for viewedUser to be loaded...');
+      return;
+    }
+    
+    if (!user && !isViewingOtherProfile) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const response = await getMyVideos();
+      
+      // If viewing another user's profile, fetch their videos
+      let response;
+      if (isViewingOtherProfile && viewedUser) {
+        console.log('📹 Fetching videos for user:', viewedUser.username || viewUsername);
+        const userId = viewedUser._id || viewedUser.id;
+        if (userId) {
+          try {
+            const apiResponse = await getUserVideos(userId);
+            console.log('📹 getUserVideos API response:', apiResponse);
+            
+            // Backend returns array directly or object with videos/data
+            if (Array.isArray(apiResponse)) {
+              response = { success: true, videos: apiResponse };
+            } else if (apiResponse && Array.isArray(apiResponse.videos)) {
+              response = { success: true, videos: apiResponse.videos };
+            } else if (apiResponse && Array.isArray(apiResponse.data)) {
+              response = { success: true, videos: apiResponse.data };
+            } else if (apiResponse && apiResponse.success && Array.isArray(apiResponse.videos)) {
+              response = apiResponse;
+            } else {
+              console.warn('⚠️ Unexpected response format from getUserVideos:', apiResponse);
+              response = { success: true, videos: [] };
+            }
+            console.log('📹 Normalized response:', response);
+          } catch (error) {
+            console.error('❌ Error fetching user videos:', error);
+            response = { success: true, videos: [] };
+          }
+        } else {
+          console.warn('⚠️ No userId found for viewedUser');
+          response = { success: true, videos: [] };
+        }
+      } else {
+        // Fetch current user's videos
+        response = await getMyVideos();
+      }
 
+      console.log('📹 Final response before processing:', response);
+      
       if (response?.success && Array.isArray(response.videos)) {
         const formattedVideos = response.videos.map((video) => {
           const processedVideos = Array.isArray(video.processedVideos)
@@ -887,16 +1029,22 @@ const Profile = ({ onClose, username: viewUsername }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, formatDurationLabel]);
+  }, [user, formatDurationLabel, isViewingOtherProfile, viewedUser, viewUsername]);
 
   useEffect(() => {
-    if (user) {
+    if (isViewingOtherProfile) {
+      // If viewing another user, wait for viewedUser to be loaded
+      if (viewedUser) {
+        void fetchVideos();
+      }
+    } else if (user) {
+      // If viewing own profile, fetch videos
       void fetchVideos();
     } else {
       // No user - don't leave in loading state
       setLoading(false);
     }
-  }, [user, fetchVideos]);
+  }, [user, fetchVideos, isViewingOtherProfile, viewedUser]);
 
   useEffect(() => {
     const handleVideoUploaded = () => {
@@ -1381,6 +1529,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
           </div>
         </div>
       )}
+      {/* Close Button REMOVED as per user request */}
+
       <div className="profile-modal settings-open">
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
@@ -1390,34 +1540,36 @@ const Profile = ({ onClose, username: viewUsername }) => {
           ></div>
         )}
         
-        {/* Account Settings Sidebar - Always Visible on Desktop, Overlay on Mobile */}
-        <AccountSettings 
-          inline={!showMobileSettings}
-          onClose={() => {
-            if (showMobileSettings) {
+        {/* Account Settings Sidebar - Show ONLY on own profile */}
+        {isMyProfile && (
+          <AccountSettings 
+            inline={!showMobileSettings}
+            onClose={() => {
+              if (showMobileSettings) {
+                setShowMobileSettings(false);
+              } else {
+                onClose();
+              }
+            }}
+            onOpenEditProfile={() => {
+              setShowEditModal(true);
               setShowMobileSettings(false);
-            } else {
-              onClose();
-            }
-          }}
-          onOpenEditProfile={() => {
-            setShowEditModal(true);
-            setShowMobileSettings(false);
-          }}
-          onSubFeatureToggle={(hasSubFeature) => {
-            setHasAccountSettingsSubFeature(hasSubFeature);
-          }}
-          avatarPreview={avatarPreview}
-          displayNamePreview={usernameText || user?.username}
-        />
+            }}
+            onSubFeatureToggle={(hasSubFeature) => {
+              setHasAccountSettingsSubFeature(hasSubFeature);
+            }}
+            avatarPreview={avatarPreview}
+            displayNamePreview={usernameText || user?.username}
+          />
+        )}
 
         {/* Profile Content Wrapper */}
         <div className="profile-content-wrapper">
           {/* TikTok-Style Profile Header */}
           <div className="profile-header-new">
           {/* Buttons inside header so they scroll with content */}
-          {/* Account Settings Button (Gear Icon) - Show on tablet/mobile, hide on desktop */}
-          {!showEditModal && !showFollowers && !showFollowing && !selectedVideo && !hasAccountSettingsSubFeature && (
+          {/* Account Settings Button (Gear Icon) - Show ONLY on own profile, hide when viewing other user's profile */}
+          {isMyProfile && !showEditModal && !showFollowers && !showFollowing && !selectedVideo && !hasAccountSettingsSubFeature && (
             <button 
               className="profile-account-settings-btn" 
               onClick={() => setShowMobileSettings(!showMobileSettings)}
@@ -1427,30 +1579,25 @@ const Profile = ({ onClose, username: viewUsername }) => {
             </button>
           )}
           
-          {/* Close Button - Show only on Profile page, hide when AccountSettings sub-features are open */}
-          {!showEditModal && !showFollowers && !showFollowing && !selectedVideo && !hasAccountSettingsSubFeature && (
-            <button className="profile-back-btn" onClick={onClose}>
-              <i className="fa-solid fa-times"></i>
-            </button>
-          )}
-          
           <div className="cover-image-header">
             <div 
               className="cover-image"
               style={{
-                backgroundImage: bannerPreview ? `url(${bannerPreview})` : bannerImage ? `url(${bannerImage})` : 'linear-gradient(135deg, #2563EB 0%, #38BDF8 100%)',
+                backgroundImage: bannerPreview ? `url(${bannerPreview})` : (isViewingOtherProfile ? (viewedUser?.profile?.banner || 'linear-gradient(135deg, #2563EB 0%, #38BDF8 100%)') : (bannerImage ? `url(${bannerImage})` : 'linear-gradient(135deg, #2563EB 0%, #38BDF8 100%)')),
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
               }}
             >
             </div>
-            <input
-              ref={bannerFileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleBannerChange}
-              style={{ display: 'none' }}
-            />
+            {isMyProfile && (
+              <input
+                ref={bannerFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleBannerChange}
+                style={{ display: 'none' }}
+              />
+            )}
           </div>
           <div className="profile-info-section">
             <div className="avatar-container">
@@ -1490,113 +1637,189 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 >
                   <div className="profile-story-ring">
                     <img
-                      src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
-                      alt={user?.username}
+                      src={avatarPreview || (isViewingOtherProfile ? viewedUser?.profile?.avatar : user?.profile?.avatar) || `https://ui-avatars.com/api/?name=${isViewingOtherProfile ? (viewedUser?.username || viewUsername) : user?.username}&background=E50914&color=fff`}
+                      alt={isViewingOtherProfile ? (viewedUser?.username || viewUsername) : user?.username}
                       className="profile-avatar-new profile-avatar-with-ring"
                     />
                   </div>
-                  <div className="camera-icon-overlay visible story-ring-camera-overlay" onClick={(e) => { e.stopPropagation(); handleAvatarClick(); }}>
-                    <i className="fa-solid fa-camera"></i>
-                  </div>
+                  {isMyProfile && (
+                    <div className="camera-icon-overlay visible story-ring-camera-overlay" onClick={(e) => { e.stopPropagation(); handleAvatarClick(); }}>
+                      <i className="fa-solid fa-camera"></i>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="avatar-wrapper-no-story" onClick={handleAvatarClick}>
+                <div className="avatar-wrapper-no-story" onClick={isMyProfile ? handleAvatarClick : undefined}>
                   <img
-                    src={avatarPreview || user?.profile?.avatar || `https://ui-avatars.com/api/?name=${user?.username}&background=E50914&color=fff`}
-                    alt={user?.username}
+                    src={avatarPreview || (isViewingOtherProfile ? viewedUser?.profile?.avatar : user?.profile?.avatar) || `https://ui-avatars.com/api/?name=${isViewingOtherProfile ? (viewedUser?.username || viewUsername) : user?.username}&background=E50914&color=fff`}
+                    alt={isViewingOtherProfile ? (viewedUser?.username || viewUsername) : user?.username}
                     className="profile-avatar-new"
                   />
-                  <div className="camera-icon-overlay visible">
-                    <i className="fa-solid fa-camera"></i>
-                  </div>
+                  {isMyProfile && (
+                    <div className="camera-icon-overlay visible">
+                      <i className="fa-solid fa-camera"></i>
+                    </div>
+                  )}
                 </div>
               );
               })()}
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              style={{ display: 'none' }}
-            />
+            {isMyProfile && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
+              />
+            )}
             <div className="profile-header-right">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
-                <h2>{user?.profile?.displayName || usernameText}</h2>
-                {user?.profile?.isVerified && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap', width: '100%' }}>
+                <h2 style={{ flex: '1', minWidth: 0 }}>{isViewingOtherProfile ? (viewedUser?.profile?.displayName || viewedUser?.username || viewUsername) : (user?.profile?.displayName || usernameText)}</h2>
+                {(isViewingOtherProfile ? viewedUser?.profile?.isVerified : user?.profile?.isVerified) && (
                   <i className="fa-solid fa-check-circle" style={{ color: '#2563EB', fontSize: '20px' }}></i>
                 )}
-                {/* Follow Button - Show only when viewing other user's profile */}
-                {isViewingOtherProfile && viewedUser && (
-                  <button
-                    className={`profile-follow-btn ${isFollowing ? 'profile-follow-btn--following' : 'profile-follow-btn--follow'}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔘 Follow button onClick triggered');
-                      handleFollow(e);
-                    }}
-                    disabled={followLoading}
-                    type="button"
-                    style={{
-                      marginLeft: 'auto',
-                      padding: '8px 20px',
-                      borderRadius: '20px',
-                      border: isFollowing ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
-                      background: isFollowing 
-                        ? 'rgba(255, 255, 255, 0.1)' 
-                        : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
-                      color: '#fff',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: followLoading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      minWidth: '100px',
-                      justifyContent: 'center'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isFollowing && !followLoading) {
-                        e.currentTarget.style.background = 'rgba(255, 0, 0, 0.2)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (isFollowing && !followLoading) {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      }
-                    }}
-                  >
-                    {followLoading ? (
-                      <>
-                        <i className="fa-solid fa-spinner fa-spin"></i>
-                        <span>...</span>
-                      </>
-                    ) : isFollowPending ? (
-                      <>
-                        <i className="fa-solid fa-clock"></i>
-                        <span>Pending</span>
-                      </>
-                    ) : isFollowing ? (
-                      <>
-                        <i className="fa-solid fa-check"></i>
-                        <span>Following</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-plus"></i>
-                        <span>Follow</span>
-                      </>
-                    )}
-                  </button>
+                {/* Follow and Message Buttons - Show only when viewing other user's profile */}
+                {/* Always show buttons when viewing other profile - don't hide during refresh or after follow */}
+                {/* Show buttons if viewing other profile OR if we have viewUsername (even if viewedUser is temporarily null) */}
+                {(isViewingOtherProfile || viewUsername) && (
+                  <div style={{ 
+                    marginLeft: 'auto', 
+                    display: 'flex', 
+                    gap: '12px', 
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    visibility: 'visible', // Force visible
+                    opacity: 1 // Force visible
+                  }}>
+                    {/* Message Button - Always visible when viewing other profile */}
+                    <button
+                      className="profile-message-btn"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Navigate to messages with this user
+                        const targetUsername = viewedUser?.username || viewUsername;
+                        if (targetUsername) {
+                          navigate(`/messages?user=${encodeURIComponent(targetUsername)}`);
+                        } else {
+                          alert('Unable to open messages');
+                        }
+                      }}
+                      type="button"
+                      style={{
+                        padding: '8px 20px',
+                        borderRadius: '20px',
+                        border: 'none',
+                        background: '#FF0050',
+                        color: '#FFFFFF',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minWidth: '100px',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(255, 0, 80, 0.3)',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#FE2C55';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 0, 80, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#FF0050';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 0, 80, 0.3)';
+                      }}
+                      title="Send message"
+                    >
+                      <i className="fa-solid fa-envelope" style={{ color: '#FFFFFF' }}></i>
+                      <span>Message</span>
+                    </button>
+                    
+                    {/* Follow Button - Always show when viewing other profile, even if viewedUser is temporarily null */}
+                    {/* Button should ALWAYS be visible - never hide it */}
+                    <button
+                      className={`profile-follow-btn ${isFollowing ? 'profile-follow-btn--following' : 'profile-follow-btn--follow'}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🔘 Follow button onClick triggered');
+                        handleFollow(e);
+                      }}
+                      disabled={followLoading}
+                      type="button"
+                      style={{
+                        padding: '8px 20px',
+                        borderRadius: '20px',
+                        border: isFollowing ? '2px solid #FF0050' : 'none', // Red border when following - more visible
+                        background: isFollowing 
+                          ? '#FF0050' // SOLID RED when following - ALWAYS visible
+                          : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
+                        color: '#fff',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: followLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s ease',
+                        display: 'flex', // ALWAYS visible
+                        visibility: 'visible', // ALWAYS visible
+                        opacity: followLoading ? 0.7 : 1, // Slightly transparent when loading, but still visible
+                        alignItems: 'center',
+                        gap: '6px',
+                        minWidth: '100px',
+                        justifyContent: 'center',
+                        pointerEvents: followLoading ? 'none' : 'auto', // Disable clicks when loading, but keep visible
+                        boxShadow: isFollowing 
+                          ? '0 2px 8px rgba(255, 0, 80, 0.4)' // Red shadow when following
+                          : '0 2px 8px rgba(255, 0, 80, 0.3)' // Shadow for visibility
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isFollowing && !followLoading) {
+                          e.currentTarget.style.background = '#FE2C55'; // Darker red on hover
+                          e.currentTarget.style.border = '2px solid #FE2C55';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isFollowing && !followLoading) {
+                          e.currentTarget.style.background = '#FF0050'; // Keep solid red
+                          e.currentTarget.style.border = '2px solid #FF0050';
+                        }
+                      }}
+                    >
+                      {followLoading ? (
+                        <>
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>...</span>
+                        </>
+                      ) : isFollowPending ? (
+                        <>
+                          <i className="fa-solid fa-clock"></i>
+                          <span>Pending</span>
+                        </>
+                      ) : isFollowing ? (
+                        <>
+                          <i className="fa-solid fa-check"></i>
+                          <span>Following</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-plus"></i>
+                          <span>Follow</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
-              <p className="username-text">@{usernameText}</p>
-              <p className="bio-text">{bioText}</p>
-              {websiteLink && (
+              <div>
+                <p className="username-text">@{isViewingOtherProfile ? (viewedUser?.username || viewUsername || '') : usernameText}</p>
+                <p className="bio-text">{isViewingOtherProfile ? (viewedUser?.profile?.bio || 'No bio yet') : bioText}</p>
+              </div>
+              {(isViewingOtherProfile ? viewedUser?.profile?.website : websiteLink) && (
                 <a 
-                  href={websiteLink.startsWith('http') ? websiteLink : `https://${websiteLink}`}
+                  href={(isViewingOtherProfile ? viewedUser?.profile?.website : websiteLink).startsWith('http') ? (isViewingOtherProfile ? viewedUser?.profile?.website : websiteLink) : `https://${isViewingOtherProfile ? viewedUser?.profile?.website : websiteLink}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="website-link"
@@ -1611,7 +1834,10 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   }}
                 >
                   <i className="fa-solid fa-link"></i>
-                  {websiteLink && typeof websiteLink === 'string' ? websiteLink.replace(/^https?:\/\//, '') : websiteLink}
+                  {(() => {
+                    const link = isViewingOtherProfile ? viewedUser?.profile?.website : websiteLink;
+                    return link && typeof link === 'string' ? link.replace(/^https?:\/\//, '') : link;
+                  })()}
                 </a>
               )}
               
@@ -1940,9 +2166,6 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
             ) : (
               <div className="empty-state">
-                <div className="empty-icon">
-                  <i className="fa-solid fa-video"></i>
-                </div>
                 <h3>No videos uploaded yet</h3>
                 <p>Start creating and sharing your content!</p>
               </div>

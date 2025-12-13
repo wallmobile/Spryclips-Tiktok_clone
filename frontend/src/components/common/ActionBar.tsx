@@ -101,7 +101,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   currentReaction: currentReactionProp = null,
 }) => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: currentUser } = useAuth();
   
   const [state, setState] = useState<ActionState>({
     liked: isLiked,
@@ -906,23 +906,82 @@ const ActionBar: React.FC<ActionBarProps> = ({
               }
               
               // Navigate to user profile page without page reload
-              if (username) {
-                const cleanUsername = username.replace('@', '');
-                navigate(`/user/${cleanUsername}`);
-              } else if (userId) {
-                navigate(`/user/${userId}`);
-              } else if (video?.user) {
+              // Priority: username prop > video.user.username > video.channel > userId (if not ObjectId)
+              let targetUsername = null;
+              
+              console.log('🔍 Profile click - Debug info:', {
+                usernameProp: username,
+                userIdProp: userId,
+                videoUser: video?.user,
+                videoChannel: (video as any)?.channel,
+                videoUsername: (video as any)?.username,
+                currentUser: currentUser?.username
+              });
+              
+              // First priority: username prop (most reliable - this is the video creator's username)
+              if (username && username.trim()) {
+                targetUsername = String(username).replace('@', '').trim();
+                console.log('✅ Using username prop:', targetUsername);
+              } 
+              // Second priority: video.user.username (from video object)
+              else if (video?.user) {
                 const user = video.user;
-                const userUsername = (typeof user === 'object' ? (user.username || user._id || user.id) : user) || 
-                                   (video as any)?.username || 
-                                   (video as any)?.channel;
-                if (userUsername) {
-                  navigate(`/user/${String(userUsername).replace('@', '')}`);
+                if (typeof user === 'object' && user.username) {
+                  targetUsername = String(user.username).replace('@', '').trim();
+                  console.log('✅ Using video.user.username:', targetUsername);
+                } else if (typeof user === 'object' && (user._id || user.id)) {
+                  // If only ID is available, check if it's an ObjectId
+                  const userIdValue = String(user._id || user.id);
+                  if (!isHexObjectId(userIdValue)) {
+                    // Not an ObjectId, treat as username
+                    targetUsername = userIdValue.replace('@', '').trim();
+                    console.log('✅ Using video.user._id as username:', targetUsername);
+                  } else {
+                    // It's an ObjectId, we'll use it as fallback
+                    console.log('⚠️ video.user._id is ObjectId, will use as fallback');
+                  }
+                } else if (typeof user === 'string') {
+                  targetUsername = String(user).replace('@', '').trim();
+                  console.log('✅ Using video.user (string):', targetUsername);
+                }
+              }
+              // Third priority: Check video object directly for username/channel
+              if (!targetUsername && video) {
+                targetUsername = (video as any)?.username || (video as any)?.channel;
+                if (targetUsername) {
+                  targetUsername = String(targetUsername).replace('@', '').trim();
+                  console.log('✅ Using video.username/channel:', targetUsername);
+                }
+              }
+              // Fourth priority: userId prop (if not ObjectId)
+              if (!targetUsername && userId && !isHexObjectId(userId)) {
+                targetUsername = String(userId).replace('@', '').trim();
+                console.log('✅ Using userId prop:', targetUsername);
+              }
+              
+              // Clean and validate username
+              if (targetUsername && targetUsername.trim()) {
+                targetUsername = String(targetUsername).replace('@', '').trim();
+                
+                // Always navigate to the target user's profile (video creator's profile)
+                // The Profile component will handle showing own profile vs other user's profile
+                console.log('🔗 Navigating to user profile:', targetUsername, {
+                  currentUser: currentUser?.username,
+                  targetUsername,
+                  isSame: targetUsername === currentUser?.username
+                });
+                navigate(`/user/${targetUsername}`);
+              } else {
+                // No username found, try to get from video object or go to own profile
+                console.warn('⚠️ No username found for profile navigation, trying userId fallback');
+                if (video?.user?._id || video?.user?.id) {
+                  const userId = String(video.user._id || video.user.id);
+                  console.log('🔗 Using video.user._id as fallback:', userId);
+                  navigate(`/user/${userId}`);
                 } else {
+                  console.warn('⚠️ No user info found, going to own profile');
                   navigate('/profile');
                 }
-              } else {
-                navigate('/profile');
               }
             }}
             style={{ cursor: 'pointer' }}

@@ -17,10 +17,11 @@
 
 .message-center-modal {
   background: #F5F7FA;
-  border-radius: 20px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 1200px;
-  height: 80vh;
+  max-width: 900px; /* Reduced from 1200px */
+  height: 70vh; /* Reduced from 80vh */
+  max-height: 700px; /* Added max-height for better control */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -34,19 +35,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 16px 20px; /* Reduced padding */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%) !important; /* TikTok gradient */
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .message-center-header h2 {
   margin: 0;
   color: #fff !important; /* White text on blue background */
-  font-size: 22px;
+  font-size: 20px; /* Reduced from 22px */
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px; /* Reduced gap */
 }
 
 .unread-badge {
@@ -63,24 +65,31 @@
 
 .message-center-close-btn,
 .new-message-btn {
-  background: rgba(255, 255, 255, 0.3) !important;
-  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.25) !important; /* Slightly more transparent */
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important; /* Thinner border */
   color: #ffffff !important; /* White on TikTok gradient background */
-  width: 40px;
-  height: 40px;
+  width: 36px; /* Reduced from 40px */
+  height: 36px; /* Reduced from 40px */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+.message-center-close-btn:hover,
+.new-message-btn:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  transform: scale(1.05);
 }
 
 .message-center-close-btn i,
 .new-message-btn i {
   color: #ffffff !important; /* White icon on TikTok gradient background */
-  font-size: 18px !important;
+  font-size: 16px !important; /* Reduced from 18px */
 }
 
 .message-center-close-btn:hover,
@@ -97,11 +106,12 @@
 
 /* Sidebar */
 .message-sidebar {
-  width: 350px;
+  width: 300px; /* Reduced from 350px */
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   background: #E0F2FE;
+  flex-shrink: 0; /* Prevent sidebar from shrinking */
 }
 
 .message-alert {
@@ -142,8 +152,9 @@
 }
 
 .message-search {
-  padding: 20px;
+  padding: 16px; /* Reduced from 20px */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0; /* Prevent search from shrinking */
 }
 
 .search-input-container {
@@ -191,10 +202,10 @@
 .conversation-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 10px; /* Reduced from 12px */
+  padding: 12px 16px; /* Reduced from 16px 20px */
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border-left: 3px solid transparent;
 }
 
@@ -209,8 +220,8 @@
 
 .conversation-avatar {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 44px; /* Reduced from 48px */
+  height: 44px; /* Reduced from 48px */
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -302,9 +313,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 16px 20px; /* Reduced from 20px 24px */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: #E0F2FE;
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .chat-user-info {
@@ -315,8 +327,8 @@
 
 .chat-avatar {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 40px; /* Reduced from 44px */
+  height: 40px; /* Reduced from 44px */
   border-radius: 50%;
   overflow: hidden;
 }
@@ -368,11 +380,12 @@
 /* Messages */
 .chat-messages {
   flex: 1;
-  padding: 20px;
+  padding: 16px; /* Reduced from 20px */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px; /* Reduced from 16px */
+  min-height: 0; /* Allow flex shrinking */
 }
 
 .chat-loading,
@@ -441,20 +454,21 @@
 
 /* Message Input */
 .message-input-form {
-  padding: 20px;
+  padding: 16px; /* Reduced from 20px */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: #E0F2FE;
+  flex-shrink: 0; /* Prevent input from shrinking */
 }
 
 .message-input-container {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px; /* Reduced from 12px */
+  padding: 10px 14px; /* Reduced from 12px 16px */
   background: #F9FAFB;
   border: 1px solid #E0F2FE;
-  border-radius: 24px;
-  transition: all 0.3s ease;
+  border-radius: 20px; /* Reduced from 24px */
+  transition: all 0.2s ease;
 }
 
 .message-input-container:focus-within {
