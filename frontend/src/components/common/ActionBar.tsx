@@ -1065,10 +1065,24 @@ const ActionBar: React.FC<ActionBarProps> = ({
       <div className="action-bar-item">
         <button
           className="action-button comment-button"
-          onClick={() => onComment && onComment(videoId)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onComment) {
+              onComment(videoId);
+            }
+          }}
           aria-label="Comment"
           title="Add comment"
-          onKeyDown={(e) => handleKeyDown(e, () => onComment && onComment(videoId))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onComment) {
+                onComment(videoId);
+              }
+            }
+          }}
         >
           <i className="fa-solid fa-comment-dots"></i>
         </button>
