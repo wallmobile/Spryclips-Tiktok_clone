@@ -77,6 +77,7 @@ const StoriesBar = ({ onStoryClick }) => {
         const allStories = [];
         
         // Add current user's story at the beginning if they have any
+        // Always show own story even if not viewed yet
         if (filteredMyStories.length > 0) {
           allStories.push({
             user: {
@@ -85,7 +86,11 @@ const StoriesBar = ({ onStoryClick }) => {
               username: user.username,
               profile: user.profile
             },
-            stories: filteredMyStories,
+            stories: filteredMyStories.map(story => ({
+              ...story,
+              // Ensure hasViewed is explicitly set
+              hasViewed: story.hasViewed !== undefined ? story.hasViewed : false
+            })),
             isOwn: true // Mark as own story
           });
         }
@@ -165,28 +170,74 @@ const StoriesBar = ({ onStoryClick }) => {
       <div className="stories-bar__container">
         {hasStories && storiesByUser.map((userStory) => {
           const { user: storyUser, stories, isOwn } = userStory;
-          const hasUnviewed = stories.some(story => !story.hasViewed);
+          
+          // Ensure stories array exists and is valid - but don't hide if empty, show anyway
+          if (!stories || !Array.isArray(stories)) {
+            console.warn('⚠️ Invalid stories array for user:', storyUser?.username);
+            return null;
+          }
+          
+          // Always show story item even if stories array is empty (might be loading)
+          const hasUnviewed = stories.length > 0 && stories.some(story => story && !story.hasViewed);
           const firstStory = stories[0];
-          const isMyStory = isOwn || (storyUser._id || storyUser.id) === user._id;
+          const isMyStory = isOwn || (storyUser?._id || storyUser?.id) === user?._id;
+          
+          // Check if user has viewed their own story
+          // For own stories, check if any story has been viewed
+          // Default to false if no stories or not viewed
+          const hasViewedOwnStory = isMyStory && stories.length > 0 && stories.some(story => {
+            if (!story) return false;
+            // Check if story has hasViewed property or if it's in viewedBy array
+            return story.hasViewed === true || 
+                   (story.viewedBy && Array.isArray(story.viewedBy) && 
+                    story.viewedBy.some(view => {
+                      const viewUserId = view?.user?._id || view?.user?.id || view?.user;
+                      return viewUserId && viewUserId.toString() === user?._id?.toString();
+                    }));
+          });
+          
           const avatar = storyUser?.profile?.avatar || 
-            `https://ui-avatars.com/api/?name=${storyUser?.username || 'User'}&background=ff0050&color=fff`;
+            `https://ui-avatars.com/api/?name=${storyUser?.username || 'User'}&background=25F4EE&color=fff`;
 
           return (
             <div
-              key={storyUser._id || storyUser.id}
-              className={`stories-bar__item ${hasUnviewed && !isMyStory ? 'stories-bar__item--unviewed' : ''} ${isMyStory ? 'stories-bar__item--own' : ''}`}
+              key={storyUser?._id || storyUser?.id || `story-${Math.random()}`}
+              className={`stories-bar__item ${hasUnviewed && !isMyStory ? 'stories-bar__item--unviewed' : ''} ${isMyStory ? 'stories-bar__item--own' : ''} ${isMyStory && !hasViewedOwnStory ? 'stories-bar__item--unviewed-own' : ''}`}
               onClick={() => handleStoryClick(userStory)}
+              style={{ 
+                display: 'flex !important', 
+                visibility: 'visible !important', 
+                opacity: '1 !important',
+                pointerEvents: 'auto'
+              }}
             >
               <div className="stories-bar__avatar-wrapper">
-                <img
-                  src={avatar}
-                  alt={storyUser.username}
-                  className="stories-bar__avatar"
-                />
+                {isMyStory && !hasViewedOwnStory ? (
+                  // Hide DP until user views their story - show placeholder
+                  <div className="stories-bar__avatar-placeholder">
+                    <i className="fa-solid fa-user"></i>
+                  </div>
+                ) : (
+                  <img
+                    src={avatar}
+                    alt={storyUser?.username || 'User'}
+                    className="stories-bar__avatar"
+                    style={{ display: 'block', visibility: 'visible', opacity: 1 }}
+                    onError={(e) => {
+                      // Fallback if image fails to load - show placeholder
+                      console.warn('⚠️ Avatar image failed to load:', avatar);
+                      e.target.style.display = 'none';
+                      const placeholder = e.target.parentElement.querySelector('.stories-bar__avatar-placeholder');
+                      if (placeholder) {
+                        placeholder.style.display = 'flex';
+                      }
+                    }}
+                  />
+                )}
                 {hasUnviewed && !isMyStory && <div className="stories-bar__unviewed-indicator"></div>}
               </div>
               <div className="stories-bar__username">
-                {isMyStory ? 'Your Story' : (storyUser.username || 'User')}
+                {isMyStory ? 'Your Story' : (storyUser?.username || 'User')}
               </div>
               {stories.length > 1 && (
                 <div className="stories-bar__count">{stories.length}</div>

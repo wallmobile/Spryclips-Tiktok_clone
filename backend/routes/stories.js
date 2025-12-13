@@ -2,6 +2,8 @@ const express = require('express');
 const Story = require('../models/Story');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
 const authMiddleware = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -48,7 +50,7 @@ const upload = multer({
 router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
   try {
     const userId = req.user._id;
-    const { type, text, textColor, textBackground, music, isPrivate } = req.body;
+    const { type, text, textColor, textBackground, textPositionX, textPositionY, music, isPrivate } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -95,6 +97,8 @@ router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
       text: (text || '').trim(),
       textColor: textColor || '#FFFFFF',
       textBackground: textBackground || 'transparent',
+      textPositionX: textPositionX ? parseFloat(textPositionX) : 50,
+      textPositionY: textPositionY ? parseFloat(textPositionY) : 50,
       music: music || null,
       isPrivate: isPrivate === 'true' || isPrivate === true,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
@@ -126,6 +130,10 @@ router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
         mediaUrl: story.mediaUrl,
         thumbnail: story.thumbnail,
         text: story.text,
+        textColor: story.textColor,
+        textBackground: story.textBackground,
+        textPositionX: story.textPositionX,
+        textPositionY: story.textPositionY,
         expiresAt: story.expiresAt,
         createdAt: story.createdAt
       },
@@ -283,9 +291,22 @@ router.get('/following', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get followed users list
+    const followedUsers = user.followedUsers || [];
+    console.log(`📚 Fetching stories for ${followedUsers.length} followed users`);
+
+    if (followedUsers.length === 0) {
+      return res.json({
+        success: true,
+        storiesByUser: [],
+        count: 0,
+        message: 'No followed users',
+      });
+    }
+
     // Get stories from followed users
     const stories = await Story.find({
-      user: { $in: user.followedUsers || [] },
+      user: { $in: followedUsers },
       expiresAt: { $gt: new Date() },
       isPrivate: false,
     })
@@ -294,18 +315,22 @@ router.get('/following', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    console.log(`✅ Found ${stories.length} stories from followed users`);
+
     // Group stories by user
     const storiesByUser = {};
     stories.forEach(story => {
-      const userId = story.user._id.toString();
-      if (!storiesByUser[userId]) {
-        storiesByUser[userId] = {
+      const storyUserId = story.user._id.toString();
+      if (!storiesByUser[storyUserId]) {
+        storiesByUser[storyUserId] = {
           user: story.user,
           stories: [],
         };
       }
-      storiesByUser[userId].stories.push(story);
+      storiesByUser[storyUserId].stories.push(story);
     });
+
+    console.log(`📊 Grouped into ${Object.keys(storiesByUser).length} users`);
 
     res.json({
       success: true,
@@ -313,7 +338,7 @@ router.get('/following', authMiddleware, async (req, res) => {
       count: stories.length,
     });
   } catch (error) {
-    console.error('Error fetching following stories:', error);
+    console.error('❌ Error fetching following stories:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch following stories',
@@ -489,10 +514,13 @@ router.post('/:storyId/reply', authMiddleware, async (req, res) => {
       });
     }
 
-    // Add reply
+    const storyOwnerId = story.user;
+    const replyText = message.trim();
+
+    // Add reply to story
     story.replies.push({
       user: userId,
-      message: message.trim(),
+      message: replyText,
       createdAt: new Date(),
     });
 
@@ -501,7 +529,7 @@ router.post('/:storyId/reply', authMiddleware, async (req, res) => {
 
     // Create notification
     const notification = new Notification({
-      recipient: story.user,
+      recipient: storyOwnerId,
       sender: userId,
       type: 'comment',
       message: `${req.user.username} replied to your story`,
@@ -510,6 +538,56 @@ router.post('/:storyId/reply', authMiddleware, async (req, res) => {
       entityModel: 'Story',
     });
     await notification.save();
+
+    // Also create a message in the conversation system
+    try {
+      // Find or create conversation between story owner and reply sender
+      let conversation = await Conversation.findOne({
+        participants: { $all: [storyOwnerId, userId] },
+        isGroup: false
+      });
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = new Conversation({
+          participants: [storyOwnerId, userId],
+          isGroup: false,
+        });
+        await conversation.save();
+        console.log(`✅ Created new conversation between story owner and reply sender`);
+      }
+
+      // Create message in conversation
+      const conversationMessage = new Message({
+        conversation: conversation._id,
+        sender: userId,
+        receiver: storyOwnerId,
+        messageType: 'text',
+        content: {
+          text: `Replied to your story: ${replyText}`,
+        },
+      });
+
+      await conversationMessage.save();
+
+      // Update conversation
+      conversation.lastMessage = conversationMessage._id;
+      conversation.lastMessageAt = new Date();
+      
+      // Update unread count for story owner
+      if (!conversation.unreadCounts || typeof conversation.unreadCounts.get !== 'function') {
+        conversation.unreadCounts = new Map();
+      }
+      const currentUnread = conversation.unreadCounts.get(storyOwnerId.toString()) || 0;
+      conversation.unreadCounts.set(storyOwnerId.toString(), currentUnread + 1);
+      
+      await conversation.save();
+
+      console.log(`✅ Story reply also created as message in conversation ${conversation._id}`);
+    } catch (messageError) {
+      // Don't fail the story reply if message creation fails
+      console.error('⚠️ Error creating message from story reply:', messageError);
+    }
 
     const newReply = story.replies[story.replies.length - 1];
 
@@ -534,9 +612,12 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
     const storyId = req.params.storyId;
     const userId = req.user._id;
 
+    console.log(`🗑️ Delete story request: storyId=${storyId}, userId=${userId}`);
+
     const story = await Story.findById(storyId);
 
     if (!story) {
+      console.log(`❌ Story not found: ${storyId}`);
       return res.status(404).json({
         success: false,
         message: 'Story not found',
@@ -545,11 +626,14 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
 
     // Check ownership
     if (story.user.toString() !== userId.toString()) {
+      console.log(`❌ Unauthorized delete attempt: story owner=${story.user}, requester=${userId}`);
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this story',
       });
     }
+
+    console.log(`✅ Story found and authorized for deletion: ${storyId}`);
 
     // Delete media file
     if (story.mediaUrl) {
@@ -597,16 +681,20 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
 
     await Story.findByIdAndDelete(storyId);
 
+    console.log(`✅ Story deleted successfully: ${storyId}`);
+
     res.json({
       success: true,
       message: 'Story deleted successfully',
+      storyId: storyId,
     });
   } catch (error) {
-    console.error('Error deleting story:', error);
+    console.error('❌ Error deleting story:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to delete story',
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 });
@@ -615,7 +703,23 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
 router.get('/:storyId', async (req, res) => {
   try {
     const storyId = req.params.storyId;
-    const currentUserId = req.user ? req.user._id : null;
+    
+    // Try to get current user from token (optional auth)
+    let currentUserId = null;
+    try {
+      let token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+      if (token && process.env.JWT_SECRET) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && decoded.userId) {
+          const authUser = await User.findById(decoded.userId);
+          if (authUser) {
+            currentUserId = authUser._id;
+          }
+        }
+      }
+    } catch (authError) {
+      // Auth is optional, continue without it
+    }
 
     const story = await Story.findById(storyId)
       .populate('user', 'username profile')

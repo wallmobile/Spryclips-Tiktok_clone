@@ -31,6 +31,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const fileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
   const justFollowedRef = useRef(false);
+  const refreshTimeoutRef = useRef(null);
+  const isRefreshingRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [bannerImage, setBannerImage] = useState(user?.profile?.banner || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
   const [bannerPreview, setBannerPreview] = useState(null);
@@ -113,14 +115,21 @@ const Profile = ({ onClose, username: viewUsername }) => {
   }, [onClose]);
 
   // Fetch user stories (for own profile or other user's profile)
+  // Use useMemo to stabilize userId to prevent infinite loops
+  const userId = React.useMemo(() => user?._id || user?.id, [user?._id, user?.id]);
+  
   useEffect(() => {
-    // Handle both _id and id formats
-    const userId = user?._id || user?.id;
     console.log('🔄 Profile useEffect triggered');
     console.log('🔄 Profile: User object:', user);
     console.log('🔄 Profile: user._id:', user?._id);
     console.log('🔄 Profile: user.id:', user?.id);
     console.log('🔄 Profile: Resolved userId:', userId);
+    
+    // Early return if no user and not viewing other profile
+    if (!userId && !viewUsername) {
+      console.log('⏭️ Profile: No user ID and no viewUsername, skipping fetch');
+      return;
+    }
     
     const fetchStories = async () => {
       // Try both _id and id formats
@@ -181,14 +190,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
       if (!targetUserId) {
         console.warn('⚠️ Profile: No targetUserId, skipping story fetch');
         console.warn('⚠️ Profile: User object:', user);
-        console.warn('⚠️ Profile: Will retry when user is available...');
-        // Don't return - wait a bit and retry
-        setTimeout(() => {
-          if (user?._id || user?.id) {
-            console.log('🔄 Profile: Retrying fetch after user available...');
-            fetchStories();
-          }
-        }, 1000);
+        // Don't retry - let useEffect handle it when user becomes available
+        setUserStories([]);
         return;
       }
       
@@ -223,17 +226,21 @@ const Profile = ({ onClose, username: viewUsername }) => {
         
         console.log('✅ Profile: Valid stories count:', validStories.length);
         console.log('✅ Profile: Valid stories:', validStories.map(s => ({ id: s._id, type: s.type, expiresAt: s.expiresAt })));
-        console.log('✅ Profile: Setting userStories state with', validStories.length, 'stories');
-        console.log('✅ Profile: Full validStories array:', validStories);
         
-        // IMPORTANT: Always set the state, even if empty
-        setUserStories(validStories);
-        
-        // Force re-render by logging state update
-        setTimeout(() => {
-          console.log('🔍 Profile: State updated, userStories should now have', validStories.length, 'stories');
-          console.log('🔍 Profile: Current userStories state after update:', validStories);
-        }, 100);
+        // IMPORTANT: Only update state if stories actually changed to prevent unnecessary re-renders
+        setUserStories(prevStories => {
+          // Compare story IDs to avoid unnecessary updates
+          const prevIds = (prevStories || []).map(s => s._id || s.id).filter(Boolean).sort().join(',');
+          const newIds = validStories.map(s => s._id || s.id).filter(Boolean).sort().join(',');
+          
+          if (prevIds === newIds && (prevStories || []).length === validStories.length) {
+            console.log('ℹ️ Profile: Stories unchanged, skipping state update to prevent re-render');
+            return prevStories; // Return previous state to prevent re-render
+          }
+          
+          console.log('✅ Profile: Stories changed, updating state');
+          return validStories;
+        });
       } catch (error) {
         console.error('❌ Error fetching user stories:', error);
         console.error('Error details:', error.response?.data || error.message);
@@ -250,30 +257,39 @@ const Profile = ({ onClose, username: viewUsername }) => {
     // Refresh stories every 5 minutes
     const interval = setInterval(fetchStories, 5 * 60 * 1000);
     
-    // Listen for story creation events - with multiple refreshes
+    // Listen for story creation events - optimized with debounce
     const handleStoryRefresh = () => {
-      console.log('🔄 Profile: Stories refresh event received, fetching stories...');
-      console.log('🔄 Profile: Current user._id:', user?._id);
-      // Refresh immediately
-      fetchStories();
-      // Also refresh after delays to ensure backend has processed
-      setTimeout(() => {
-        console.log('🔄 Profile: Delayed refresh after 500ms...');
-        fetchStories();
-      }, 500);
-      setTimeout(() => {
-        console.log('🔄 Profile: Delayed refresh after 1000ms...');
-        fetchStories();
-      }, 1000);
-      setTimeout(() => {
-        console.log('🔄 Profile: Delayed refresh after 2000ms...');
-        fetchStories();
-      }, 2000);
-      setTimeout(() => {
-        console.log('🔄 Profile: Final refresh after 3000ms...');
-        fetchStories();
-      }, 3000);
+      // Clear any pending refresh
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = null;
+      }
+      
+      // If already refreshing, skip
+      if (isRefreshingRef.current) {
+        console.log('🔄 Profile: Refresh already in progress, skipping...');
+        return;
+      }
+      
+      console.log('🔄 Profile: Stories refresh event received');
+      
+      // Debounce: wait 1000ms before refreshing (in case multiple events fire)
+      refreshTimeoutRef.current = setTimeout(async () => {
+        if (isRefreshingRef.current) return;
+        
+        isRefreshingRef.current = true;
+        try {
+          await fetchStories();
+          console.log('✅ Profile: Stories refreshed successfully');
+        } catch (error) {
+          console.error('❌ Profile: Error refreshing stories:', error);
+        } finally {
+          isRefreshingRef.current = false;
+        }
+        refreshTimeoutRef.current = null;
+      }, 1000); // Debounce to 1000ms to handle rapid events
     };
+    
     window.addEventListener('stories:refresh', handleStoryRefresh);
     
     // Also expose fetchStories globally for manual testing
@@ -290,9 +306,13 @@ const Profile = ({ onClose, username: viewUsername }) => {
     return () => {
       console.log('🧹 Profile: Cleaning up useEffect, removing event listeners');
       clearInterval(interval);
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = null;
+      }
       window.removeEventListener('stories:refresh', handleStoryRefresh);
     };
-  }, [user?._id || user?.id, isViewingOtherProfile, viewUsername]); // Use user._id or user.id
+  }, [userId, isViewingOtherProfile, viewUsername]); // Use stabilized userId, removed user to prevent infinite loops
 
   // Check follow status when viewing other user's profile (refetch on refresh)
   useEffect(() => {

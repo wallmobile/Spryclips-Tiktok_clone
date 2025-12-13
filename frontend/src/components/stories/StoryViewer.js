@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { viewStory, reactToStory, replyToStory } from '../../api/stories';
+import { viewStory, reactToStory, deleteStory, getStoryDetails } from '../../api/stories';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../config/axios';
 import './StoryViewer.css';
@@ -12,10 +12,11 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [showReplyInput, setShowReplyInput] = useState(false);
-  const [replyMessage, setReplyMessage] = useState('');
   const [reactions, setReactions] = useState({});
   const [storyDetails, setStoryDetails] = useState(null);
+  const [showViewersModal, setShowViewersModal] = useState(false);
+  const [viewersList, setViewersList] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const progressIntervalRef = useRef(null);
   const storyTimeoutRef = useRef(null);
   const videoRef = useRef(null);
@@ -83,6 +84,97 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
       console.error('Error marking story as viewed:', error);
     }
   }, [user]);
+
+  // Fetch viewers list
+  const fetchViewers = useCallback(async (storyId) => {
+    try {
+      const response = await getStoryDetails(storyId);
+      if (response?.story?.viewedBy) {
+        const viewers = response.story.viewedBy.map(view => ({
+          user: view.user,
+          viewedAt: view.viewedAt
+        }));
+        setViewersList(viewers);
+        setShowViewersModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching viewers:', error);
+      alert('Failed to load viewers');
+    }
+  }, []);
+
+  // Handle delete story - Direct delete without confirmation
+  const handleDeleteStory = useCallback(async (storyId) => {
+    if (!storyId) {
+      console.error('❌ No story ID provided for deletion');
+      return;
+    }
+
+    console.log('🗑️ Deleting story:', storyId);
+    setIsDeleting(true);
+    
+    try {
+      const response = await deleteStory(storyId);
+      console.log('✅ Story deleted successfully:', response);
+      
+      // Trigger refresh to update stories list
+      window.dispatchEvent(new Event('stories:refresh'));
+      
+      // Move to next story or close if no more stories
+      const currentStories = validStoriesArray[currentUserIndex]?.stories || [];
+      const remainingStories = currentStories.filter(s => {
+        const sId = s._id || s.id;
+        return sId && sId.toString() !== storyId.toString();
+      });
+      
+      if (remainingStories.length === 0) {
+        // No more stories for this user, try next user or close
+        if (currentUserIndex < validStoriesArray.length - 1) {
+          setCurrentUserIndex(currentUserIndex + 1);
+          setCurrentStoryIndex(0);
+        } else {
+          onClose();
+        }
+      } else {
+        // Move to next story or adjust index
+        if (currentStoryIndex >= remainingStories.length) {
+          setCurrentStoryIndex(remainingStories.length - 1);
+        }
+        // Refresh the current story view
+        setProgress(0);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting story:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      // Silent error handling - no popup, just refresh
+      // Story might already be deleted or there was a network issue
+      console.log('ℹ️ Error occurred, refreshing stories...');
+      window.dispatchEvent(new Event('stories:refresh'));
+      
+      // Move to next story or close
+      const currentStories = validStoriesArray[currentUserIndex]?.stories || [];
+      const remainingStories = currentStories.filter(s => {
+        const sId = s._id || s.id;
+        return sId && sId.toString() !== storyId.toString();
+      });
+      
+      if (remainingStories.length === 0) {
+        if (currentUserIndex < validStoriesArray.length - 1) {
+          setCurrentUserIndex(currentUserIndex + 1);
+          setCurrentStoryIndex(0);
+        } else {
+          onClose();
+        }
+      } else {
+        if (currentStoryIndex >= remainingStories.length) {
+          setCurrentStoryIndex(remainingStories.length - 1);
+        }
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [validStoriesArray, currentUserIndex, currentStoryIndex, onClose]);
 
   // Start progress animation
   const startProgress = useCallback(() => {
@@ -171,41 +263,45 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
 
   // Handle reaction
   const handleReaction = async (emoji = '❤️') => {
-    if (!currentStory || !user) return;
+    if (!currentStory || !user) {
+      console.warn('⚠️ Cannot react: missing story or user');
+      return;
+    }
+    
+    const storyId = currentStory._id || currentStory.id;
+    console.log('❤️ Reacting to story:', { storyId, emoji });
+    
     try {
-      await reactToStory(currentStory._id || currentStory.id, emoji);
+      const response = await reactToStory(storyId, emoji);
+      console.log('✅ Reaction successful:', response);
+      
+      // Update reactions state
       setReactions(prev => ({
         ...prev,
-        [currentStory._id || currentStory.id]: emoji
+        [storyId]: emoji
       }));
+      
+      // Update story details if available
+      if (response?.story) {
+        setStoryDetails(response.story);
+      } else {
+        // Refresh story details to get updated reactions
+        try {
+          const detailsResponse = await api.get(`/api/stories/${storyId}`);
+          if (detailsResponse.data?.story) {
+            setStoryDetails(detailsResponse.data.story);
+          }
+        } catch (fetchError) {
+          console.error('⚠️ Error fetching updated story details:', fetchError);
+        }
+      }
     } catch (error) {
-      console.error('Error reacting to story:', error);
+      console.error('❌ Error reacting to story:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      alert(`Failed to react: ${error.response?.data?.message || error.message || 'Please try again.'}`);
     }
   };
 
-  // Handle reply
-  const handleReply = async (e) => {
-    e.preventDefault();
-    if (!currentStory || !user || !replyMessage.trim()) return;
-    try {
-      await replyToStory(currentStory._id || currentStory.id, replyMessage.trim());
-      setReplyMessage('');
-      setShowReplyInput(false);
-      // Refresh story details to get updated replies
-      const storyId = currentStory._id || currentStory.id;
-      try {
-        const response = await api.get(`/api/stories/${storyId}`);
-        if (response.data?.story) {
-          setStoryDetails(response.data.story);
-        }
-      } catch (fetchError) {
-        console.error('Error fetching story details:', fetchError);
-      }
-    } catch (error) {
-      console.error('Error replying to story:', error);
-      alert('Failed to send reply. Please try again.');
-    }
-  };
 
   // Pause/Resume
   const togglePause = () => {
@@ -245,7 +341,18 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
     }
 
     // Mark as viewed and start progress
-    markAsViewed(currentStory._id || currentStory.id);
+    const storyId = currentStory._id || currentStory.id;
+    markAsViewed(storyId);
+    
+    // If it's user's own story, trigger refresh to show DP
+    if (user && currentUserStories?.user && 
+        (user._id === currentUserStories.user._id || user._id === currentUserStories.user.id)) {
+      // Dispatch event to refresh stories bar
+      setTimeout(() => {
+        window.dispatchEvent(new Event('stories:refresh'));
+      }, 500);
+    }
+    
     startProgress();
 
     return () => {
@@ -323,17 +430,65 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
             <div className="story-viewer__time">
               {new Date(currentStory.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
-            {/* Show views count if story owner */}
+            {/* Show views count if story owner - clickable to see viewers */}
             {user && displayStory.user && (user._id === displayStory.user || user._id === displayStory.user._id) && (
-              <div className="story-viewer__views-count">
+              <div 
+                className="story-viewer__views-count"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fetchViewers(currentStory._id || currentStory.id);
+                }}
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+                title="Click to see who viewed"
+              >
                 <i className="fa-solid fa-eye"></i> {displayStory.views || 0} views
               </div>
             )}
           </div>
         </div>
-        <button className="story-viewer__close" onClick={onClose}>
-          <i className="fa-solid fa-times"></i>
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {/* Delete button for own stories */}
+          {user && displayStory.user && (user._id === displayStory.user || user._id === displayStory.user._id) && (
+            <button 
+              className="story-viewer__delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteStory(currentStory._id || currentStory.id);
+              }}
+              disabled={isDeleting}
+              title="Delete story"
+              style={{
+                background: 'rgba(255, 0, 0, 0.7)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: isDeleting ? 'not-allowed' : 'pointer',
+                color: '#fff',
+                fontSize: '16px',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!isDeleting) e.target.style.background = 'rgba(255, 0, 0, 0.9)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isDeleting) e.target.style.background = 'rgba(255, 0, 0, 0.7)';
+              }}
+            >
+              {isDeleting ? (
+                <i className="fa-solid fa-spinner fa-spin"></i>
+              ) : (
+                <i className="fa-solid fa-trash"></i>
+              )}
+            </button>
+          )}
+          <button className="story-viewer__close" onClick={onClose}>
+            <i className="fa-solid fa-times"></i>
+          </button>
+        </div>
       </div>
 
       {/* Media */}
@@ -366,6 +521,9 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
             style={{
               color: currentStory.textColor || '#FFFFFF',
               background: currentStory.textBackground || 'transparent',
+              left: `${currentStory.textPositionX || 50}%`,
+              top: `${currentStory.textPositionY || 50}%`,
+              transform: 'translate(-50%, -50%)',
             }}
           >
             {currentStory.text}
@@ -377,7 +535,7 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
       <div className="story-viewer__nav-left" onClick={(e) => { e.stopPropagation(); previousStory(); }}></div>
       <div className="story-viewer__nav-right" onClick={(e) => { e.stopPropagation(); nextStory(); }}></div>
 
-      {/* Actions */}
+      {/* Actions - Only show in StoryViewer */}
       <div className="story-viewer__actions">
         <button
           className="story-viewer__action-btn"
@@ -386,72 +544,135 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
             handleReaction('❤️');
           }}
           title="Like"
-        >
-          <i className="fa-solid fa-heart"></i>
-        </button>
-        <button
-          className="story-viewer__action-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowReplyInput(!showReplyInput);
+          style={{
+            background: displayStory?.reactions?.some(r => 
+              (r.user?._id || r.user?.id || r.user) === user?._id
+            ) ? 'rgba(255, 0, 80, 0.3)' : 'transparent'
           }}
-          title="Reply"
         >
-          <i className="fa-solid fa-comment"></i>
-        </button>
-        <button
-          className="story-viewer__action-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (navigator.share) {
-              navigator.share({
-                title: `${storyUser.username}'s story`,
-                text: 'Check out this story!',
-                url: window.location.href,
-              }).catch(console.error);
-            }
-          }}
-          title="Share"
-        >
-          <i className="fa-solid fa-share"></i>
+          <i 
+            className="fa-solid fa-heart" 
+            style={{
+              color: displayStory?.reactions?.some(r => 
+                (r.user?._id || r.user?.id || r.user) === user?._id
+              ) ? '#FF0050' : '#fff'
+            }}
+          ></i>
+          {displayStory?.reactions && displayStory.reactions.length > 0 && (
+            <span style={{ marginLeft: '4px', fontSize: '0.85rem' }}>
+              {displayStory.reactions.length}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Reply input */}
-      {showReplyInput && (
-        <div className="story-viewer__reply-container" onClick={(e) => e.stopPropagation()}>
-          <form onSubmit={handleReply}>
-            <input
-              type="text"
-              value={replyMessage}
-              onChange={(e) => setReplyMessage(e.target.value)}
-              placeholder="Send a message..."
-              className="story-viewer__reply-input"
-              autoFocus
-            />
-            <button type="submit" className="story-viewer__reply-send">
-              <i className="fa-solid fa-paper-plane"></i>
-            </button>
-          </form>
-          {/* Show reactions and replies count */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '12px', 
-            marginTop: '8px',
-            fontSize: '0.85rem',
-            color: '#fff',
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)'
-          }}>
-            {displayStory.reactions && displayStory.reactions.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <i className="fa-solid fa-heart" style={{ color: '#FF0050' }}></i>
-                <span>{displayStory.reactions.length}</span>
-              </div>
-            )}
-            {displayStory.replies && displayStory.replies.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <i className="fa-solid fa-comments" style={{ color: '#25F4EE' }}></i>
-                <span>{displayStory.replies.length} {displayStory.replies.length === 1 ? 'reply' : 'replies'}</span>
+
+      {/* Viewers Modal */}
+      {showViewersModal && (
+        <div 
+          className="story-viewer__viewers-modal"
+          onClick={(e) => {
+            if (e.target.classList.contains('story-viewer__viewers-modal')) {
+              setShowViewersModal(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+        >
+          <div 
+            style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '20px',
+              maxWidth: '400px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fa-solid fa-eye"></i> Viewers ({viewersList.length})
+              </h3>
+              <button
+                onClick={() => setShowViewersModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#f0f0f0'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            
+            {viewersList.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>No viewers yet</p>
+            ) : (
+              <div>
+                {viewersList.map((view, index) => {
+                  const viewer = view.user;
+                  const avatar = viewer?.profile?.avatar || 
+                    `https://ui-avatars.com/api/?name=${viewer?.username || 'User'}&background=ff0050&color=fff`;
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px',
+                        borderBottom: index < viewersList.length - 1 ? '1px solid #eee' : 'none',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = '#f9f9f9'}
+                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                    >
+                      <img
+                        src={avatar}
+                        alt={viewer?.username}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                          {viewer?.username || 'Unknown User'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          {new Date(view.viewedAt).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

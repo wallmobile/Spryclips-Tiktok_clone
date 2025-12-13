@@ -32,6 +32,14 @@ const storySchema = new mongoose.Schema({
     type: String,
     default: 'transparent',
   },
+  textPositionX: {
+    type: Number,
+    default: 50, // Percentage from left
+  },
+  textPositionY: {
+    type: Number,
+    default: 50, // Percentage from top
+  },
   music: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Sound',

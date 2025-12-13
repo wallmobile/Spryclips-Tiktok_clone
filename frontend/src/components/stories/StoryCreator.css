@@ -244,10 +244,7 @@
 }
 
 .story-creator__text-overlay {
-  position: absolute;
-  bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: absolute !important;
   padding: 12px 20px;
   border-radius: 12px;
   font-size: 1.1rem;
@@ -255,8 +252,11 @@
   text-align: center;
   max-width: 85%;
   word-wrap: break-word;
-  z-index: 5;
+  z-index: 100 !important; /* Higher z-index to be above other elements */
   line-height: 1.4;
+  touch-action: none; /* Prevent touch scrolling while dragging */
+  pointer-events: auto !important; /* Ensure it can receive mouse events */
+  cursor: grab !important;
 }
 
 @media (max-width: 768px) {

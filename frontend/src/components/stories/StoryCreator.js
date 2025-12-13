@@ -13,6 +13,11 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
   const [text, setText] = useState('');
   const [textColor, setTextColor] = useState('#FFFFFF');
   const [textBackground, setTextBackground] = useState('transparent');
+  const [textPosition, setTextPosition] = useState({ x: 50, y: 50 }); // Position in percentage
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const textOverlayRef = useRef(null);
+  const previewWrapperRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -37,6 +42,75 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
       }
     };
   }, []);
+
+  // Handle global mouse events for dragging
+  useEffect(() => {
+    if (!isDragging) {
+      return;
+    }
+
+    console.log('🖱️ Setting up drag event listeners, isDragging:', isDragging);
+
+    const handleMouseMove = (e) => {
+      if (!isDragging) {
+        console.log('🖱️ Drag ended, ignoring mousemove');
+        return;
+      }
+
+      if (!previewWrapperRef.current) {
+        console.warn('⚠️ previewWrapperRef.current is null');
+        return;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const rect = previewWrapperRef.current.getBoundingClientRect();
+      if (!rect || rect.width === 0 || rect.height === 0) {
+        console.warn('⚠️ Invalid rect:', rect);
+        return;
+      }
+      
+      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      
+      console.log('🖱️ Dragging text to:', { x, y, clientX: e.clientX, clientY: e.clientY });
+      setTextPosition(prev => {
+        // Only update if position actually changed
+        if (Math.abs(prev.x - x) > 0.1 || Math.abs(prev.y - y) > 0.1) {
+          return { x, y };
+        }
+        return prev;
+      });
+    };
+
+    const handleMouseUp = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🖱️ Text drag ended via mouseup');
+      setIsDragging(false);
+    };
+
+    const handleMouseLeave = (e) => {
+      // Only handle if leaving the document
+      if (e.target === document) {
+        console.log('🖱️ Text drag ended via mouseleave');
+        setIsDragging(false);
+      }
+    };
+
+    // Use capture phase to ensure we catch events
+    document.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false });
+    document.addEventListener('mouseleave', handleMouseLeave, { capture: true, passive: false });
+
+    return () => {
+      console.log('🖱️ Cleaning up drag event listeners');
+      document.removeEventListener('mousemove', handleMouseMove, { capture: true });
+      document.removeEventListener('mouseup', handleMouseUp, { capture: true });
+      document.removeEventListener('mouseleave', handleMouseLeave, { capture: true });
+    };
+  }, [isDragging]);
 
   // Set up video stream when capture step is active
   useEffect(() => {
@@ -352,6 +426,8 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
         formData.append('text', text.trim());
         formData.append('textColor', textColor);
         formData.append('textBackground', textBackground);
+        formData.append('textPositionX', textPosition.x.toString());
+        formData.append('textPositionY', textPosition.y.toString());
       }
 
       console.log('📤 Starting story upload...');
@@ -373,30 +449,9 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
           onStoryCreated(response.story);
         }
         
-        // Refresh stories list with multiple attempts to ensure it's loaded
+        // Dispatch single refresh event - components will handle debouncing
         console.log('📢 Dispatching stories:refresh event...');
         window.dispatchEvent(new Event('stories:refresh'));
-        
-        // Also force refreshes after delays to ensure backend has processed
-        setTimeout(() => {
-          console.log('📢 Dispatching second stories:refresh event after 500ms...');
-          window.dispatchEvent(new Event('stories:refresh'));
-        }, 500);
-        
-        setTimeout(() => {
-          console.log('📢 Dispatching third stories:refresh event after 1000ms...');
-          window.dispatchEvent(new Event('stories:refresh'));
-        }, 1000);
-        
-        setTimeout(() => {
-          console.log('📢 Dispatching fourth stories:refresh event after 2000ms...');
-          window.dispatchEvent(new Event('stories:refresh'));
-        }, 2000);
-        
-        setTimeout(() => {
-          console.log('📢 Dispatching fifth stories:refresh event after 3000ms...');
-          window.dispatchEvent(new Event('stories:refresh'));
-        }, 3000);
         
         // Close after showing success message (2 seconds to allow refresh)
         setTimeout(() => {
@@ -568,6 +623,7 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
         <div className="story-creator">
         <div className="story-creator__edit-container">
           <div 
+            ref={previewWrapperRef}
             className="story-creator__preview-wrapper"
             style={aspectRatio ? {
               aspectRatio: `${aspectRatio} / 1`,
@@ -597,11 +653,45 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
             
             {text && (
               <div
+                ref={textOverlayRef}
                 className="story-creator__text-overlay"
                 style={{
                   color: textColor,
                   background: textBackground === 'transparent' ? 'transparent' : textBackground,
+                  left: `${textPosition.x}%`,
+                  top: `${textPosition.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                  msUserSelect: 'none',
+                  pointerEvents: 'auto',
+                  zIndex: 10,
+                  position: 'absolute',
                 }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Text drag started - isDragging will be set to true');
+                  console.log('🖱️ Current text position:', textPosition);
+                  console.log('🖱️ Preview wrapper ref:', previewWrapperRef.current);
+                  setIsDragging(true);
+                }}
+                onTouchStart={(e) => {
+                  // Also support touch for mobile
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (previewWrapperRef.current) {
+                    const touch = e.touches[0];
+                    const rect = previewWrapperRef.current.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+                    const y = Math.max(0, Math.min(100, ((touch.clientY - rect.top) / rect.height) * 100));
+                    setTextPosition({ x, y });
+                    setIsDragging(true);
+                  }
+                }}
+                draggable={false}
               >
                 {text}
               </div>
