@@ -40,7 +40,7 @@ const Profile = lazy(() => import('./components/profile/Profile'));
 const More = lazy(() => import('./components/common/More'));
 const Login = lazy(() => import('./components/auth/Login'));
 const Signup = lazy(() => import('./components/auth/Signup'));
-const TikTokStudio = lazy(() => import('./components/creator/TikTokStudio'));
+const SpryclipsStudio = lazy(() => import('./components/creator/TikTokStudio'));
 const EffectsLab = lazy(() => import('./components/creator/EffectsLab'));
 const SellerDashboard = lazy(() => import('./components/business/SellerDashboard'));
 const GrowthToolsHub = lazy(() => import('./components/creator/GrowthToolsHub'));
@@ -414,12 +414,12 @@ const MorePage: React.FC = () => {
   return <More mode="page" onClose={() => navigate('/')} />;
 };
 
-const TikTokStudioPage: React.FC = () => {
+const SpryclipsStudioPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const fromCreatorTools = location.state?.from === 'creator-tools';
   
-  return <TikTokStudio onClose={() => {
+  return <SpryclipsStudio onClose={() => {
     if (fromCreatorTools) {
       navigate('/profile', { replace: true });
     } else {
@@ -762,7 +762,7 @@ const AppRoutes: React.FC = () => (
       <Route path="upload" element={<ProtectedRoute><UploadPageRoute /></ProtectedRoute>} />
       <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="user/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="more/studio" element={<ProtectedRoute><TikTokStudioPage /></ProtectedRoute>} />
+      <Route path="more/studio" element={<ProtectedRoute><SpryclipsStudioPage /></ProtectedRoute>} />
       <Route path="more/effects" element={<ProtectedRoute><EffectsLabPage /></ProtectedRoute>} />
       <Route path="more/shop" element={<ProtectedRoute><SellerDashboardPage /></ProtectedRoute>} />
       <Route path="more/growth-tools" element={<ProtectedRoute><GrowthToolsPage /></ProtectedRoute>} />

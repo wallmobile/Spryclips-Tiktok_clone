@@ -126,7 +126,7 @@ const Sidebar = () => {
       <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
             <div className="sidebar-header">
               <div className="logo">
-                TikTok
+                Spryclips
               </div>
             </div>
 
@@ -181,7 +181,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Search Modal - TikTok Style */}
+      {/* Search Modal - Spryclips Style */}
       {showSearchModal && (
         <SearchPage onClose={() => setShowSearchModal(false)} />
       )}

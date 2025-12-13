@@ -751,7 +751,7 @@ const ManageAccount = ({ onClose }) => {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My TikTok Data</title>
+  <title>My Spryclips Data</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
     h1 { color: #FE2C55; text-align: center; border-bottom: 3px solid #FE2C55; padding-bottom: 15px; }
@@ -766,7 +766,7 @@ const ManageAccount = ({ onClose }) => {
   </style>
 </head>
 <body>
-  <h1>🎵 My TikTok Data</h1>
+  <h1>🎵 My Spryclips Data</h1>
   <p style="text-align: center; color: #666;">Downloaded on: ${new Date().toLocaleDateString()}</p>
   
   <h2>👤 Profile Information</h2>
@@ -814,8 +814,8 @@ const ManageAccount = ({ onClose }) => {
   </div>
   
   <div class="footer">
-    <p>This document was generated from TikTok Clone App</p>
-    <p>© ${new Date().getFullYear()} TikTok Clone</p>
+    <p>This document was generated from Spryclips App</p>
+    <p>© ${new Date().getFullYear()} Spryclips</p>
   </div>
 </body>
 </html>`;

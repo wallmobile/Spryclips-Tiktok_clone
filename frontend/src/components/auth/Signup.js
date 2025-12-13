@@ -209,7 +209,7 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
         // Email already verified before signup, so no need for post-signup verification
         // Complete signup directly
         if (isMountedRef.current) {
-          setSuccess('Welcome aboard! Redirecting you to TikTok…');
+          setSuccess('Welcome aboard! Redirecting you to Spryclips…');
           setFormData(initialFormState);
           setErrors({});
           setEmailVerificationCode('');
@@ -361,7 +361,7 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
     try {
       await verifyEmail(null, verificationCode.trim(), userEmail);
       if (isMountedRef.current) {
-        setSuccess('Email verified successfully! Welcome to TikTok…');
+        setSuccess('Email verified successfully! Welcome to Spryclips…');
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -398,11 +398,11 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 
       <div className="signup-right">
         <div className="tiktok-logo-container">
-          <div className="tiktok-logo-text">TikTok</div>
+          <div className="tiktok-logo-text">Spryclips</div>
         </div>
 
         <h2 className="signup-heading">
-          {showVerification ? 'Verify your email' : 'Create your TikTok account'}
+          {showVerification ? 'Verify your email' : 'Create your Spryclips account'}
         </h2>
         <p className="auth-subheading">
           {showVerification 
@@ -712,7 +712,7 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
         {!showVerification && (
           <>
             <p className="terms-hint">
-              By continuing, you agree to the TikTok Terms of Service and confirm that you have read our Privacy Policy.
+              By continuing, you agree to the Spryclips Terms of Service and confirm that you have read our Privacy Policy.
             </p>
 
             <p className="signup-footer">

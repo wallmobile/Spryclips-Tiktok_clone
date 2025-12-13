@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'tiktok-clone-static-v2';
-const RUNTIME_CACHE = 'tiktok-clone-runtime-v1';
+const STATIC_CACHE = 'spryclips-static-v2';
+const RUNTIME_CACHE = 'spryclips-runtime-v1';
 const PRECACHE_URLS = ['/', '/manifest.json', '/config.js'];
 
 // Install event - cache resources

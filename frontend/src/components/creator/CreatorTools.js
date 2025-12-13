@@ -95,7 +95,7 @@ const CreatorTools = ({ onClose }) => {
   const creatorSections = [
     {
       id: 'studio',
-      title: 'TikTok Studio',
+      title: 'Spryclips Studio',
       description: 'Manage your content, analytics, and audience insights',
       icon: 'fa-solid fa-video',
       color: 'gradient-primary',

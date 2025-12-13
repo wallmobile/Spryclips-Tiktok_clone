@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './GetApp.css';
 
 const GetApp = ({ onClose }) => {
-  const [selectedPlatform, setSelectedPlatform] = useState('ios'); // Default to iOS like TikTok
+  const [selectedPlatform, setSelectedPlatform] = useState('ios'); // Default to iOS like Spryclips
   const [installMessage, setInstallMessage] = useState('');
 
   const platforms = [
@@ -11,7 +11,7 @@ const GetApp = ({ onClose }) => {
       name: 'iOS',
       icon: 'fa-brands fa-apple',
       color: '#000000',
-      heading: 'Download the latest official TikTok app for iOS',
+      heading: 'Download the latest official Spryclips app for iOS',
       description: 'Download for iPhone and iPad',
       downloadUrl: window.location.origin,
       storeUrl: '#'
@@ -21,7 +21,7 @@ const GetApp = ({ onClose }) => {
       name: 'Android',
       icon: 'fa-brands fa-android',
       color: '#3DDC84',
-      heading: 'Download the latest official TikTok app for Android',
+      heading: 'Download the latest official Spryclips app for Android',
       description: 'Download for Android devices',
       downloadUrl: window.location.origin,
       storeUrl: '#'
@@ -108,7 +108,7 @@ const GetApp = ({ onClose }) => {
                   ))}
                 </div>
                 <h2 className="platform-heading">{currentPlatform.heading}</h2>
-                <h1 className="get-app-title">Download TikTok - Make Your Day</h1>
+                <h1 className="get-app-title">Download Spryclips - Make Your Day</h1>
                 
                 <div className="download-section">
                   <button className="download-btn" onClick={handleDownload}>
@@ -146,7 +146,7 @@ const GetApp = ({ onClose }) => {
                 <div className="phone-screen">
                   <div className="phone-header">
                     <div className="phone-logo">
-                      <strong>TikTok</strong>
+                      <strong>Spryclips</strong>
                     </div>
                     <div className="phone-search">
                       <i className="fa-solid fa-search"></i>

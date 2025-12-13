@@ -186,10 +186,10 @@ const Login = ({ onClose, onSwitchToSignup }) => {
 
       <div className="signup-right">
         <div className="tiktok-logo-container">
-          <div className="tiktok-logo-text">TikTok</div>
+          <div className="tiktok-logo-text">Spryclips</div>
         </div>
 
-        <h2 className="signup-heading">Log in to TikTok</h2>
+        <h2 className="signup-heading">Log in to Spryclips</h2>
         <p className="auth-subheading">Enter your credentials or continue with a connected account.</p>
 
         {error && (

@@ -1,8 +1,8 @@
 {
-  "name": "tiktok-clone-backend",
+  "name": "spryclips-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "TikTok Clone - Backend API Server",
+  "description": "Spryclips - Backend API Server",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -5,12 +5,12 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'TikTok Clone API',
+      title: 'Spryclips API',
       version: '1.0.0',
-      description: 'API documentation for TikTok Clone application',
+      description: 'API documentation for Spryclips application',
       contact: {
         name: 'API Support',
-        email: 'support@tiktok-clone.com'
+        email: 'support@spryclips.com'
       }
     },
     servers: [

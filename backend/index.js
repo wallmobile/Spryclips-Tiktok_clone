@@ -312,7 +312,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api', (req, res) => {
   res.json({
     success: true,
-    message: 'TikTok Clone API',
+    message: 'Spryclips API',
     version: '1.0.0',
     endpoints: {
       documentation: '/api-docs',

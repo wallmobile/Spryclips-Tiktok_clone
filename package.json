@@ -1,8 +1,8 @@
 {
-  "name": "tiktok-clone-root",
+  "name": "spryclips-root",
   "version": "1.0.0",
   "private": true,
-  "description": "TikTok Clone - Full Stack Application (Root Package)",
+  "description": "Spryclips - Full Stack Application (Root Package)",
   "scripts": {
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "start:frontend": "cd frontend && npm start",

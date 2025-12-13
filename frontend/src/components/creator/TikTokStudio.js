@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchStudioSummary } from '../../api/more';
 import '../common/MorePages.css';
 
-const TikTokStudio = ({ onClose = () => {} }) => {
+const SpryclipsStudio = ({ onClose = () => {} }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -262,5 +262,5 @@ const TikTokStudio = ({ onClose = () => {} }) => {
   );
 };
 
-export default TikTokStudio;
+export default SpryclipsStudio;
 

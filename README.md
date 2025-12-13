@@ -1,6 +1,6 @@
-# TikTok Clone - Full Stack Application
+# Spryclips - Full Stack Application
 
-A full-featured TikTok clone built with React (Frontend) and Node.js/Express (Backend), featuring video uploads, live streaming, social interactions, and comprehensive admin panel.
+A full-featured short video sharing platform built with React (Frontend) and Node.js/Express (Backend), featuring video uploads, live streaming, social interactions, and comprehensive admin panel.
 
 ## 🚀 Features
 
@@ -17,7 +17,7 @@ A full-featured TikTok clone built with React (Frontend) and Node.js/Express (Ba
 - **Notifications**: Real-time notifications via WebSocket
 
 ### Creator Tools
-- **TikTok Studio**: Video editing and management
+- **Spryclips Studio**: Video editing and management
 - **Creator Analytics**: Detailed analytics dashboard
 - **Monetization**: Creator fund and earnings tracking
 - **Effects Lab**: Video effects and filters

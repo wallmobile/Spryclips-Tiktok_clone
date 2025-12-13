@@ -219,7 +219,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       },
       {
         id: 'tiktok_studio',
-        label: 'TikTok Studio',
+        label: 'Spryclips Studio',
         icon: 'fa-tv',
         badge: true,
         action: 'route',
@@ -227,7 +227,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       },
       {
         id: 'create_effects',
-        label: 'Create TikTok effects',
+        label: 'Create Spryclips effects',
         icon: 'fa-wand-magic-sparkles',
         action: 'route',
         path: '/more/effects'

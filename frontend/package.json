@@ -1,8 +1,8 @@
 {
-  "name": "tiktok-clone",
+  "name": "spryclips",
   "version": "1.0.0",
   "private": true,
-  "description": "A TikTok clone built with React",
+  "description": "Spryclips - Short video sharing platform built with React",
   "dependencies": {
     "ajv": "^6.12.6",
     "ajv-keywords": "^3.5.2",

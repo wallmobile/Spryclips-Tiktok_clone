@@ -199,7 +199,7 @@ const FALLBACK_CREATORS = FALLBACK_VIDEOS.reduce((acc, video) => {
     profile: {
       displayName: video.user?.profile?.displayName || handle,
       avatar: video.user?.profile?.avatar,
-      bio: video.description?.slice(0, 80) || 'Content creator on TikTok Clone',
+      bio: video.description?.slice(0, 80) || 'Content creator on Spryclips',
       followers: video.views ?? 0,
       isVerified: video.user?.profile?.isVerified ?? false
     },
@@ -945,7 +945,7 @@ const Following = () => {
                         <i className="fa-solid fa-check-circle following-verified-badge"></i>
                       )}
                     </div>
-                    <p>{creator.profile?.bio || 'Content creator on TikTok Clone'}</p>
+                    <p>{creator.profile?.bio || 'Content creator on Spryclips'}</p>
                     <div className="following-creator-stats">
                       <span>{formatCount(creator.profile?.followers || 0)} followers</span>
                       <span>•</span>
