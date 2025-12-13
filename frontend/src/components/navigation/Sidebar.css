@@ -303,7 +303,7 @@ body.more-page-open .sidebar {
   color: #656565;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.875rem; /* 14px */
+  font-size: 15px !important; /* 15px - fixed font size */
   min-height: 2.5rem; /* 40px - reduced */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -559,7 +559,7 @@ body.dark-mode .sidebar-submenu-item:hover {
   border: none !important;
   color: #FFFFFF !important;
   border-radius: 1.125rem; /* 18px - slightly reduced */
-  font-size: 0.875rem; /* 14px */
+  font-size: 15px !important; /* 15px - fixed font size */ /* 14px - fixed font size */
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -587,7 +587,7 @@ body.dark-mode .sidebar-submenu-item:hover {
   color: #fff !important;
   border: none !important;
   border-radius: 1.125rem; /* 18px - slightly reduced */
-  font-size: 0.875rem; /* 14px */
+  font-size: 15px !important; /* 15px - fixed font size */ /* 14px - fixed font size */
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -616,7 +616,7 @@ body.dark-mode .sidebar-submenu-item:hover {
   color: #656565;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.875rem; /* 14px */
+  font-size: 15px !important; /* 15px - fixed font size */
   min-height: 48px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -1019,7 +1019,7 @@ body.dark-mode .mobile-menu-close:hover {
     margin: 0.25rem 0.625rem !important; /* 4px 10px */
     border-radius: 0.625rem !important; /* 10px */
     min-height: 3rem !important; /* 48px */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     touch-action: manipulation !important;
   }
 
@@ -1038,7 +1038,7 @@ body.dark-mode .mobile-menu-close:hover {
     width: 100% !important;
     margin: 0 !important;
     padding: 0.875rem !important; /* 14px */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     min-height: 3rem !important; /* 48px */
     border-radius: 1.25rem !important; /* 20px */
     touch-action: manipulation !important;
@@ -1048,7 +1048,7 @@ body.dark-mode .mobile-menu-close:hover {
     padding: 0.75rem 1.5rem !important; /* 12px 24px */
     margin: 0.3125rem 0.625rem !important; /* 5px 10px */
     justify-content: flex-start !important;
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     min-height: 3rem !important; /* 48px */
     touch-action: manipulation !important;
   }
@@ -1091,7 +1091,7 @@ body.dark-mode .mobile-menu-close:hover {
     height: 1.75rem !important; /* 28px */
     min-width: 1.75rem !important;
     min-height: 1.75rem !important;
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
   }
 
   .sidebar-search {
@@ -1115,7 +1115,7 @@ body.dark-mode .mobile-menu-close:hover {
     padding: 0.75rem 1.25rem !important; /* 12px 20px */
     margin: 0.1875rem 0.5rem !important; /* 3px 8px */
     min-height: 2.75rem !important; /* 44px - touch-friendly */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
   }
 
   .nav-item i {
@@ -1134,7 +1134,7 @@ body.dark-mode .mobile-menu-close:hover {
   .login-btn-sidebar {
     padding: 0.75rem !important; /* 12px */
     margin: 0 !important; /* Remove margin - gap handles spacing */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     min-height: 2.75rem !important; /* 44px */
     border-radius: 1.125rem !important; /* 18px */
   }
@@ -1142,7 +1142,7 @@ body.dark-mode .mobile-menu-close:hover {
   .signup-btn-sidebar {
     padding: 0.75rem !important; /* 12px */
     margin: 0 !important; /* Remove margin - gap handles spacing */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     min-height: 2.75rem !important; /* 44px */
     border-radius: 1.125rem !important; /* 18px */
   }
@@ -1150,12 +1150,12 @@ body.dark-mode .mobile-menu-close:hover {
   .logout-btn {
     padding: 0.625rem 1.25rem !important; /* 10px 20px */
     margin: 0.25rem 0.5rem !important; /* 4px 8px */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     min-height: 2.75rem !important; /* 44px */
   }
 
   .logout-btn i {
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
   }
 }
 
@@ -1173,7 +1173,7 @@ body.dark-mode .mobile-menu-close:hover {
     height: 2.25rem !important; /* 36px */
     min-width: 2.25rem !important;
     min-height: 2.25rem !important;
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
     border-radius: 0.5rem !important; /* 8px */
   }
 
@@ -1215,7 +1215,7 @@ body.dark-mode .mobile-menu-close:hover {
     padding: 0.625rem 1rem !important; /* 10px 16px */
     margin: 0.125rem 0.375rem !important; /* 2px 6px */
     min-height: 2.5rem !important; /* 40px */
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
   }
 
   .nav-item i {
@@ -1242,7 +1242,7 @@ body.dark-mode .mobile-menu-close:hover {
   }
 
   .logout-btn i {
-    font-size: 0.875rem !important; /* 14px */
+    font-size: 15px !important; /* 15px - fixed font size */
   }
 }
 
