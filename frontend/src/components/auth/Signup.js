@@ -381,10 +381,6 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 
   return (
     <div className="tiktok-signup-container">
-      <button className="close-btn-tiktok" onClick={onClose} aria-label="Close sign up dialog">
-        ×
-      </button>
-
       <div className="signup-left">
         <div className="hero-animation" aria-hidden="true">
           <div className="floating-videos">
