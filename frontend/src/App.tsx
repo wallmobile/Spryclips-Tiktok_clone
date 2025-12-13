@@ -410,8 +410,8 @@ const ProfilePage: React.FC = () => {
 };
 
 const MorePage: React.FC = () => {
-  const navigate = useNavigate();
-  return <More mode="page" onClose={() => navigate('/')} />;
+  // Redirect to home since More options are now in sidebar
+  return <Navigate to="/" replace />;
 };
 
 const SpryclipsStudioPage: React.FC = () => {
