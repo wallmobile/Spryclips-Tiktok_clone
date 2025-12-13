@@ -8,7 +8,6 @@ import Profile from '../profile/Profile';
 import UploadPage from '../upload/UploadPage';
 import NotificationCenter from '../social/NotificationCenter';
 import Balance from '../common/Balance';
-import SearchPage from '../feed/SearchPage';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -17,7 +16,6 @@ const Navbar = () => {
   const { unreadCount } = useNotification();
   const [activeOverlay, setActiveOverlay] = useState(null); // login, signup, profile, upload, notifications, balance, getApp
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchPage, setShowSearchPage] = useState(false);
   const searchInputRef = useRef(null);
 
   const handleLogout = () => {
@@ -42,9 +40,9 @@ const Navbar = () => {
           {/* Left side - Logo placeholder (if needed) */}
           <div className="nav-left"></div>
           
-          {/* Center/Right - Search Bar */}
+          {/* Center/Right - Search Bar - INLINE SEARCH ONLY, NO POPUP/MODAL */}
           <div className="nav-center">
-            <div className="navbar-search" onClick={() => setShowSearchPage(true)}>
+            <div className="navbar-search" style={{ cursor: 'text' }}>
               <div className="navbar-search-icon">
                 <i className="fa-solid fa-search"></i>
               </div>
@@ -54,9 +52,31 @@ const Navbar = () => {
                 className="navbar-search-input"
                 placeholder="Search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setShowSearchPage(true)}
-                readOnly
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQuery(value);
+                  // Dispatch event to HomeFeed for inline filtering
+                  const event = new CustomEvent('searchTermChange', { detail: value });
+                  window.dispatchEvent(event);
+                  console.log('Search query changed:', value); // Debug log
+                }}
+                onKeyDown={(e) => {
+                  // Handle Enter key - trigger search
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = searchQuery.trim();
+                    if (value) {
+                      const event = new CustomEvent('searchTermChange', { detail: value });
+                      window.dispatchEvent(event);
+                      console.log('Search submitted (Enter key):', value);
+                    }
+                  }
+                }}
+                // NO onFocus - no popup on focus
+                // NO onClick - no popup on click
+                // NO readOnly - allow typing inline
+                // NO popup/modal should open - this is inline search only
+                style={{ cursor: 'text' }}
               />
             </div>
           </div>
@@ -125,9 +145,7 @@ const Navbar = () => {
       )}
 
       {/* Search Page Modal */}
-      {showSearchPage && (
-        <SearchPage onClose={() => setShowSearchPage(false)} />
-      )}
+      {/* Search popup removed - inline search only */}
 
     </>
   );

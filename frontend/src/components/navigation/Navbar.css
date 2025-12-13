@@ -62,7 +62,7 @@
   padding: 0.5rem 0.875rem;
   box-shadow: 0 1px 8px rgba(255, 0, 80, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  cursor: text; /* Changed from pointer to text for inline typing */
   margin: 0;
 }
 

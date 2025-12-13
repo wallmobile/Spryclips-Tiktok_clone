@@ -203,6 +203,7 @@ const HomeFeed: React.FC = () => {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>(''); // Inline search term
   // Story viewer and creator removed from HomeFeed - only available from Profile
   const fallbackVideos = useMemo(
     () => sampleVideos.map((video) => normalizeVideoData(video as Record<string, unknown>, 'sample')),
@@ -281,10 +282,39 @@ const HomeFeed: React.FC = () => {
     };
   }, [fallbackVideos]);
 
-  const feedItems: FeedItem[] = useMemo(() => {
-    if (!videos || videos.length === 0) return [];
+  // Listen for search term changes from Navbar
+  useEffect(() => {
+    const handleSearchChange = (event: CustomEvent<string>) => {
+      const term = String(event.detail || '').trim();
+      console.log('=== HomeFeed received search term ===');
+      console.log('Search term received:', term);
+      console.log('Current searchTerm state before update:', searchTerm);
+      setSearchTerm(term);
+      console.log('Search term updated to:', term);
+      console.log('=== End search term update ===');
+    };
+    
+    window.addEventListener('searchTermChange' as any, handleSearchChange);
+    document.addEventListener('searchTermChange' as any, handleSearchChange);
+    
+    return () => {
+      window.removeEventListener('searchTermChange' as any, handleSearchChange);
+      document.removeEventListener('searchTermChange' as any, handleSearchChange);
+    };
+  }, []); // Keep empty deps - we want this to run once
 
-    return videos.map((video) => {
+  // Separate featured videos (top videos) - NOT filtered by search
+  const featuredVideos: FeedItem[] = useMemo(() => {
+    if (!videos || videos.length === 0) return [];
+    // Get top 3-5 videos by engagement (likes + views)
+    const sorted = [...videos].sort((a, b) => {
+      const engagementA = (a.likes || 0) + (a.views || 0);
+      const engagementB = (b.likes || 0) + (b.views || 0);
+      return engagementB - engagementA;
+    });
+    const topVideos = sorted.slice(0, 5);
+    
+    return topVideos.map((video) => {
       const fallbackId =
         typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
@@ -295,9 +325,6 @@ const HomeFeed: React.FC = () => {
         video.user?.profile?.avatar ||
         (video as { avatar?: string }).avatar ||
         `https://ui-avatars.com/api/?name=${username}&background=ff0050&color=fff`;
-
-      // Production: Backend already returns full URLs (https://spryclips.com/uploads/...)
-      // Development: Use relative URLs, browser will use localhost:5000
       const videoUrl = (video.url as string) || (video.videoUrl as string) || '';
       const thumbnailUrl = video.thumbnail;
 
@@ -318,13 +345,173 @@ const HomeFeed: React.FC = () => {
     });
   }, [videos]);
 
+  // Regular feed items - filtered by search term (if any)
+  // Featured videos are excluded from this list (unless search is active)
+  const feedItems: FeedItem[] = useMemo(() => {
+    console.log('🔵 feedItems useMemo RUNNING - searchTerm:', searchTerm, 'videos.length:', videos?.length || 0);
+    
+    if (!videos || videos.length === 0) {
+      console.log('⚠️ No videos available - returning empty array');
+      return [];
+    }
+
+    // Get featured video IDs (needed for both search and non-search cases)
+    const featuredIds = new Set(featuredVideos.map(v => v.id));
+    
+    // If search is active, search ALL videos (including featured)
+    // If no search, exclude featured videos from regular feed
+    let filteredVideos = videos;
+    
+    if (!searchTerm.trim()) {
+      // No search - exclude featured videos from regular feed
+      console.log('Featured video IDs to exclude:', Array.from(featuredIds));
+      filteredVideos = videos.filter(v => !featuredIds.has(String(v._id || v.id)));
+      console.log('Videos after excluding featured:', filteredVideos.length);
+    } else {
+      // Search is active - search ALL videos (don't exclude featured)
+      console.log('Search active - searching ALL videos (including featured)');
+      filteredVideos = videos;
+    }
+    
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      console.log('=== SEARCH FILTERING START ===');
+      console.log('Search term (lowercase):', searchLower);
+      console.log('Total videos in database:', videos.length);
+      console.log('Videos to filter:', filteredVideos.length);
+      console.log('Featured video IDs:', Array.from(featuredIds));
+      console.log('All videos data:', videos.map(v => ({
+        id: v._id || v.id,
+        description: v.description,
+        username: v.user?.username || (v as { channel?: string }).channel
+      })));
+      
+      let matchCount = 0;
+      filteredVideos = filteredVideos.filter((video) => {
+        // Get all searchable text fields
+        const description = String(video.description || '').toLowerCase();
+        const username = String(video.user?.username || (video as { channel?: string }).channel || '').toLowerCase();
+        const hashtags = Array.isArray(video.hashtags) 
+          ? video.hashtags.map(h => String(h).toLowerCase()).join(' ')
+          : String(video.hashtags || '').toLowerCase();
+        const song = String(video.song || '').toLowerCase();
+        
+        // Also check video title if it exists
+        const title = String((video as { title?: string }).title || '').toLowerCase();
+        
+        // Combine all searchable text
+        const allSearchableText = `${description} ${username} ${hashtags} ${song} ${title}`.toLowerCase();
+        
+        // Check if search term is in any field or in combined text
+        const matches = description.includes(searchLower) || 
+               username.includes(searchLower) || 
+               hashtags.includes(searchLower) ||
+               song.includes(searchLower) ||
+               title.includes(searchLower) ||
+               allSearchableText.includes(searchLower);
+        
+        if (matches) {
+          matchCount++;
+          console.log(`✓ Video ${matchCount} MATCHES:`, {
+            id: video._id || video.id,
+            description: video.description,
+            username: username,
+            hashtags: video.hashtags,
+            song: video.song,
+            title: (video as { title?: string }).title,
+            searchTerm: searchLower,
+            'description check': description.includes(searchLower),
+            'username check': username.includes(searchLower),
+            'hashtags check': hashtags.includes(searchLower),
+            'song check': song.includes(searchLower),
+            'combined text check': allSearchableText.includes(searchLower)
+          });
+        } else {
+          // Log first few non-matches for debugging
+          if (matchCount < 3) {
+            console.log('✗ Video NO MATCH:', {
+              id: video._id || video.id,
+              description: video.description || '(empty)',
+              username: username || '(empty)',
+              hashtags: video.hashtags || '(empty)',
+              song: song || '(empty)',
+              searchTerm: searchLower,
+              'description.includes?': description.includes(searchLower),
+              'username.includes?': username.includes(searchLower),
+              'hashtags.includes?': hashtags.includes(searchLower),
+              'song.includes?': song.includes(searchLower),
+              'allSearchableText': allSearchableText.substring(0, 100)
+            });
+          }
+        }
+        return matches;
+      });
+      console.log('=== SEARCH FILTERING END ===');
+      console.log('Total videos after filter:', filteredVideos.length);
+      console.log('Matched videos:', matchCount);
+      if (filteredVideos.length === 0) {
+        console.warn('⚠️ NO VIDEOS MATCHED THE SEARCH TERM!');
+        console.warn('Search term was:', searchLower);
+        console.warn('Try checking if video descriptions contain this text');
+      }
+    } else {
+      console.log('No search term - showing all videos (excluding featured)');
+    }
+
+    return filteredVideos.map((video) => {
+      const fallbackId =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const id = String(video._id || video.id || fallbackId);
+      const username = video.user?.username || (video as { channel?: string }).channel || '@user';
+      const avatar =
+        video.user?.profile?.avatar ||
+        (video as { avatar?: string }).avatar ||
+        `https://ui-avatars.com/api/?name=${username}&background=ff0050&color=fff`;
+
+      const videoUrl = (video.url as string) || (video.videoUrl as string) || '';
+      const thumbnailUrl = video.thumbnail;
+
+      return {
+        id,
+        src: videoUrl,
+        poster: thumbnailUrl || undefined,
+        profileImg: avatar,
+        username,
+        description: video.description || '',
+        song: (video.song as string) || 'Original Sound',
+        likes: video.likes || 0,
+        comments: video.comments || 0,
+        shares: video.shares || 0,
+        views: video.views || 0,
+        video
+      };
+    });
+  }, [videos, searchTerm, featuredVideos]);
+
+  // Combine featured and regular videos - featured always at top
+  // Must be before early returns to follow React Hooks rules
+  const allFeedItems: FeedItem[] = useMemo(() => {
+    console.log('allFeedItems - searchTerm:', searchTerm, 'feedItems count:', feedItems.length, 'featuredVideos count:', featuredVideos.length);
+    // If search is active, only show filtered results (no featured)
+    if (searchTerm.trim()) {
+      console.log('Search active - showing filtered results only:', feedItems.length);
+      return feedItems;
+    }
+    // If no search, show featured first, then regular videos
+    const combined = [...featuredVideos, ...feedItems];
+    console.log('No search - showing combined:', combined.length);
+    return combined;
+  }, [featuredVideos, feedItems, searchTerm]);
+
   if (loading) {
     return <LoadingSpinner />;
   }
 
   // Story handling removed - stories only accessible from Profile page
 
-  if (error && feedItems.length === 0) {
+  if (error && allFeedItems.length === 0) {
     return (
       <div className="feed-error">
         <p>{error}</p>
@@ -332,10 +519,14 @@ const HomeFeed: React.FC = () => {
     );
   }
 
+  // Debug: Log final state
+  console.log('HomeFeed render - searchTerm:', searchTerm, 'allFeedItems.length:', allFeedItems.length, 'videos.length:', videos.length);
+
   return (
     <>
       {/* StoriesBar removed - Stories only show around profile picture ring */}
-      <ForYouFeed items={feedItems} />
+      {/* Featured videos always at top when no search, filtered results when searching */}
+      <ForYouFeed items={allFeedItems} />
     </>
   );
 };

@@ -235,7 +235,16 @@ const SearchPage = ({ onClose }) => {
         <div className="search-page-content">
           <div className="search-page-main">
             <form className="search-page-form" onSubmit={handleSearchSubmit}>
-              <div className="search-input-wrapper">
+              <div 
+                className="search-input-wrapper"
+                onClick={(e) => {
+                  // Close popup when user clicks on search input wrapper
+                  e.stopPropagation();
+                  if (onClose) {
+                    onClose();
+                  }
+                }}
+              >
                 <span className="search-icon" aria-hidden="true">
                   <i className="fa-solid fa-search"></i>
                 </span>
@@ -248,6 +257,13 @@ const SearchPage = ({ onClose }) => {
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setSearchError('');
+                  }}
+                  onClick={(e) => {
+                    // Close popup when user clicks on search input
+                    e.stopPropagation();
+                    if (onClose) {
+                      onClose();
+                    }
                   }}
                   aria-label="Search"
                   aria-invalid={Boolean(searchError)}
