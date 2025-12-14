@@ -223,9 +223,9 @@ const requestLogger = require('./middleware/requestLogger');
 const seedSampleData = require('./utils/seedSampleData');
 app.use(requestLogger);
 
-// Body parser middleware
-app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parser middleware - increased limit for large base64 images (banners can be 2-3MB base64)
+app.use(express.json({ limit: '50mb' })); // Increased limit for large base64 images
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // PUBLIC UPLOADS DIRECTORY CONFIGURATION
 // In production, Nginx will serve files directly from /home/reactmaster/uploads

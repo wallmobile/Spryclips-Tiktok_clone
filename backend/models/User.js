@@ -219,6 +219,10 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    banner: {
+      type: String,
+      default: ''
+    },
     website: {
       type: String,
       default: '',

@@ -75,6 +75,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const [loadingLiked, setLoadingLiked] = useState(false);
   const [loadingReposts, setLoadingReposts] = useState(false);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [userStories, setUserStories] = useState([]);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   // const [loadingStories, setLoadingStories] = useState(false); // Not currently used
@@ -118,6 +119,34 @@ const Profile = ({ onClose, username: viewUsername }) => {
   // Use useMemo to stabilize userId to prevent infinite loops
   const userId = React.useMemo(() => user?._id || user?.id, [user?._id, user?.id]);
   
+  // Sync banner image when user data changes (e.g., on page reload)
+  useEffect(() => {
+    if (!isViewingOtherProfile && user?.profile) {
+      // Always sync banner from backend when user data loads
+      console.log('🔄 Banner sync check:', {
+        hasProfile: !!user.profile,
+        hasBanner: !!user.profile.banner,
+        bannerValue: user.profile.banner ? (user.profile.banner.substring(0, 50) + '...') : 'none',
+        bannerLength: user.profile.banner ? user.profile.banner.length : 0,
+        profileKeys: Object.keys(user.profile || {})
+      });
+      
+      if (user.profile.banner && user.profile.banner.trim() !== '') {
+        // User has a saved banner from database, use it
+        console.log('✅ Syncing banner from backend:', {
+          hasBanner: true,
+          bannerLength: user.profile.banner.length,
+          bannerPreview: user.profile.banner.substring(0, 50) + '...'
+        });
+        setBannerImage(user.profile.banner);
+      } else {
+        // No banner in backend, use default
+        console.log('⚠️ No banner in backend, using default. Profile keys:', Object.keys(user.profile || {}));
+        setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
+      }
+    }
+  }, [user?.profile, isViewingOtherProfile]);
+
   useEffect(() => {
     console.log('🔄 Profile useEffect triggered');
     console.log('🔄 Profile: User object:', user);
@@ -531,6 +560,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
             });
             updateUser(updatedUser);
             
+            // Update banner from backend if viewing own profile
+            if (!isViewingOtherProfile && updatedUser?.profile?.banner) {
+              setBannerImage(updatedUser.profile.banner);
+            }
+            
             // Update own profile stats if viewing own profile
             if (!isViewingOtherProfile) {
               setStats(prev => ({
@@ -694,10 +728,19 @@ const Profile = ({ onClose, username: viewUsername }) => {
 
   // Save profile function
   const saveProfile = async (profileData) => {
+    setSavingProfile(true);
     try {
       // Check if avatar data is too large (base64 can be 33% larger than original)
       if (profileData.avatar && profileData.avatar.length > 3 * 1024 * 1024) { // ~3MB base64 string limit
         setToastMessage('Avatar image is too large. Please use an image smaller than 2MB.');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 4000);
+        return;
+      }
+      
+      // Check if banner data is too large
+      if (profileData.banner && profileData.banner.length > 3 * 1024 * 1024) { // ~3MB base64 string limit
+        setToastMessage('Banner image is too large. Please use an image smaller than 2MB.');
         setShowToast(true);
         setTimeout(() => setShowToast(false), 4000);
         return;
@@ -714,54 +757,95 @@ const Profile = ({ onClose, username: viewUsername }) => {
       }
       
       // Call updateProfile API with timeout
-      console.log('Saving profile data:', { 
+      console.log('💾 Saving profile data:', { 
         displayName: profileData.displayName, 
         bio: profileData.bio?.substring(0, 50),
         avatar: profileData.avatar ? `${(profileData.avatar.length / 1024).toFixed(2)}KB base64` : 'none',
+        banner: profileData.banner ? `${(profileData.banner.length / 1024).toFixed(2)}KB base64` : 'none',
+        bannerIncluded: 'banner' in profileData,
         website: profileData.website
       });
       
-      const response = await updateProfile(profileData);
-      console.log('Profile update response:', response);
+      // Store original state for rollback on error
+      const originalBanner = bannerImage;
+      const originalUser = user;
       
-      // Refresh user data from backend to get updated profile
-      try {
-        // Add a small delay to ensure backend has processed the update
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const verifyResponse = await api.get('/api/auth/verify');
-        
-        // Update AuthContext with fresh user data
-        const updatedUser = verifyResponse.data.user;
-        updateUser(updatedUser);
-        
-        // Also update local banner state if banner was updated
-        if (profileData.banner) {
+      // OPTIMISTIC UPDATE: Update UI immediately before API call completes
+      if (profileData.banner !== undefined) {
+        if (profileData.banner && profileData.banner.trim() !== '') {
           setBannerImage(profileData.banner);
+        } else {
+          // User deleted banner
+          setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
         }
-        
-        // Clear avatar preview after successful save (use the updated avatar from backend)
-        if (updatedUser?.profile?.avatar) {
-          setAvatarPreview(null);
-        }
-      } catch (verifyError) {
-        console.error('Error verifying session:', verifyError);
       }
       
-      // Clear files
+      // Update user context optimistically
+      const optimisticUser = {
+        ...user,
+        profile: {
+          ...user?.profile,
+          ...profileData
+        }
+      };
+      updateUser(optimisticUser);
+      
+      // Clear files immediately
       setAvatarFile(null);
       setBannerPreview(null);
       setBannerFile(null);
       
-      // Close modal
+      // Close modal immediately
       setShowEditModal(false);
       
-      // Show success toast notification
+      // Show success toast immediately
       setToastMessage('Profile saved successfully!');
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
-      }, 3000); // Auto hide after 3 seconds
+      }, 3000);
+      
+      // Now save to backend in background (non-blocking)
+      // Use setTimeout to make it truly non-blocking
+      setTimeout(async () => {
+        try {
+          const response = await updateProfile(profileData);
+          console.log('Profile update response:', response);
+          
+          // Update with actual backend response (if different)
+          if (response?.profile) {
+            const updatedUser = {
+              ...user,
+              profile: {
+                ...user?.profile,
+                ...response.profile
+              }
+            };
+            updateUser(updatedUser);
+            
+            // Update banner from backend response if available
+            if (response.profile.banner !== undefined) {
+              if (response.profile.banner && response.profile.banner.trim() !== '') {
+                setBannerImage(response.profile.banner);
+              } else {
+                setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
+              }
+            }
+          }
+        } catch (backendError) {
+          // Backend save failed - revert optimistic updates
+          console.error('Backend save failed, reverting optimistic updates:', backendError);
+          setBannerImage(originalBanner);
+          updateUser(originalUser);
+          
+          // Show error but don't reopen modal (user already saw success)
+          setToastMessage('Profile saved locally, but failed to sync with server. Please try again.');
+          setShowToast(true);
+          setTimeout(() => {
+            setShowToast(false);
+          }, 5000);
+        }
+      }, 0);
     } catch (error) {
       // If backend error, save locally and show success
       if (error.message?.includes('Backend server not reachable') || error.message?.includes('Network Error')) {
@@ -783,7 +867,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
       
       let errorMessage = 'Failed to save profile. Please try again.';
       
-      if (error.response?.status === 413) {
+      if (error.response?.status === 408 || error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Request timeout. Banner is too large. Please use a smaller image (max 2MB file size).';
+      } else if (error.response?.status === 413) {
         errorMessage = 'Image is too large. Please use an image smaller than 2MB.';
       } else if (error.response?.status === 401) {
         errorMessage = 'Session expired. Please login again.';
@@ -793,8 +879,6 @@ const Profile = ({ onClose, username: viewUsername }) => {
         errorMessage = 'Server error. Please try again later.';
       } else if (error.message?.includes('Network Error') || error.code === 'ECONNREFUSED') {
         errorMessage = 'Backend server is not running. Please start the server on port 5000.';
-      } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Request timeout. Please try again with a smaller image.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -807,6 +891,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
       }, 5000); // Show error for 5 seconds
       
       throw error;
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -2511,6 +2597,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 </button>
                 <button 
                   className="save-profile-btn" 
+                  disabled={savingProfile}
                   onClick={async () => {
                     try {
                       // Prepare profile data
@@ -2520,6 +2607,37 @@ const Profile = ({ onClose, username: viewUsername }) => {
                         bio: bioText,
                         website: websiteLink
                       };
+                      
+                      // Include existing banner if no new file is being uploaded and banner wasn't deleted
+                      // If bannerImage is empty string, it means user deleted it, so send empty to clear it
+                      if (!bannerFile) {
+                        if (bannerImage === '') {
+                          // User deleted banner, send empty string to clear it
+                          profileData.banner = '';
+                          console.log('🗑️ Banner deleted by user, sending empty string');
+                        } else if (bannerImage && !bannerImage.startsWith('https://images.unsplash.com')) {
+                          // Existing banner from state (not default), preserve it
+                          profileData.banner = bannerImage;
+                          console.log('💾 Preserving existing banner from bannerImage state:', {
+                            length: bannerImage.length,
+                            preview: bannerImage.substring(0, 50) + '...'
+                          });
+                        } else {
+                          // Check if user has a saved banner in database (even if state shows default)
+                          // This handles the case where banner was saved but state wasn't updated
+                          if (user?.profile?.banner && user.profile.banner !== '' && !user.profile.banner.startsWith('https://images.unsplash.com')) {
+                            profileData.banner = user.profile.banner;
+                            console.log('💾 Preserving existing banner from user context (database):', {
+                              length: user.profile.banner.length,
+                              preview: user.profile.banner.substring(0, 50) + '...'
+                            });
+                          } else {
+                            // No banner in database and state shows default
+                            // Don't include banner - backend will preserve existing if any
+                            console.log('ℹ️ Banner not included (default or not in context), backend will preserve existing');
+                          }
+                        }
+                      }
 
                       // Handle avatar upload (if changed)
                       if (avatarFile) {
@@ -2567,22 +2685,62 @@ const Profile = ({ onClose, username: viewUsername }) => {
                         return; // Will continue in reader.onloadend
                       }
 
-                      // Handle banner (if changed) - store locally only (backend doesn't support banner yet)
+                      // Handle banner (if changed)
                       if (bannerFile) {
+                        // Check file size (max 2MB for base64 to avoid network issues)
+                        if (bannerFile.size > 2 * 1024 * 1024) {
+                          setToastMessage('Banner image is too large. Please use an image smaller than 2MB.');
+                          setShowToast(true);
+                          setTimeout(() => setShowToast(false), 4000);
+                          return;
+                        }
+                        
+                        // Convert file to base64
                         const reader = new FileReader();
                         reader.onloadend = async () => {
-                          // Store banner locally (backend doesn't have banner field yet)
-                          setBannerImage(reader.result);
-                          setBannerPreview(null);
-                          setBannerFile(null);
-                          // Save profile without banner
-                          await saveProfile(profileData);
+                          try {
+                            // Check base64 string size (should be ~33% larger than file)
+                            const base64String = reader.result;
+                            if (base64String.length > 3 * 1024 * 1024) { // ~3MB base64 limit
+                              setToastMessage('Banner image is too large. Please use a smaller image.');
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 4000);
+                              return;
+                            }
+                            
+                            profileData.banner = base64String;
+                            console.log('📤 Banner file converted, calling saveProfile with banner:', {
+                              hasBanner: !!profileData.banner,
+                              bannerLength: profileData.banner.length,
+                              bannerPreview: profileData.banner.substring(0, 50) + '...'
+                            });
+                            await saveProfile(profileData);
+                          } catch (error) {
+                            console.error('Error saving banner:', error);
+                            let errorMsg = 'Failed to save banner. Please try again.';
+                            if (error.message?.includes('Network Error')) {
+                              errorMsg = 'Network error. Please check if backend server is running.';
+                            }
+                            setToastMessage(errorMsg);
+                            setShowToast(true);
+                            setTimeout(() => setShowToast(false), 4000);
+                          }
+                        };
+                        reader.onerror = () => {
+                          setToastMessage('Error reading banner file. Please try again.');
+                          setShowToast(true);
+                          setTimeout(() => setShowToast(false), 4000);
                         };
                         reader.readAsDataURL(bannerFile);
                         return; // Will continue in reader.onloadend
                       }
 
                       // If no files, save directly
+                      console.log('💾 Saving profile without file uploads:', {
+                        hasBannerInData: 'banner' in profileData,
+                        bannerValue: profileData.banner ? 'exists' : 'none',
+                        bannerLength: profileData.banner ? profileData.banner.length : 0
+                      });
                       await saveProfile(profileData);
                     } catch (error) {
                       console.error('Error saving profile:', error);
@@ -2590,7 +2748,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                     }
                   }}
                 >
-                  Save Changes
+                  {savingProfile ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>

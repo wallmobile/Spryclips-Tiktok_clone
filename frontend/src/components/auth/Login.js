@@ -208,18 +208,18 @@ const Login = ({ onClose, onSwitchToSignup }) => {
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <input
-                id="login-password"
+            <input
+              id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                value={formState.password}
-                onChange={(e) => {
-                  setFormState((prev) => ({ ...prev, password: e.target.value }));
-                  setError('');
-                }}
-                required
-                placeholder="Your password"
-                className="tiktok-input"
-              />
+              value={formState.password}
+              onChange={(e) => {
+                setFormState((prev) => ({ ...prev, password: e.target.value }));
+                setError('');
+              }}
+              required
+              placeholder="Your password"
+              className="tiktok-input"
+            />
               <button
                 type="button"
                 className="password-toggle-btn"

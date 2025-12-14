@@ -364,7 +364,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUser) => {
-    setUser(updatedUser);
+    // Normalize user object: ensure _id exists (use id if _id not present)
+    const normalizedUser = {
+      ...updatedUser,
+      _id: updatedUser._id || updatedUser.id,
+      id: updatedUser.id || updatedUser._id,
+      role: updatedUser.role || 'user'
+    };
+    setUser(normalizedUser);
+    // CRITICAL: Also update localStorage so banner persists on refresh
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
+    console.log('✅ User updated in context and localStorage:', {
+      hasBanner: !!normalizedUser?.profile?.banner,
+      bannerLength: normalizedUser?.profile?.banner ? normalizedUser.profile.banner.length : 0
+    });
   };
 
   const value = {

@@ -286,12 +286,12 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
         setStoryDetails(response.story);
       } else {
         // Refresh story details to get updated reactions
-        try {
+      try {
           const detailsResponse = await api.get(`/api/stories/${storyId}`);
           if (detailsResponse.data?.story) {
             setStoryDetails(detailsResponse.data.story);
-          }
-        } catch (fetchError) {
+        }
+      } catch (fetchError) {
           console.error('⚠️ Error fetching updated story details:', fetchError);
         }
       }
@@ -485,9 +485,9 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
               )}
             </button>
           )}
-          <button className="story-viewer__close" onClick={onClose}>
-            <i className="fa-solid fa-times"></i>
-          </button>
+        <button className="story-viewer__close" onClick={onClose}>
+          <i className="fa-solid fa-times"></i>
+        </button>
         </div>
       </div>
 
@@ -625,11 +625,11 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
                 }}
                 onMouseEnter={(e) => e.target.style.background = '#f0f0f0'}
                 onMouseLeave={(e) => e.target.style.background = 'transparent'}
-              >
+        >
                 <i className="fa-solid fa-times"></i>
-              </button>
-            </div>
-            
+        </button>
+      </div>
+
             {viewersList.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>No viewers yet</p>
             ) : (
@@ -642,9 +642,9 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
                     <div
                       key={index}
                       style={{
-                        display: 'flex',
+            display: 'flex', 
                         alignItems: 'center',
-                        gap: '12px',
+            gap: '12px', 
                         padding: '12px',
                         borderBottom: index < viewersList.length - 1 ? '1px solid #eee' : 'none',
                         transition: 'background 0.2s'
@@ -670,7 +670,7 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
                           {new Date(view.viewedAt).toLocaleString()}
                         </div>
                       </div>
-                    </div>
+              </div>
                   );
                 })}
               </div>

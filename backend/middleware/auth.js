@@ -103,6 +103,16 @@ const authMiddleware = async (req, res, next) => {
 
     const user = await User.findById(decoded.userId).select('-password');
     
+    // Debug: Log profile data when fetching user
+    if (req.path === '/api/auth/verify') {
+      console.log('🔍 Auth middleware - User profile check:', {
+        userId: user?._id,
+        hasProfile: !!user?.profile,
+        hasBanner: !!user?.profile?.banner,
+        bannerLength: user?.profile?.banner ? user.profile.banner.length : 0
+      });
+    }
+    
     if (!user) {
       // User doesn't exist - clear all cookies to force fresh login
       res.clearCookie('accessToken', { path: '/' });

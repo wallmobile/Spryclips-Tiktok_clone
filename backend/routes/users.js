@@ -340,17 +340,18 @@ router.get('/:id', async (req, res) => {
 // Update profile
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { username, displayName, bio, avatar, website } = req.body;
+    const { username, displayName, bio, avatar, banner, website } = req.body;
     console.log('Profile update request:', { 
       userId: req.user._id, 
       username,
       displayName, 
       bio: bio?.substring(0, 50),
       avatar: avatar ? `${(avatar.length / 1024).toFixed(2)}KB base64` : 'none',
+      banner: banner ? `${(banner.length / 1024).toFixed(2)}KB base64` : 'none',
       website 
     });
     
-    const user = await User.findById(req.user._id);
+    let user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -376,19 +377,112 @@ router.put('/profile', authMiddleware, async (req, res) => {
       }
       
       user.username = username.toLowerCase();
+      await user.save();
     }
 
-    if (displayName !== undefined) user.profile.displayName = displayName;
-    if (bio !== undefined) user.profile.bio = bio;
-    if (avatar !== undefined) user.profile.avatar = avatar;
-    if (website !== undefined) user.profile.website = website;
+    // Build update object for profile fields using $set operator
+    // This ensures nested fields are properly saved in MongoDB
+    const updateData = {};
+    if (displayName !== undefined) updateData['profile.displayName'] = displayName;
+    if (bio !== undefined) updateData['profile.bio'] = bio;
+    if (avatar !== undefined) updateData['profile.avatar'] = avatar;
+    if (banner !== undefined) {
+      // Only update banner if it's explicitly provided
+      // Empty string means user wants to clear it, non-empty means set it
+      const previousBanner = user.profile.banner || '';
+      updateData['profile.banner'] = banner;
+      
+      console.log('💾 Setting banner using $set:', {
+        isDefined: banner !== undefined,
+        isEmpty: banner === '',
+        length: banner ? banner.length : 0,
+        previousBanner: previousBanner ? 'exists' : 'none',
+        previousLength: previousBanner ? previousBanner.length : 0,
+        newLength: banner ? banner.length : 0
+      });
+    } else {
+      // Banner not provided - preserve existing banner from database
+      console.log('💾 Banner not provided in request - preserving existing banner:', {
+        hasExistingBanner: !!user.profile.banner,
+        existingBannerLength: user.profile.banner ? user.profile.banner.length : 0
+      });
+    }
+    if (website !== undefined) updateData['profile.website'] = website;
 
-    await user.save();
-    console.log('Profile updated successfully:', { username: user.username, profile: user.profile });
+    // Use $set operator to ensure nested fields are saved properly in MongoDB
+    if (Object.keys(updateData).length > 0) {
+      const updateResult = await User.findByIdAndUpdate(
+        req.user._id, 
+        { $set: updateData }, 
+        { new: true, runValidators: true }
+      );
+      console.log('💾 Profile fields updated using $set:', {
+        updatedFields: Object.keys(updateData),
+        hasBanner: !!updateResult?.profile?.banner,
+        bannerLength: updateResult?.profile?.banner ? updateResult.profile.banner.length : 0
+      });
+      
+      // Reload user to get updated data
+      user = await User.findById(req.user._id);
+    }
+    
+    // Verify banner was saved by fetching from database
+    const savedUser = await User.findById(req.user._id);
+    console.log('✅ Banner save verification (from database):', {
+      hasBanner: !!savedUser?.profile?.banner,
+      bannerLength: savedUser?.profile?.banner ? savedUser.profile.banner.length : 0,
+      bannerMatch: banner ? (savedUser?.profile?.banner === banner) : 'not provided',
+      bannerInProfile: 'banner' in (savedUser?.profile || {}),
+      allProfileKeys: Object.keys(savedUser?.profile || {})
+    });
+    console.log('Profile updated successfully:', { 
+      username: user.username, 
+      hasBanner: !!user.profile.banner,
+      bannerLength: user.profile.banner ? user.profile.banner.length : 0,
+      profile: {
+        displayName: user.profile.displayName,
+        bio: user.profile.bio?.substring(0, 50),
+        hasAvatar: !!user.profile.avatar,
+        hasBanner: !!user.profile.banner,
+        website: user.profile.website
+      }
+    });
+    // Fetch fresh user from database to ensure we return the saved data
+    const updatedUser = await User.findById(req.user._id);
+    
+    // Ensure profile object includes all fields, even if empty
+    const profile = updatedUser.profile || {};
+    
+    // ALWAYS include banner field, even if empty
+    const profileWithBanner = {
+      displayName: profile.displayName || '',
+      bio: profile.bio || '',
+      avatar: profile.avatar || '',
+      banner: profile.banner || '', // ALWAYS include banner
+      website: profile.website || '',
+      followers: profile.followers || 0,
+      following: profile.following || 0,
+      likes: profile.likes || 0,
+      pinnedVideo: profile.pinnedVideo || null,
+      isVerified: profile.isVerified || false,
+      qrScans: profile.qrScans || 0,
+      profileViews: profile.profileViews || 0
+    };
+    
+    console.log('📤 Response being sent with profile:', {
+      hasBanner: !!profileWithBanner.banner,
+      bannerLength: profileWithBanner.banner ? profileWithBanner.banner.length : 0,
+      bannerExists: profileWithBanner.banner !== undefined,
+      bannerIsEmpty: profileWithBanner.banner === '',
+      profileKeys: Object.keys(profileWithBanner),
+      bannerInKeys: 'banner' in profileWithBanner,
+      bannerValue: profileWithBanner.banner ? profileWithBanner.banner.substring(0, 50) + '...' : 'empty'
+    });
+    
     res.json({ 
       message: 'Profile updated', 
-      username: user.username,
-      profile: user.profile 
+      username: updatedUser.username,
+      profile: profileWithBanner
     });
   } catch (error) {
     console.error('Profile update error:', error);

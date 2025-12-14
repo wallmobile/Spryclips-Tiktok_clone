@@ -981,15 +981,52 @@ router.post('/social/facebook', asyncHandler(async (req, res) => {
 
 // Verify token
 router.get('/verify', authMiddleware, async (req, res) => {
+  // Fetch fresh user from database to ensure we have latest profile data
+  const freshUser = await User.findById(req.user._id).select('-password');
+  
+  console.log('🔍 Verify endpoint - User profile:', {
+    userId: freshUser?._id,
+    hasProfile: !!freshUser?.profile,
+    hasBanner: !!freshUser?.profile?.banner,
+    bannerLength: freshUser?.profile?.banner ? freshUser.profile.banner.length : 0,
+    profileKeys: freshUser?.profile ? Object.keys(freshUser.profile) : []
+  });
+  
+  // Ensure profile object includes all fields, even if empty
+  const profile = freshUser.profile || {};
+  
+  // ALWAYS include banner field explicitly, even if empty
+  const profileWithBanner = {
+    displayName: profile.displayName || '',
+    bio: profile.bio || '',
+    avatar: profile.avatar || '',
+    banner: profile.banner || '', // ALWAYS include banner
+    website: profile.website || '',
+    followers: profile.followers || 0,
+    following: profile.following || 0,
+    likes: profile.likes || 0,
+    pinnedVideo: profile.pinnedVideo || null,
+    isVerified: profile.isVerified || false,
+    qrScans: profile.qrScans || 0,
+    profileViews: profile.profileViews || 0
+  };
+  
+  console.log('📤 Verify endpoint - Profile with banner:', {
+    hasBanner: !!profileWithBanner.banner,
+    bannerLength: profileWithBanner.banner ? profileWithBanner.banner.length : 0,
+    bannerInKeys: 'banner' in profileWithBanner,
+    allKeys: Object.keys(profileWithBanner)
+  });
+  
   res.json({
     success: true,
     user: {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
-      profile: req.user.profile,
-      role: req.user.role,
-      emailVerified: req.user.emailVerified
+      id: freshUser._id,
+      username: freshUser.username,
+      email: freshUser.email,
+      profile: profileWithBanner,
+      role: freshUser.role,
+      emailVerified: freshUser.emailVerified
     }
   });
 });

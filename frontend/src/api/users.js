@@ -3,8 +3,12 @@ import api from '../config/axios';
 // Update profile (including website)
 export const updateProfile = async (profileData) => {
   try {
+    // Calculate timeout based on data size (banner can be large)
+    const dataSize = JSON.stringify(profileData).length;
+    const timeout = Math.max(60000, Math.ceil(dataSize / 1000) * 2); // At least 60s, or 2ms per KB
+    
     const response = await api.put('/api/users/profile', profileData, {
-      timeout: 15000, // 15 seconds timeout for large base64 data
+      timeout: timeout, // Dynamic timeout based on data size
       headers: {
         'Content-Type': 'application/json'
       }
@@ -13,6 +17,9 @@ export const updateProfile = async (profileData) => {
   } catch (error) {
     if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
       throw new Error('Backend server is not running. Please start the server on port 5000.');
+    }
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      throw new Error('Request timeout. Banner is too large. Please use a smaller image (max 2MB).');
     }
     throw error;
   }
