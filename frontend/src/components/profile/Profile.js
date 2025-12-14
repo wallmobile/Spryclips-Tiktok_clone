@@ -770,7 +770,20 @@ const Profile = ({ onClose, username: viewUsername }) => {
       const originalBanner = bannerImage;
       const originalUser = user;
       
-      // OPTIMISTIC UPDATE: Update UI immediately before API call completes
+      // CRITICAL: Save to backend FIRST (synchronously) to ensure database persistence
+      // This ensures banner is saved even if user closes project immediately
+      const response = await updateProfile(profileData);
+      console.log('Profile update response:', response);
+      
+      // Verify banner was saved in response
+      if (response?.profile?.banner !== undefined) {
+        console.log('✅ Banner saved to database:', {
+          hasBanner: !!response.profile.banner,
+          bannerLength: response.profile.banner ? response.profile.banner.length : 0
+        });
+      }
+      
+      // Update UI after successful database save
       if (profileData.banner !== undefined) {
         if (profileData.banner && profileData.banner.trim() !== '') {
           setBannerImage(profileData.banner);
@@ -780,72 +793,41 @@ const Profile = ({ onClose, username: viewUsername }) => {
         }
       }
       
-      // Update user context optimistically
-      const optimisticUser = {
-        ...user,
-        profile: {
-          ...user?.profile,
-          ...profileData
+      // Update user context with backend response
+      if (response?.profile) {
+        const updatedUser = {
+          ...user,
+          profile: {
+            ...user?.profile,
+            ...response.profile
+          }
+        };
+        updateUser(updatedUser);
+        
+        // Update banner from backend response if available
+        if (response.profile.banner !== undefined) {
+          if (response.profile.banner && response.profile.banner.trim() !== '') {
+            setBannerImage(response.profile.banner);
+          } else {
+            setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
+          }
         }
-      };
-      updateUser(optimisticUser);
+      }
       
-      // Clear files immediately
+      // Clear files after successful save
       setAvatarFile(null);
       setBannerPreview(null);
       setBannerFile(null);
       
-      // Close modal immediately
+      // Close modal after successful save
       setShowEditModal(false);
       
-      // Show success toast immediately
+      // Show success toast
       setToastMessage('Profile saved successfully!');
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
       }, 3000);
-      
-      // Now save to backend in background (non-blocking)
-      // Use setTimeout to make it truly non-blocking
-      setTimeout(async () => {
-        try {
-          const response = await updateProfile(profileData);
-          console.log('Profile update response:', response);
-          
-          // Update with actual backend response (if different)
-          if (response?.profile) {
-            const updatedUser = {
-              ...user,
-              profile: {
-                ...user?.profile,
-                ...response.profile
-              }
-            };
-            updateUser(updatedUser);
-            
-            // Update banner from backend response if available
-            if (response.profile.banner !== undefined) {
-              if (response.profile.banner && response.profile.banner.trim() !== '') {
-                setBannerImage(response.profile.banner);
-              } else {
-                setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
-              }
-            }
-          }
-        } catch (backendError) {
-          // Backend save failed - revert optimistic updates
-          console.error('Backend save failed, reverting optimistic updates:', backendError);
-          setBannerImage(originalBanner);
-          updateUser(originalUser);
-          
-          // Show error but don't reopen modal (user already saw success)
-          setToastMessage('Profile saved locally, but failed to sync with server. Please try again.');
-          setShowToast(true);
-          setTimeout(() => {
-            setShowToast(false);
-          }, 5000);
-        }
-      }, 0);
     } catch (error) {
       // If backend error, save locally and show success
       if (error.message?.includes('Backend server not reachable') || error.message?.includes('Network Error')) {

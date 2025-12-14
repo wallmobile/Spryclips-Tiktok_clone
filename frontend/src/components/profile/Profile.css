@@ -1744,17 +1744,18 @@ html body .profile-overlay .profile-header-new .profile-back-btn {
 }
 
 .profile-story-ring {
-  width: 8rem; /* 128px - larger to accommodate ring */
-  height: 8rem;
+  width: 8.5rem; /* 136px - larger to accommodate ring and DP */
+  height: 8.5rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
-  padding: 3px;
+  background: linear-gradient(135deg, #25F4EE 0%, #1E90FF 50%, #4169E1 100%); /* Blue gradient for own story */
+  padding: 0.5rem; /* 8px padding - creates ring around DP */
   display: flex;
   align-items: center;
   justify-content: center;
   animation: storyPulse 2s infinite;
-  box-shadow: 0 0 0 3px rgba(255, 0, 80, 0.2);
+  box-shadow: 0 0 0 2px rgba(37, 244, 238, 0.3), 0 0 0 4px rgba(37, 244, 238, 0.1); /* Double shadow for better visibility */
   position: relative;
+  border: none; /* Remove border - ring is created by padding */
 }
 
 @keyframes storyPulse {
@@ -1770,21 +1771,23 @@ html body .profile-overlay .profile-header-new .profile-back-btn {
 
 .profile-story-ring-wrapper:hover .profile-story-ring {
   animation: none;
-  box-shadow: 0 0 0 4px rgba(255, 0, 80, 0.4);
+  box-shadow: 0 0 0 4px rgba(37, 244, 238, 0.4); /* Blue shadow on hover */
 }
 
 .profile-avatar-with-ring {
-  width: calc(8rem - 6px) !important; /* Account for padding */
-  height: calc(8rem - 6px) !important;
-  min-width: calc(8rem - 6px) !important;
-  min-height: calc(8rem - 6px) !important;
-  max-width: calc(8rem - 6px) !important;
-  max-height: calc(8rem - 6px) !important;
-  border-radius: 50% !important;
-  border: none !important; /* No border when inside ring */
+  width: 7.5rem !important; /* Same size as profile-avatar-new (120px) */
+  height: 7.5rem !important; /* Same size as profile-avatar-new (120px) */
+  min-width: 7.5rem !important;
+  min-height: 7.5rem !important;
+  max-width: 7.5rem !important;
+  max-height: 7.5rem !important;
+  border-radius: 50% !important; /* Perfect circle */
+  border: none !important; /* No border - keep DP clean */
   background: transparent;
   object-fit: cover !important;
   display: block;
+  /* Ensure DP stays perfectly circular */
+  aspect-ratio: 1 / 1 !important;
 }
 
 .story-ring-camera-overlay {
@@ -1805,29 +1808,33 @@ html body .profile-overlay .profile-header-new .profile-back-btn {
   }
 
   .profile-avatar-with-ring {
-    width: calc(6.5rem - 5px) !important;
-    height: calc(6.5rem - 5px) !important;
-    min-width: calc(6.5rem - 5px) !important;
-    min-height: calc(6.5rem - 5px) !important;
-    max-width: calc(6.5rem - 5px) !important;
-    max-height: calc(6.5rem - 5px) !important;
+    width: 6rem !important; /* Same as profile-avatar-new on mobile (96px) */
+    height: 6rem !important;
+    min-width: 6rem !important;
+    min-height: 6rem !important;
+    max-width: 6rem !important;
+    max-height: 6rem !important;
+    aspect-ratio: 1 / 1 !important; /* Perfect circle - DP stays same */
+    border: none !important; /* No border - keep DP clean */
   }
 }
 
 @media (max-width: 480px) {
   .profile-story-ring {
-    width: 6rem; /* 96px */
-    height: 6rem;
-    padding: 2px;
+    width: 6.5rem; /* 104px - larger to accommodate ring and DP */
+    height: 6.5rem;
+    padding: 0.4375rem; /* 7px padding for ring */
   }
 
   .profile-avatar-with-ring {
-    width: calc(6rem - 4px) !important;
-    height: calc(6rem - 4px) !important;
-    min-width: calc(6rem - 4px) !important;
-    min-height: calc(6rem - 4px) !important;
-    max-width: calc(6rem - 4px) !important;
-    max-height: calc(6rem - 4px) !important;
+    width: 5.625rem !important; /* Same as profile-avatar-new on small mobile (90px) */
+    height: 5.625rem !important;
+    min-width: 5.625rem !important;
+    min-height: 5.625rem !important;
+    max-width: 5.625rem !important;
+    max-height: 5.625rem !important;
+    aspect-ratio: 1 / 1 !important; /* Perfect circle - DP stays same */
+    border: none !important; /* No border - keep DP clean */
   }
 }
 
