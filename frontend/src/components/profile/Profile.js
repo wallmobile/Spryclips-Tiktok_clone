@@ -123,50 +123,25 @@ const Profile = ({ onClose, username: viewUsername }) => {
   useEffect(() => {
     if (!isViewingOtherProfile && user?.profile) {
       // Always sync banner from backend when user data loads
-      console.log('🔄 Banner sync check:', {
-        hasProfile: !!user.profile,
-        hasBanner: !!user.profile.banner,
-        bannerValue: user.profile.banner ? (user.profile.banner.substring(0, 50) + '...') : 'none',
-        bannerLength: user.profile.banner ? user.profile.banner.length : 0,
-        profileKeys: Object.keys(user.profile || {})
-      });
-      
       if (user.profile.banner && user.profile.banner.trim() !== '') {
         // User has a saved banner from database, use it
-        console.log('✅ Syncing banner from backend:', {
-          hasBanner: true,
-          bannerLength: user.profile.banner.length,
-          bannerPreview: user.profile.banner.substring(0, 50) + '...'
-        });
         setBannerImage(user.profile.banner);
       } else {
         // No banner in backend, use default
-        console.log('⚠️ No banner in backend, using default. Profile keys:', Object.keys(user.profile || {}));
         setBannerImage('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=400&fit=crop');
       }
     }
   }, [user?.profile, isViewingOtherProfile]);
 
   useEffect(() => {
-    console.log('🔄 Profile useEffect triggered');
-    console.log('🔄 Profile: User object:', user);
-    console.log('🔄 Profile: user._id:', user?._id);
-    console.log('🔄 Profile: user.id:', user?.id);
-    console.log('🔄 Profile: Resolved userId:', userId);
-    
     // Early return if no user and not viewing other profile
     if (!userId && !viewUsername) {
-      console.log('⏭️ Profile: No user ID and no viewUsername, skipping fetch');
       return;
     }
     
     const fetchStories = async () => {
       // Try both _id and id formats
       let targetUserId = user?._id || user?.id;
-      
-      console.log('📚 Profile: Starting fetchStories');
-      console.log('📚 Profile: targetUserId:', targetUserId);
-      console.log('📚 Profile: User object keys:', user ? Object.keys(user) : 'No user');
       
       // If viewing another user's profile, fetch their user data first
       if (isViewingOtherProfile && viewUsername) {
@@ -225,16 +200,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
       }
       
       try {
-        console.log('📚 Profile: Calling getUserStories API for userId:', targetUserId);
         const response = await getUserStories(targetUserId);
-        
-        console.log('📚 Profile: Full API response:', JSON.stringify(response, null, 2));
         
         // Filter expired stories (24-hour expiration)
         const now = new Date();
         const storiesArray = response?.stories || response?.data?.stories || [];
-        console.log('📚 Profile: Raw stories array length:', storiesArray.length);
-        console.log('📚 Profile: Raw stories:', storiesArray);
         
         const validStories = storiesArray.filter(story => {
           if (!story) {
@@ -247,14 +217,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
           }
           const expiresAt = new Date(story.expiresAt);
           const isValid = expiresAt > now;
-          if (!isValid) {
-            console.log('⏰ Profile: Story expired:', story._id, 'expiresAt:', expiresAt, 'now:', now);
-          }
           return isValid;
         });
-        
-        console.log('✅ Profile: Valid stories count:', validStories.length);
-        console.log('✅ Profile: Valid stories:', validStories.map(s => ({ id: s._id, type: s.type, expiresAt: s.expiresAt })));
         
         // IMPORTANT: Only update state if stories actually changed to prevent unnecessary re-renders
         setUserStories(prevStories => {
@@ -263,11 +227,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
           const newIds = validStories.map(s => s._id || s.id).filter(Boolean).sort().join(',');
           
           if (prevIds === newIds && (prevStories || []).length === validStories.length) {
-            console.log('ℹ️ Profile: Stories unchanged, skipping state update to prevent re-render');
             return prevStories; // Return previous state to prevent re-render
           }
           
-          console.log('✅ Profile: Stories changed, updating state');
           return validStories;
         });
       } catch (error) {
@@ -1693,24 +1655,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
               {(() => {
                 const hasStories = userStories && Array.isArray(userStories) && userStories.length > 0;
                 
-                // Debug logging every render
-                if (userStories && userStories.length > 0) {
-                  console.log('✅ Profile RENDER: Stories found!', {
-                    count: userStories.length,
-                    stories: userStories.map(s => ({
-                      id: s._id || s.id,
-                      type: s.type,
-                      expiresAt: s.expiresAt
-                    }))
-                  });
-                } else {
-                  console.log('❌ Profile RENDER: No stories found', {
-                    userStories,
-                    isArray: Array.isArray(userStories),
-                    length: userStories?.length,
-                    user_id: user?._id
-                  });
-                }
+                // Removed excessive debug logging - only log when stories change, not on every render
                 
                 return hasStories ? (
                 <div 
