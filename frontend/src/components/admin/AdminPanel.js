@@ -11654,4 +11654,5 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     </div>
   );
 };
+
 export default AdminPanel;
