@@ -13,7 +13,6 @@ const ManageAccount = ({ onClose }) => {
   const [showDownloadData, setShowDownloadData] = useState(false);
   const [showDeactivateAccount, setShowDeactivateAccount] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [showAccountActivity, setShowAccountActivity] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -58,25 +57,9 @@ const ManageAccount = ({ onClose }) => {
       }
     };
 
-    const loadAccountActivity = async () => {
-      try {
-        const response = await api.get('/api/users/account-activity');
-        if (response.data.success) {
-          setAccountActivity(response.data.activities.map(activity => ({
-            ...activity,
-            time: new Date(activity.time).toLocaleString()
-          })));
-        }
-      } catch (error) {
-        console.error('Failed to load account activity:', error);
-      }
-    };
-
     loadAccountInfo();
-    loadAccountActivity();
   }, [user]);
 
-  const [accountActivity, setAccountActivity] = useState([]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -236,13 +219,6 @@ const ManageAccount = ({ onClose }) => {
           icon: 'fa-solid fa-certificate',
           action: () => setShowAccountVerification(true)
         },
-        {
-          id: 'activity',
-          title: 'Account Activity',
-          description: 'View recent account activity',
-          icon: 'fa-solid fa-clock-rotate-left',
-          action: () => setShowAccountActivity(true)
-        }
       ]
     },
     {
@@ -472,52 +448,6 @@ const ManageAccount = ({ onClose }) => {
         )}
 
 
-        {/* Account Activity Modal */}
-        {showAccountActivity && (
-          <div className="account-modal-overlay" onClick={() => setShowAccountActivity(false)}>
-            <div className="account-modal-content large" onClick={(e) => e.stopPropagation()}>
-              <div className="account-modal-header">
-                <h3>Account Activity</h3>
-                <button className="account-modal-close" onClick={() => setShowAccountActivity(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="account-modal-body">
-                <div className="activity-list">
-                  {accountActivity.map((activity, index) => (
-                    <div key={index} className="activity-item">
-                      <div className="activity-icon">
-                        <i className={`fa-solid ${
-                          (activity.action || '').includes('Login') ? 'fa-sign-in-alt' :
-                          (activity.action || '').includes('Password') ? 'fa-key' :
-                          (activity.action || '').includes('Profile') ? 'fa-user-edit' :
-                          (activity.action || '').includes('Email') ? 'fa-envelope-check' : 'fa-clock'
-                        }`}></i>
-                      </div>
-                      <div className="activity-details">
-                        <div className="activity-action">{activity.action}</div>
-                        <div className="activity-info">
-                          <span>{activity.device}</span> • <span>{activity.location}</span>
-                        </div>
-                        <div className="activity-time">{activity.time}</div>
-                      </div>
-                      <div className={`activity-status ${activity.status}`}>
-                        {activity.status === 'success' ? (
-                          <i className="fa-solid fa-check"></i>
-                        ) : activity.status === 'blocked' ? (
-                          <i className="fa-solid fa-ban"></i>
-                        ) : (
-                          <i className="fa-solid fa-exclamation"></i>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Download Data Modal */}
         {showDownloadData && (
           <div className="account-modal-overlay" onClick={() => setShowDownloadData(false)}>
@@ -530,12 +460,11 @@ const ManageAccount = ({ onClose }) => {
               </div>
               <div className="account-modal-body">
                 <p>
-                  Download your account data including profile information, settings, and activity history.
+                  Download your account data including profile information and settings.
                 </p>
                 <ul className="download-details">
                   <li><i className="fa-solid fa-user"></i> Profile details</li>
                   <li><i className="fa-solid fa-cog"></i> Account settings</li>
-                  <li><i className="fa-solid fa-clock-rotate-left"></i> Activity history</li>
                   <li><i className="fa-solid fa-shield"></i> Privacy settings</li>
                 </ul>
                 <div className="form-actions">
@@ -613,14 +542,6 @@ const ManageAccount = ({ onClose }) => {
     <div class="info-row"><span class="label">Data Saver:</span><span class="value">${data.settings.appSettings?.dataSaver ? 'Enabled' : 'Disabled'}</span></div>
   </div>
   
-  <h2>📜 Recent Activity</h2>
-  <div class="section">
-    ${(data.activityHistory || []).slice(0, 10).length > 0
-      ? (data.activityHistory || []).slice(0, 10).map(a => `<div class="activity-item">• ${a.action} - ${new Date(a.time).toLocaleString()}</div>`).join('')
-      : '<p>No activity recorded</p>'
-    }
-  </div>
-  
   <div class="footer">
     <p>This document was generated from Spryclips App</p>
     <p>© ${new Date().getFullYear()} Spryclips</p>
@@ -636,7 +557,6 @@ const ManageAccount = ({ onClose }) => {
                           displayName: data.profile?.displayName,
                           hasAccountInfo: !!data.accountInfo,
                           hasSettings: !!data.settings,
-                          activityCount: data.activityHistory?.length || 0
                         });
                         console.log('📄 HTML preview (first 800 chars):', htmlContent.substring(0, 800));
                         
