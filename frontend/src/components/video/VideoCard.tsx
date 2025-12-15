@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useVideoStore } from '../../store/videoStore';
 import ActionBar from '../common/ActionBar';
 import VolumeControl from '../common/VolumeControl';
+import { trackVideoView } from '../../api/videos';
 import './ForYouFeed.css';
 
 interface VideoDetails {
@@ -85,6 +86,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
   const [videoDisplayWidth, setVideoDisplayWidth] = useState<number>(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
+  const [watchStartTime, setWatchStartTime] = useState<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,7 +112,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
     // Disable loop if auto-scroll is enabled
     const autoScrollEnabled = localStorage.getItem('autoScroll') === 'true';
     video.loop = !autoScrollEnabled;
-  }, [src]); // Reapply when video source changes
+    
+    // Reset view tracking when video source changes
+    setHasTrackedView(false);
+    setWatchStartTime(null);
+  }, [src, id]); // Reapply when video source or ID changes
 
   // Handle video playback based on active state and global mute
   useEffect(() => {
@@ -171,6 +178,19 @@ const VideoCard: React.FC<VideoCardProps> = ({
           console.log('Play failed:', error);
           playPromiseRef.current = null;
         });
+        
+        // Track view when video starts playing (only once per video)
+        if (!hasTrackedView && id) {
+          setWatchStartTime(Date.now());
+          trackVideoView(id, 0, 0).then((result) => {
+            if (result?.success) {
+              setHasTrackedView(true);
+              console.log('✅ Video view tracked:', id);
+            }
+          }).catch((err) => {
+            console.warn('Failed to track video view:', err);
+          });
+        }
       });
     } else {
       // Inactive video: pause and mute IMMEDIATELY and FORCEFULLY
@@ -243,6 +263,30 @@ const VideoCard: React.FC<VideoCardProps> = ({
       document.removeEventListener('visibilitychange', handleVisibilityChange); 
     };
   }, [isActive, globalMute, globalVolume]);
+
+  // Track watch time and completion when video ends
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isActive || !hasTrackedView || !watchStartTime) return;
+
+    const handleVideoEnd = () => {
+      // Calculate watch time and completion rate
+      if (duration > 0) {
+        const watchTime = Math.min(duration, (Date.now() - watchStartTime) / 1000);
+        const completionRate = Math.min(100, (watchTime / duration) * 100);
+        
+        // Update view tracking with watch time and completion
+        trackVideoView(id, watchTime, completionRate).catch((err) => {
+          console.warn('Failed to update view tracking:', err);
+        });
+      }
+    };
+
+    video.addEventListener('ended', handleVideoEnd);
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+    };
+  }, [isActive, hasTrackedView, watchStartTime, duration, id]);
 
   // Handle video ended event for auto-scroll
   useEffect(() => {
@@ -667,12 +711,30 @@ const VideoCard: React.FC<VideoCardProps> = ({
             setVideoError(errorMessage);
           }
         }}
-        onLoadedData={() => {
+        onLoadedData={(e) => {
           setVideoError(null);
           setRetryCount(0);
           if (retryTimeoutRef.current) {
             clearTimeout(retryTimeoutRef.current);
             retryTimeoutRef.current = null;
+          }
+          // Set duration when video metadata is loaded
+          const videoEl = e.target as HTMLVideoElement;
+          if (videoEl.duration && videoEl.duration > 0) {
+            setDuration(videoEl.duration);
+          }
+        }}
+        onLoadedMetadata={(e) => {
+          const videoEl = e.target as HTMLVideoElement;
+          if (videoEl.duration && videoEl.duration > 0) {
+            setDuration(videoEl.duration);
+          }
+        }}
+        onTimeUpdate={(e) => {
+          const videoEl = e.target as HTMLVideoElement;
+          setCurrentTime(videoEl.currentTime);
+          if (videoEl.duration && videoEl.duration > 0) {
+            setDuration(videoEl.duration);
           }
         }}
         onCanPlay={() => {

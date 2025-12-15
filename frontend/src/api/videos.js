@@ -614,6 +614,28 @@ export const downloadVideo = async (id) => {
   }
 };
 
+/**
+ * Track video view - Dedicated endpoint for accurate view tracking
+ * This ensures views are tracked for monetization even if regular view counting has issues
+ * @param {string} videoId - Video ID
+ * @param {number} watchTime - Watch time in seconds (optional)
+ * @param {number} completionRate - Completion rate percentage 0-100 (optional)
+ */
+export const trackVideoView = async (videoId, watchTime = 0, completionRate = 0) => {
+  try {
+    const response = await api.post('/api/video-views/track', {
+      videoId,
+      watchTime,
+      completionRate
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error tracking video view:', error);
+    // Don't throw - view tracking failure shouldn't break video playback
+    return { success: false, error: error.message };
+  }
+};
+
 
 
 

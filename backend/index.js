@@ -377,6 +377,8 @@ app.use('/api/video-qa', require('./routes/video-qa'));
 app.use('/api/collaborations', require('./routes/collaborations'));
 app.use('/api/more', require('./routes/more'));
 app.use('/api/cdn-issues', require('./routes/cdn-issues'));
+app.use('/api/video-views', require('./routes/video-views'));
+app.use('/api/admin/monetization', require('./routes/admin-monetization'));
 app.use('/api/admin', require('./routes/admin'));
 
 // 404 handler

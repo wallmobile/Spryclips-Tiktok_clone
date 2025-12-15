@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const Video = require('../models/Video');
+const VideoView = require('../models/VideoView');
 const Transaction = require('../models/Transaction');
 const Gift = require('../models/Gift');
 const CreatorFund = require('../models/CreatorFund');
@@ -587,11 +588,29 @@ router.post('/ads/simulate', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Ads not enabled' });
     }
     
+    // Calculate earnings based on actual tracked views (not just video.views)
+    // Use VideoView model for accurate view tracking
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    // Get actual tracked views for creator's videos this month
+    const creatorVideos = await Video.find({ user: req.user._id }).select('_id').lean();
+    const videoIds = creatorVideos.map(v => v._id);
+    
+    const trackedViews = await VideoView.countDocuments({
+      video: { $in: videoIds },
+      createdAt: { $gte: startOfMonth }
+    });
+    
+    // Use tracked views if available, otherwise use provided impressions
+    const actualViews = trackedViews > 0 ? trackedViews : impressions;
+    
     // Calculate earnings (example: $2 CPM)
     const cpm = 2;
-    const earnings = (impressions / 1000) * cpm;
+    const earnings = (actualViews / 1000) * cpm;
     
-    adsStatus.totalImpressions += impressions;
+    adsStatus.totalImpressions += actualViews;
     adsStatus.totalClicks += clicks;
     adsStatus.totalEarnings += earnings;
     adsStatus.currentMonthEarnings += earnings;
@@ -602,8 +621,10 @@ router.post('/ads/simulate', authMiddleware, async (req, res) => {
     
     res.json({
       success: true,
-      message: `Simulated ${impressions} impressions, ${clicks} clicks. Earned $${earnings.toFixed(2)}`,
-      adsStatus
+      message: `Tracked ${actualViews} views (${trackedViews > 0 ? 'from VideoView' : 'simulated'}), ${clicks} clicks. Earned $${earnings.toFixed(2)}`,
+      adsStatus,
+      trackedViews: trackedViews,
+      usedViews: actualViews
     });
   } catch (error) {
     console.error('Error simulating ads:', error);
