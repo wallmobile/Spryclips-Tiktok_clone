@@ -355,17 +355,32 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     const processedDir = path.join(__dirname, '..', 'processed');
     if (!fs.existsSync(processedDir)) {
       fs.mkdirSync(processedDir, { recursive: true });
+      console.log(`✅ Created processed directory: ${processedDir}`);
     }
     
     const thumbnailPath = path.join(processedDir, `${video._id}-thumbnail.jpg`);
-    await generateThumbnail(req.file.path, thumbnailPath, 0.01); // Use first frame (0.01s)
-    thumbnailUrl = `/processed/${path.basename(thumbnailPath)}`;
+    console.log(`🖼️ Generating thumbnail for video ${video._id}...`);
+    console.log(`   Input: ${req.file.path}`);
+    console.log(`   Output: ${thumbnailPath}`);
     
-    // Update video with the thumbnail
-    await Video.findByIdAndUpdate(video._id, { thumbnail: thumbnailUrl });
-    console.log('First frame thumbnail generated for video:', video._id);
+    await generateThumbnail(req.file.path, thumbnailPath, 0.01); // Use first frame (0.01s)
+    
+    // Verify thumbnail was created
+    if (fs.existsSync(thumbnailPath)) {
+      const stats = fs.statSync(thumbnailPath);
+      console.log(`✅ Thumbnail generated successfully: ${stats.size} bytes`);
+      thumbnailUrl = `/processed/${path.basename(thumbnailPath)}`;
+      
+      // Update video with the thumbnail
+      await Video.findByIdAndUpdate(video._id, { thumbnail: thumbnailUrl });
+      console.log(`✅ Thumbnail saved to database: ${thumbnailUrl}`);
+    } else {
+      console.error(`❌ Thumbnail file not found after generation: ${thumbnailPath}`);
+    }
   } catch (thumbnailError) {
-    console.warn('Failed to generate first frame thumbnail:', thumbnailError.message);
+    console.error('❌ Failed to generate first frame thumbnail:', thumbnailError);
+    console.error('   Error details:', thumbnailError.message);
+    console.error('   Stack:', thumbnailError.stack);
     // Continue without thumbnail - it will be generated during full processing
   }
 

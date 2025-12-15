@@ -196,8 +196,19 @@ router.get('/following', authMiddleware, async (req, res) => {
       .populate('user', 'username profile.avatar profile.displayName profile.followers _id')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('url thumbnail description hashtags likes comments shares views createdAt user music _id')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music _id processedVideos')
       .lean();
+
+    // Log thumbnail info for debugging
+    console.log(`[Following Feed] Found ${videos.length} videos`);
+    videos.forEach((video, idx) => {
+      console.log(`[Following Feed] Video ${idx + 1}:`, {
+        id: video._id,
+        hasThumbnail: !!(video.thumbnail && video.thumbnail.trim() !== ''),
+        thumbnail: video.thumbnail || 'MISSING',
+        url: video.url ? 'EXISTS' : 'MISSING'
+      });
+    });
 
     res.json({
       success: true,

@@ -21,21 +21,40 @@ const getMediaBase = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  return window.location?.origin || '';
+  // Default to current origin (for development: http://localhost:5000)
+  return window.location?.origin || 'http://localhost:5000';
 };
 
 const toAbsoluteMediaUrl = (value) => {
-  if (!value || typeof value !== 'string') {
+  if (!value || typeof value !== 'string' || value.trim() === '') {
     return '';
   }
+  
+  // If already absolute URL, return as is
   if (ABSOLUTE_MEDIA_REGEX.test(value)) {
     return value;
   }
+  
   const base = getMediaBase();
-  if (!base) {
-    return value.startsWith('/') ? value : `/${value}`;
+  console.log(`[toAbsoluteMediaUrl] Converting:`, {
+    value,
+    base,
+    isAbsolute: ABSOLUTE_MEDIA_REGEX.test(value)
+  });
+  
+  // If no base URL, try to construct from current location
+  if (!base || base.trim() === '') {
+    const fallbackBase = window.location?.origin || 'http://localhost:5000';
+    const result = value.startsWith('/') 
+      ? `${fallbackBase}${value}` 
+      : `${fallbackBase}/${value}`;
+    console.log(`[toAbsoluteMediaUrl] Using fallback base:`, result);
+    return result;
   }
-  return `${base.replace(/\/+$/, '')}/${value.replace(/^\/+/, '')}`;
+  
+  const result = `${base.replace(/\/+$/, '')}/${value.replace(/^\/+/, '')}`;
+  console.log(`[toAbsoluteMediaUrl] Result:`, result);
+  return result;
 };
 
 const resolveVideoUrl = (video) => {
@@ -134,11 +153,31 @@ const normalizeFollowingVideo = (video, index = 0) => {
     displayName: candidateUser.profile?.displayName || video.displayName || username
   };
 
+  // Generate thumbnail URL - use video thumbnail, or generate from video URL, or use fallback
+  let thumbnailUrl = '';
+  if (video.thumbnail && video.thumbnail.trim() !== '') {
+    thumbnailUrl = toAbsoluteMediaUrl(video.thumbnail);
+    console.log(`[Following] Using video thumbnail:`, {
+      original: video.thumbnail,
+      absolute: thumbnailUrl
+    });
+  } else if (video.poster && video.poster.trim() !== '') {
+    thumbnailUrl = toAbsoluteMediaUrl(video.poster);
+    console.log(`[Following] Using video poster:`, {
+      original: video.poster,
+      absolute: thumbnailUrl
+    });
+  } else {
+    // No thumbnail available - use placeholder
+    thumbnailUrl = `https://images.unsplash.com/photo-1525182008055-f88b95ff7980?w=400&h=600&fit=crop&q=80`;
+    console.log(`[Following] No thumbnail found, using placeholder for video:`, video._id);
+  }
+
   return {
     ...video,
     _id: video._id ?? video.id ?? `video-${index}`,
     playbackUrl,
-    thumbnail: toAbsoluteMediaUrl(video.thumbnail || video.poster || ''),
+    thumbnail: thumbnailUrl,
     url: playbackUrl || video.url || video.videoUrl || '',
     user: {
       ...candidateUser,
@@ -356,6 +395,13 @@ const Following = () => {
               const normalizedVideos = videos
                 .map((video, index) => normalizeFollowingVideo(video, index))
                 .filter(Boolean);
+              
+              // Log thumbnail info for debugging
+              console.log('[Following] Normalized videos:', normalizedVideos.map(v => ({
+                id: v._id,
+                hasThumbnail: !!(v.thumbnail && v.thumbnail.trim() !== ''),
+                thumbnail: v.thumbnail || 'MISSING'
+              })));
               
               playableVideosRef.current.clear();
               setFollowingVideos(normalizedVideos);
@@ -842,10 +888,14 @@ const Following = () => {
                           />
                         ) : (
                           <img
-                            src={video.thumbnail || video.url}
+                            src={video.thumbnail || `https://images.unsplash.com/photo-1525182008055-f88b95ff7980?w=400&h=600&fit=crop&q=80`}
                             alt={video.description || `Video by ${video.user?.username || 'creator'}`}
                             className="following-thumbnail"
                             loading="lazy"
+                            onError={(e) => {
+                              // Fallback to placeholder if image fails to load
+                              e.target.src = `https://images.unsplash.com/photo-1525182008055-f88b95ff7980?w=400&h=600&fit=crop&q=80`;
+                            }}
                           />
                         )}
                         {video.isLive && <div className="following-live-badge">LIVE</div>}
