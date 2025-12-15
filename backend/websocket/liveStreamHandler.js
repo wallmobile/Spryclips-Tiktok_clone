@@ -127,11 +127,11 @@ const initializeLiveStreamHandlers = (io) => {
           return socket.emit('live:error', { message: 'Use guest:request to join as guest' });
         }
 
-        // Store socket info
-        socket.roomId = roomId;
+        // Store socket info using canonical room id
+        socket.roomId = canonicalRoomId;
         socket.role = role;
 
-        console.log(`[LiveStream] ${socket.userId} joined room ${roomId} as ${role}`);
+        console.log(`[LiveStream] ${socket.userId} joined room ${canonicalRoomId} as ${role}`);
       } catch (error) {
         console.error('[LiveStream] Error joining room:', error);
         socket.emit('live:error', { message: 'Failed to join room', error: error.message });
@@ -142,7 +142,7 @@ const initializeLiveStreamHandlers = (io) => {
     socket.on('live:leave', async () => {
       try {
         const { roomId, role } = socket;
-        
+
         if (!roomId) return;
 
         const room = activeRooms.get(roomId);
@@ -154,7 +154,7 @@ const initializeLiveStreamHandlers = (io) => {
           ioInstance.to(`live:${roomId}:viewers`).emit('live:host-offline', { roomId });
         } else if (role === 'viewer') {
           room.viewers.delete(socket.id);
-          
+
           // Notify host that viewer left (for WebRTC cleanup)
           if (room.host) {
             const hostSocket = ioInstance.sockets.sockets.get(room.host);
@@ -166,14 +166,14 @@ const initializeLiveStreamHandlers = (io) => {
               });
             }
           }
-          
+
           // Update viewer count
           const liveStream = await LiveStream.findById(roomId);
           if (liveStream) {
+            liveStream.viewers = Math.max(0, room.viewers.size);
+            await liveStream.save();
 
-        // Store socket info using canonical room id
-        socket.roomId = canonicalRoomId;
-            // Broadcast updated viewer count
+            // Broadcast updated viewer count to host
             ioInstance.to(`live:${roomId}:host`).emit('live:viewer-count', { 
               count: liveStream.viewers 
             });
@@ -443,20 +443,26 @@ const initializeLiveStreamHandlers = (io) => {
     // ==================== LIVE CHAT MESSAGE ====================
     socket.on('live:chat', async (data) => {
       try {
-        const { roomId, message, clientId } = data;
-        
-        if (!roomId || !message) {
+        const { roomId: providedRoomId, message, clientId } = data;
+
+        if (!providedRoomId || !message) {
           return socket.emit('live:error', { message: 'Room ID and message required' });
         }
 
-        const liveStream = await LiveStream.findById(roomId);
+        // Accept either the Mongo _id or the public roomId
+        const liveStream = await LiveStream.findOne({
+          $or: [{ _id: providedRoomId }, { roomId: providedRoomId }]
+        });
+
         if (!liveStream || liveStream.status !== 'live') {
           return socket.emit('live:error', { message: 'Stream not live' });
         }
 
+        const canonicalRoomId = liveStream._id.toString();
+
         // Save chat message
         const chatMessage = new LiveChat({
-          stream: roomId,
+          stream: canonicalRoomId,
           user: socket.userId,
           message: message.trim(),
           type: 'text'
@@ -465,10 +471,10 @@ const initializeLiveStreamHandlers = (io) => {
         await chatMessage.save();
         await chatMessage.populate('user', 'username profile');
 
-        // Broadcast to all in room
-        ioInstance.to(`live:${roomId}:host`)
-          .to(`live:${roomId}:viewers`)
-          .to(`live:${roomId}:guests`)
+        // Broadcast to all in room (use canonical room id)
+        ioInstance.to(`live:${canonicalRoomId}:host`)
+          .to(`live:${canonicalRoomId}:viewers`)
+          .to(`live:${canonicalRoomId}:guests`)
           .emit('live:chat', {
             message: chatMessage,
             timestamp: new Date(),
