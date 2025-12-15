@@ -154,7 +154,16 @@ router.put('/privacy', authMiddleware, async (req, res) => {
     if (stitchEnabled !== undefined) user.privacy.stitchEnabled = stitchEnabled;
     if (filteredKeywords !== undefined) user.privacy.filteredKeywords = filteredKeywords;
 
+    // Mark privacy as modified to ensure Mongoose saves nested object changes
+    user.markModified('privacy');
+    
     await user.save();
+    
+    console.log('✅ Privacy settings saved:', {
+      userId: user._id.toString(),
+      accountType: user.privacy.accountType,
+      privacyObject: user.privacy
+    });
     res.json({ success: true, message: 'Privacy settings updated', privacy: user.privacy });
   } catch (error) {
     console.error('Error updating privacy settings:', error);

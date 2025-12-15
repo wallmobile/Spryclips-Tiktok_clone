@@ -133,6 +133,15 @@ const Profile = ({ onClose, username: viewUsername }) => {
     }
   }, [user?.profile, isViewingOtherProfile]);
 
+  // Sync privacy setting when user data changes (e.g., on page reload)
+  useEffect(() => {
+    if (!isViewingOtherProfile && user?.privacy) {
+      // Sync privacy setting from backend when user data loads
+      const accountType = user.privacy.accountType || 'public';
+      setIsPrivate(accountType === 'private');
+    }
+  }, [user?.privacy, isViewingOtherProfile]);
+
   useEffect(() => {
     // Early return if no user and not viewing other profile
     if (!userId && !viewUsername) {
@@ -464,7 +473,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
       let response;
       console.log(previousIsFollowing ? '🔄 Unfollowing user:' : '🔄 Following user:', userId);
       // Use same POST endpoint - backend handles follow/unfollow based on current state
-      response = await followUser(userId.toString());
+        response = await followUser(userId.toString());
       
       console.log('✅ API Response:', response);
       console.log('📊 Response data:', JSON.stringify(response, null, 2));
@@ -1369,25 +1378,25 @@ const Profile = ({ onClose, username: viewUsername }) => {
           }
           break;
         case 'delete':
-          try {
-            await deleteVideo(videoId);
-            const updatedVideos = videos.filter(v => v.id !== videoId);
-            setVideos(updatedVideos);
-            if (pinnedVideo?.id === videoId) {
-              setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
-            }
-            // Show success toast instead of alert
-            setToastMessage('Video deleted successfully!');
-            setShowToast(true);
-            setTimeout(() => {
-              setShowToast(false);
-            }, 3000);
-            // Refresh videos list
-            setTimeout(() => {
-              fetchVideos();
-            }, 500);
-          } catch (error) {
-            console.error('Error deleting video:', error);
+            try {
+              await deleteVideo(videoId);
+              const updatedVideos = videos.filter(v => v.id !== videoId);
+              setVideos(updatedVideos);
+              if (pinnedVideo?.id === videoId) {
+                setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+              }
+              // Show success toast instead of alert
+              setToastMessage('Video deleted successfully!');
+              setShowToast(true);
+              setTimeout(() => {
+                setShowToast(false);
+              }, 3000);
+              // Refresh videos list
+              setTimeout(() => {
+                fetchVideos();
+              }, 500);
+            } catch (error) {
+              console.error('Error deleting video:', error);
               // Show user-friendly error message
               let errorMessage = 'Failed to delete video. Please try again.';
               
@@ -2452,17 +2461,73 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label htmlFor="privacy-toggle">Privacy Setting</label>
-                <div id="privacy-toggle" className="privacy-toggle">
+                <label>Privacy Setting</label>
+                <div className="privacy-toggle">
                   <button
                     className={`privacy-btn ${!isPrivate ? 'active' : ''}`}
-                    onClick={() => setIsPrivate(false)}
+                    onClick={async () => {
+                      const newValue = false;
+                      setIsPrivate(newValue);
+                      // Save to backend immediately
+                      try {
+                        await api.put('/api/users/privacy', {
+                          accountType: 'public'
+                        });
+                        // Update user context
+                        const updatedUser = {
+                          ...user,
+                          privacy: {
+                            ...user?.privacy,
+                            accountType: 'public'
+                          }
+                        };
+                        updateUser(updatedUser);
+                        setToastMessage('Privacy setting saved');
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 2000);
+                      } catch (error) {
+                        console.error('Failed to save privacy setting:', error);
+                        // Revert on error
+                        setIsPrivate(!newValue);
+                        setToastMessage('Failed to save privacy setting');
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 3000);
+                      }
+                    }}
                   >
                     <i className="fa-solid fa-globe"></i> Public
                   </button>
                   <button
                     className={`privacy-btn ${isPrivate ? 'active' : ''}`}
-                    onClick={() => setIsPrivate(true)}
+                    onClick={async () => {
+                      const newValue = true;
+                      setIsPrivate(newValue);
+                      // Save to backend immediately
+                      try {
+                        await api.put('/api/users/privacy', {
+                          accountType: 'private'
+                        });
+                        // Update user context
+                        const updatedUser = {
+                          ...user,
+                          privacy: {
+                            ...user?.privacy,
+                            accountType: 'private'
+                          }
+                        };
+                        updateUser(updatedUser);
+                        setToastMessage('Privacy setting saved');
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 2000);
+                      } catch (error) {
+                        console.error('Failed to save privacy setting:', error);
+                        // Revert on error
+                        setIsPrivate(!newValue);
+                        setToastMessage('Failed to save privacy setting');
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 3000);
+                      }
+                    }}
                   >
                     <i className="fa-solid fa-lock"></i> Private
                   </button>
@@ -2487,8 +2552,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
               </div>
 
               <div className="edit-form-group">
-                <label htmlFor="banner-upload">Profile Banner</label>
-                <div id="banner-upload" className="banner-upload-section">
+                <label>Profile Banner</label>
+                <div className="banner-upload-section">
                   <div className="banner-preview-container">
                     <div
                       className="banner-preview"
@@ -2645,7 +2710,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                               bannerLength: profileData.banner.length,
                               bannerPreview: profileData.banner.substring(0, 50) + '...'
                             });
-                            await saveProfile(profileData);
+                          await saveProfile(profileData);
                           } catch (error) {
                             console.error('Error saving banner:', error);
                             let errorMsg = 'Failed to save banner. Please try again.';

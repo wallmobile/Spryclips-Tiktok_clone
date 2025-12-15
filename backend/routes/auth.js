@@ -1010,6 +1010,21 @@ router.get('/verify', authMiddleware, async (req, res) => {
     qrScans: profile.qrScans || 0,
     profileViews: profile.profileViews || 0
   };
+
+  // ALWAYS include privacy object explicitly, even if empty
+  const privacy = freshUser.privacy || {};
+  const privacyWithDefaults = {
+    accountType: privacy.accountType || 'public',
+    showActivityStatus: privacy.showActivityStatus !== undefined ? privacy.showActivityStatus : true,
+    allowDirectMessages: privacy.allowDirectMessages || 'everyone',
+    commentFilter: privacy.commentFilter || false,
+    downloadEnabled: privacy.downloadEnabled !== undefined ? privacy.downloadEnabled : true,
+    mentionsEnabled: privacy.mentionsEnabled !== undefined ? privacy.mentionsEnabled : true,
+    tagsEnabled: privacy.tagsEnabled !== undefined ? privacy.tagsEnabled : true,
+    duetEnabled: privacy.duetEnabled !== undefined ? privacy.duetEnabled : true,
+    stitchEnabled: privacy.stitchEnabled !== undefined ? privacy.stitchEnabled : true,
+    filteredKeywords: privacy.filteredKeywords || []
+  };
   
   console.log('📤 Verify endpoint - Profile with banner:', {
     hasBanner: !!profileWithBanner.banner,
@@ -1025,6 +1040,7 @@ router.get('/verify', authMiddleware, async (req, res) => {
       username: freshUser.username,
       email: freshUser.email,
       profile: profileWithBanner,
+      privacy: privacyWithDefaults, // ALWAYS include privacy settings
       role: freshUser.role,
       emailVerified: freshUser.emailVerified
     }
