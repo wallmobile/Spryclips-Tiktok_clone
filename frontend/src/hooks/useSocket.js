@@ -48,7 +48,7 @@ const getSocketURL = () => {
 
 const API_URL = getSocketURL();
 
-export const useSocket = () => {
+const useSocket = () => {
   const { user } = useAuth();
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -121,6 +121,8 @@ export const useSocket = () => {
     isConnected 
   };
 };
+
+export { useSocket };
 
 export const useNotifications = (onNotification) => {
   const { socket } = useSocket();

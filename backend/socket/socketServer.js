@@ -97,6 +97,168 @@ const initializeSocket = (server) => {
       });
     });
 
+    // ==================== CALL SIGNALING HANDLERS ====================
+    
+    // Handle call initiation
+    socket.on('call:initiate', (data) => {
+      try {
+        const { callId, callType, targetUserId, offer } = data;
+        
+        // Check if caller is authenticated
+        if (!socket.userId) {
+          socket.emit('call:error', { 
+            callId, 
+            message: 'You must be logged in to make calls' 
+          });
+          return;
+        }
+        
+        // Convert targetUserId to string for comparison
+        const targetUserIdStr = String(targetUserId);
+        console.log(`[Call] User ${socket.userId} initiating ${callType} call to ${targetUserIdStr}`);
+        
+        // Find target user's socket (compare as strings)
+        const targetSocket = Array.from(io.sockets.sockets.values())
+          .find(s => s.userId && String(s.userId) === targetUserIdStr);
+        
+        if (!targetSocket) {
+          console.log(`[Call] Target user ${targetUserIdStr} not found online. Available users:`, 
+            Array.from(io.sockets.sockets.values())
+              .filter(s => s.userId)
+              .map(s => s.userId)
+          );
+          socket.emit('call:error', { 
+            callId, 
+            message: 'User is not online' 
+          });
+          return;
+        }
+        
+        // Send call request to target
+        targetSocket.emit('call:incoming', {
+          callId,
+          callType,
+          caller: {
+            id: socket.userId,
+            username: socket.user?.username,
+            displayName: socket.user?.profile?.displayName || socket.user?.username,
+            avatar: socket.user?.profile?.avatar
+          },
+          offer
+        });
+        
+        console.log(`[Call] Call request sent to ${targetUserId}`);
+      } catch (error) {
+        console.error('[Call] Error initiating call:', error);
+        socket.emit('call:error', { 
+          callId: data?.callId, 
+          message: 'Failed to initiate call' 
+        });
+      }
+    });
+    
+    // Handle call answer
+    socket.on('call:answer', (data) => {
+      try {
+        const { callId, answer, targetUserId } = data;
+        
+        if (!socket.userId) {
+          return;
+        }
+        
+        const targetUserIdStr = String(targetUserId);
+        console.log(`[Call] User ${socket.userId} answering call ${callId}`);
+        
+        const targetSocket = Array.from(io.sockets.sockets.values())
+          .find(s => s.userId && String(s.userId) === targetUserIdStr);
+        
+        if (targetSocket) {
+          targetSocket.emit('call:accepted', {
+            callId,
+            answer
+          });
+          console.log(`[Call] Answer sent to ${targetUserIdStr}`);
+        } else {
+          console.log(`[Call] Target user ${targetUserIdStr} not found when answering call`);
+        }
+      } catch (error) {
+        console.error('[Call] Error answering call:', error);
+      }
+    });
+    
+    // Handle call rejection
+    socket.on('call:reject', (data) => {
+      try {
+        const { callId, targetUserId } = data;
+        
+        if (!socket.userId) {
+          return;
+        }
+        
+        const targetUserIdStr = String(targetUserId);
+        console.log(`[Call] User ${socket.userId} rejecting call ${callId}`);
+        
+        const targetSocket = Array.from(io.sockets.sockets.values())
+          .find(s => s.userId && String(s.userId) === targetUserIdStr);
+        
+        if (targetSocket) {
+          targetSocket.emit('call:rejected', { callId });
+          console.log(`[Call] Rejection sent to ${targetUserIdStr}`);
+        }
+      } catch (error) {
+        console.error('[Call] Error rejecting call:', error);
+      }
+    });
+    
+    // Handle call end
+    socket.on('call:end', (data) => {
+      try {
+        const { callId, targetUserId } = data;
+        
+        if (!socket.userId) {
+          return;
+        }
+        
+        const targetUserIdStr = String(targetUserId);
+        console.log(`[Call] User ${socket.userId} ending call ${callId}`);
+        
+        const targetSocket = Array.from(io.sockets.sockets.values())
+          .find(s => s.userId && String(s.userId) === targetUserIdStr);
+        
+        if (targetSocket) {
+          targetSocket.emit('call:ended', { callId });
+          console.log(`[Call] End notification sent to ${targetUserIdStr}`);
+        }
+      } catch (error) {
+        console.error('[Call] Error ending call:', error);
+      }
+    });
+    
+    // Handle ICE candidate forwarding
+    socket.on('call:ice-candidate', (data) => {
+      try {
+        const { callId, candidate, targetUserId } = data;
+        
+        if (!socket.userId) {
+          return;
+        }
+        
+        const targetUserIdStr = String(targetUserId);
+        
+        const targetSocket = Array.from(io.sockets.sockets.values())
+          .find(s => s.userId && String(s.userId) === targetUserIdStr);
+        
+        if (targetSocket) {
+          targetSocket.emit('call:ice-candidate', {
+            callId,
+            candidate
+          });
+        }
+      } catch (error) {
+        console.error('[Call] Error forwarding ICE candidate:', error);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.userId}`);
     });

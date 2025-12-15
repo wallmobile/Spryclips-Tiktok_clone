@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../hooks/useSocket';
 import { getConversations, getMessages, sendMessage, getOrCreateConversation, markMessageAsRead } from '../../api/messages';
 import { searchUsers } from '../../api/search';
+import CallModal from './CallModal';
 import './MessageCenter.css';
 
 // All conversations will be fetched from backend API - no hardcoded data
@@ -85,6 +87,8 @@ const convertConversation = (conversation, currentUser) => {
   return {
     id: conversation.id || conversation._id || conversation.conversationId,
     user: {
+      id: participant?._id || participant?.id || participant?.userId,
+      _id: participant?._id || participant?.id || participant?.userId,
       username,
       displayName,
       avatar,
@@ -117,6 +121,11 @@ const MessageCenter = ({ onClose, initialUser }) => {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [newChatError, setNewChatError] = useState(null);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [callType, setCallType] = useState(null); // 'audio' or 'video'
+  const [incomingCall, setIncomingCall] = useState(null);
+  
+  const { socket, isConnected } = useSocket();
 
   // Search users for new message
   const handleUserSearch = useCallback(async (query) => {
@@ -180,6 +189,32 @@ const MessageCenter = ({ onClose, initialUser }) => {
       fetchSuggestedUsers();
     }
   }, [showNewMessage, suggestedUsers.length, user]);
+
+  // Handle incoming calls
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleIncomingCall = (data) => {
+      console.log('[MessageCenter] Incoming call:', data);
+      setIncomingCall({
+        callId: data.callId,
+        callType: data.callType,
+        caller: {
+          ...data.caller,
+          id: data.caller?.id || data.caller?._id,
+          _id: data.caller?._id || data.caller?.id
+        },
+        offer: data.offer
+      });
+      setShowCallModal(true);
+    };
+
+    socket.on('call:incoming', handleIncomingCall);
+
+    return () => {
+      socket.off('call:incoming', handleIncomingCall);
+    };
+  }, [socket, isConnected]);
 
   useEffect(() => {
     if (!user) {
@@ -521,10 +556,24 @@ const MessageCenter = ({ onClose, initialUser }) => {
                     </div>
                   </div>
                   <div className="chat-actions">
-                    <button className="chat-action-btn">
+                    <button 
+                      className="chat-action-btn"
+                      onClick={() => {
+                        setCallType('audio');
+                        setShowCallModal(true);
+                      }}
+                      title="Audio call"
+                    >
                       <i className="fa-solid fa-phone"></i>
                     </button>
-                    <button className="chat-action-btn">
+                    <button 
+                      className="chat-action-btn"
+                      onClick={() => {
+                        setCallType('video');
+                        setShowCallModal(true);
+                      }}
+                      title="Video call"
+                    >
                       <i className="fa-solid fa-video"></i>
                     </button>
                     <button className="chat-action-btn">
@@ -746,6 +795,38 @@ const MessageCenter = ({ onClose, initialUser }) => {
           </div>
         )}
       </div>
+
+      {/* Call Modal */}
+      {showCallModal && activeChat && (
+        <CallModal
+          isOpen={showCallModal}
+          onClose={() => {
+            setShowCallModal(false);
+            setCallType(null);
+          }}
+          callType={callType}
+          otherUser={{
+            ...activeChat.user,
+            id: activeChat.user?.id || activeChat.user?._id || activeChat.id,
+            _id: activeChat.user?._id || activeChat.user?.id || activeChat.id
+          }}
+          currentUser={user}
+        />
+      )}
+
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <CallModal
+          isOpen={!!incomingCall}
+          onClose={() => {
+            setIncomingCall(null);
+          }}
+          callType={incomingCall?.callType}
+          otherUser={incomingCall?.caller}
+          currentUser={user}
+          incomingCall={incomingCall}
+        />
+      )}
     </div>
   );
 };
