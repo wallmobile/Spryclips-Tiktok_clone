@@ -102,6 +102,12 @@ const liveStreamSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  // Banned users for this stream (per-stream bans)
+  bannedUsers: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    bannedUntil: { type: Date, default: null },
+    reason: { type: String, default: '' }
+  }],
   recordingUrl: {
     type: String,
     default: '',

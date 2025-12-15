@@ -99,6 +99,45 @@ export const getChatMessages = async (streamId, limit = 50) => {
 };
 
 /**
+ * Delete a chat message (moderation)
+ */
+export const deleteChatMessage = async (streamId, chatId) => {
+  try {
+    const response = await axios.delete(`/api/live/${streamId}/chat/${chatId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting chat message:', error);
+    throw error;
+  }
+};
+
+/**
+ * Ban a user from a stream (moderation)
+ */
+export const banUserFromStream = async (streamId, userId, minutes = 0, reason = '') => {
+  try {
+    const response = await axios.post(`/api/live/${streamId}/ban`, { userId, minutes, reason });
+    return response.data;
+  } catch (error) {
+    console.error('Error banning user from stream:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unban a user from a stream
+ */
+export const unbanUserFromStream = async (streamId, userId) => {
+  try {
+    const response = await axios.post(`/api/live/${streamId}/unban`, { userId });
+    return response.data;
+  } catch (error) {
+    console.error('Error unbanning user from stream:', error);
+    throw error;
+  }
+};
+
+/**
  * Like/Unlike live stream
  */
 export const toggleLikeLiveStream = async (streamId) => {
