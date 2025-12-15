@@ -266,6 +266,79 @@ router.patch('/users/:id/status', async (req, res) => {
   }
 });
 
+// Create new user (admin only)
+router.post('/users', async (req, res) => {
+  try {
+    const { username, email, password, role = 'user', displayName } = req.body;
+
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Username, email, and password are required' 
+      });
+    }
+
+    // Validate role
+    if (!['user', 'moderator', 'admin', 'creator'].includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid role. Must be: user, moderator, admin, or creator' 
+      });
+    }
+
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { username: username.toLowerCase() },
+        { email: email.toLowerCase() }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: existingUser.username === username.toLowerCase() 
+          ? 'Username already exists' 
+          : 'Email already exists' 
+      });
+    }
+
+    // Create new user
+    const newUser = new User({
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
+      password, // Will be hashed by pre-save hook
+      role,
+      'profile.displayName': displayName || username,
+      emailVerified: true, // Admin-created users are pre-verified
+      accountStatus: 'active'
+    });
+
+    await newUser.save();
+
+    // Return user without password
+    const userResponse = await User.findById(newUser._id)
+      .select('-password -passwordHistory')
+      .lean();
+
+    console.log(`✅ Admin created ${role} account: ${username}`);
+
+    res.status(201).json({ 
+      success: true, 
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully`,
+      user: userResponse 
+    });
+  } catch (error) {
+    console.error('Admin create user error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create user',
+      error: error.message 
+    });
+  }
+});
+
 // Update user role
 router.patch('/users/:id/role', async (req, res) => {
   try {

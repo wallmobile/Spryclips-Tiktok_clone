@@ -9,6 +9,7 @@ import {
   getUserDetails,
   updateUserStatus,
   updateUserRole,
+  createUser,
   deleteUser,
   getAllVideos,
   deleteVideo,
@@ -139,6 +140,15 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileEditData, setProfileEditData] = useState({});
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [createUserData, setCreateUserData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'user',
+    displayName: ''
+  });
+  const [creatingUser, setCreatingUser] = useState(false);
 
   // Videos
   const [videos, setVideos] = useState([]);
@@ -833,6 +843,31 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     } catch (error) {
       console.error('Error updating user role:', error);
       setToast({ type: 'error', message: 'Failed to update user role' });
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreatingUser(true);
+    try {
+      const response = await createUser(createUserData);
+      if (response.success) {
+        setToast({ type: 'success', message: response.message || 'User created successfully' });
+        setShowCreateUserModal(false);
+        setCreateUserData({
+          username: '',
+          email: '',
+          password: '',
+          role: 'user',
+          displayName: ''
+        });
+        fetchUsers(); // Refresh users list
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      setToast({ type: 'error', message: error.response?.data?.message || 'Failed to create user' });
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -2756,6 +2791,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           {/* Users Tab - Continue in next message due to length */}
           {activeTab === 'users' && (
             <div className="admin-users">
+              {/* Header with Create User Button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0 }}>All Users</h2>
+                <button
+                  onClick={() => setShowCreateUserModal(true)}
+                  className="admin-btn admin-btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <span>+</span> Create User
+                </button>
+              </div>
+
               {/* Search and Filters */}
               <div className="admin-filters">
                 <input
@@ -11502,6 +11549,108 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   return (
     <div className="admin-panel-page-container">
       {content}
+
+      {/* Create User Modal */}
+      {showCreateUserModal && (
+        <div className="admin-modal-overlay" onClick={() => setShowCreateUserModal(false)}>
+          <div className="admin-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="admin-modal-header">
+              <h3>Create New User</h3>
+              <button 
+                className="admin-modal-close"
+                onClick={() => setShowCreateUserModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleCreateUser} className="admin-form">
+              <div className="admin-form-group">
+                <label>Username *</label>
+                <input
+                  type="text"
+                  value={createUserData.username}
+                  onChange={(e) => setCreateUserData({ ...createUserData, username: e.target.value })}
+                  required
+                  placeholder="Enter username"
+                  style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label>Email *</label>
+                <input
+                  type="email"
+                  value={createUserData.email}
+                  onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
+                  required
+                  placeholder="Enter email"
+                  style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label>Password *</label>
+                <input
+                  type="password"
+                  value={createUserData.password}
+                  onChange={(e) => setCreateUserData({ ...createUserData, password: e.target.value })}
+                  required
+                  placeholder="Enter password (min 6 characters)"
+                  minLength={6}
+                  style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label>Display Name</label>
+                <input
+                  type="text"
+                  value={createUserData.displayName}
+                  onChange={(e) => setCreateUserData({ ...createUserData, displayName: e.target.value })}
+                  placeholder="Enter display name (optional)"
+                  style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label>Role *</label>
+                <select
+                  value={createUserData.role}
+                  onChange={(e) => setCreateUserData({ ...createUserData, role: e.target.value })}
+                  required
+                  className="admin-role-select"
+                  style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                >
+                  <option value="user">User</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                  <option value="creator">Creator</option>
+                </select>
+                <small style={{ color: '#666', marginTop: '5px', display: 'block' }}>
+                  {createUserData.role === 'moderator' && 'Moderators can moderate content and manage reports'}
+                  {createUserData.role === 'admin' && 'Admins have full access to all features'}
+                  {createUserData.role === 'creator' && 'Creators can monetize their content'}
+                  {createUserData.role === 'user' && 'Regular users with standard access'}
+                </small>
+              </div>
+              <div className="admin-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateUserModal(false)}
+                  className="admin-btn admin-btn-secondary"
+                  disabled={creatingUser}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  disabled={creatingUser}
+                >
+                  {creatingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
