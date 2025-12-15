@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getEffects, toggleFavoriteEffect, getFavoriteEffects } from '../../api/effects';
 import './EffectsMarketplace.css';
 
@@ -37,8 +37,16 @@ const EffectsMarketplace = ({ onClose, onSelectEffect }) => {
         }
         
         const response = await getEffects(params);
-        if (response.success) {
-          setEffects(response.effects.map(effect => ({
+        console.log('[EffectsMarketplace] API Response:', { 
+          success: response.success, 
+          effectsCount: response.effects?.length || 0,
+          category: activeCategory,
+          tab: activeTab,
+          params 
+        });
+        
+        if (response.success && response.effects && response.effects.length > 0) {
+          const mappedEffects = response.effects.map(effect => ({
             id: effect._id,
             name: effect.name,
             category: effect.category,
@@ -50,7 +58,17 @@ const EffectsMarketplace = ({ onClose, onSelectEffect }) => {
             isTrending: effect.isFeatured || effect.usageCount > 50000,
             isAR: effect.category === 'ar',
             favoritesCount: effect.favoritesCount || 0
-          })));
+          }));
+          console.log('[EffectsMarketplace] Mapped effects:', mappedEffects.length);
+          setEffects(mappedEffects);
+        } else if (response.success && (!response.effects || response.effects.length === 0)) {
+          // API succeeded but no effects found - use fallback for demo
+          console.log('[EffectsMarketplace] No effects from API, using fallback');
+          setEffects(fallbackEffects);
+        } else {
+          // API failed - use fallback
+          console.log('[EffectsMarketplace] API failed, using fallback');
+          setEffects(fallbackEffects);
         }
       } catch (err) {
         console.error('Failed to fetch effects:', err);
@@ -136,20 +154,36 @@ const EffectsMarketplace = ({ onClose, onSelectEffect }) => {
     localStorage.setItem('favoriteEffects', JSON.stringify(newFavorites));
   };
 
-  const filteredEffects = effects.filter(effect => {
-    const matchesCategory = activeCategory === 'all' || effect.category === activeCategory;
-    const matchesSearch = searchQuery === '' ||
-      effect.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      effect.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredEffects = useMemo(() => {
+    console.log('[EffectsMarketplace] Filtering effects:', {
+      totalEffects: effects.length,
+      activeCategory,
+      activeTab,
+      searchQuery,
+      favoriteEffectsCount: favoriteEffects.length
+    });
     
-    if (activeTab === 'trending') {
-      return matchesCategory && matchesSearch && effect.isTrending;
-    } else if (activeTab === 'favorites') {
-      return matchesCategory && matchesSearch && favoriteEffects.includes(effect.id);
-    }
-    
-    return matchesCategory && matchesSearch;
-  });
+    return effects.filter(effect => {
+      const matchesCategory = activeCategory === 'all' || effect.category === activeCategory;
+      const matchesSearch = searchQuery === '' ||
+        effect.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (effect.description && effect.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      if (activeTab === 'trending') {
+        const result = matchesCategory && matchesSearch && effect.isTrending;
+        if (result) console.log('[EffectsMarketplace] Trending match:', effect.name, effect.category);
+        return result;
+      } else if (activeTab === 'favorites') {
+        const result = matchesCategory && matchesSearch && favoriteEffects.includes(effect.id);
+        if (result) console.log('[EffectsMarketplace] Favorite match:', effect.name, effect.category);
+        return result;
+      }
+      
+      const result = matchesCategory && matchesSearch;
+      if (result) console.log('[EffectsMarketplace] Browse match:', effect.name, effect.category);
+      return result;
+    });
+  }, [effects, activeCategory, activeTab, searchQuery, favoriteEffects]);
 
   const handleSelectEffect = (effect) => {
     if (onSelectEffect) {

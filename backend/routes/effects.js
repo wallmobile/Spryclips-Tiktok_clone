@@ -45,6 +45,15 @@ router.get('/', async (req, res) => {
       .limit(limit)
       .lean();
 
+    console.log(`[Effects API] Query:`, query);
+    console.log(`[Effects API] Found ${effects.length} effects`);
+    if (effects.length > 0) {
+      console.log(`[Effects API] Categories:`, effects.map(e => e.category));
+    } else {
+      console.log(`[Effects API] ⚠️ No effects found in database for query:`, query);
+      console.log(`[Effects API] Total effects in DB:`, await Effect.countDocuments({ isActive: true }));
+    }
+
     res.json({
       success: true,
       effects,

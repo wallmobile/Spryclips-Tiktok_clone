@@ -53,7 +53,19 @@ const EffectsLab = ({ onClose = () => {} }) => {
   const filteredToolkits = useMemo(() => {
     if (!toolbox?.toolkits) return [];
     if (activeDifficulty === 'all') return toolbox.toolkits;
-    return toolbox.toolkits.filter((tool) => tool.difficulty.toLowerCase() === activeDifficulty);
+    return toolbox.toolkits.filter((tool) => {
+      const toolDifficulty = (tool.difficulty || '').toLowerCase();
+      return toolDifficulty === activeDifficulty;
+    });
+  }, [toolbox, activeDifficulty]);
+
+  const filteredTemplates = useMemo(() => {
+    if (!toolbox?.templates) return [];
+    if (activeDifficulty === 'all') return toolbox.templates;
+    return toolbox.templates.filter((template) => {
+      const templateComplexity = (template.complexity || '').toLowerCase();
+      return templateComplexity === activeDifficulty;
+    });
   }, [toolbox, activeDifficulty]);
 
   const handleClose = () => {
@@ -181,7 +193,7 @@ const EffectsLab = ({ onClose = () => {} }) => {
                   </button>
                 </div>
                 <div className="more-page__cards-row">
-                  {toolbox.templates?.map((template) => (
+                  {filteredTemplates.map((template) => (
                     <div 
                       key={template.id} 
                       className="more-page__list-item"

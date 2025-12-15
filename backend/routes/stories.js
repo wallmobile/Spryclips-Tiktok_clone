@@ -567,7 +567,7 @@ router.post('/:storyId/react', authMiddleware, async (req, res) => {
 
     let isRemoved = false;
     const reactionEmoji = emoji || '❤️';
-    
+
     if (existingReaction) {
       // If same emoji, remove reaction (unlike)
       if (existingReaction.emoji === reactionEmoji) {
@@ -579,7 +579,7 @@ router.post('/:storyId/react', authMiddleware, async (req, res) => {
       } else {
         // Update reaction with different emoji
         existingReaction.emoji = reactionEmoji;
-        existingReaction.createdAt = new Date();
+      existingReaction.createdAt = new Date();
         console.log(`🔄 Updated reaction emoji for story ${storyId}`);
       }
     } else {
@@ -624,11 +624,11 @@ router.post('/:storyId/react', authMiddleware, async (req, res) => {
           userIdsMatch: notificationUserId.toString() === userId.toString()
         });
 
-        const notification = new Notification({
+      const notification = new Notification({
           user: notificationUserId,
           type: 'likes',
           title: 'Story Reaction',
-          message: `${req.user.username} reacted to your story`,
+        message: `${req.user.username} reacted to your story`,
           relatedUser: userId,
           relatedVideo: null,
           metadata: { storyId: storyId.toString() }
