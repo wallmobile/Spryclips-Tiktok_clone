@@ -52,10 +52,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const cacheKey = cacheKeys.videoList({ page, limit, sortBy, sortOrder });
 
-  // Invalidate cache if querying first page (to show new uploads)
-  if (page === 1) {
-    cache.delete(cacheKey);
-  }
+  // Cache will auto-expire after TTL - no need to manually invalidate
 
   // Filter to only show videos from spryclips server
   // Exclude videos with external URLs (YouTube, Vimeo, etc.)
@@ -93,8 +90,8 @@ router.get('/', asyncHandler(async (req, res) => {
       };
       
       const allVideos = await Video.find(queryWithUserFilter)
-        .populate('user', 'username profile accountStatus')
-        .select('-processedVideos')
+        .populate('user', 'username profile.avatar profile.displayName accountStatus')
+        .select('url thumbnail description hashtags likes comments shares views createdAt user status isPrivate')
         .sort({ [sortBy]: sortOrder })
         .limit(limit)
         .skip(skip)
@@ -106,15 +103,18 @@ router.get('/', asyncHandler(async (req, res) => {
         return video.user.accountStatus === 'active';
       });
     },
-    60 // Reduced cache time to 1 minute for faster updates
+    300 // Increased cache time to 5 minutes for better performance
   );
 
-  // Count only videos from active users
-  const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
-  const activeUserIds = activeUsers.map(u => u._id);
+  // Count only videos from active users - use same query pattern
+  const activeUsersForCount = await User.find({ accountStatus: 'active' })
+    .select('_id')
+    .lean()
+    .limit(10000); // Safety limit
+  const activeUserIdsForCount = activeUsersForCount.map(u => u._id);
   const countQuery = {
     ...videoQuery,
-    user: { $in: activeUserIds }
+    user: { $in: activeUserIdsForCount }
   };
   const total = await Video.countDocuments(countQuery);
 

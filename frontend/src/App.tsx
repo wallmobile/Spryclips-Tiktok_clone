@@ -215,16 +215,13 @@ const HomeFeed: React.FC = () => {
   useEffect(() => {
     const handleVideoUploaded = async (event: Event) => {
       try {
-        console.log('Video uploaded event received, refreshing feed...');
         setLoading(true);
         
         // Clear cache and fetch fresh data
         const data = await getAllVideos();
-        console.log('Fetched videos after upload:', data?.length || 0);
         
         if (data && Array.isArray(data) && data.length > 0) {
           const normalizedVideos = data.map((video) => normalizeVideoData(video as Record<string, unknown>, 'api'));
-          console.log('Normalized videos:', normalizedVideos.length);
           setVideos(normalizedVideos);
         } else {
           console.warn('No videos returned after upload');
@@ -286,12 +283,7 @@ const HomeFeed: React.FC = () => {
   useEffect(() => {
     const handleSearchChange = (event: CustomEvent<string>) => {
       const term = String(event.detail || '').trim();
-      console.log('=== HomeFeed received search term ===');
-      console.log('Search term received:', term);
-      console.log('Current searchTerm state before update:', searchTerm);
       setSearchTerm(term);
-      console.log('Search term updated to:', term);
-      console.log('=== End search term update ===');
     };
     
     window.addEventListener('searchTermChange' as any, handleSearchChange);

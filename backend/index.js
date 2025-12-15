@@ -180,8 +180,19 @@ app.use(helmet({
   }
 }));
 
-// Compression
-app.use(compression());
+// Compression with optimized settings
+app.use(compression({
+  level: 6, // Balanced compression (1-9, 6 is good balance)
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression for all other requests
+    return compression.filter(req, res);
+  }
+}));
 
 // Prevent HTTP parameter pollution
 app.use(hpp({

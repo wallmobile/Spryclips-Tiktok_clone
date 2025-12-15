@@ -58,7 +58,7 @@ const createClient = (overrides?: Partial<AxiosRequestConfig>) =>
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     },
-    timeout: 30000, // Increased to 30 seconds for slow connections and backend processing
+    timeout: 15000, // Optimized to 15 seconds for better performance
     maxRedirects: 3,
     validateStatus: (status) => status >= 200 && status < 300,
     withCredentials: true,

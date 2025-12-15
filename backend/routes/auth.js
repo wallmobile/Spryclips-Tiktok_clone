@@ -100,10 +100,11 @@ const issueAuthSuccess = async ({
         userAgent: req.get('user-agent') || 'Unknown'
       });
       await refreshTokenDoc.save();
-      console.log('✅ Refresh token saved');
     } catch (refreshError) {
-      console.error('❌ Error saving refresh token:', refreshError.message);
-      console.error('Refresh token error stack:', refreshError.stack);
+      // Log only in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error saving refresh token:', refreshError.message);
+      }
       // Don't fail login if refresh token save fails - we can still proceed
       console.warn('⚠️ Continuing without refresh token...');
     }
@@ -1002,16 +1003,10 @@ router.post('/social/facebook', asyncHandler(async (req, res) => {
 
 // Verify token
 router.get('/verify', authMiddleware, async (req, res) => {
-  // Fetch fresh user from database to ensure we have latest profile data
-  const freshUser = await User.findById(req.user._id).select('-password');
-  
-  console.log('🔍 Verify endpoint - User profile:', {
-    userId: freshUser?._id,
-    hasProfile: !!freshUser?.profile,
-    hasBanner: !!freshUser?.profile?.banner,
-    bannerLength: freshUser?.profile?.banner ? freshUser.profile.banner.length : 0,
-    profileKeys: freshUser?.profile ? Object.keys(freshUser.profile) : []
-  });
+  // Fetch fresh user from database - optimized query with only needed fields
+  const freshUser = await User.findById(req.user._id)
+    .select('username email profile role emailVerified accountStatus isSelfDeactivated deactivatedAt privacy')
+    .lean();
   
   // Ensure profile object includes all fields, even if empty
   const profile = freshUser.profile || {};
@@ -1046,13 +1041,6 @@ router.get('/verify', authMiddleware, async (req, res) => {
     stitchEnabled: privacy.stitchEnabled !== undefined ? privacy.stitchEnabled : true,
     filteredKeywords: privacy.filteredKeywords || []
   };
-  
-  console.log('📤 Verify endpoint - Profile with banner:', {
-    hasBanner: !!profileWithBanner.banner,
-    bannerLength: profileWithBanner.banner ? profileWithBanner.banner.length : 0,
-    bannerInKeys: 'banner' in profileWithBanner,
-    allKeys: Object.keys(profileWithBanner)
-  });
   
   res.json({
     success: true,

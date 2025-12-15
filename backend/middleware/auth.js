@@ -101,17 +101,10 @@ const authMiddleware = async (req, res, next) => {
       }), req);
     }
 
-    const user = await User.findById(decoded.userId).select('-password');
-    
-    // Debug: Log profile data when fetching user
-    if (req.path === '/api/auth/verify') {
-      console.log('🔍 Auth middleware - User profile check:', {
-        userId: user?._id,
-        hasProfile: !!user?.profile,
-        hasBanner: !!user?.profile?.banner,
-        bannerLength: user?.profile?.banner ? user.profile.banner.length : 0
-      });
-    }
+    // Optimized query - only fetch essential fields for auth check
+    const user = await User.findById(decoded.userId)
+      .select('username email role accountStatus isSelfDeactivated deactivatedAt')
+      .lean();
     
     if (!user) {
       // User doesn't exist - clear all cookies to force fresh login
@@ -143,15 +136,13 @@ const authMiddleware = async (req, res, next) => {
     const path = req.path || '';
     const baseUrl = req.baseUrl || '';
     
-    // Debug logging for path matching
-    if (user.accountStatus !== 'active') {
-      console.log('🔍 Auth middleware - Checking paths for deactivated account:', {
+    // Check account status (logging removed for performance - only in development)
+    if (user.accountStatus !== 'active' && process.env.NODE_ENV !== 'production') {
+      console.log('Auth middleware - Checking paths for deactivated account:', {
         originalUrl,
         path,
         baseUrl,
-        fullPath: baseUrl + path,
-        accountStatus: user.accountStatus,
-        isSelfDeactivated: user.isSelfDeactivated
+        accountStatus: user.accountStatus
       });
     }
     
@@ -186,18 +177,18 @@ const authMiddleware = async (req, res, next) => {
       if (containsLogout || containsVerify || isLogoutEndpoint || isVerifyEndpoint) {
         // Attach user to request but don't block - let the endpoint handle it
         req.user = user;
-        console.log(`✅ Allowing ${containsLogout ? 'logout' : 'verify'} for deactivated account: ${user._id}`);
-        console.log(`   Path details: originalUrl=${originalUrl}, path=${path}, baseUrl=${baseUrl}`);
-        console.log(`   URL string check: ${urlString}`);
+        // Only log in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Allowing ${containsLogout ? 'logout' : 'verify'} for deactivated account: ${user._id}`);
+        }
         return next();
       }
       
       // If we reach here, the endpoint is blocked
-      console.log(`❌ Blocking request for deactivated account: ${user._id}`);
-      console.log(`   Path details: originalUrl=${originalUrl}, path=${path}, baseUrl=${baseUrl}`);
-      console.log(`   URL string: ${urlString}`);
-      console.log(`   containsLogout=${containsLogout}, containsVerify=${containsVerify}`);
-      console.log(`   isLogoutEndpoint=${isLogoutEndpoint}, isVerifyEndpoint=${isVerifyEndpoint}`);
+      // Only log in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Blocking request for deactivated account: ${user._id}`);
+      }
       
       // User-friendly messages based on account status
       let userMessage = 'Your account access has been temporarily restricted. Our support team can help you restore access.';

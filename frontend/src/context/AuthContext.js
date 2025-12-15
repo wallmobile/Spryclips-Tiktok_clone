@@ -200,7 +200,6 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setAuthenticating(true);
-      console.log('Attempting login with email:', email);
       const response = await api.post('/api/auth/login', { email, password });
       if (response?.data?.user) {
         // Normalize user object: ensure _id exists (use id if _id not present)
@@ -219,7 +218,6 @@ export const AuthProvider = ({ children }) => {
           try { localStorage.setItem('accessToken', token); } catch {};
         }
       }
-      console.log('Login successful');
       return { success: true };
     } catch (error) {
       console.error('Login error details:', {

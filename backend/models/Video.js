@@ -4,7 +4,8 @@ const videoSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true // Index for filtering videos by user
   },
   category: {
     type: String,
@@ -272,6 +273,8 @@ const videoSchema = new mongoose.Schema({
 videoSchema.index({ user: 1, createdAt: -1 });
 videoSchema.index({ status: 1, createdAt: -1 });
 videoSchema.index({ isPrivate: 1, status: 1, createdAt: -1 });
+// Compound index for common feed queries (user + status + isPrivate)
+videoSchema.index({ user: 1, status: 1, isPrivate: 1, createdAt: -1 });
 videoSchema.index({ hashtags: 1 });
 videoSchema.index({ createdAt: -1 });
 videoSchema.index({ views: -1 });

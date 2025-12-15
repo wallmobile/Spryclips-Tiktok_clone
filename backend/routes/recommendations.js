@@ -61,12 +61,12 @@ router.get('/videos', authMiddleware, async (req, res) => {
       user: { $in: activeUserIds }
     };
     
-    // Get recommended videos (only from active users)
+    // Get recommended videos (only from active users) - optimized query
     let recommendedVideos = await Video.find(queryWithActiveUsers)
-      .populate('user', 'username profile.avatar profile.displayName profile.followers accountStatus')
+      .populate('user', 'username profile.avatar profile.displayName accountStatus')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user')
       .sort({ views: -1, likes: -1, createdAt: -1 })
       .limit(limit * 2) // Get more to filter
-      .select('url thumbnail description hashtags likes comments shares views createdAt user')
       .lean();
     
     // Double-check: filter out any videos from non-active users
@@ -158,16 +158,16 @@ router.get('/for-you', authMiddleware, async (req, res) => {
       user: { $in: activeUserIds }
     };
     
-    // Get trending videos (high engagement) - only from active users
+    // Get trending videos (high engagement) - only from active users - optimized query
     const trendingVideos = await Video.find(queryWithActiveUsers)
-      .populate('user', 'username profile.avatar profile.displayName profile.followers accountStatus')
+      .populate('user', 'username profile.avatar profile.displayName accountStatus')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music')
       .sort({ 
         views: -1,
         likes: -1,
         createdAt: -1
       })
       .limit(limit)
-      .select('url thumbnail description hashtags likes comments shares views createdAt user music')
       .lean();
     
     // Double-check: filter out any videos from non-active users
@@ -243,10 +243,10 @@ router.get('/following', authMiddleware, async (req, res) => {
       status: 'ready',
       isPrivate: false
     })
-      .populate('user', 'username profile.avatar profile.displayName profile.followers _id accountStatus')
+      .populate('user', 'username profile.avatar profile.displayName _id accountStatus')
+      .select('url thumbnail description hashtags likes comments shares views createdAt user music _id')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('url thumbnail description hashtags likes comments shares views createdAt user music _id processedVideos')
       .lean();
     
     // Double-check: filter out any videos from non-active users

@@ -114,7 +114,8 @@ const userSchema = new mongoose.Schema({
   accountStatus: {
     type: String,
     enum: ['active', 'suspended', 'banned'],
-    default: 'active'
+    default: 'active',
+    index: true // Index for filtering active users
   },
   deactivatedAt: {
     type: Date,

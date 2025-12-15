@@ -199,14 +199,17 @@ router.get('/blocked', authMiddleware, async (req, res) => {
 router.post('/block/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(req.user._id);
+    // Optimized query - only fetch needed fields
+    const user = await User.findById(req.user._id)
+      .select('privacy.blockedUsers')
+      .lean();
     
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     // Check if already blocked
-    const alreadyBlocked = user.privacy.blockedUsers?.some(
+    const alreadyBlocked = user.privacy?.blockedUsers?.some(
       b => b.user.toString() === userId
     );
     
@@ -214,9 +217,15 @@ router.post('/block/:userId', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already blocked' });
     }
 
-    user.privacy.blockedUsers = user.privacy.blockedUsers || [];
-    user.privacy.blockedUsers.push({ user: userId, blockedAt: new Date() });
-    await user.save();
+    // Use updateOne for better performance
+    await User.updateOne(
+      { _id: req.user._id },
+      { 
+        $push: { 
+          'privacy.blockedUsers': { user: userId, blockedAt: new Date() }
+        }
+      }
+    );
 
     res.json({ success: true, message: 'User blocked successfully' });
   } catch (error) {
@@ -229,16 +238,19 @@ router.post('/block/:userId', authMiddleware, async (req, res) => {
 router.delete('/block/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(req.user._id);
+    // Use updateOne for better performance - no need to fetch full user
+    const result = await User.updateOne(
+      { _id: req.user._id },
+      { 
+        $pull: { 
+          'privacy.blockedUsers': { user: userId }
+        }
+      }
+    );
     
-    if (!user) {
+    if (result.matchedCount === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
-    user.privacy.blockedUsers = (user.privacy.blockedUsers || []).filter(
-      b => b.user.toString() !== userId
-    );
-    await user.save();
 
     res.json({ success: true, message: 'User unblocked successfully' });
   } catch (error) {
