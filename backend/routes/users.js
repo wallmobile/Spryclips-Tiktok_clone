@@ -238,6 +238,210 @@ router.delete('/block/:userId', authMiddleware, async (req, res) => {
   }
 });
 
+// Get user data for download (must be before /:id route)
+router.get('/download-data', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('-password -passwordHistory -emailVerificationToken -emailVerificationCode')
+      .populate('videos', 'description createdAt likes comments shares views')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Get linked accounts (same logic as /linked-accounts endpoint)
+    const linkedAccountsData = user.appSettings?.linkedAccounts || {};
+    const linkedAccounts = [
+      { 
+        platform: 'Google', 
+        icon: 'fa-brands fa-google', 
+        connected: user.authProvider === 'google' || !!linkedAccountsData.google,
+        email: linkedAccountsData.google?.email || (user.authProvider === 'google' ? user.email : null),
+        username: linkedAccountsData.google?.username || null
+      },
+      { 
+        platform: 'Facebook', 
+        icon: 'fa-brands fa-facebook', 
+        connected: user.authProvider === 'facebook' || !!linkedAccountsData.facebook,
+        email: linkedAccountsData.facebook?.email || (user.authProvider === 'facebook' ? user.email : null),
+        username: linkedAccountsData.facebook?.username || null
+      },
+      { 
+        platform: 'Instagram', 
+        icon: 'fa-brands fa-instagram', 
+        connected: !!linkedAccountsData.instagram,
+        email: linkedAccountsData.instagram?.email || null,
+        username: linkedAccountsData.instagram?.username || null
+      },
+      { 
+        platform: 'Twitter', 
+        icon: 'fa-brands fa-twitter', 
+        connected: !!linkedAccountsData.twitter,
+        email: linkedAccountsData.twitter?.email || null,
+        username: linkedAccountsData.twitter?.username || null
+      },
+      { 
+        platform: 'Apple', 
+        icon: 'fa-brands fa-apple', 
+        connected: !!linkedAccountsData.apple,
+        email: linkedAccountsData.apple?.email || null,
+        username: linkedAccountsData.apple?.username || null
+      }
+    ];
+
+    // Get account activity (simplified - use login history if available)
+    const activityHistory = (user.loginHistory || []).slice(0, 10).map(login => ({
+      action: `Login from ${login.device || 'Unknown device'}`,
+      time: login.loginAt || new Date(),
+      device: login.device || 'Unknown',
+      location: login.location || 'Unknown'
+    }));
+
+    // Format data for PDF
+    const data = {
+      profile: {
+        username: user.username,
+        displayName: user.profile?.displayName || '',
+        email: user.email,
+        bio: user.profile?.bio || '',
+        website: user.profile?.website || '',
+        isVerified: user.profile?.isVerified || false,
+        followers: user.profile?.followers || 0,
+        following: user.profile?.following || 0,
+        likes: user.profile?.likes || 0
+      },
+      accountInfo: {
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin || null,
+        accountStatus: 'Active',
+        emailVerified: user.emailVerified || false
+      },
+      settings: {
+        appSettings: user.appSettings || {}
+      },
+      linkedAccounts: linkedAccounts,
+      activityHistory: activityHistory
+    };
+
+    res.json({ success: true, ...data });
+  } catch (error) {
+    console.error('Error fetching download data:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch download data' });
+  }
+});
+
+// Get linked accounts (must be before /:id route)
+router.get('/linked-accounts', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('authProvider providerId appSettings');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Check appSettings for linked accounts
+    const linkedAccountsData = user.appSettings?.linkedAccounts || {};
+
+    const linkedAccounts = [
+      { 
+        platform: 'Google', 
+        icon: 'fa-brands fa-google', 
+        connected: user.authProvider === 'google' || !!linkedAccountsData.google,
+        email: linkedAccountsData.google?.email || (user.authProvider === 'google' ? user.email : null),
+        username: linkedAccountsData.google?.username || null
+      },
+      { 
+        platform: 'Facebook', 
+        icon: 'fa-brands fa-facebook', 
+        connected: user.authProvider === 'facebook' || !!linkedAccountsData.facebook,
+        email: linkedAccountsData.facebook?.email || (user.authProvider === 'facebook' ? user.email : null),
+        username: linkedAccountsData.facebook?.username || null
+      },
+      { 
+        platform: 'Instagram', 
+        icon: 'fa-brands fa-instagram', 
+        connected: !!linkedAccountsData.instagram,
+        email: linkedAccountsData.instagram?.email || null,
+        username: linkedAccountsData.instagram?.username || null
+      },
+      { 
+        platform: 'Twitter', 
+        icon: 'fa-brands fa-twitter', 
+        connected: !!linkedAccountsData.twitter,
+        email: linkedAccountsData.twitter?.email || null,
+        username: linkedAccountsData.twitter?.username || null
+      },
+      { 
+        platform: 'Apple', 
+        icon: 'fa-brands fa-apple', 
+        connected: !!linkedAccountsData.apple,
+        email: linkedAccountsData.apple?.email || null,
+        username: linkedAccountsData.apple?.username || null
+      }
+    ];
+
+    res.json({ success: true, linkedAccounts });
+  } catch (error) {
+    console.error('Error fetching linked accounts:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch linked accounts' });
+  }
+});
+
+// Get account activity (must be before /:id route)
+router.get('/account-activity', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('lastLogin createdAt loginHistory');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate activity log from user data
+    const activities = [
+      {
+        id: '1',
+        type: 'account_created',
+        description: 'Account created',
+        time: user.createdAt,
+        ip: 'N/A',
+        device: 'N/A'
+      }
+    ];
+
+    if (user.lastLogin) {
+      activities.push({
+        id: '2',
+        type: 'login',
+        description: 'Last login',
+        time: user.lastLogin,
+        ip: 'N/A',
+        device: 'N/A'
+      });
+    }
+
+    // Add login history if available
+    if (user.loginHistory && Array.isArray(user.loginHistory)) {
+      user.loginHistory.slice(0, 10).forEach((login, index) => {
+        activities.push({
+          id: `login_${index + 3}`,
+          type: 'login',
+          description: `Login from ${login.device || 'Unknown device'}`,
+          time: login.loginAt || new Date(),
+          ip: login.ipAddress || 'N/A',
+          device: login.device || 'N/A',
+          location: login.location || 'N/A'
+        });
+      });
+    }
+
+    res.json({ success: true, activities });
+  } catch (error) {
+    console.error('Error fetching account activity:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch account activity' });
+  }
+});
+
 // ==================== DYNAMIC ROUTES ====================
 
 // Get user profile
@@ -1249,34 +1453,10 @@ router.post('/profile-view/:userId', async (req, res) => {
   }
 });
 
-// Get linked accounts
-router.get('/linked-accounts', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('authProvider providerId');
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    const linkedAccounts = [
-      { platform: 'Google', icon: 'fa-brands fa-google', connected: user.authProvider === 'google' },
-      { platform: 'Facebook', icon: 'fa-brands fa-facebook', connected: user.authProvider === 'facebook' },
-      { platform: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
-      { platform: 'Twitter', icon: 'fa-brands fa-twitter', connected: false },
-      { platform: 'Apple', icon: 'fa-brands fa-apple', connected: false }
-    ];
-
-    res.json({ success: true, linkedAccounts });
-  } catch (error) {
-    console.error('Error fetching linked accounts:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to fetch linked accounts' });
-  }
-});
-
 // Link account
 router.post('/link-account', authMiddleware, async (req, res) => {
   try {
-    const { platform } = req.body;
+    const { platform, email, username } = req.body;
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -1284,8 +1464,33 @@ router.post('/link-account', authMiddleware, async (req, res) => {
     }
 
     // In production, this would handle OAuth flow
-    // For now, just return success
-    res.json({ success: true, message: `${platform} account linked successfully` });
+    // For demo purposes, we'll simulate linking by storing it in user's appSettings
+    if (!user.appSettings) {
+      user.appSettings = {};
+    }
+    if (!user.appSettings.linkedAccounts) {
+      user.appSettings.linkedAccounts = {};
+    }
+    
+    // Store linked account info
+    user.appSettings.linkedAccounts[platform.toLowerCase()] = {
+      email: email || null,
+      username: username || null,
+      linkedAt: new Date()
+    };
+    
+    user.markModified('appSettings');
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: `${platform} account linked successfully`,
+      linkedAccount: {
+        platform: platform,
+        email: email,
+        username: username
+      }
+    });
   } catch (error) {
     console.error('Error linking account:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to link account' });
@@ -1303,54 +1508,21 @@ router.post('/unlink-account', authMiddleware, async (req, res) => {
     }
 
     // Can't unlink if it's the only auth method
-    if (user.authProvider === platform && !user.password) {
+    if (user.authProvider === platform.toLowerCase() && !user.password) {
       return res.status(400).json({ success: false, message: 'Cannot unlink your only authentication method' });
     }
 
-    // In production, this would handle OAuth unlinking
+    // Remove from appSettings
+    if (user.appSettings?.linkedAccounts) {
+      delete user.appSettings.linkedAccounts[platform.toLowerCase()];
+      user.markModified('appSettings');
+      await user.save();
+    }
+
     res.json({ success: true, message: `${platform} account unlinked successfully` });
   } catch (error) {
     console.error('Error unlinking account:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to unlink account' });
-  }
-});
-
-// Get account activity
-router.get('/account-activity', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('lastLogin createdAt');
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Generate activity log from user data
-    const activities = [
-      {
-        id: '1',
-        type: 'account_created',
-        description: 'Account created',
-        time: user.createdAt,
-        ip: 'N/A',
-        device: 'N/A'
-      }
-    ];
-
-    if (user.lastLogin) {
-      activities.push({
-        id: '2',
-        type: 'login',
-        description: 'Last login',
-        time: user.lastLogin,
-        ip: 'N/A',
-        device: 'N/A'
-      });
-    }
-
-    res.json({ success: true, activities });
-  } catch (error) {
-    console.error('Error fetching account activity:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to fetch account activity' });
   }
 });
 

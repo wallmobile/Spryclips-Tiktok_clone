@@ -631,10 +631,21 @@ const ManageAccount = ({ onClose }) => {
                     type="button"
                     className="submit-btn"
                     onClick={async () => {
+                      let data = null;
                       try {
                         setSaving(true);
                         const response = await api.get('/api/users/download-data');
-                        const data = response.data;
+                        data = response.data;
+                        
+                        // Debug: Log data structure
+                        console.log('📥 Download data received:', data);
+                        console.log('📋 Profile data:', data.profile);
+                        console.log('📋 Account info:', data.accountInfo);
+                        
+                        // Validate data structure
+                        if (!data || !data.profile) {
+                          throw new Error('Invalid data structure received from server');
+                        }
                         
                         // Create PDF-ready HTML content
                         const htmlContent = `
@@ -710,22 +721,199 @@ const ManageAccount = ({ onClose }) => {
 </body>
 </html>`;
                         
-                        // Open in new window and trigger print (Save as PDF)
-                        const printWindow = window.open('', '_blank');
-                        printWindow.document.write(htmlContent);
-                        printWindow.document.close();
+                        // Debug: Log HTML content and data
+                        console.log('📄 HTML content length:', htmlContent.length);
+                        console.log('📄 Data being used:', {
+                          username: data.profile?.username,
+                          email: data.profile?.email,
+                          displayName: data.profile?.displayName,
+                          hasAccountInfo: !!data.accountInfo,
+                          hasSettings: !!data.settings,
+                          linkedAccountsCount: data.linkedAccounts?.length || 0,
+                          activityCount: data.activityHistory?.length || 0
+                        });
+                        console.log('📄 HTML preview (first 800 chars):', htmlContent.substring(0, 800));
                         
-                        // Wait for content to load then print
-                        printWindow.onload = () => {
-                          printWindow.print();
+                        // Load html2pdf.js from CDN if not already loaded
+                        if (!window.html2pdf) {
+                          const script = document.createElement('script');
+                          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                          script.async = true;
+                          await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                          });
+                        }
+                        
+                        // Extract styles from HTML
+                        const styleMatch = htmlContent.match(/<style[^>]*>([\s\S]*)<\/style>/i);
+                        const styles = styleMatch ? styleMatch[1] : '';
+                        
+                        // Extract body content from HTML string
+                        const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                        const bodyContent = bodyMatch ? bodyMatch[1] : htmlContent;
+                        
+                        // Create a temporary container with proper styling
+                        // Position it in viewport but behind everything (z-index -9999)
+                        const tempDiv = document.createElement('div');
+                        tempDiv.id = 'pdf-content-temp';
+                        tempDiv.style.position = 'fixed';
+                        tempDiv.style.left = '50%';
+                        tempDiv.style.top = '50%';
+                        tempDiv.style.transform = 'translate(-50%, -50%)';
+                        tempDiv.style.width = '800px';
+                        tempDiv.style.minHeight = '1000px';
+                        tempDiv.style.backgroundColor = '#ffffff';
+                        tempDiv.style.fontFamily = 'Arial, sans-serif';
+                        tempDiv.style.padding = '40px';
+                        tempDiv.style.overflow = 'visible';
+                        tempDiv.style.color = '#000000';
+                        tempDiv.style.opacity = '1';
+                        tempDiv.style.visibility = 'visible';
+                        tempDiv.style.pointerEvents = 'none';
+                        tempDiv.style.zIndex = '-9999';
+                        tempDiv.style.boxShadow = 'none';
+                        
+                        // Create style element with all styles
+                        const styleElement = document.createElement('style');
+                        styleElement.id = 'pdf-styles-temp';
+                        styleElement.textContent = `
+                          #pdf-content-temp {
+                            font-family: Arial, sans-serif;
+                            padding: 40px;
+                            max-width: 800px;
+                            margin: 0 auto;
+                            color: #000000;
+                            background: #ffffff;
+                          }
+                          #pdf-content-temp h1 {
+                            color: #FE2C55;
+                            text-align: center;
+                            border-bottom: 3px solid #FE2C55;
+                            padding-bottom: 15px;
+                          }
+                          #pdf-content-temp h2 {
+                            color: #333;
+                            margin-top: 30px;
+                            border-left: 4px solid #FE2C55;
+                            padding-left: 15px;
+                          }
+                          #pdf-content-temp .info-row {
+                            display: flex;
+                            padding: 10px 0;
+                            border-bottom: 1px solid #eee;
+                          }
+                          #pdf-content-temp .label {
+                            font-weight: bold;
+                            width: 150px;
+                            color: #666;
+                          }
+                          #pdf-content-temp .value {
+                            color: #333;
+                          }
+                          #pdf-content-temp .section {
+                            background: #f9f9f9;
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 15px 0;
+                          }
+                          #pdf-content-temp .activity-item {
+                            padding: 8px 0;
+                            border-bottom: 1px solid #eee;
+                          }
+                          #pdf-content-temp .footer {
+                            text-align: center;
+                            margin-top: 40px;
+                            color: #999;
+                            font-size: 12px;
+                          }
+                          #pdf-content-temp * {
+                            box-sizing: border-box;
+                          }
+                        `;
+                        document.head.appendChild(styleElement);
+                        
+                        // Set innerHTML and append to body
+                        tempDiv.innerHTML = bodyContent;
+                        document.body.appendChild(tempDiv);
+                        
+                        // Wait for content to render
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        // Verify content exists and is rendered
+                        if (!tempDiv.innerHTML || tempDiv.innerHTML.trim().length === 0) {
+                          throw new Error('PDF content is empty. Please check the data.');
+                        }
+                        
+                        // Verify element has content
+                        const hasContent = tempDiv.textContent && tempDiv.textContent.trim().length > 0;
+                        if (!hasContent) {
+                          throw new Error('PDF content is not rendering. Please check the data structure.');
+                        }
+                        
+                        console.log('📄 Content ready for PDF:', {
+                          innerHTMLLength: tempDiv.innerHTML.length,
+                          textContentLength: tempDiv.textContent.length,
+                          scrollHeight: tempDiv.scrollHeight,
+                          offsetHeight: tempDiv.offsetHeight
+                        });
+                        
+                        // Close modal immediately (before PDF generation)
+                        setShowDownloadData(false);
+                        
+                        // Wait a bit more for rendering
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        
+                        // Configure PDF options for direct download
+                        const opt = {
+                          margin: [10, 10, 10, 10],
+                          filename: `spryclips-data-${data.profile.username}-${new Date().toISOString().split('T')[0]}.pdf`,
+                          image: { type: 'jpeg', quality: 0.98 },
+                          html2canvas: { 
+                            scale: 2, 
+                            useCORS: true, 
+                            logging: false,
+                            backgroundColor: '#ffffff',
+                            width: 800,
+                            height: tempDiv.scrollHeight || 1200,
+                            windowWidth: 800,
+                            windowHeight: tempDiv.scrollHeight || 1200,
+                            x: 0,
+                            y: 0
+                          },
+                          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                          enableLinks: false
                         };
                         
-                        setSaveMessage('PDF ready! Select "Save as PDF" in print dialog.');
-                        setShowDownloadData(false);
-                        setTimeout(() => setSaveMessage(''), 5000);
-                      } catch (error) {
-                        setSaveMessage('Failed to generate PDF');
+                        // Generate and download PDF automatically (no window opening)
+                        await window.html2pdf()
+                          .set(opt)
+                          .from(tempDiv)
+                          .save();
+                        
+                        // Clean up temporary elements
+                        document.body.removeChild(tempDiv);
+                        document.head.removeChild(styleElement);
+                        
+                        setSaveMessage('PDF downloaded successfully!');
                         setTimeout(() => setSaveMessage(''), 3000);
+                      } catch (error) {
+                        console.error('PDF generation error:', error);
+                        console.error('Error details:', {
+                          message: error.message,
+                          stack: error.stack,
+                          data: data || 'No data available'
+                        });
+                        
+                        // Clean up on error
+                        const tempEl = document.getElementById('pdf-content-temp');
+                        const styleEl = document.getElementById('pdf-styles-temp');
+                        if (tempEl) document.body.removeChild(tempEl);
+                        if (styleEl) document.head.removeChild(styleEl);
+                        
+                        setSaveMessage(`Failed to generate PDF: ${error.message}. Please check console for details.`);
+                        setTimeout(() => setSaveMessage(''), 5000);
                       } finally {
                         setSaving(false);
                       }
