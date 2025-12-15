@@ -2068,7 +2068,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   >
                     <i className="fa-solid fa-lock"></i>
                     Private
-                  </button>
+                </button>
                 </div>
               </div>
             </div>
