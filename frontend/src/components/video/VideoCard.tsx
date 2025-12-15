@@ -84,8 +84,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
   const [videoDisplayWidth, setVideoDisplayWidth] = useState<number>(0);
+  const [retryCount, setRetryCount] = useState(0);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Apply saved settings on mount and when video changes
   useEffect(() => {
@@ -289,6 +291,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
       video.removeEventListener('ended', handleVideoEnd);
     };
   }, [isActive, src]);
+
+  // Cleanup retry timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Listen for playback speed changes from ActionBar
   useEffect(() => {
@@ -601,11 +612,70 @@ const VideoCard: React.FC<VideoCardProps> = ({
         controls={false}
         preload={preload}
         muted={globalMute} // Respect globalMute state
+        crossOrigin="anonymous"
         onError={(e) => {
-          console.error('Video loading error:', e);
-          setVideoError('Failed to load video. Please try again.');
+          const videoEl = e.target as HTMLVideoElement;
+          const error = videoEl.error;
+          let errorMessage = 'Failed to load video.';
+          
+          if (error) {
+            switch (error.code) {
+              case error.MEDIA_ERR_ABORTED:
+                errorMessage = 'Video loading was aborted.';
+                break;
+              case error.MEDIA_ERR_NETWORK:
+                errorMessage = 'Network error. Please check your connection.';
+                break;
+              case error.MEDIA_ERR_DECODE:
+                errorMessage = 'Video decoding error. The file may be corrupted.';
+                break;
+              case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage = 'Video format not supported or file not found.';
+                break;
+              default:
+                errorMessage = 'Failed to load video. Please try again.';
+            }
+          }
+          
+          console.error('Video loading error:', {
+            errorCode: error?.code,
+            errorMessage: error?.message,
+            videoSrc: src,
+            videoUrl: videoEl.src,
+            networkState: videoEl.networkState,
+            readyState: videoEl.readyState
+          });
+          
+          // Retry logic (max 2 retries)
+          if (retryCount < 2 && src) {
+            setRetryCount(prev => prev + 1);
+            setVideoError(`${errorMessage} Retrying...`);
+            
+            // Clear any existing retry timeout
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current);
+            }
+            
+            // Retry after a delay
+            retryTimeoutRef.current = setTimeout(() => {
+              if (videoRef.current && src) {
+                videoRef.current.load();
+                videoRef.current.play().catch(() => {});
+              }
+            }, 2000);
+          } else {
+            setVideoError(errorMessage);
+          }
         }}
         onLoadedData={() => {
+          setVideoError(null);
+          setRetryCount(0);
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+          }
+        }}
+        onCanPlay={() => {
           setVideoError(null);
         }}
       />
@@ -619,17 +689,56 @@ const VideoCard: React.FC<VideoCardProps> = ({
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            background: 'rgba(0, 0, 0, 0.8)',
+            background: 'rgba(0, 0, 0, 0.85)',
             color: '#fff',
-            padding: '1rem 1.5rem',
+            padding: '1.25rem 1.75rem',
             borderRadius: '12px',
             zIndex: 1000,
             textAlign: 'center',
             backdropFilter: 'blur(8px)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            maxWidth: '90%',
+            minWidth: '280px'
           }}>
-            <i className="fa-solid fa-exclamation-triangle" style={{ marginRight: '0.5rem' }}></i>
-            <span>{videoError}</span>
+            <i className="fa-solid fa-exclamation-triangle" style={{ 
+              marginRight: '0.5rem',
+              color: '#FF6B6B',
+              fontSize: '1.25rem'
+            }}></i>
+            <span style={{ fontSize: '0.95rem', lineHeight: '1.5', display: 'block' }}>{videoError}</span>
+            {retryCount >= 2 && src && (
+              <button
+                onClick={() => {
+                  setRetryCount(0);
+                  setVideoError(null);
+                  if (videoRef.current && src) {
+                    videoRef.current.load();
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
+                style={{
+                  marginTop: '0.75rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+              >
+                <i className="fa-solid fa-rotate" style={{ marginRight: '0.5rem' }}></i>
+                Retry
+              </button>
+            )}
           </div>
         )}
 
