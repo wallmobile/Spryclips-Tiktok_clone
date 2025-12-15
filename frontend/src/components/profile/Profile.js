@@ -1369,26 +1369,25 @@ const Profile = ({ onClose, username: viewUsername }) => {
           }
           break;
         case 'delete':
-          if (window.confirm('Are you sure you want to delete this video?')) {
-            try {
-              await deleteVideo(videoId);
-              const updatedVideos = videos.filter(v => v.id !== videoId);
-              setVideos(updatedVideos);
-              if (pinnedVideo?.id === videoId) {
-                setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
-              }
-              // Show success toast instead of alert
-              setToastMessage('Video deleted successfully!');
-              setShowToast(true);
-              setTimeout(() => {
-                setShowToast(false);
-              }, 3000);
-              // Refresh videos list
-              setTimeout(() => {
-                fetchVideos();
-              }, 500);
-            } catch (error) {
-              console.error('Error deleting video:', error);
+          try {
+            await deleteVideo(videoId);
+            const updatedVideos = videos.filter(v => v.id !== videoId);
+            setVideos(updatedVideos);
+            if (pinnedVideo?.id === videoId) {
+              setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+            }
+            // Show success toast instead of alert
+            setToastMessage('Video deleted successfully!');
+            setShowToast(true);
+            setTimeout(() => {
+              setShowToast(false);
+            }, 3000);
+            // Refresh videos list
+            setTimeout(() => {
+              fetchVideos();
+            }, 500);
+          } catch (error) {
+            console.error('Error deleting video:', error);
               // Show user-friendly error message
               let errorMessage = 'Failed to delete video. Please try again.';
               
@@ -1420,7 +1419,6 @@ const Profile = ({ onClose, username: viewUsername }) => {
               setTimeout(() => {
                 setShowToast(false);
               }, 5000);
-            }
           }
           break;
         case 'promote':
@@ -1642,6 +1640,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
             {isMyProfile && (
               <input
                 ref={bannerFileInputRef}
+                id="profile-banner-upload"
+                name="banner"
                 type="file"
                 accept="image/*"
                 onChange={handleBannerChange}
@@ -1700,6 +1700,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
             {isMyProfile && (
               <input
                 ref={fileInputRef}
+                id="profile-avatar-upload"
+                name="avatar"
                 type="file"
                 accept="image/*"
                 onChange={handleAvatarChange}
@@ -2006,6 +2008,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 <div className="search-input-wrapper">
                   <i className="fa-solid fa-magnifying-glass"></i>
                   <input
+                    id="profile-video-search"
+                    name="videoSearch"
                     type="text"
                     placeholder="Search videos..."
                     value={searchQuery}

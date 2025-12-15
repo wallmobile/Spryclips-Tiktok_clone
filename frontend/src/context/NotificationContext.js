@@ -63,11 +63,13 @@ export const NotificationProvider = ({ children }) => {
 
   const loadNotifications = useCallback(async () => {
     if (!user?.id) {
+      console.log('⚠️ Cannot load notifications: no user ID');
       setNotifications([]);
       setUnreadCount(0);
       return;
     }
 
+    console.log('📬 Loading notifications for user:', user.id);
     setLoading(true);
     try {
       const [listResponse, unreadResponse] = await Promise.all([
@@ -75,11 +77,34 @@ export const NotificationProvider = ({ children }) => {
         getUnreadCount()
       ]);
       
+      console.log('📬 Notification API responses:', {
+        listResponseKeys: Object.keys(listResponse || {}),
+        notificationsCount: listResponse?.notifications?.length || 0,
+        unreadCount: unreadResponse?.unreadCount || 0,
+        hasNotifications: !!listResponse?.notifications,
+        isArray: Array.isArray(listResponse?.notifications),
+        rawListResponse: listResponse
+      });
+      
       const rawEntries = Array.isArray(listResponse?.notifications)
         ? listResponse.notifications
         : Array.isArray(listResponse)
         ? listResponse
         : [];
+      
+      console.log('📬 Raw notification entries:', {
+        count: rawEntries.length,
+        types: rawEntries.map(n => n.type),
+        likesCount: rawEntries.filter(n => n.type === 'likes').length,
+        allNotifications: rawEntries.map(n => ({
+          id: n._id || n.id,
+          type: n.type,
+          message: n.message,
+          title: n.title,
+          createdAt: n.createdAt,
+          isRead: n.isRead || n.read
+        }))
+      });
       
       // Transform backend data to frontend format
       const entries = rawEntries.map(notif => ({
@@ -95,6 +120,27 @@ export const NotificationProvider = ({ children }) => {
         timestamp: notif.createdAt || notif.timestamp || new Date().toISOString(),
         metadata: notif.metadata || {}
       }));
+      
+      const likesNotifications = entries.filter(n => n.type === 'likes');
+      console.log('📬 Transformed notifications:', {
+        count: entries.length,
+        likesCount: likesNotifications.length,
+        allTypes: entries.map(n => n.type),
+        likesNotifications: likesNotifications.map(n => ({
+          id: n.id,
+          message: n.message,
+          title: n.title,
+          timestamp: n.timestamp,
+          username: n.username,
+          read: n.read
+        })),
+        allNotifications: entries.map(n => ({
+          id: n.id,
+          type: n.type,
+          message: n.message,
+          title: n.title
+        }))
+      });
       
       setNotifications(entries);
       const unread = unreadResponse?.unreadCount ?? entries.filter((n) => !n.read).length;
@@ -117,6 +163,21 @@ export const NotificationProvider = ({ children }) => {
     bootstrapFromStorage();
     loadNotifications();
   }, [bootstrapFromStorage, loadNotifications, user?.id]);
+
+  // Listen for notification refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (user?.id) {
+        console.log('🔄 Notification refresh event received, reloading notifications...');
+        loadNotifications();
+      }
+    };
+
+    window.addEventListener('notifications:refresh', handleRefresh);
+    return () => {
+      window.removeEventListener('notifications:refresh', handleRefresh);
+    };
+  }, [loadNotifications, user?.id]);
 
   // Request push notification permission
   useEffect(() => {

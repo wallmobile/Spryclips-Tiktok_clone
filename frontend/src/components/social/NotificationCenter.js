@@ -57,17 +57,24 @@ const NotificationCenter = ({ onClose }) => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'likes':
+      case 'like':
         return 'fa-solid fa-heart';
       case 'comments':
+      case 'comment':
         return 'fa-solid fa-comment';
       case 'follows':
+      case 'follow':
         return 'fa-solid fa-user-plus';
       case 'mentions':
+      case 'mention':
         return 'fa-solid fa-at';
       case 'live':
         return 'fa-solid fa-broadcast-tower';
       case 'shares':
         return 'fa-solid fa-share';
+      case 'video_upload':
+      case 'videoUpload':
+        return 'fa-solid fa-video';
       case 'system':
         return 'fa-solid fa-exclamation-triangle';
       default:
@@ -78,17 +85,24 @@ const NotificationCenter = ({ onClose }) => {
   const getNotificationColor = (type) => {
     switch (type) {
       case 'likes':
+      case 'like':
         return '#FF3B6E';
       case 'comments':
+      case 'comment':
         return '#007AFF';
       case 'follows':
+      case 'follow':
         return '#34C759';
       case 'mentions':
+      case 'mention':
         return '#FF9500';
       case 'live':
         return '#FF0000';
       case 'shares':
         return '#5856D6';
+      case 'video_upload':
+      case 'videoUpload':
+        return '#FF0050'; // TikTok pink for video uploads
       case 'system':
         return '#FF9500'; // Orange for warnings
       default:

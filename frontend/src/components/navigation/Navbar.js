@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
 import Login from '../auth/Login';
 import Signup from '../auth/Signup';
 import Profile from '../profile/Profile';
@@ -13,8 +12,7 @@ import './Navbar.css';
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
-  const { unreadCount } = useNotification();
-  const [activeOverlay, setActiveOverlay] = useState(null); // login, signup, profile, upload, notifications, balance, getApp
+  const [activeOverlay, setActiveOverlay] = useState(null); // login, signup, profile, upload, balance, getApp
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef(null);
 

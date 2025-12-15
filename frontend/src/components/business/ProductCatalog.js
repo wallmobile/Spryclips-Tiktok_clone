@@ -242,8 +242,10 @@ const ProductCatalog = ({ onClose }) => {
             </div>
             <div className="pc-modal-body">
               <div className="pc-form-group">
-                <label>Product Name *</label>
+                <label htmlFor="product-name-input">Product Name *</label>
                 <input
+                  id="product-name-input"
+                  name="productName"
                   type="text"
                   value={productForm.name}
                   onChange={e => setProductForm({...productForm, name: e.target.value})}
@@ -251,8 +253,10 @@ const ProductCatalog = ({ onClose }) => {
                 />
               </div>
               <div className="pc-form-group">
-                <label>Description</label>
+                <label htmlFor="product-description-textarea">Description</label>
                 <textarea
+                  id="product-description-textarea"
+                  name="productDescription"
                   value={productForm.description}
                   onChange={e => setProductForm({...productForm, description: e.target.value})}
                   placeholder="Product description"
@@ -261,8 +265,10 @@ const ProductCatalog = ({ onClose }) => {
               </div>
               <div className="pc-form-row">
                 <div className="pc-form-group">
-                  <label>Price *</label>
+                  <label htmlFor="product-price-input">Price *</label>
                   <input
+                    id="product-price-input"
+                    name="productPrice"
                     type="number"
                     value={productForm.price}
                     onChange={e => setProductForm({...productForm, price: e.target.value})}
@@ -271,8 +277,10 @@ const ProductCatalog = ({ onClose }) => {
                   />
                 </div>
                 <div className="pc-form-group">
-                  <label>Compare at Price</label>
+                  <label htmlFor="product-compare-price-input">Compare at Price</label>
                   <input
+                    id="product-compare-price-input"
+                    name="productComparePrice"
                     type="number"
                     value={productForm.comparePrice}
                     onChange={e => setProductForm({...productForm, comparePrice: e.target.value})}
@@ -283,8 +291,10 @@ const ProductCatalog = ({ onClose }) => {
               </div>
               <div className="pc-form-row">
                 <div className="pc-form-group">
-                  <label>Category</label>
+                  <label htmlFor="product-category-select">Category</label>
                   <select
+                    id="product-category-select"
+                    name="productCategory"
                     value={productForm.category}
                     onChange={e => setProductForm({...productForm, category: e.target.value})}
                   >
@@ -295,8 +305,10 @@ const ProductCatalog = ({ onClose }) => {
                   </select>
                 </div>
                 <div className="pc-form-group">
-                  <label>Stock Quantity</label>
+                  <label htmlFor="product-stock-input">Stock Quantity</label>
                   <input
+                    id="product-stock-input"
+                    name="productStock"
                     type="number"
                     value={productForm.stock}
                     onChange={e => setProductForm({...productForm, stock: e.target.value})}
@@ -305,8 +317,10 @@ const ProductCatalog = ({ onClose }) => {
                 </div>
               </div>
               <div className="pc-form-group">
-                <label>SKU</label>
+                <label htmlFor="product-sku-input">SKU</label>
                 <input
+                  id="product-sku-input"
+                  name="productSku"
                   type="text"
                   value={productForm.sku}
                   onChange={e => setProductForm({...productForm, sku: e.target.value})}

@@ -242,6 +242,46 @@
   width: 40px;
 }
 
+.notification-settings-view-btn {
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notification-settings-view-btn i {
+  color: #fff !important;
+  font-size: 18px;
+}
+
+.notification-settings-view-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.notification-badge-small {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #FF4757;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid #fff;
+}
+
 /* Content */
 .notification-settings-content {
   padding: 24px;

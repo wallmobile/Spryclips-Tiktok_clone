@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import api from '../../config/axios';
 import './NotificationSettings.css';
 
 const NotificationSettings = ({ onClose }) => {
-  useAuth(); // Get auth context but don't need to destructure user
+  const navigate = useNavigate();
+  const { unreadCount } = useNotification();
   
   const [notificationSettings, setNotificationSettings] = useState({
     likes: {
@@ -246,7 +249,19 @@ const NotificationSettings = ({ onClose }) => {
             <i className="fa-solid fa-x"></i>
           </button>
           <h2>Notification Settings</h2>
-          <div className="notification-settings-header-placeholder"></div>
+          <button 
+            className="notification-settings-view-btn" 
+            onClick={() => {
+              onClose();
+              navigate('/more/activity-center');
+            }}
+            title="View Notifications"
+          >
+            <i className="fa-solid fa-bell"></i>
+            {unreadCount > 0 && (
+              <span className="notification-badge-small">{unreadCount}</span>
+            )}
+          </button>
         </div>
 
         {/* Save Message */}

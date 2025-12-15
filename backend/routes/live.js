@@ -547,13 +547,13 @@ router.post('/:streamId/gift', authMiddleware, async (req, res) => {
 
     // Create notification
     const notification = new Notification({
-      recipient: liveStream.streamer._id,
-      sender: userId,
+      user: liveStream.streamer._id,
       type: 'live',
+      title: 'Gift Received',
       message: `${req.user.username} sent you a gift on your live stream`,
-      link: `/live/${streamId}`,
-      entityId: streamId,
-      entityModel: 'LiveStream',
+      relatedUser: userId,
+      relatedVideo: null,
+      metadata: { streamId: streamId.toString() }
     });
 
     await notification.save();

@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Story = require('../models/Story');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
@@ -109,6 +110,78 @@ router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
     
     if (music) {
       await story.populate('music');
+    }
+
+    // Notify followers about new story
+    try {
+      const Notification = require('../models/Notification');
+      const storyUser = await User.findById(userId).select('username followers');
+      
+      console.log(`📖 Story upload notification check:`, {
+        userId: userId.toString(),
+        username: storyUser?.username,
+        followersCount: storyUser?.followers?.length || 0
+      });
+      
+      if (storyUser && storyUser.followers && Array.isArray(storyUser.followers) && storyUser.followers.length > 0) {
+        console.log(`📬 Creating notifications for ${storyUser.followers.length} followers`);
+        
+        const notificationPromises = storyUser.followers.map(async (followerId) => {
+          try {
+            // Handle both ObjectId and populated user
+            const followerIdStr = followerId._id ? followerId._id.toString() : followerId.toString();
+            
+            // Convert to ObjectId if it's a string
+            const followerObjectId = mongoose.Types.ObjectId.isValid(followerIdStr) 
+              ? new mongoose.Types.ObjectId(followerIdStr)
+              : followerIdStr;
+            
+            const notification = new Notification({
+              user: followerObjectId,
+              type: 'story_upload',
+              title: 'New Story',
+              message: `${storyUser.username} posted a new story`,
+              relatedUser: userId,
+              relatedVideo: null,
+              metadata: { storyId: story._id.toString() }
+            });
+            
+            const savedNotification = await notification.save();
+            console.log(`✅ Story notification created for follower ${followerIdStr}:`, {
+              notificationId: savedNotification._id.toString(),
+              userId: savedNotification.user.toString(),
+              type: savedNotification.type,
+              message: savedNotification.message,
+              createdAt: savedNotification.createdAt
+            });
+            
+            // Verify notification was saved
+            const verifyNotif = await Notification.findById(savedNotification._id);
+            if (verifyNotif) {
+              console.log(`✅ Story notification verified in database for follower ${followerIdStr}`);
+            } else {
+              console.error(`❌ Story notification not found after save for follower ${followerIdStr}`);
+            }
+          } catch (err) {
+            console.error(`❌ Error creating story notification for follower ${followerId}:`, {
+              error: err.message,
+              stack: err.stack,
+              followerId: followerId.toString()
+            });
+          }
+        });
+        
+        await Promise.all(notificationPromises);
+        console.log(`✅ Completed notifying ${storyUser.followers.length} followers about new story`);
+      } else {
+        console.log(`⏭️ No followers to notify (followers: ${storyUser?.followers?.length || 0})`);
+      }
+    } catch (notifError) {
+      console.error('❌ Error notifying followers about story:', {
+        error: notifError.message,
+        stack: notifError.stack
+      });
+      // Don't fail story creation if notification fails
     }
 
     console.log(`✅ Story created successfully: ${story._id} by user ${userId}`);
@@ -399,13 +472,13 @@ router.post('/:storyId/view', authMiddleware, async (req, res) => {
       // Create notification if not the story owner
       if (story.user.toString() !== userId.toString()) {
         const notification = new Notification({
-          recipient: story.user,
-          sender: userId,
+          user: story.user,
           type: 'system',
+          title: 'Story Viewed',
           message: `${req.user.username} viewed your story`,
-          link: `/stories/${storyId}`,
-          entityId: storyId,
-          entityModel: 'Story',
+          relatedUser: userId,
+          relatedVideo: null,
+          metadata: { storyId: storyId.toString() }
         });
         await notification.save();
       }
@@ -428,12 +501,20 @@ router.post('/:storyId/view', authMiddleware, async (req, res) => {
 
 // ==================== REACT TO STORY ====================
 router.post('/:storyId/react', authMiddleware, async (req, res) => {
+  console.log(`🔥 STORY REACTION ENDPOINT HIT:`, {
+    storyId: req.params.storyId,
+    userId: req.user._id?.toString(),
+    username: req.user.username,
+    emoji: req.body.emoji,
+    timestamp: new Date().toISOString()
+  });
+  
   try {
     const storyId = req.params.storyId;
     const userId = req.user._id;
     const { emoji } = req.body;
 
-    const story = await Story.findById(storyId);
+    let story = await Story.findById(storyId);
 
     if (!story) {
       return res.status(404).json({
@@ -442,45 +523,212 @@ router.post('/:storyId/react', authMiddleware, async (req, res) => {
       });
     }
 
+    // Always populate story user to ensure we have the correct user ID
+    if (!story.user || !story.user._id || typeof story.user === 'object' && !story.user._id) {
+      story = await Story.findById(storyId).populate('user', '_id username');
+    }
+
+    // Get story owner ID (handle both ObjectId and populated)
+    const storyOwnerId = story.user._id || story.user;
+    const storyOwnerIdStr = storyOwnerId.toString();
+    const userIdStr = userId.toString();
+
+    console.log(`📖 Story reaction request:`, {
+      storyId: storyId.toString(),
+      storyOwnerId: storyOwnerIdStr,
+      currentUserId: userIdStr,
+      username: req.user.username,
+      storyUserType: typeof story.user,
+      storyUserIsObject: story.user instanceof mongoose.Types.ObjectId,
+      storyUserHasId: !!story.user._id,
+      storyUserRaw: story.user
+    });
+
     // Check if already reacted
     const existingReaction = story.reactions.find(
-      reaction => reaction.user.toString() === userId.toString()
+      reaction => reaction.user.toString() === userIdStr
     );
 
+    const isNewReaction = !existingReaction;
+    const isOwnStory = storyOwnerIdStr === userIdStr;
+
+    console.log(`📖 Reaction check:`, {
+      isNewReaction,
+      isOwnStory,
+      existingReactionCount: story.reactions.length,
+      existingReaction: existingReaction ? 'found' : 'not found',
+      userIdStr,
+      storyOwnerIdStr,
+      reactions: story.reactions.map(r => ({
+        userId: r.user?.toString(),
+        emoji: r.emoji
+      }))
+    });
+
+    let isRemoved = false;
+    const reactionEmoji = emoji || '❤️';
+    
     if (existingReaction) {
-      // Update reaction
-      existingReaction.emoji = emoji || '❤️';
-      existingReaction.createdAt = new Date();
+      // If same emoji, remove reaction (unlike)
+      if (existingReaction.emoji === reactionEmoji) {
+        story.reactions = story.reactions.filter(
+          reaction => reaction.user.toString() !== userIdStr
+        );
+        isRemoved = true;
+        console.log(`🗑️ Removed reaction (unlike) for story ${storyId}`);
+      } else {
+        // Update reaction with different emoji
+        existingReaction.emoji = reactionEmoji;
+        existingReaction.createdAt = new Date();
+        console.log(`🔄 Updated reaction emoji for story ${storyId}`);
+      }
     } else {
       // Add new reaction
       story.reactions.push({
         user: userId,
-        emoji: emoji || '❤️',
+        emoji: reactionEmoji,
         createdAt: new Date(),
       });
+      console.log(`➕ Added new reaction for story ${storyId}`);
     }
 
     await story.save();
 
-    // Create notification if not the story owner
-    if (story.user.toString() !== userId.toString()) {
-      const notification = new Notification({
-        recipient: story.user,
-        sender: userId,
-        type: 'like',
-        message: `${req.user.username} reacted to your story`,
-        link: `/stories/${storyId}`,
-        entityId: storyId,
-        entityModel: 'Story',
+    // Create notification only for NEW reactions (not updates or removals) - even for own stories
+    if (isNewReaction && !isRemoved) {
+      try {
+        console.log(`📬 Creating story reaction notification:`, {
+          storyId: storyId.toString(),
+          storyOwnerId: storyOwnerIdStr,
+          reactorId: userIdStr,
+          reactorUsername: req.user.username,
+          isNewReaction,
+          isOwnStory
+        });
+
+        // Ensure storyOwnerId is a valid ObjectId - use userId directly for consistency
+        const notificationUserId = mongoose.Types.ObjectId.isValid(storyOwnerIdStr) 
+          ? new mongoose.Types.ObjectId(storyOwnerIdStr)
+          : (storyOwnerId instanceof mongoose.Types.ObjectId ? storyOwnerId : new mongoose.Types.ObjectId(storyOwnerIdStr));
+
+        console.log(`📝 Creating notification with:`, {
+          user: notificationUserId.toString(),
+          type: 'likes',
+          storyOwnerIdStr,
+          storyOwnerIdType: typeof storyOwnerId,
+          notificationUserIdType: typeof notificationUserId,
+          notificationUserIdIsObjectId: notificationUserId instanceof mongoose.Types.ObjectId,
+          currentUserId: userId.toString(),
+          userIdType: typeof userId,
+          userIdIsObjectId: userId instanceof mongoose.Types.ObjectId,
+          userIdsMatch: notificationUserId.toString() === userId.toString()
+        });
+
+        const notification = new Notification({
+          user: notificationUserId,
+          type: 'likes',
+          title: 'Story Reaction',
+          message: `${req.user.username} reacted to your story`,
+          relatedUser: userId,
+          relatedVideo: null,
+          metadata: { storyId: storyId.toString() }
+        });
+        
+        const savedNotification = await notification.save();
+        console.log(`✅ Story reaction notification created successfully:`, {
+          notificationId: savedNotification._id.toString(),
+          userId: savedNotification.user.toString(),
+          userIdType: typeof savedNotification.user,
+          type: savedNotification.type,
+          message: savedNotification.message,
+          createdAt: savedNotification.createdAt,
+          relatedUser: savedNotification.relatedUser?.toString()
+        });
+
+        // Verify notification was saved by querying it
+        const verifyNotification = await Notification.findById(savedNotification._id);
+        if (verifyNotification) {
+          console.log(`✅ Notification verified in database:`, {
+            id: verifyNotification._id.toString(),
+            user: verifyNotification.user.toString(),
+            userType: typeof verifyNotification.user,
+            type: verifyNotification.type,
+            isRead: verifyNotification.isRead
+          });
+          
+          // Also verify it can be found by user query using both ObjectId and string
+          const userNotificationsById = await Notification.find({ 
+            user: notificationUserId,
+            type: 'likes'
+          }).limit(5).sort({ createdAt: -1 });
+          
+          const userNotificationsByString = await Notification.find({ 
+            user: notificationUserId.toString(),
+            type: 'likes'
+          }).limit(5).sort({ createdAt: -1 });
+          
+          console.log(`✅ Notification query results:`, {
+            queryByObjectId: {
+              count: userNotificationsById.length,
+              found: userNotificationsById.length > 0,
+              notifications: userNotificationsById.map(n => ({
+                id: n._id.toString(),
+                userId: n.user.toString(),
+                message: n.message,
+                createdAt: n.createdAt
+              }))
+            },
+            queryByString: {
+              count: userNotificationsByString.length,
+              found: userNotificationsByString.length > 0,
+              notifications: userNotificationsByString.map(n => ({
+                id: n._id.toString(),
+                userId: n.user.toString(),
+                message: n.message,
+                createdAt: n.createdAt
+              }))
+            }
+          });
+        } else {
+          console.error(`❌ Notification not found in database after save!`);
+        }
+      } catch (notifError) {
+        console.error('❌ Error creating story reaction notification:', {
+          error: notifError.message,
+          stack: notifError.stack,
+          storyId: storyId.toString(),
+          storyOwnerId: storyOwnerIdStr,
+          userId: userIdStr
+        });
+        // Don't fail the reaction if notification fails
+      }
+    } else {
+      console.log(`⏭️ Skipping notification creation:`, {
+        isNewReaction,
+        isOwnStory,
+        storyOwnerId: storyOwnerIdStr,
+        reactorId: userIdStr
       });
-      await notification.save();
     }
 
-    res.json({
+    const responseData = {
       success: true,
       story,
-      message: 'Reaction added successfully',
+      message: isRemoved ? 'Reaction removed successfully' : 'Reaction added successfully',
+      isNewReaction: isNewReaction && !isRemoved, // Include this so frontend knows if notification was created
+      isRemoved, // Let frontend know if reaction was removed
+    };
+    
+    console.log(`📤 Sending story reaction response:`, {
+      success: responseData.success,
+      isNewReaction: responseData.isNewReaction,
+      isRemoved: responseData.isRemoved,
+      storyId: storyId.toString(),
+      reactionsCount: story.reactions.length,
+      responseKeys: Object.keys(responseData)
     });
+    
+    res.json(responseData);
   } catch (error) {
     console.error('Error reacting to story:', error);
     res.status(500).json({
@@ -529,13 +777,13 @@ router.post('/:storyId/reply', authMiddleware, async (req, res) => {
 
     // Create notification
     const notification = new Notification({
-      recipient: storyOwnerId,
-      sender: userId,
-      type: 'comment',
+      user: storyOwnerId,
+      type: 'comments',
+      title: 'Story Reply',
       message: `${req.user.username} replied to your story`,
-      link: `/stories/${storyId}`,
-      entityId: storyId,
-      entityModel: 'Story',
+      relatedUser: userId,
+      relatedVideo: null,
+      metadata: { storyId: storyId.toString() }
     });
     await notification.save();
 

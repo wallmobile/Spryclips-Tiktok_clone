@@ -18,6 +18,7 @@ const notificationSchema = new mongoose.Schema({
       'mention',
       'mentions',
       'video_upload',
+      'story_upload',
       'comment_reply',
       'video_shared',
       'video_liked',

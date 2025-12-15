@@ -263,6 +263,92 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     // Don't throw - video is saved, just log the error
   }
 
+  // Notify followers about new video
+  try {
+    const Notification = require('../models/Notification');
+    const videoUser = await User.findById(req.user._id).select('username followers');
+    
+    console.log(`📹 Video upload notification check:`, {
+      userId: req.user._id.toString(),
+      username: videoUser?.username,
+      followersCount: videoUser?.followers?.length || 0
+    });
+    
+    if (videoUser && videoUser.followers && Array.isArray(videoUser.followers) && videoUser.followers.length > 0) {
+      console.log(`📬 Creating notifications for ${videoUser.followers.length} followers`);
+      
+      const notificationPromises = videoUser.followers.map(async (followerId) => {
+        try {
+          // Handle both ObjectId and populated user
+          const followerIdStr = followerId._id ? followerId._id.toString() : followerId.toString();
+          
+          // Convert to ObjectId if it's a string
+          const followerObjectId = mongoose.Types.ObjectId.isValid(followerIdStr) 
+            ? new mongoose.Types.ObjectId(followerIdStr)
+            : followerIdStr;
+          
+          const notification = new Notification({
+            user: followerObjectId,
+            type: 'video_upload',
+            title: 'New Video',
+            message: `${videoUser.username} posted a new video`,
+            relatedUser: req.user._id,
+            relatedVideo: video._id,
+            metadata: { videoTitle: caption?.substring(0, 50) || '' }
+          });
+          
+          const savedNotification = await notification.save();
+          console.log(`✅ Notification created for follower ${followerIdStr}:`, {
+            notificationId: savedNotification._id.toString(),
+            userId: savedNotification.user.toString(),
+            userIdType: typeof savedNotification.user,
+            userIdIsObjectId: savedNotification.user instanceof mongoose.Types.ObjectId,
+            type: savedNotification.type,
+            message: savedNotification.message,
+            createdAt: savedNotification.createdAt
+          });
+          
+          // Verify notification was saved and can be queried
+          const verifyNotif = await Notification.findById(savedNotification._id);
+          if (verifyNotif) {
+            console.log(`✅ Notification verified in database for follower ${followerIdStr}`);
+            
+            // Also verify it can be found by user query
+            const userQueryResult = await Notification.find({
+              user: followerObjectId,
+              type: 'video_upload'
+            }).limit(1).sort({ createdAt: -1 });
+            
+            console.log(`🔍 User query verification for ${followerIdStr}:`, {
+              found: userQueryResult.length > 0,
+              count: userQueryResult.length,
+              notificationId: userQueryResult[0]?._id?.toString()
+            });
+          } else {
+            console.error(`❌ Notification not found after save for follower ${followerIdStr}`);
+          }
+        } catch (err) {
+          console.error(`❌ Error creating video notification for follower ${followerId}:`, {
+            error: err.message,
+            stack: err.stack,
+            followerId: followerId.toString()
+          });
+        }
+      });
+      
+      await Promise.all(notificationPromises);
+      console.log(`✅ Completed notifying ${videoUser.followers.length} followers about new video`);
+    } else {
+      console.log(`⏭️ No followers to notify (followers: ${videoUser?.followers?.length || 0})`);
+    }
+  } catch (notifError) {
+    console.error('❌ Error notifying followers about video:', {
+      error: notifError.message,
+      stack: notifError.stack
+    });
+    // Don't fail video upload if notification fails
+  }
+
   // Generate a basic thumbnail synchronously for immediate display (first frame)
   let thumbnailUrl = '';
   try {

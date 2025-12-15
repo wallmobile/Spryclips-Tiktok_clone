@@ -77,13 +77,13 @@ router.post('/:videoId/collaborate', authMiddleware, async (req, res) => {
 
     // Create notification
     const notification = new Notification({
-      recipient: recipientId,
-      sender: userId,
+      user: recipientId,
       type: 'system',
+      title: 'Collaboration Request',
       message: `${req.user.username} requested collaboration on a video`,
-      link: `/videos/${videoId}`,
-      entityId: collaboration._id,
-      entityModel: 'Collaboration',
+      relatedUser: userId,
+      relatedVideo: videoId,
+      metadata: { collaborationId: collaboration._id.toString() }
     });
     await notification.save();
 
@@ -154,13 +154,13 @@ router.post('/:collaborationId/accept', authMiddleware, async (req, res) => {
 
     // Create notification
     const notification = new Notification({
-      recipient: collaboration.requester,
-      sender: userId,
+      user: collaboration.requester,
       type: 'system',
+      title: 'Collaboration Accepted',
       message: `${req.user.username} accepted your collaboration request`,
-      link: `/videos/${collaboration.video._id}`,
-      entityId: collaborationId,
-      entityModel: 'Collaboration',
+      relatedUser: userId,
+      relatedVideo: collaboration.video._id,
+      metadata: { collaborationId: collaborationId.toString() }
     });
     await notification.save();
 

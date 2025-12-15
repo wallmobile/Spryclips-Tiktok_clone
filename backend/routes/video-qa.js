@@ -42,13 +42,13 @@ router.post('/:videoId/qa', authMiddleware, async (req, res) => {
     // Create notification for video owner
     if (video.user.toString() !== userId.toString()) {
       const notification = new Notification({
-        recipient: video.user,
-        sender: userId,
+        user: video.user,
         type: 'system',
+        title: 'New Question',
         message: `${req.user.username} asked a question on your video`,
-        link: `/videos/${videoId}`,
-        entityId: videoId,
-        entityModel: 'Video',
+        relatedUser: userId,
+        relatedVideo: videoId,
+        metadata: { videoId: videoId.toString() }
       });
       await notification.save();
     }
@@ -188,13 +188,13 @@ router.post('/:videoId/qa/:questionId/answer', authMiddleware, async (req, res) 
     // Create notification for question asker
     if (qa.askedBy.toString() !== userId.toString()) {
       const notification = new Notification({
-        recipient: qa.askedBy,
-        sender: userId,
+        user: qa.askedBy,
         type: 'system',
+        title: 'Question Answered',
         message: `${req.user.username} answered your question`,
-        link: `/videos/${videoId}`,
-        entityId: questionId,
-        entityModel: 'VideoQA',
+        relatedUser: userId,
+        relatedVideo: videoId,
+        metadata: { questionId: questionId.toString() }
       });
       await notification.save();
     }

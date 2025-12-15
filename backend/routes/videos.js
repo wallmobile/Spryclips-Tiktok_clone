@@ -147,11 +147,12 @@ router.post(
       
       // Create notification for video owner (only for likes, not unlikes)
       if (video.user && video.user._id.toString() !== userId) {
+        const likerUser = await User.findById(req.user._id).select('username');
         await createNotification({
           userId: video.user._id,
           type: 'likes',
           title: 'New Like',
-          message: 'liked your video',
+          message: `${likerUser?.username || 'Someone'} liked your video`,
           relatedUserId: req.user._id,
           relatedVideoId: video._id,
           metadata: { videoTitle: video.description?.substring(0, 50) }

@@ -271,27 +271,80 @@ const StoryViewer = ({ storiesByUser, startIndex = 0, onClose }) => {
     const storyId = currentStory._id || currentStory.id;
     console.log('❤️ Reacting to story:', { storyId, emoji });
     
+    // Check if user already reacted
+    const alreadyReacted = displayStory?.reactions?.some(r => 
+      (r.user?._id || r.user?.id || r.user) === user?._id
+    );
+    
     try {
       const response = await reactToStory(storyId, emoji);
-      console.log('✅ Reaction successful:', response);
+      console.log('✅ Reaction successful:', {
+        success: response?.success,
+        isNewReaction: response?.isNewReaction,
+        isRemoved: response?.isRemoved,
+        storyReactionsCount: response?.story?.reactions?.length || 0,
+        responseKeys: Object.keys(response || {}),
+        fullResponse: response
+      });
       
-      // Update reactions state
-      setReactions(prev => ({
-        ...prev,
-        [storyId]: emoji
-      }));
+      // Update reactions state - remove if unlike, add if like
+      if (response?.isRemoved) {
+        setReactions(prev => {
+          const newReactions = { ...prev };
+          delete newReactions[storyId];
+          return newReactions;
+        });
+        console.log('🗑️ Reaction removed (unlike)');
+      } else {
+        setReactions(prev => ({
+          ...prev,
+          [storyId]: emoji
+        }));
+        console.log('➕ Reaction added/updated');
+      }
+      
+      // Refresh notifications if this is a new reaction (not an update)
+      // Use backend's isNewReaction flag for accuracy
+      const backendIsNewReaction = response?.isNewReaction;
+      const isNewReaction = backendIsNewReaction !== false && !alreadyReacted;
+      
+      console.log('📊 Reaction refresh check:', {
+        isNewReaction,
+        backendIsNewReaction,
+        alreadyReacted,
+        willRefresh: isNewReaction || backendIsNewReaction === true,
+        responseKeys: Object.keys(response || {}),
+        responseIsNewReaction: response?.isNewReaction
+      });
+      
+      // Always refresh if backend says it's a new reaction, or if frontend thinks it's new
+      if (isNewReaction || backendIsNewReaction === true) {
+        console.log('✅ Triggering notification refresh - isNewReaction:', isNewReaction, 'backendIsNewReaction:', backendIsNewReaction);
+        // Add a small delay to ensure backend has saved the notification
+        setTimeout(() => {
+          // Dispatch event to refresh notifications
+          window.dispatchEvent(new CustomEvent('notifications:refresh'));
+          console.log('🔄 Dispatched notification refresh event for new story reaction');
+        }, 500);
+      } else {
+        console.log('⏭️ Skipping notification refresh - not a new reaction');
+      }
       
       // Update story details if available
       if (response?.story) {
         setStoryDetails(response.story);
+        console.log('📝 Story details updated:', {
+          reactionsCount: response.story.reactions?.length || 0,
+          isRemoved: response.isRemoved
+        });
       } else {
         // Refresh story details to get updated reactions
-      try {
+        try {
           const detailsResponse = await api.get(`/api/stories/${storyId}`);
           if (detailsResponse.data?.story) {
             setStoryDetails(detailsResponse.data.story);
-        }
-      } catch (fetchError) {
+          }
+        } catch (fetchError) {
           console.error('⚠️ Error fetching updated story details:', fetchError);
         }
       }

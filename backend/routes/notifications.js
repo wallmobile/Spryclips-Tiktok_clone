@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Video = require('../models/Video');
@@ -14,13 +15,33 @@ router.get('/', authMiddleware, async (req, res) => {
     const type = req.query.type; // Filter by type
     const unreadOnly = req.query.unreadOnly === 'true';
 
-    let query = { user: req.user._id };
+    // Use both ObjectId and string format for query to handle any format issues
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+    
+    // Try querying with both ObjectId and string
+    let query = { 
+      $or: [
+        { user: userId },
+        { user: userIdStr }
+      ]
+    };
+    
     if (type) {
       query.type = type;
     }
     if (unreadOnly) {
       query.isRead = false;
     }
+
+    console.log(`📬 Fetching notifications for user ${userIdStr}:`, {
+      userIdType: typeof userId,
+      userIdIsObjectId: userId instanceof mongoose.Types.ObjectId,
+      query,
+      limit,
+      skip,
+      type
+    });
 
     const notifications = await Notification.find(query)
       .populate('relatedUser', 'username profile.avatar profile.displayName')
@@ -30,11 +51,107 @@ router.get('/', authMiddleware, async (req, res) => {
       .limit(limit)
       .skip(skip)
       .lean();
-
-    const unreadCount = await Notification.countDocuments({
-      user: req.user._id,
-      isRead: false
+    
+    // Also check with direct user query for debugging
+    const directQueryNotifications = await Notification.find({ user: userId })
+      .limit(5)
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    const stringQueryNotifications = await Notification.find({ user: userIdStr })
+      .limit(5)
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    console.log(`🔍 Notification query debug:`, {
+      orQueryCount: notifications.length,
+      directObjectIdQueryCount: directQueryNotifications.length,
+      stringQueryCount: stringQueryNotifications.length,
+      userId: userIdStr,
+      sampleNotificationUser: notifications[0]?.user?.toString() || 'none'
     });
+
+    // Count unread with both ObjectId and string
+    const unreadCount = await Notification.countDocuments({
+      $or: [
+        { user: userId, isRead: false },
+        { user: userIdStr, isRead: false }
+      ]
+    });
+
+    console.log(`✅ Found ${notifications.length} notifications for user ${userIdStr} (${unreadCount} unread)`);
+    
+    // Log details of 'likes' type notifications for debugging
+    const likesNotifications = notifications.filter(n => n.type === 'likes');
+    const videoUploadNotifications = notifications.filter(n => n.type === 'video_upload');
+    const storyUploadNotifications = notifications.filter(n => n.type === 'story_upload');
+    
+    console.log(`📊 Notification type breakdown:`, {
+      total: notifications.length,
+      likes: likesNotifications.length,
+      videoUpload: videoUploadNotifications.length,
+      storyUpload: storyUploadNotifications.length,
+      other: notifications.length - likesNotifications.length - videoUploadNotifications.length - storyUploadNotifications.length
+    });
+    
+    if (likesNotifications.length > 0) {
+      console.log(`📊 Likes notifications found:`, likesNotifications.map(n => ({
+        id: n._id,
+        type: n.type,
+        message: n.message,
+        createdAt: n.createdAt,
+        isRead: n.isRead,
+        relatedUser: n.relatedUser?.username || n.relatedUser?._id
+      })));
+    } else {
+      console.log(`⚠️ No 'likes' type notifications found in results`);
+      
+      // Check if there are any 'likes' notifications in database for this user
+      const allLikesNotifications = await Notification.find({
+        $or: [{ user: userId }, { user: userIdStr }],
+        type: 'likes'
+      }).sort({ createdAt: -1 }).limit(5).lean();
+      
+      console.log(`🔍 Total 'likes' notifications in database for user: ${allLikesNotifications.length}`);
+      if (allLikesNotifications.length > 0) {
+        console.log(`📋 Recent 'likes' notifications:`, allLikesNotifications.map(n => ({
+          id: n._id,
+          message: n.message,
+          createdAt: n.createdAt,
+          isRead: n.isRead,
+          userId: n.user?.toString()
+        })));
+      }
+    }
+    
+    if (videoUploadNotifications.length > 0) {
+      console.log(`📹 Video upload notifications found:`, videoUploadNotifications.map(n => ({
+        id: n._id,
+        message: n.message,
+        createdAt: n.createdAt,
+        isRead: n.isRead,
+        relatedUser: n.relatedUser?.username || n.relatedUser?._id,
+        relatedVideo: n.relatedVideo?._id || n.relatedVideo
+      })));
+    } else {
+      console.log(`⚠️ No 'video_upload' type notifications found in results`);
+      
+      // Check if there are any 'video_upload' notifications in database
+      const allVideoUploadNotifications = await Notification.find({
+        $or: [{ user: userId }, { user: userIdStr }],
+        type: 'video_upload'
+      }).sort({ createdAt: -1 }).limit(5).lean();
+      
+      console.log(`🔍 Total 'video_upload' notifications in database: ${allVideoUploadNotifications.length}`);
+      if (allVideoUploadNotifications.length > 0) {
+        console.log(`📋 Recent 'video_upload' notifications:`, allVideoUploadNotifications.map(n => ({
+          id: n._id,
+          message: n.message,
+          createdAt: n.createdAt,
+          userId: n.user?.toString()
+        })));
+      }
+    }
 
     res.json({
       success: true,
