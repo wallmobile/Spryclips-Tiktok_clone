@@ -13,7 +13,6 @@ const ManageAccount = ({ onClose }) => {
   const [showDownloadData, setShowDownloadData] = useState(false);
   const [showDeactivateAccount, setShowDeactivateAccount] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [showLinkedAccounts, setShowLinkedAccounts] = useState(false);
   const [showAccountActivity, setShowAccountActivity] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
@@ -59,17 +58,6 @@ const ManageAccount = ({ onClose }) => {
       }
     };
 
-    const loadLinkedAccounts = async () => {
-      try {
-        const response = await api.get('/api/users/linked-accounts');
-        if (response.data.success) {
-          setLinkedAccounts(response.data.linkedAccounts);
-        }
-      } catch (error) {
-        console.error('Failed to load linked accounts:', error);
-      }
-    };
-
     const loadAccountActivity = async () => {
       try {
         const response = await api.get('/api/users/account-activity');
@@ -85,17 +73,8 @@ const ManageAccount = ({ onClose }) => {
     };
 
     loadAccountInfo();
-    loadLinkedAccounts();
     loadAccountActivity();
   }, [user]);
-
-  const [linkedAccounts, setLinkedAccounts] = useState([
-    { platform: 'Google', icon: 'fa-brands fa-google', connected: false },
-    { platform: 'Facebook', icon: 'fa-brands fa-facebook', connected: false },
-    { platform: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
-    { platform: 'Twitter', icon: 'fa-brands fa-twitter', connected: false },
-    { platform: 'Apple', icon: 'fa-brands fa-apple', connected: false }
-  ]);
 
   const [accountActivity, setAccountActivity] = useState([]);
 
@@ -224,57 +203,6 @@ const ManageAccount = ({ onClose }) => {
     }
   };
 
-  const handleLinkAccount = async (platform) => {
-    try {
-      // In a real app, this would redirect to OAuth flow
-      // For demo, we'll simulate linking
-      setSaveMessage(`Redirecting to ${platform} for account linking...`);
-      
-      // Simulate OAuth callback
-      setTimeout(async () => {
-        try {
-          await api.post('/api/users/link-account', { 
-            platform, 
-            email: `user@${platform.toLowerCase()}.com`,
-            username: `@${user?.username || 'user'}`
-          });
-          
-          // Refresh linked accounts
-          const response = await api.get('/api/users/linked-accounts');
-          if (response.data.success) {
-            setLinkedAccounts(response.data.linkedAccounts);
-          }
-          
-          setSaveMessage(`${platform} account linked successfully!`);
-          setTimeout(() => setSaveMessage(''), 3000);
-        } catch (error) {
-          setSaveMessage(error.response?.data?.message || `Failed to link ${platform} account`);
-          setTimeout(() => setSaveMessage(''), 3000);
-        }
-      }, 1500);
-    } catch (error) {
-      setSaveMessage(`Failed to link ${platform} account`);
-      setTimeout(() => setSaveMessage(''), 3000);
-    }
-  };
-
-  const handleUnlinkAccount = async (platform) => {
-    try {
-      await api.post('/api/users/unlink-account', { platform });
-      
-      // Refresh linked accounts
-      const response = await api.get('/api/users/linked-accounts');
-      if (response.data.success) {
-        setLinkedAccounts(response.data.linkedAccounts);
-      }
-      
-      setSaveMessage(`${platform} account unlinked successfully!`);
-      setTimeout(() => setSaveMessage(''), 3000);
-    } catch (error) {
-      setSaveMessage(error.response?.data?.message || `Failed to unlink ${platform} account`);
-      setTimeout(() => setSaveMessage(''), 3000);
-    }
-  };
 
   const manageAccountSections = [
     {
@@ -314,19 +242,6 @@ const ManageAccount = ({ onClose }) => {
           description: 'View recent account activity',
           icon: 'fa-solid fa-clock-rotate-left',
           action: () => setShowAccountActivity(true)
-        }
-      ]
-    },
-    {
-      id: 'connections',
-      title: 'Connected Accounts',
-      items: [
-        {
-          id: 'linked',
-          title: 'Linked Accounts',
-          description: 'Manage social media connections',
-          icon: 'fa-solid fa-link',
-          action: () => setShowLinkedAccounts(true)
         }
       ]
     },
@@ -383,12 +298,12 @@ const ManageAccount = ({ onClose }) => {
         {saveMessage && (
           <div style={{
             padding: '0.75rem 1.25rem',
-            background: saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-            color: saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? '#DC2626' : '#16A34A',
+            background: (saveMessage || '').includes('Failed') || (saveMessage || '').includes('not match') || (saveMessage || '').includes('must be') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            color: (saveMessage || '').includes('Failed') || (saveMessage || '').includes('not match') || (saveMessage || '').includes('must be') ? '#DC2626' : '#16A34A',
             fontSize: '0.875rem',
             fontWeight: '500',
             textAlign: 'center',
-            borderBottom: `1px solid ${saveMessage.includes('Failed') || saveMessage.includes('not match') || saveMessage.includes('must be') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
+            borderBottom: `1px solid ${(saveMessage || '').includes('Failed') || (saveMessage || '').includes('not match') || (saveMessage || '').includes('must be') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
           }}>
             {saveMessage}
           </div>
@@ -431,7 +346,7 @@ const ManageAccount = ({ onClose }) => {
             <div key={section.id} className="manage-account-section">
               <h3 className="section-title">{section.title}</h3>
               <div className="section-items">
-                {section.items.map((item) => (
+                {(section.items || []).map((item) => (
                   <div 
                     key={item.id} 
                     className={`manage-account-item ${item.danger ? 'danger' : ''}`}
@@ -573,10 +488,10 @@ const ManageAccount = ({ onClose }) => {
                     <div key={index} className="activity-item">
                       <div className="activity-icon">
                         <i className={`fa-solid ${
-                          activity.action.includes('Login') ? 'fa-sign-in-alt' :
-                          activity.action.includes('Password') ? 'fa-key' :
-                          activity.action.includes('Profile') ? 'fa-user-edit' :
-                          activity.action.includes('Email') ? 'fa-envelope-check' : 'fa-clock'
+                          (activity.action || '').includes('Login') ? 'fa-sign-in-alt' :
+                          (activity.action || '').includes('Password') ? 'fa-key' :
+                          (activity.action || '').includes('Profile') ? 'fa-user-edit' :
+                          (activity.action || '').includes('Email') ? 'fa-envelope-check' : 'fa-clock'
                         }`}></i>
                       </div>
                       <div className="activity-details">
@@ -698,14 +613,6 @@ const ManageAccount = ({ onClose }) => {
     <div class="info-row"><span class="label">Data Saver:</span><span class="value">${data.settings.appSettings?.dataSaver ? 'Enabled' : 'Disabled'}</span></div>
   </div>
   
-  <h2>🔗 Linked Accounts</h2>
-  <div class="section">
-    ${(data.linkedAccounts || []).filter(a => a.connected).length > 0 
-      ? (data.linkedAccounts || []).filter(a => a.connected).map(a => `<div class="info-row"><span class="label">${a.platform}:</span><span class="value">${a.email || a.username || 'Connected'}</span></div>`).join('')
-      : '<p>No linked accounts</p>'
-    }
-  </div>
-  
   <h2>📜 Recent Activity</h2>
   <div class="section">
     ${(data.activityHistory || []).slice(0, 10).length > 0
@@ -729,7 +636,6 @@ const ManageAccount = ({ onClose }) => {
                           displayName: data.profile?.displayName,
                           hasAccountInfo: !!data.accountInfo,
                           hasSettings: !!data.settings,
-                          linkedAccountsCount: data.linkedAccounts?.length || 0,
                           activityCount: data.activityHistory?.length || 0
                         });
                         console.log('📄 HTML preview (first 800 chars):', htmlContent.substring(0, 800));
@@ -1018,54 +924,6 @@ const ManageAccount = ({ onClose }) => {
                   >
                     {saving ? 'Deleting...' : 'Delete Forever'}
                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Linked Accounts Modal */}
-        {showLinkedAccounts && (
-          <div className="account-modal-overlay" onClick={() => setShowLinkedAccounts(false)}>
-            <div className="account-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="account-modal-header">
-                <h3>Linked Accounts</h3>
-                <button className="account-modal-close" onClick={() => setShowLinkedAccounts(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="account-modal-body">
-                <div className="linked-accounts-list">
-                  {linkedAccounts.map((account, index) => (
-                    <div key={index} className="linked-account-item">
-                      <div className="linked-account-info">
-                        <div className="linked-account-icon">
-                          <i className={account.icon}></i>
-                        </div>
-                        <div className="linked-account-details">
-                          <h4>{account.platform}</h4>
-                          <p>{account.email || account.username}</p>
-                        </div>
-                      </div>
-                      <div className="linked-account-action">
-                        {account.connected ? (
-                          <button 
-                            className="unlink-btn"
-                            onClick={() => handleUnlinkAccount(account.platform)}
-                          >
-                            Unlink
-                          </button>
-                        ) : (
-                          <button 
-                            className="link-btn"
-                            onClick={() => handleLinkAccount(account.platform)}
-                          >
-                            Link
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
