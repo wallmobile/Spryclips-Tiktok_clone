@@ -3,3 +3,88 @@
 [33mbb0ea57[m Add latest features with full backend integration:
 [33m8ae7552[m Add latest features: Business Tools, Ad Manager, Product Catalog, Business Messaging, Activity Center, Manage Account, Delete Account with full backend integration
 [33mbad0c2b[m Production config update: Set API_URL to empty for Nginx proxy and UPLOADS_BASE_URL to spryclips.com - Added complete Business Tools, Ad Manager, Product Catalog, Business Messaging, Activity Center, Manage Account, Delete Account, and all backend integrations with database connectivity
+[33m855a7b8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge branch 'main' of github.com:wallmobile/Tiktok_clone
+[33m8fa240c[m Fix PDF download functionality - auto-download with proper content rendering
+[33me64c69f[m Remove phone number change feature from project
+[33m576248a[m Fix notification system: Add story_upload type, fix story upload notifications, improve notification fetching with ObjectId/string support
+[33mfd6cc77[m Remove excessive console logs from Profile component to clean up console output
+[33md6b2a37[m Fix story ring UI: Blue gradient for own stories, ensure DP stays same size, fix banner persistence with synchronous save
+[33m370c422[m Fix banner save functionality: Add optimistic updates, increase timeout, fix localStorage sync, and improve error handling
+[33m7c202a4[m Remove close icon from signup page
+[33mcf5997a[m Remove close icon from login page
+[33ma071d03[m Add password visibility toggle, signup link, and red hover effect for forgot password
+[33m804fd62[m Fix comment button click and optimize comment form - smaller size, right side panel, reduced height
+[33m7b51a5a[m Remove comment/reply and share buttons from story viewer, optimize story refresh logic
+[33mfaae808[m Implement inline search functionality - Remove search popup/modal, add real-time filtering in For You feed, fix featured videos exclusion logic
+[33m8a451e9[m Sidebar: Update font size to 15px for all text elements
+[33meebe7c6[m Backend: Follow/unfollow API fixes and recommendations updates
+[33me794b5f[m Profile click issue — fixed: Correct profile opens on click, Message button available on other user profiles
+[33m71053cd[m Add online music search, improve music playback, and UI enhancements
+[33mcea8717[m feat: Upload page improvements - drag text/stickers, remove stickers, voiceover fixes, solid red buttons, remove Smart Auto-Crop
+[33mc4c001a[m feat: Improve upload page UI and fix settings persistence
+[33m4687cb6[m fix: Update all nav items font size to 14px for consistency
+[33m3fe9d3c[m feat: Move More menu options to sidebar with expand/collapse functionality
+[33m25b62a3[m Explore page improvements: removed search, centered header, fixed button colors, disabled close button hover, improved category filters, added demo videos script
+[33mbc21c5e[m Change app name from TikTok to Spryclips - Update all user-facing text, package names, and documentation
+[33m0859cf2[m Add spacing between icons and text in Earnings Breakdown section
+[33mc82a9b6[m Update volume control to show on hover instead of click
+[33m13632b7[m Merge pull request #14 from wallmobile/Bipul-3
+[33mcb4b230[m Merge branch 'main' of github.com:wallmobile/Tiktok_clone # Please enter a commit message to explain why this merge is necessary, # especially if it merges an updated upstream into a topic branch. # # Lines starting with '#' will be ignored, and an empty message aborts # the commit.
+[33m383b997[m Fix: Back to App button navigation in admin panel
+[33mde47f51[m Fix: Resolve merge conflicts, admin login issues, and update URLs for production - Fixed merge conflicts in auth.js, search.js, and admin.js - Added _id field to user response for admin login compatibility - Updated frontend to normalize user object (id/_id) - Changed all localhost URLs to production URLs (spryclips.com) - All fixes ready for production deployment
+[33m9a0e87d[m[33m ([m[1;31morigin/bipuldev4[m[33m)[m Fix merge conflicts in AdminPanel, GrowthToolsHub, and Navbar - Fix TypeScript lazy import error in App.tsx
+[33m0e3a114[m Update routes, components, hooks, and context providers
+[33m095023a[m Merge Admin-Testing changes into main: Update routes, components, configs, and socket implementation
+[33m879a6e1[m Merge branch 'main' of https://github.com/wallmobile/Tiktok_clone
+[33mc037616[m feat: Implement WebRTC functionality for live streaming, including viewer connection handling and UI updates
+[33mb1f3952[m feat: Add end stream functionality and improve stream action UI in LiveStream components
+[33m16cff42[m feat: Add functionality to fetch and display user's active stream with resume option
+[33m6b10cbb[m feat: Add Live Stream Watch functionality with loading and error states
+[33m0181cd0[m feat: Implement share functionality in LiveStreamPlayer component
+[33m9bc347c[m feat: Add host information display in LiveStreamPlayer component
+[33m4e1914f[m feat: Add responsive styles for various screen sizes in LiveStreamPlayer component
+[33mf16d7e0[m feat: Add online status indicator to stream title bar
+[33mc495ba2[m feat: Update stream title display with new floating bottom bar design
+[33mb9c93ce[m refactor: Remove recording and effects functionality from LiveStreamPlayer component
+[33mdae7813[m feat: Enhance LiveStreamSetup with improved stream handling and close functionality
+[33mbcb0175[m feat: Enhance Live Stream Player and Setup with camera error handling, loading states, and improved styling
+[33m9b95d93[m refactor: Simplify API_URL comment in config.js for clarity
+[33m04f0d0f[m feat: Implement gift types system with seeding script and update live streaming routes
+[33m80662b9[m feat: Major updates - Auth, Messaging, Creator Academy & UI improvements
+[33mbb6ce89[m Update z-index values in ActionBar and ForYouFeed components for improved layering
+[33mb1a44f9[m Update API configuration for production deployment by removing local URL
+[33m722547c[m Enhance video display by centering and preserving aspect ratio in video card styles
+[33ma03191e[m Update video progress time styles for improved layout and alignment
+[33mdada65e[m Update API configuration for local development and adjust video card styles for better aspect ratio handling
+[33m77a99c2[m adjust video display width calculation in VideoCard component
+[33m276b073[m Update video card styles to use transparent backgrounds for better video visibility and maintain aspect ratio
+[33m4ecc0d4[m Update API_URL and UPLOADS_BASE_URL for local development; adjust video object-fit to contain for better aspect ratio preservation
+[33m0bad041[m Add click event handlers to prevent event propagation in LiveStreamPlayer
+[33m4578940[m Revert to dae01404: undo commits after dae01404fd9388df159361aec0d2c42c0a2d47f0
+[33m636a68f[m Anurag: Update output directory for video processing to use environment variable
+[33me48c9ca[m Anurag: Update video processing paths to use '/uploads/processed' for consistency
+[33m28a6f57[m Anurag: Refactor directory structure for processed videos: move to uploads/processed and update related paths
+[33mdae0140[m Anurag: Enhance video processing: add thumbnail generation and cache invalidation Thumbnail from video's first frame.
+[33m2524620[m Add script to fix port configuration for blue-green environments
+[33mc4b0230[m Fix blue-green deployment to use dynamic ports instead of ecosystem.config.js
+[33mff2b777[m Fix nginx configuration syntax error in deployment script
+[33m19f30e3[m Add interactive deployment management menu
+[33mc2ffddb[m Add comprehensive blue-green deployment documentation
+[33mbdb8f5c[m Implement blue-green deployment strategy for zero-downtime deployments
+[33mfa5fbab[m Update deployment script: enhanced UI, proper permissions, and switched to main branch
+[33mec037fe[m Merge branch 'LatestUpdated' into main
+[33m4146e9e[m changes
+[33m859a757[m fix urls
+[33mb2475b0[m chages in comment
+[33mb8f7c89[m Update index.js
+[33m5f1d3b6[m Update CORS allowed origins for spryclips
+[33m524ee71[m Update API URL for production environment
+[33m3c1b366[m Update axios.ts
+[33m4645858[m Update axios.ts
+[33m1278cc4[m Update .env.production
+[33m7e44c90[m Update config.js
+[33m326e2f6[m Add production server changes and environment fixes
+[33m68f302c[m Simplify API error messages and functions
+[33m5da9ee4[m Update apiError.ts
+[33m72d1b3a[m Update API URL for production environment
+[33m9d9ee2a[m code setup

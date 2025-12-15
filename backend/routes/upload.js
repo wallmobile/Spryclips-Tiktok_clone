@@ -123,6 +123,17 @@ const normalizeHashtags = (input) => {
 
 // Upload video
 router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHandler(async (req, res) => {
+  // Check if account is suspended or banned - block video upload
+  if (req.user.accountStatus !== 'active') {
+    let errorMessage = 'Your account access has been temporarily restricted. Please contact our support team for assistance.';
+    if (req.user.accountStatus === 'suspended' && req.user.isSelfDeactivated) {
+      errorMessage = 'Your account is currently deactivated. To reactivate it, please contact our support team. We\'ll be happy to assist you!';
+    } else if (req.user.accountStatus === 'banned') {
+      errorMessage = 'Your account has been restricted. If you believe this is an error, please contact our support team for review.';
+    }
+    throw new AppError(errorMessage, 403);
+  }
+  
   if (!req.file) {
     throw new AppError('No video file uploaded', 400);
   }

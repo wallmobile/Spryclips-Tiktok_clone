@@ -60,6 +60,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // Filter to only show videos from spryclips server
   // Exclude videos with external URLs (YouTube, Vimeo, etc.)
   // Allow: spryclips.com, localhost, and relative paths
+  // IMPORTANT: Exclude videos from suspended or banned users
   const videoQuery = {
     status: 'ready',
     isPrivate: false,
@@ -74,21 +75,48 @@ router.get('/', asyncHandler(async (req, res) => {
       { url: { $not: { $regex: /^https?:\/\//i } } }
     ]
   };
+  
+  // Exclude videos from suspended or banned users
+  // We'll filter this in the populate or after query
 
   const videos = await cache.getOrSet(
     cacheKey,
-    async () =>
-      Video.find(videoQuery)
-        .populate('user', 'username profile')
+    async () => {
+      // Get active user IDs first
+      const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
+      const activeUserIds = activeUsers.map(u => u._id);
+      
+      // Add user filter to exclude suspended/banned users
+      const queryWithUserFilter = {
+        ...videoQuery,
+        user: { $in: activeUserIds }
+      };
+      
+      const allVideos = await Video.find(queryWithUserFilter)
+        .populate('user', 'username profile accountStatus')
         .select('-processedVideos')
         .sort({ [sortBy]: sortOrder })
         .limit(limit)
         .skip(skip)
-        .lean(),
+        .lean();
+      
+      // Double-check: filter out any videos from non-active users (safety check)
+      return allVideos.filter(video => {
+        if (!video.user) return false;
+        return video.user.accountStatus === 'active';
+      });
+    },
     60 // Reduced cache time to 1 minute for faster updates
   );
 
-  const total = await Video.countDocuments(videoQuery);
+  // Count only videos from active users
+  const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
+  const activeUserIds = activeUsers.map(u => u._id);
+  const countQuery = {
+    ...videoQuery,
+    user: { $in: activeUserIds }
+  };
+  const total = await Video.countDocuments(countQuery);
 
   sendPaginated(res, videos, { page, limit, total }, 'Videos retrieved successfully');
 }));

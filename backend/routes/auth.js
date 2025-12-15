@@ -537,9 +537,27 @@ router.post('/login',
         throw new AppError(`Account is temporarily locked due to too many failed login attempts. Please try again in ${lockTime} minutes.`, 423);
       }
 
-      // Block banned accounts only - allow suspended (deactivated) accounts to login for reactivation
+      // Block banned accounts
       if (user.accountStatus === 'banned') {
-        throw new AppError('Account is banned. Please contact support.', 403);
+        throw new AppError('Your account has been restricted. If you believe this is an error, please contact our support team for review.', 403);
+      }
+      
+      // Block ALL suspended accounts (both self-deactivated and admin-suspended) - they cannot login
+      if (user.accountStatus === 'suspended') {
+        if (user.isSelfDeactivated) {
+          const deactivatedDays = user.deactivatedAt 
+            ? Math.floor((new Date() - new Date(user.deactivatedAt)) / (1000 * 60 * 60 * 24))
+            : 0;
+          
+          if (deactivatedDays > 30) {
+            throw new AppError('Your account was deactivated more than 30 days ago. To restore your account, please reach out to our support team. We\'re here to help!', 403);
+          }
+          
+          throw new AppError('Your account is currently deactivated. To reactivate it, please contact our support team. We\'ll be happy to assist you!', 403);
+        } else {
+          // Admin-suspended account
+          throw new AppError('Your account access has been temporarily restricted. Please contact our support team for assistance. We\'re here to help!', 403);
+        }
       }
 
       // Compare password - ensure no extra whitespace
@@ -577,13 +595,16 @@ router.post('/login',
 
       await user.resetLoginAttempts();
       
-      // Reactivate account if it was suspended (deactivated)
-      const wasSuspended = user.accountStatus === 'suspended';
-      if (wasSuspended) {
+      // Only reactivate if it was admin-suspended (not self-deactivated)
+      // Self-deactivated accounts cannot login and must contact admin
+      const wasAdminSuspended = user.accountStatus === 'suspended' && !user.isSelfDeactivated;
+      if (wasAdminSuspended) {
         user.accountStatus = 'active';
-        if (user.deactivatedAt !== undefined) {
+        user.isSelfDeactivated = false;
+        if (user.deactivatedAt) {
           user.deactivatedAt = null;
         }
+        console.log(`✅ Admin-suspended account reactivated on login: ${user._id}`);
       }
       
       user.lastLogin = new Date();
@@ -1039,6 +1060,9 @@ router.get('/verify', authMiddleware, async (req, res) => {
       id: freshUser._id,
       username: freshUser.username,
       email: freshUser.email,
+      accountStatus: freshUser.accountStatus || 'active', // Include account status
+      isSelfDeactivated: freshUser.isSelfDeactivated || false, // Include deactivation flag
+      deactivatedAt: freshUser.deactivatedAt || null, // Include deactivation date
       profile: profileWithBanner,
       privacy: privacyWithDefaults, // ALWAYS include privacy settings
       role: freshUser.role,

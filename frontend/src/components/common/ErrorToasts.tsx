@@ -89,14 +89,7 @@ const ErrorToasts: React.FC = () => {
           </div>
           <div className="error-toast__content">
             <p className="error-toast__message">{toast.userMessage}</p>
-            <div className="error-toast__meta">
-              <span className="error-toast__code">{toast.errorCode}</span>
-              {toast.requestId && (
-                <span className="error-toast__request">
-                  Ref&nbsp;#{toast.requestId.slice(-6)}
-                </span>
-              )}
-            </div>
+            {/* Hide technical error codes and request IDs from users - only show user-friendly message */}
           </div>
           <button
             type="button"

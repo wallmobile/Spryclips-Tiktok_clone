@@ -137,12 +137,93 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Check if account is active
+    // Allow logout and verify endpoints even for deactivated accounts (for cleanup and status checks)
+    // Check multiple path variations (Express routers can have different path formats)
+    const originalUrl = req.originalUrl || req.url || '';
+    const path = req.path || '';
+    const baseUrl = req.baseUrl || '';
+    
+    // Debug logging for path matching
     if (user.accountStatus !== 'active') {
+      console.log('🔍 Auth middleware - Checking paths for deactivated account:', {
+        originalUrl,
+        path,
+        baseUrl,
+        fullPath: baseUrl + path,
+        accountStatus: user.accountStatus,
+        isSelfDeactivated: user.isSelfDeactivated
+      });
+    }
+    
+    // Match logout endpoint in various formats (case-insensitive)
+    const isLogoutEndpoint = 
+      originalUrl.toLowerCase().includes('/logout') || 
+      path.toLowerCase().includes('/logout') || 
+      originalUrl.toLowerCase().endsWith('/logout') || 
+      path.toLowerCase().endsWith('/logout') ||
+      path.toLowerCase() === '/logout' ||
+      originalUrl.toLowerCase() === '/api/auth/logout' ||
+      (baseUrl + path).toLowerCase().includes('/logout');
+    
+    // Match verify endpoint in various formats (case-insensitive)
+    const isVerifyEndpoint = 
+      originalUrl.toLowerCase().includes('/verify') || 
+      path.toLowerCase().includes('/verify') || 
+      originalUrl.toLowerCase().endsWith('/verify') || 
+      path.toLowerCase().endsWith('/verify') ||
+      path.toLowerCase() === '/verify' ||
+      originalUrl.toLowerCase() === '/api/auth/verify' ||
+      (baseUrl + path).toLowerCase().includes('/verify');
+    
+    if (user.accountStatus !== 'active') {
+      // SIMPLIFIED: Just check if the URL contains 'logout' or 'verify' anywhere
+      // This is more lenient and will catch all variations
+      const urlString = (originalUrl + path + baseUrl).toLowerCase();
+      const containsLogout = urlString.includes('logout');
+      const containsVerify = urlString.includes('verify');
+      
+      // Allow logout and verify even for deactivated accounts
+      if (containsLogout || containsVerify || isLogoutEndpoint || isVerifyEndpoint) {
+        // Attach user to request but don't block - let the endpoint handle it
+        req.user = user;
+        console.log(`✅ Allowing ${containsLogout ? 'logout' : 'verify'} for deactivated account: ${user._id}`);
+        console.log(`   Path details: originalUrl=${originalUrl}, path=${path}, baseUrl=${baseUrl}`);
+        console.log(`   URL string check: ${urlString}`);
+        return next();
+      }
+      
+      // If we reach here, the endpoint is blocked
+      console.log(`❌ Blocking request for deactivated account: ${user._id}`);
+      console.log(`   Path details: originalUrl=${originalUrl}, path=${path}, baseUrl=${baseUrl}`);
+      console.log(`   URL string: ${urlString}`);
+      console.log(`   containsLogout=${containsLogout}, containsVerify=${containsVerify}`);
+      console.log(`   isLogoutEndpoint=${isLogoutEndpoint}, isVerifyEndpoint=${isVerifyEndpoint}`);
+      
+      // User-friendly messages based on account status
+      let userMessage = 'Your account access has been temporarily restricted. Our support team can help you restore access.';
+      
+      // Provide specific, friendly message for self-deactivated accounts
+      if (user.accountStatus === 'suspended' && user.isSelfDeactivated) {
+        const deactivatedDays = user.deactivatedAt 
+          ? Math.floor((new Date() - new Date(user.deactivatedAt)) / (1000 * 60 * 60 * 24))
+          : 0;
+        
+        if (deactivatedDays > 30) {
+          userMessage = 'Your account was deactivated more than 30 days ago. To restore your account, please reach out to our support team. We\'re here to help!';
+        } else {
+          userMessage = 'Your account is currently deactivated. To reactivate it, please contact our support team. We\'ll be happy to assist you!';
+        }
+      } else if (user.accountStatus === 'suspended') {
+        userMessage = 'Your account access has been temporarily restricted. Please contact our support team for assistance. We\'re here to help!';
+      } else if (user.accountStatus === 'banned') {
+        userMessage = 'Your account has been restricted. If you believe this is an error, please contact our support team for review.';
+      }
+      
       return sendErrorResponse(res, new AppError({
         message: 'Account suspended',
         statusCode: 403,
         code: 'FORBIDDEN',
-        userMessage: 'Your account has been suspended. Please contact support for assistance.'
+        userMessage: userMessage
       }), req);
     }
 

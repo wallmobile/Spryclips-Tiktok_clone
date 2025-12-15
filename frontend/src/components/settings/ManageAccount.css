@@ -165,6 +165,16 @@
   color: #00FF88;
 }
 
+.stat-value.status.suspended {
+  color: #FF6B35;
+  font-weight: 600;
+}
+
+.stat-value.status.banned {
+  color: #FF4757;
+  font-weight: 600;
+}
+
 .stat-value.status.inactive {
   color: #FF4757;
 }
@@ -1541,6 +1551,34 @@ body.dark-mode .stat-value {
 
 body.dark-mode .stat-value.status.active {
   color: #00FF88 !important;
+}
+
+body.dark-mode .stat-value.status.suspended {
+  color: #FF6B35 !important;
+  font-weight: 600;
+}
+
+body.dark-mode .stat-value.status.banned {
+  color: #EF4444 !important;
+  font-weight: 600;
+}
+
+body.dark-mode .stat-value.status.inactive {
+  color: #EF4444 !important;
+}
+
+body.dark-mode .stat-value.status.active {
+  color: #00FF88 !important;
+}
+
+body.dark-mode .stat-value.status.suspended {
+  color: #FF6B35 !important;
+  font-weight: 600;
+}
+
+body.dark-mode .stat-value.status.banned {
+  color: #EF4444 !important;
+  font-weight: 600;
 }
 
 body.dark-mode .stat-value.status.inactive {

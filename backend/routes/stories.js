@@ -50,6 +50,26 @@ const upload = multer({
 // ==================== CREATE STORY ====================
 router.post('/', authMiddleware, upload.single('media'), async (req, res) => {
   try {
+    // Check if account is suspended or banned - block story creation
+    if (req.user.accountStatus !== 'active') {
+      let errorMessage = 'Your account access has been temporarily restricted. Please contact our support team for assistance.';
+      if (req.user.accountStatus === 'suspended' && req.user.isSelfDeactivated) {
+        errorMessage = 'Your account is currently deactivated. To reactivate it, please contact our support team. We\'ll be happy to assist you!';
+      } else if (req.user.accountStatus === 'banned') {
+        errorMessage = 'Your account has been restricted. If you believe this is an error, please contact our support team for review.';
+      }
+      
+      // Delete uploaded file if account is suspended
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: errorMessage,
+      });
+    }
+    
     const userId = req.user._id;
     const { type, text, textColor, textBackground, textPositionX, textPositionY, music, isPrivate } = req.body;
 

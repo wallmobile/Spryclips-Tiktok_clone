@@ -51,13 +51,29 @@ router.get('/videos', authMiddleware, async (req, res) => {
       query.hashtags = { $in: preferredHashtags };
     }
 
-    // Get recommended videos
-    let recommendedVideos = await Video.find(query)
-      .populate('user', 'username profile.avatar profile.displayName profile.followers')
+    // Get active user IDs (exclude suspended/banned users)
+    const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
+    const activeUserIds = activeUsers.map(u => u._id);
+    
+    // Add user filter to exclude suspended/banned users
+    const queryWithActiveUsers = {
+      ...query,
+      user: { $in: activeUserIds }
+    };
+    
+    // Get recommended videos (only from active users)
+    let recommendedVideos = await Video.find(queryWithActiveUsers)
+      .populate('user', 'username profile.avatar profile.displayName profile.followers accountStatus')
       .sort({ views: -1, likes: -1, createdAt: -1 })
       .limit(limit * 2) // Get more to filter
       .select('url thumbnail description hashtags likes comments shares views createdAt user')
       .lean();
+    
+    // Double-check: filter out any videos from non-active users
+    recommendedVideos = recommendedVideos.filter(video => {
+      if (!video.user) return false;
+      return video.user.accountStatus === 'active';
+    });
 
     // Score and sort videos
     recommendedVideos = recommendedVideos.map(video => {
@@ -132,9 +148,19 @@ router.get('/for-you', authMiddleware, async (req, res) => {
       _id: { $nin: excludedVideoIds }
     };
 
-    // Get trending videos (high engagement)
-    const trendingVideos = await Video.find(query)
-      .populate('user', 'username profile.avatar profile.displayName profile.followers')
+    // Get active user IDs (exclude suspended/banned users)
+    const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
+    const activeUserIds = activeUsers.map(u => u._id);
+    
+    // Add user filter to exclude suspended/banned users
+    const queryWithActiveUsers = {
+      ...query,
+      user: { $in: activeUserIds }
+    };
+    
+    // Get trending videos (high engagement) - only from active users
+    const trendingVideos = await Video.find(queryWithActiveUsers)
+      .populate('user', 'username profile.avatar profile.displayName profile.followers accountStatus')
       .sort({ 
         views: -1,
         likes: -1,
@@ -143,9 +169,15 @@ router.get('/for-you', authMiddleware, async (req, res) => {
       .limit(limit)
       .select('url thumbnail description hashtags likes comments shares views createdAt user music')
       .lean();
+    
+    // Double-check: filter out any videos from non-active users
+    const filteredVideos = trendingVideos.filter(video => {
+      if (!video.user) return false;
+      return video.user.accountStatus === 'active';
+    });
 
     // Add recommendation scores
-    const videosWithScores = trendingVideos.map(video => {
+    const videosWithScores = filteredVideos.map(video => {
       const engagement = (video.likes || 0) + (video.comments || 0) + (video.shares || 0);
       const engagementRate = video.views > 0 ? (engagement / video.views) * 100 : 0;
       
@@ -188,20 +220,44 @@ router.get('/following', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get active user IDs (exclude suspended/banned users)
+    const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
+    const activeUserIds = activeUsers.map(u => u._id);
+    
+    // Filter followingUserIds to only include active users
+    const activeFollowingUserIds = followingUserIds.filter(id => 
+      activeUserIds.some(activeId => activeId.toString() === id.toString())
+    );
+    
+    if (activeFollowingUserIds.length === 0) {
+      return res.json({
+        success: true,
+        videos: [],
+        count: 0,
+        message: 'Follow users to see their videos'
+      });
+    }
+    
     const videos = await Video.find({
-      user: { $in: followingUserIds },
+      user: { $in: activeFollowingUserIds },
       status: 'ready',
       isPrivate: false
     })
-      .populate('user', 'username profile.avatar profile.displayName profile.followers _id')
+      .populate('user', 'username profile.avatar profile.displayName profile.followers _id accountStatus')
       .sort({ createdAt: -1 })
       .limit(limit)
       .select('url thumbnail description hashtags likes comments shares views createdAt user music _id processedVideos')
       .lean();
+    
+    // Double-check: filter out any videos from non-active users
+    const filteredVideos = videos.filter(video => {
+      if (!video.user) return false;
+      return video.user.accountStatus === 'active';
+    });
 
     // Log thumbnail info for debugging
-    console.log(`[Following Feed] Found ${videos.length} videos`);
-    videos.forEach((video, idx) => {
+    console.log(`[Following Feed] Found ${filteredVideos.length} videos (after filtering suspended users)`);
+    filteredVideos.forEach((video, idx) => {
       console.log(`[Following Feed] Video ${idx + 1}:`, {
         id: video._id,
         hasThumbnail: !!(video.thumbnail && video.thumbnail.trim() !== ''),
@@ -212,8 +268,8 @@ router.get('/following', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      videos: videos,
-      count: videos.length
+      videos: filteredVideos,
+      count: filteredVideos.length
     });
   } catch (error) {
     console.error('Error fetching Following feed:', error);

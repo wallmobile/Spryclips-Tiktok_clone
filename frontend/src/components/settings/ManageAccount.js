@@ -25,12 +25,26 @@ const ManageAccount = ({ onClose }) => {
     password: ''
   });
 
+  // Helper function to format account status
+  const formatAccountStatus = (status) => {
+    if (!status) return 'Active';
+    const statusMap = {
+      'active': 'Active',
+      'suspended': 'Suspended',
+      'banned': 'Banned'
+    };
+    return statusMap[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
+
+  // Track if account was just deactivated to prevent status override
+  const [isDeactivated, setIsDeactivated] = useState(false);
+  
   const [accountInfo, setAccountInfo] = useState({
     email: user?.email || 'user@example.com',
     phone: user?.phone || '+1 (555) 123-4567',
     joinDate: user?.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : '2023-05-15',
     lastLogin: user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : '2024-10-28 14:30',
-    accountStatus: user?.accountStatus || 'Active',
+    accountStatus: formatAccountStatus(user?.accountStatus),
     verificationStatus: user?.emailVerified ? 'Verified' : 'Unverified'
   });
   const [saving, setSaving] = useState(false);
@@ -38,27 +52,56 @@ const ManageAccount = ({ onClose }) => {
 
   // Load account info from backend
   useEffect(() => {
+    // Skip loading if account was just deactivated (to prevent status override)
+    if (isDeactivated) {
+      console.log('⏭️ Skipping account info load - account is deactivated');
+      return;
+    }
+    
     const loadAccountInfo = async () => {
       try {
         const response = await api.get('/api/auth/verify');
         const userData = response.data.user;
         if (userData) {
-          setAccountInfo({
-            email: userData.email || 'user@example.com',
-            phone: userData.phone || 'Not set',
-            joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
-            lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
-            accountStatus: userData.accountStatus || 'Active',
-            verificationStatus: userData.emailVerified ? 'Verified' : 'Unverified'
+          setAccountInfo(prev => {
+            // NEVER override if status is already Suspended
+            if (prev.accountStatus === 'Suspended') {
+              console.log('🔒 Preserving Suspended status - not updating from API');
+              return prev;
+            }
+            
+            const newStatus = formatAccountStatus(userData.accountStatus);
+            console.log('📥 Updating account info from API:', { newStatus, prevStatus: prev.accountStatus });
+            
+            return {
+              email: userData.email || 'user@example.com',
+              phone: userData.phone || 'Not set',
+              joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
+              lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
+              accountStatus: newStatus,
+              verificationStatus: userData.emailVerified ? 'Verified' : 'Unverified'
+            };
           });
         }
       } catch (error) {
         console.error('Failed to load account info:', error);
+        // If verify fails (403), set status to Suspended if not already set
+        if (error.response?.status === 403) {
+          setAccountInfo(prev => {
+            // If already Suspended, keep it
+            if (prev.accountStatus === 'Suspended') {
+              return prev;
+            }
+            // Otherwise, set to Suspended (account is deactivated)
+            console.log('🔒 Setting status to Suspended due to 403 error');
+            return { ...prev, accountStatus: 'Suspended' };
+          });
+        }
       }
     };
 
     loadAccountInfo();
-  }, [user]);
+  }, [user, isDeactivated]);
 
 
   const handlePasswordChange = async (e) => {
@@ -149,11 +192,34 @@ const ManageAccount = ({ onClose }) => {
         try {
           setSaving(true);
           const response = await api.post('/api/users/deactivate');
-          setSaveMessage(response.data.message || 'Account deactivated successfully. You have 30 days to reactivate.');
+          setSaveMessage(response.data.message || 'Account deactivated successfully. Please contact administration to reactivate.');
           setShowDeactivateAccount(false);
+          
+          // Mark as deactivated to prevent useEffect from overriding status
+          setIsDeactivated(true);
+          
+          // Update account status immediately in UI - FORCE update
+          setAccountInfo(prev => {
+            console.log('🔒 Setting account status to Suspended after deactivation');
+            return {
+              ...prev,
+              accountStatus: 'Suspended' // Force to Suspended
+            };
+          });
+          
+          console.log('✅ Account status updated to Suspended in UI, isDeactivated flag set');
+          
+          // Immediately clear local state and logout (don't wait for API call)
           setTimeout(() => {
             setSaveMessage('');
-            logout();
+            // Clear local storage immediately
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            // Try to logout via API (may fail if account is deactivated, but that's OK)
+            logout().catch(() => {
+              // Ignore logout errors - we've already cleared local state
+              console.log('Logout API call failed (expected for deactivated account)');
+            });
             onClose();
           }, 2000);
         } catch (error) {
@@ -766,8 +832,9 @@ const ManageAccount = ({ onClose }) => {
               </div>
               <div className="account-modal-body">
                 <p>
-                  Deactivating your account will hide your profile, videos, and comments. You can reactivate your account
-                  by logging in within 30 days.
+                  Deactivating your account will hide your profile, videos, and comments. 
+                  After deactivation, you will not be able to log in. To reactivate your account, 
+                  please contact administration within 30 days. After 30 days, your account will be permanently deactivated.
                 </p>
                 <div className="warning-box">
                   <i className="fa-solid fa-triangle-exclamation"></i>

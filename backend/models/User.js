@@ -116,6 +116,14 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'suspended', 'banned'],
     default: 'active'
   },
+  deactivatedAt: {
+    type: Date,
+    default: null
+  },
+  isSelfDeactivated: {
+    type: Boolean,
+    default: false
+  },
   // Safety & Security
   isBot: {
     type: Boolean,

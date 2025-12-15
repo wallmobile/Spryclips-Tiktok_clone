@@ -881,12 +881,67 @@ router.post('/deactivate', authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    
+    // Mark as self-deactivated with timestamp
     user.accountStatus = 'suspended';
+    user.deactivatedAt = new Date();
+    user.isSelfDeactivated = true;
     await user.save();
-    res.json({ success: true, message: 'Account deactivated successfully' });
+    
+    console.log(`✅ Account deactivated: ${user._id}, deactivatedAt: ${user.deactivatedAt}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Account deactivated successfully. Please contact administration to reactivate your account within 30 days.' 
+    });
   } catch (error) {
     console.error('Error deactivating account:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to deactivate account' });
+  }
+});
+
+// Reactivate account (admin only or for self-deactivated accounts within 30 days)
+router.post('/reactivate', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Only allow reactivation if account is self-deactivated
+    if (!user.isSelfDeactivated || user.accountStatus !== 'suspended') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Account cannot be reactivated. Please contact administration.' 
+      });
+    }
+    
+    // Check if within 30 days
+    if (user.deactivatedAt) {
+      const deactivatedDays = Math.floor((new Date() - new Date(user.deactivatedAt)) / (1000 * 60 * 60 * 24));
+      if (deactivatedDays > 30) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Account has been permanently deactivated after 30 days. Please contact administration to restore your account.' 
+        });
+      }
+    }
+    
+    // Reactivate account
+    user.accountStatus = 'active';
+    user.isSelfDeactivated = false;
+    user.deactivatedAt = null;
+    await user.save();
+    
+    console.log(`✅ Account reactivated: ${user._id}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Account reactivated successfully. You can now use your account normally.' 
+    });
+  } catch (error) {
+    console.error('Error reactivating account:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to reactivate account' });
   }
 });
 
