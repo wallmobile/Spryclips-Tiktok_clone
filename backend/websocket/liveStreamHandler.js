@@ -443,7 +443,7 @@ const initializeLiveStreamHandlers = (io) => {
     // ==================== LIVE CHAT MESSAGE ====================
     socket.on('live:chat', async (data) => {
       try {
-        const { roomId, message } = data;
+        const { roomId, message, clientId } = data;
         
         if (!roomId || !message) {
           return socket.emit('live:error', { message: 'Room ID and message required' });
@@ -471,7 +471,8 @@ const initializeLiveStreamHandlers = (io) => {
           .to(`live:${roomId}:guests`)
           .emit('live:chat', {
             message: chatMessage,
-            timestamp: new Date()
+            timestamp: new Date(),
+            clientId: clientId || null
           });
       } catch (error) {
         console.error('[LiveStream] Error sending chat:', error);
@@ -488,9 +489,10 @@ const initializeLiveStreamHandlers = (io) => {
           return socket.emit('live:error', { message: 'Room ID required' });
         }
 
-        // Broadcast reaction to all viewers and host
+        // Broadcast reaction to host, viewers and guests
         ioInstance.to(`live:${roomId}:host`)
           .to(`live:${roomId}:viewers`)
+          .to(`live:${roomId}:guests`)
           .emit('live:reaction', {
             userId: socket.userId,
             user: socket.user,

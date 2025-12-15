@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
-import { sendChatMessage, deleteChatMessage, banUserFromStream, unbanUserFromStream, sendGift } from '../../api/live';
+import { deleteChatMessage, banUserFromStream, unbanUserFromStream, sendGift } from '../../api/live';
 import './LiveStreamPlayer.css';
 
 // STUN servers for WebRTC NAT traversal
@@ -79,19 +79,38 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
 
     const handleIncomingChat = (data) => {
       const msg = data?.message || data;
-      const comment = {
-        id: msg?._id || Date.now(),
+      const clientId = data?.clientId || null;
+
+      const serverMsg = {
+        id: msg?._id || msg?.id || Date.now(),
         username: msg?.user?.username || msg?.username || 'viewer',
         userId: msg?.user?._id || msg?.user?.id || msg?.userId || null,
         text: msg?.message || msg?.text || '',
         timestamp: msg?.createdAt || msg?.timestamp || new Date(),
         gift: msg?.gift || null,
+        _raw: msg
       };
-      setComments(prev => [...prev.slice(-49), comment]);
 
-      if (comment.gift) {
-        setTotalGifts(prev => prev + (comment.gift.price || 0));
-        setGifts(prev => [...prev, { id: Date.now(), gift: comment.gift, username: comment.username }]);
+      setComments(prev => {
+        // If server echoed clientId, replace optimistic message
+        if (clientId) {
+          const idx = prev.findIndex(c => c.id === clientId);
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = serverMsg;
+            return next.slice(-50);
+          }
+        }
+
+        // dedupe by id
+        if (prev.some(c => c.id === serverMsg.id)) return prev;
+
+        return [...prev.slice(-49), serverMsg];
+      });
+
+      if (serverMsg.gift) {
+        setTotalGifts(prev => prev + (serverMsg.gift.price || 0));
+        setGifts(prev => [...prev, { id: Date.now(), gift: serverMsg.gift, username: serverMsg.username }]);
       }
     };
 
@@ -521,13 +540,10 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
 
     // emit over socket for real-time delivery
     try {
-      socket?.emit('live:chat', { roomId, message: optimistic.text });
-      // persist via API (will also be emitted by server when saved)
-      sendChatMessage(roomId, { text: optimistic.text }).catch(err => {
-        console.error('sendChatMessage failed:', err);
-      });
+      // include optimistic id so server can echo it back and clients can reconcile
+      socket?.emit('live:chat', { roomId, message: optimistic.text, clientId: optimistic.id });
     } catch (err) {
-      console.error('Error sending chat message:', err);
+      console.error('Error sending chat message via socket:', err);
     }
 
     meta.lastTimestamps.push(now);
