@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
+import { sendChatMessage, deleteChatMessage, banUserFromStream, unbanUserFromStream, sendGift } from '../../api/live';
 import './LiveStreamPlayer.css';
 
 // STUN servers for WebRTC NAT traversal
@@ -40,6 +41,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [sendCooldownUntil, setSendCooldownUntil] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [cameraError, setCameraError] = useState(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -58,18 +61,6 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     { id: 'crown', name: 'Crown', emoji: '👑', price: 100 },
   ], []);
 
-  // Simulate viewer count updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewerCount(prev => {
-        const change = Math.floor(Math.random() * 21) - 10; // -10 to +10
-        return Math.max(0, prev + change);
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Stream duration timer
   useEffect(() => {
     const interval = setInterval(() => {
@@ -79,39 +70,63 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate live comments
+  // Real-time chat and viewer count via socket
   useEffect(() => {
-    const interval = setInterval(() => {
-      const mockComments = [
-        { text: 'Amazing stream! 🔥', username: 'viewer1' },
-        { text: 'Keep it up!', username: 'fan123' },
-        { text: 'This is great! 👏', username: 'user456' },
-      ];
-      
-      if (Math.random() > 0.7 && comments.length < 50) {
-        const comment = mockComments[Math.floor(Math.random() * mockComments.length)];
-        const newComment = {
-          id: Date.now(),
-          username: comment.username,
-          text: comment.text,
-          timestamp: new Date(),
-          gift: Math.random() > 0.9 ? giftOptions[Math.floor(Math.random() * giftOptions.length)] : null,
-        };
-        setComments(prev => [...prev.slice(-49), newComment]);
-        
-        if (newComment.gift) {
-          setTotalGifts(prev => prev + newComment.gift.price);
-          setGifts(prev => [...prev, {
-            id: Date.now(),
-            gift: newComment.gift,
-            username: newComment.username,
-          }]);
-        }
-      }
-    }, 2000);
+    if (!socket || !streamData) return;
 
-    return () => clearInterval(interval);
-  }, [comments.length, giftOptions]);
+    const canonicalRoomId = streamData?.id || streamData?._id || streamData?.roomId;
+    if (!canonicalRoomId) return;
+
+    const handleIncomingChat = (data) => {
+      const msg = data?.message || data;
+      const comment = {
+        id: msg?._id || Date.now(),
+        username: msg?.user?.username || msg?.username || 'viewer',
+        userId: msg?.user?._id || msg?.user?.id || msg?.userId || null,
+        text: msg?.message || msg?.text || '',
+        timestamp: msg?.createdAt || msg?.timestamp || new Date(),
+        gift: msg?.gift || null,
+      };
+      setComments(prev => [...prev.slice(-49), comment]);
+
+      if (comment.gift) {
+        setTotalGifts(prev => prev + (comment.gift.price || 0));
+        setGifts(prev => [...prev, { id: Date.now(), gift: comment.gift, username: comment.username }]);
+      }
+    };
+
+    const handleViewerCount = ({ count }) => {
+      setViewerCount(count || 0);
+    };
+
+    socket.on('live:chat', handleIncomingChat);
+    socket.on('live:viewer-count', handleViewerCount);
+    socket.on('live:chat-deleted', ({ chatId }) => {
+      setComments(prev => prev.filter(c => c.id !== chatId));
+    });
+    socket.on('live:user-banned', ({ userId, reason }) => {
+      // Optionally show system message
+      setComments(prev => [...prev.slice(-49), { id: `sys-${Date.now()}`, username: 'system', text: `@${userId} was banned: ${reason}`, timestamp: new Date() }]);
+    });
+    socket.on('live:user-unbanned', ({ userId }) => {
+      setComments(prev => [...prev.slice(-49), { id: `sys-${Date.now()}`, username: 'system', text: `@${userId} was unbanned`, timestamp: new Date() }]);
+    });
+
+    return () => {
+      socket.off('live:chat', handleIncomingChat);
+      socket.off('live:viewer-count', handleViewerCount);
+    };
+  }, [socket, streamData]);
+
+  // Cooldown timer updater
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((sendCooldownUntil - now) / 1000));
+      setCooldownRemaining(remaining);
+    }, 250);
+    return () => clearInterval(iv);
+  }, [sendCooldownUntil]);
 
   // Scroll comments to bottom
   useEffect(() => {
@@ -471,26 +486,76 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    const comment = {
-      id: Date.now(),
+    // Client-side rate limiting & simple spam checks
+    const now = Date.now();
+    if (!handleSendComment.meta) handleSendComment.meta = { lastTimestamps: [] };
+    const meta = handleSendComment.meta;
+
+    // remove older than 30 seconds
+    meta.lastTimestamps = meta.lastTimestamps.filter(ts => now - ts < 30000);
+    if (meta.lastTimestamps.length >= 10) {
+      // too many messages in 30s
+      // set short cooldown to inform user
+      setSendCooldownUntil(Date.now() + 5000);
+      return; // silently drop or show UI in future
+    }
+
+    // simple spam filter: block if message too long or many repeated chars
+    if (newComment.length > 400) return;
+    if ((newComment.match(/(.)\1{20,}/) || []).length) return;
+
+    const roomId = streamData?.id || streamData?._id || streamData?.roomId;
+    if (!roomId) return;
+
+    const optimistic = {
+      id: `optimistic-${now}`,
       username: user?.username || 'viewer',
       text: newComment,
       timestamp: new Date(),
+      sending: true
     };
 
-    setComments(prev => [...prev.slice(-49), comment]);
+    setComments(prev => [...prev.slice(-49), optimistic]);
     setNewComment('');
     inputRef.current?.focus();
+
+    // emit over socket for real-time delivery
+    try {
+      socket?.emit('live:chat', { roomId, message: optimistic.text });
+      // persist via API (will also be emitted by server when saved)
+      sendChatMessage(roomId, { text: optimistic.text }).catch(err => {
+        console.error('sendChatMessage failed:', err);
+      });
+    } catch (err) {
+      console.error('Error sending chat message:', err);
+    }
+
+    meta.lastTimestamps.push(now);
+    // set a small cooldown between sends (2s)
+    setSendCooldownUntil(Date.now() + 2000);
   };
 
   const handleSendGift = (gift) => {
+    const streamId = streamData?.id || streamData?._id || streamData?.roomId;
+    if (!streamId) return;
+
+    // optimistic UI
+    const optimistic = { id: `gift-${Date.now()}`, gift, username: user?.username || 'viewer' };
     setTotalGifts(prev => prev + gift.price);
-    setGifts(prev => [...prev, {
-      id: Date.now(),
-      gift: gift,
-      username: user?.username || 'viewer',
-    }]);
+    setGifts(prev => [...prev, optimistic]);
     setShowGifts(false);
+
+    // Call backend to process gift (will create chat message and transactions)
+    try {
+      sendGift(streamId, gift.id).then((res) => {
+        // server returns chat message and gift info; server will also emit live:chat
+        // we could replace optimistic with server message if needed
+      }).catch(err => {
+        console.error('Error sending gift to server:', err);
+      });
+    } catch (err) {
+      console.error('Error sending gift:', err);
+    }
   };
 
   const handleEndStream = async () => {
@@ -835,6 +900,47 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
                   <span className="comment-username">@{comment.username}</span>
                   <span className="comment-text">{comment.text}</span>
                 </div>
+                {/* Moderator / Host actions */}
+                {(user && (user.role === 'moderator' || user.role === 'admin' || (streamData && (streamData.streamer?._id === user._id || streamData.streamer === user._id)))) && (
+                  <div className="comment-actions">
+                    <button
+                      className="comment-action-btn"
+                      onClick={async () => {
+                        // delete message
+                        try {
+                          const streamId = streamData?.id || streamData?._id || streamData?.roomId;
+                          if (!streamId) return;
+                          await deleteChatMessage(streamId, comment.id);
+                          setComments(prev => prev.filter(c => c.id !== comment.id));
+                        } catch (err) {
+                          console.error('Delete chat failed:', err);
+                        }
+                      }}
+                      title="Delete message"
+                    >
+                      <i className="fa-solid fa-trash"></i>
+                    </button>
+                    {comment.userId && (
+                      <button
+                        className="comment-action-btn"
+                        onClick={async () => {
+                          try {
+                            const streamId = streamData?.id || streamData?._id || streamData?.roomId;
+                            if (!streamId) return;
+                            // ban for 10 minutes by default
+                            await banUserFromStream(streamId, comment.userId, 10, 'Moderator action');
+                            setComments(prev => [...prev.slice(-49), { id: `sys-${Date.now()}`, username: 'system', text: `User ${comment.username} banned`, timestamp: new Date() }]);
+                          } catch (err) {
+                            console.error('Ban user failed:', err);
+                          }
+                        }}
+                        title="Ban user for 10 minutes"
+                      >
+                        <i className="fa-solid fa-ban"></i>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             <div ref={commentsEndRef} />
@@ -850,8 +956,8 @@ const LiveStreamPlayer = ({ streamData, onEnd, isBroadcaster = false }) => {
               onChange={(e) => setNewComment(e.target.value)}
               className="comment-input"
             />
-            <button type="submit" className="send-comment-btn">
-              <i className="fa-solid fa-paper-plane"></i>
+            <button type="submit" className="send-comment-btn" disabled={cooldownRemaining > 0}>
+              {cooldownRemaining > 0 ? `${cooldownRemaining}s` : <i className="fa-solid fa-paper-plane"></i>}
             </button>
             <button
               type="button"

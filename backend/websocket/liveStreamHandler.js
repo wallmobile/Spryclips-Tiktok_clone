@@ -54,6 +54,17 @@ const initializeLiveStreamHandlers = (io) => {
           return socket.emit('live:error', { message: 'Live stream not found or not active' });
         }
 
+        // Check per-stream bans
+        if (socket.userId) {
+          const bannedEntry = (liveStream.bannedUsers || []).find(b => b.user?.toString() === socket.userId?.toString());
+          if (bannedEntry) {
+            const now = new Date();
+            if (!bannedEntry.bannedUntil || new Date(bannedEntry.bannedUntil) > now) {
+              return socket.emit('live:error', { message: 'You are banned from this stream' });
+            }
+          }
+        }
+
         const canonicalRoomId = liveStream._id.toString();
 
         // Initialize room if it doesn't exist (keyed by canonical Mongo _id)
