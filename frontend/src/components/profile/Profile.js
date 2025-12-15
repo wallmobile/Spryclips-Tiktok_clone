@@ -54,6 +54,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const [drafts, setDrafts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('latest'); // 'latest', 'popular', 'oldest'
+  const [privacyFilter, setPrivacyFilter] = useState('all'); // 'all', 'public', 'private'
   const [activeVideoId, setActiveVideoId] = useState(null);
 
   // Check if viewing own profile or other user's profile
@@ -1519,9 +1520,27 @@ const Profile = ({ onClose, username: viewUsername }) => {
 
   const safeQuery = searchQuery.toLowerCase();
   const filteredVideos = sortVideos(
-    videos.filter(video =>
-      (video.caption || '').toLowerCase().includes(safeQuery)
-    )
+    videos.filter(video => {
+      // Search filter
+      const matchesSearch = (video.caption || '').toLowerCase().includes(safeQuery);
+      
+      // Privacy filter
+      const isVideoPrivate = video.isPrivate === true || video.visibility === 'private';
+      let matchesPrivacy = true;
+      if (privacyFilter === 'public') {
+        matchesPrivacy = !isVideoPrivate;
+      } else if (privacyFilter === 'private') {
+        matchesPrivacy = isVideoPrivate;
+      }
+      // 'all' shows everything
+      
+      // Debug logging
+      if (privacyFilter !== 'all') {
+        console.log(`🔍 Video ${video.id}: isPrivate=${video.isPrivate}, visibility=${video.visibility}, isVideoPrivate=${isVideoPrivate}, matchesPrivacy=${matchesPrivacy}, filter=${privacyFilter}`);
+      }
+      
+      return matchesSearch && matchesPrivacy;
+    })
   );
 
   const filteredLikedVideos = sortVideos(
@@ -2026,10 +2045,31 @@ const Profile = ({ onClose, username: viewUsername }) => {
                     className="dashboard-search-input"
                   />
                 </div>
-                <button className="filter-btn">
-                  <i className="fa-solid fa-filter"></i>
-                  Filter
-                </button>
+                <div className="privacy-filter-buttons">
+                  <button
+                    type="button"
+                    className={`privacy-filter-btn ${privacyFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setPrivacyFilter('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    className={`privacy-filter-btn ${privacyFilter === 'public' ? 'active' : ''}`}
+                    onClick={() => setPrivacyFilter('public')}
+                  >
+                    <i className="fa-solid fa-globe"></i>
+                    Public
+                  </button>
+                  <button
+                    type="button"
+                    className={`privacy-filter-btn ${privacyFilter === 'private' ? 'active' : ''}`}
+                    onClick={() => setPrivacyFilter('private')}
+                  >
+                    <i className="fa-solid fa-lock"></i>
+                    Private
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2086,6 +2126,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
                           <div className="video-duration-badge">
                             {video.duration}
                           </div>
+                          {(video.isPrivate === true || video.visibility === 'private') && (
+                            <div className="video-privacy-badge">
+                              <i className="fa-solid fa-lock"></i>
+                            </div>
+                          )}
                           <button
                             type="button"
                             className="thumbnail-play-button"

@@ -6675,6 +6675,78 @@ html body .profile-overlay .profile-header-new .profile-back-btn {
   box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
 }
 
+/* Privacy Filter Buttons */
+.privacy-filter-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.privacy-filter-btn {
+  padding: 8px 16px;
+  background: #FF0050;
+  border: 1px solid #FF0050;
+  border-radius: 20px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.privacy-filter-btn i {
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.privacy-filter-btn:hover {
+  background: #FE2C55;
+  border-color: #FE2C55;
+  color: #ffffff;
+}
+
+.privacy-filter-btn.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  border-color: transparent;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+.privacy-filter-btn.active i {
+  color: #0F172A;
+}
+
+.privacy-filter-btn.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 0, 80, 0.3);
+}
+
+/* Video Privacy Badge */
+.video-privacy-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.video-privacy-badge i {
+  color: #ffffff;
+  font-size: 14px;
+}
+
 /* Mobile: Red filter button */
 @media (max-width: 48rem) { /* 768px and below - all mobile/tablet */
   .filter-btn {
@@ -6686,6 +6758,21 @@ html body .profile-overlay .profile-header-new .profile-back-btn {
   .filter-btn:hover {
     background: #FE2C55 !important; /* Slightly lighter red on hover */
     box-shadow: 0 8px 20px rgba(255, 0, 80, 0.4) !important;
+  }
+
+  /* Privacy Filter Buttons - Mobile */
+  .privacy-filter-buttons {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .privacy-filter-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .privacy-filter-btn i {
+    font-size: 10px;
   }
 }
 
@@ -8409,6 +8496,32 @@ body.dark-mode .visibility-friends,
 body.dark-mode .visibility-private {
   background: rgba(0, 0, 0, 0.85) !important;
   color: #F9FAFB !important;
+}
+
+/* Dark Mode - Privacy Filter Buttons */
+body.dark-mode .privacy-filter-btn {
+  background: #FF0050;
+  border-color: #FF0050;
+  color: #ffffff;
+}
+
+body.dark-mode .privacy-filter-btn:hover {
+  background: #FE2C55;
+  border-color: #FE2C55;
+  color: #ffffff;
+}
+
+body.dark-mode .privacy-filter-btn.active {
+  background: linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%);
+  color: #0F172A;
+}
+
+body.dark-mode .privacy-filter-btn.active i {
+  color: #0F172A;
+}
+
+body.dark-mode .video-privacy-badge {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* Edit Profile Modal Dark Mode */
