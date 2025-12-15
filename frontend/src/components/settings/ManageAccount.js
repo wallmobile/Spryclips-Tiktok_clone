@@ -9,7 +9,6 @@ const ManageAccount = ({ onClose }) => {
   
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const [showChangePhone, setShowChangePhone] = useState(false);
   const [showAccountVerification, setShowAccountVerification] = useState(false);
   const [showDownloadData, setShowDownloadData] = useState(false);
   const [showDeactivateAccount, setShowDeactivateAccount] = useState(false);
@@ -26,11 +25,6 @@ const ManageAccount = ({ onClose }) => {
   const [emailForm, setEmailForm] = useState({
     newEmail: '',
     password: ''
-  });
-
-  const [phoneForm, setPhoneForm] = useState({
-    newPhone: '',
-    verificationCode: ''
   });
 
   const [accountInfo, setAccountInfo] = useState({
@@ -166,33 +160,6 @@ const ManageAccount = ({ onClose }) => {
     }
   };
 
-  const handlePhoneChange = async (e) => {
-    e.preventDefault();
-    if (phoneForm.verificationCode.length !== 6) {
-      setSaveMessage('Please enter the 6-digit verification code!');
-      setTimeout(() => setSaveMessage(''), 3000);
-      return;
-    }
-    try {
-      setSaving(true);
-      await api.put('/api/users/change-phone', {
-        newPhone: phoneForm.newPhone,
-        verificationCode: phoneForm.verificationCode
-      });
-      setSaveMessage('Phone number updated successfully!');
-      setTimeout(() => {
-        setSaveMessage('');
-        setShowChangePhone(false);
-        setPhoneForm({ newPhone: '', verificationCode: '' });
-      }, 2000);
-    } catch (error) {
-      console.error('Failed to change phone:', error);
-      setSaveMessage(error.response?.data?.message || 'Failed to change phone number');
-      setTimeout(() => setSaveMessage(''), 3000);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleAccountAction = async (action) => {
     switch(action) {
@@ -327,13 +294,6 @@ const ManageAccount = ({ onClose }) => {
           description: accountInfo.email,
           icon: 'fa-solid fa-envelope',
           action: () => setShowChangeEmail(true)
-        },
-        {
-          id: 'phone',
-          title: 'Change Phone Number',
-          description: accountInfo.phone,
-          icon: 'fa-solid fa-phone',
-          action: () => setShowChangePhone(true)
         }
       ]
     },
@@ -596,76 +556,6 @@ const ManageAccount = ({ onClose }) => {
           </div>
         )}
 
-        {/* Change Phone Modal */}
-        {showChangePhone && (
-          <div className="account-modal-overlay" onClick={() => setShowChangePhone(false)}>
-            <div className="account-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="account-modal-header">
-                <h3>Change Phone Number</h3>
-                <button className="account-modal-close" onClick={() => setShowChangePhone(false)}>
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              </div>
-              <div className="account-modal-body">
-                <form onSubmit={handlePhoneChange}>
-                  <div className="current-info">
-                    <p>Current Phone: <strong>{accountInfo.phone}</strong></p>
-                  </div>
-                  <div className="form-group">
-                    <label>New Phone Number</label>
-                    <input
-                      type="tel"
-                      value={phoneForm.newPhone}
-                      onChange={(e) => setPhoneForm({ ...phoneForm, newPhone: e.target.value })}
-                      required
-                      placeholder="+1 555-123-4567"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Verification Code</label>
-                    <div className="input-with-action">
-                      <input
-                        type="text"
-                        value={phoneForm.verificationCode}
-                        onChange={(e) => setPhoneForm({ ...phoneForm, verificationCode: e.target.value })}
-                        required
-                        maxLength={6}
-                        pattern="\d{6}"
-                        placeholder="Enter 6-digit code"
-                      />
-                      <button
-                        type="button"
-                        className="secondary-action-btn"
-                        onClick={async () => {
-                          try {
-                            await api.post('/api/users/send-phone-verification', {
-                              phone: phoneForm.newPhone || accountInfo.phone
-                            });
-                            setSaveMessage(`Verification code sent to ${phoneForm.newPhone || accountInfo.phone}`);
-                            setTimeout(() => setSaveMessage(''), 3000);
-                          } catch (error) {
-                            setSaveMessage('Failed to send verification code');
-                            setTimeout(() => setSaveMessage(''), 3000);
-                          }
-                        }}
-                      >
-                        Send Code
-                      </button>
-                    </div>
-                  </div>
-                  <div className="form-actions">
-                    <button type="button" className="cancel-btn" onClick={() => setShowChangePhone(false)}>
-                      Cancel
-                    </button>
-                    <button type="submit" className="submit-btn" disabled={saving}>
-                      {saving ? 'Updating...' : 'Update Phone'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Account Activity Modal */}
         {showAccountActivity && (

@@ -631,40 +631,6 @@ router.put('/change-email', authMiddleware, async (req, res) => {
   }
 });
 
-// Change phone
-router.put('/change-phone', authMiddleware, async (req, res) => {
-  try {
-    const { newPhone, verificationCode } = req.body;
-    const user = await User.findById(req.user._id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // In production, verify the code here
-    // For now, just update the phone
-    user.phone = newPhone;
-    await user.save();
-
-    res.json({ message: 'Phone number updated successfully' });
-  } catch (error) {
-    console.error('Error changing phone:', error);
-    res.status(500).json({ message: error.message || 'Failed to change phone number' });
-  }
-});
-
-// Send phone verification code
-router.post('/send-phone-verification', authMiddleware, async (req, res) => {
-  try {
-    const { phone } = req.body;
-    // In production, send SMS verification code here
-    res.json({ message: 'Verification code sent successfully' });
-  } catch (error) {
-    console.error('Error sending phone verification:', error);
-    res.status(500).json({ message: error.message || 'Failed to send verification code' });
-  }
-});
-
 // Request account verification
 router.post('/request-verification', authMiddleware, async (req, res) => {
   try {
