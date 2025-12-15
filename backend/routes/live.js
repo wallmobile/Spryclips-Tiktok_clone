@@ -22,6 +22,8 @@ const authMiddleware = require('../middleware/auth');
 const crypto = require('crypto');
 const router = express.Router();
 const { emitNotification } = require('../socket/socketServer');
+const { getIO } = require('../socket/socketServer');
+const rateLimit = require('express-rate-limit');
 
 // ==================== START LIVE STREAM ====================
 router.post('/start', authMiddleware, async (req, res) => {
@@ -382,7 +384,20 @@ router.post('/:streamId/viewer', async (req, res) => {
 });
 
 // ==================== SEND LIVE CHAT MESSAGE ====================
-router.post('/:streamId/chat', authMiddleware, async (req, res) => {
+// Rate limiter for chat: limit per user (or IP if anonymous)
+const chatLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10 seconds
+  max: 5, // max 5 messages per window
+  message: { success: false, message: 'Too many messages. Slow down.' },
+  keyGenerator: (req) => {
+    // use user id if available, otherwise IP
+    return (req.user && req.user._id) ? req.user._id.toString() : req.ip;
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/:streamId/chat', authMiddleware, chatLimiter, async (req, res) => {
   try {
     const streamId = req.params.streamId;
     const { message, type } = req.body;
@@ -404,6 +419,20 @@ router.post('/:streamId/chat', authMiddleware, async (req, res) => {
       });
     }
 
+    // Server-side ban check
+    const bannedEntry = (liveStream.bannedUsers || []).find(b => b.user?.toString() === userId.toString());
+    if (bannedEntry) {
+      const now = new Date();
+      if (!bannedEntry.bannedUntil || new Date(bannedEntry.bannedUntil) > now) {
+        return res.status(403).json({ success: false, message: 'You are banned from this stream' });
+      }
+    }
+
+    // Simple spam/bot protection
+    if (req.user.isBot || (req.user.spamScore || 0) > 80) {
+      return res.status(403).json({ success: false, message: 'Message rejected' });
+    }
+
     // Create chat message
     const chatMessage = new LiveChat({
       stream: streamId,
@@ -414,6 +443,16 @@ router.post('/:streamId/chat', authMiddleware, async (req, res) => {
 
     await chatMessage.save();
     await chatMessage.populate('user', 'username profile');
+
+    // Emit to room via socket so viewers get real-time update
+    try {
+      const io = getIO();
+      if (io) {
+        io.to(`live:${streamId}:host`).to(`live:${streamId}:viewers`).to(`live:${streamId}:guests`).emit('live:chat', { message: chatMessage, timestamp: new Date() });
+      }
+    } catch (err) {
+      console.warn('Failed to emit chat via socket:', err?.message || err);
+    }
 
     res.status(201).json({
       success: true,
@@ -575,6 +614,107 @@ router.post('/:streamId/gift', authMiddleware, async (req, res) => {
       message: 'Failed to send gift',
       error: error.message,
     });
+  }
+});
+
+// ==================== DELETE CHAT MESSAGE (MODERATION) ====================
+router.delete('/:streamId/chat/:chatId', authMiddleware, async (req, res) => {
+  try {
+    const { streamId, chatId } = req.params;
+    const userId = req.user._id;
+
+    const liveStream = await LiveStream.findById(streamId).populate('streamer');
+    if (!liveStream) return res.status(404).json({ success: false, message: 'Stream not found' });
+
+    // Only streamer or moderators/admins can delete messages
+    if (liveStream.streamer._id.toString() !== userId.toString() && !['moderator','admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const chat = await LiveChat.findById(chatId);
+    if (!chat || chat.stream.toString() !== streamId.toString()) {
+      return res.status(404).json({ success: false, message: 'Chat message not found' });
+    }
+
+    await LiveChat.findByIdAndDelete(chatId);
+
+    // Emit deletion to live room
+    const io = getIO();
+    if (io) io.to(`live:${streamId}:viewers`).emit('live:chat-deleted', { chatId });
+
+    res.json({ success: true, message: 'Chat message deleted' });
+  } catch (error) {
+    console.error('Error deleting chat message:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete chat message', error: error.message });
+  }
+});
+
+// ==================== BAN USER FROM STREAM ====================
+router.post('/:streamId/ban', authMiddleware, async (req, res) => {
+  try {
+    const { streamId } = req.params;
+    const { userId: targetUserId, minutes = 0, reason = '' } = req.body;
+    const actorId = req.user._id;
+
+    const liveStream = await LiveStream.findById(streamId).populate('streamer');
+    if (!liveStream) return res.status(404).json({ success: false, message: 'Stream not found' });
+
+    // Only streamer or moderators/admins can ban
+    if (liveStream.streamer._id.toString() !== actorId.toString() && !['moderator','admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const bannedUntil = minutes > 0 ? new Date(Date.now() + minutes * 60000) : null;
+
+    // Upsert ban entry
+    const existing = liveStream.bannedUsers.find(b => b.user?.toString() === targetUserId.toString());
+    if (existing) {
+      existing.bannedUntil = bannedUntil;
+      existing.reason = reason;
+    } else {
+      liveStream.bannedUsers.push({ user: targetUserId, bannedUntil, reason });
+    }
+
+    await liveStream.save();
+
+    // Notify user and room
+    const io = getIO();
+    if (io) {
+      io.to(`user:${targetUserId}`).emit('live:banned', { streamId, reason, bannedUntil });
+      io.to(`live:${streamId}:viewers`).emit('live:user-banned', { userId: targetUserId, reason, bannedUntil });
+    }
+
+    res.json({ success: true, message: 'User banned from stream', bannedUntil });
+  } catch (error) {
+    console.error('Error banning user:', error);
+    res.status(500).json({ success: false, message: 'Failed to ban user', error: error.message });
+  }
+});
+
+// ==================== UNBAN USER FROM STREAM ====================
+router.post('/:streamId/unban', authMiddleware, async (req, res) => {
+  try {
+    const { streamId } = req.params;
+    const { userId: targetUserId } = req.body;
+    const actorId = req.user._id;
+
+    const liveStream = await LiveStream.findById(streamId).populate('streamer');
+    if (!liveStream) return res.status(404).json({ success: false, message: 'Stream not found' });
+
+    if (liveStream.streamer._id.toString() !== actorId.toString() && !['moderator','admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    liveStream.bannedUsers = liveStream.bannedUsers.filter(b => b.user?.toString() !== targetUserId.toString());
+    await liveStream.save();
+
+    const io = getIO();
+    if (io) io.to(`live:${streamId}:viewers`).emit('live:user-unbanned', { userId: targetUserId });
+
+    res.json({ success: true, message: 'User unbanned' });
+  } catch (error) {
+    console.error('Error unbanning user:', error);
+    res.status(500).json({ success: false, message: 'Failed to unban user', error: error.message });
   }
 });
 
