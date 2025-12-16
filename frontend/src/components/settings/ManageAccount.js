@@ -38,7 +38,7 @@ const ManageAccount = ({ onClose }) => {
 
   // Track if account was just deactivated to prevent status override
   const [isDeactivated, setIsDeactivated] = useState(false);
-  
+
   const [accountInfo, setAccountInfo] = useState({
     email: user?.email || 'user@example.com',
     phone: user?.phone || '+1 (555) 123-4567',
@@ -74,12 +74,12 @@ const ManageAccount = ({ onClose }) => {
             console.log('📥 Updating account info from API:', { newStatus, prevStatus: prev.accountStatus });
             
             return {
-              email: userData.email || 'user@example.com',
-              phone: userData.phone || 'Not set',
-              joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
-              lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
+            email: userData.email || 'user@example.com',
+            phone: userData.phone || 'Not set',
+            joinDate: userData.createdAt ? new Date(userData.createdAt).toISOString().split('T')[0] : '2023-05-15',
+            lastLogin: userData.lastLogin ? new Date(userData.lastLogin).toLocaleString() : 'Never',
               accountStatus: newStatus,
-              verificationStatus: userData.emailVerified ? 'Verified' : 'Unverified'
+            verificationStatus: userData.emailVerified ? 'Verified' : 'Unverified'
             };
           });
         }
