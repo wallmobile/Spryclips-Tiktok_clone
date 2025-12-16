@@ -17,7 +17,7 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'http://localhost:5000',  // Local development
+  API_URL: '',  // Local development
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'http://localhost:5000/uploads'  // Local development: 'http://localhost:5000/uploads'
+  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Local development: 'http://localhost:5000/uploads'
 };
