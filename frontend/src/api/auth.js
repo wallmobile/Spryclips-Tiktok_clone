@@ -4,6 +4,7 @@ import api from '../config/axios';
 
 // Register
 export const register = async (userData) => {
+  // userData can be an object with username, email, password, verificationCode
   const response = await api.post('/api/auth/register', userData);
   return response.data;
 };

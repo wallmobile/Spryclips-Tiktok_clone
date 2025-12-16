@@ -893,19 +893,19 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       onConfirm: async () => {
-        try {
-          const response = await deleteUser(userId);
-          if (response.success) {
-            setToast({ type: 'success', message: 'User deleted successfully' });
-            fetchUsers();
-            if (selectedUser?._id === userId) {
-              setSelectedUser(null);
-            }
-          }
-        } catch (error) {
-          console.error('Error deleting user:', error);
-          setToast({ type: 'error', message: 'Failed to delete user' });
+    try {
+      const response = await deleteUser(userId);
+      if (response.success) {
+        setToast({ type: 'success', message: 'User deleted successfully' });
+        fetchUsers();
+        if (selectedUser?._id === userId) {
+          setSelectedUser(null);
         }
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setToast({ type: 'error', message: 'Failed to delete user' });
+    }
       }
     });
   };
@@ -919,16 +919,16 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       onConfirm: async () => {
-        try {
-          const response = await deleteVideo(videoId);
-          if (response.success) {
-            setToast({ type: 'success', message: 'Video deleted successfully' });
-            fetchVideos();
-          }
-        } catch (error) {
-          console.error('Error deleting video:', error);
-          setToast({ type: 'error', message: 'Failed to delete video' });
-        }
+    try {
+      const response = await deleteVideo(videoId);
+      if (response.success) {
+        setToast({ type: 'success', message: 'Video deleted successfully' });
+        fetchVideos();
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      setToast({ type: 'error', message: 'Failed to delete video' });
+    }
       }
     });
   };
@@ -942,16 +942,16 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       onConfirm: async () => {
-        try {
-          const response = await deleteStory(storyId);
-          if (response.success) {
-            setToast({ type: 'success', message: 'Story deleted successfully' });
-            fetchStories();
-          }
-        } catch (error) {
-          console.error('Error deleting story:', error);
-          setToast({ type: 'error', message: 'Failed to delete story' });
-        }
+    try {
+      const response = await deleteStory(storyId);
+      if (response.success) {
+        setToast({ type: 'success', message: 'Story deleted successfully' });
+        fetchStories();
+      }
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      setToast({ type: 'error', message: 'Failed to delete story' });
+    }
       }
     });
   };
@@ -965,18 +965,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       onConfirm: async () => {
-        try {
-          const response = await deleteComment(commentId);
-          if (response.success) {
-            setToast({ type: 'success', message: 'Comment deleted successfully' });
-            fetchComments();
-          } else {
-            setToast({ type: 'error', message: response.message || 'Failed to delete comment' });
-          }
-        } catch (error) {
-          console.error('Error deleting comment:', error);
-          setToast({ type: 'error', message: error.response?.data?.message || 'Failed to delete comment' });
-        }
+    try {
+      const response = await deleteComment(commentId);
+      if (response.success) {
+        setToast({ type: 'success', message: 'Comment deleted successfully' });
+        fetchComments();
+      } else {
+        setToast({ type: 'error', message: response.message || 'Failed to delete comment' });
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      setToast({ type: 'error', message: error.response?.data?.message || 'Failed to delete comment' });
+    }
       }
     });
   };
@@ -7145,14 +7145,14 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                       confirmText: 'Delete',
                                       cancelText: 'Cancel',
                                       onConfirm: async () => {
-                                        try {
-                                          await deleteBlacklistItem(item._id);
-                                          setToast({ type: 'success', message: 'Item deleted' });
-                                          fetchBlacklist();
-                                        } catch (error) {
-                                          setToast({ type: 'error', message: 'Failed to delete' });
-                                        }
+                                      try {
+                                        await deleteBlacklistItem(item._id);
+                                        setToast({ type: 'success', message: 'Item deleted' });
+                                        fetchBlacklist();
+                                      } catch (error) {
+                                        setToast({ type: 'error', message: 'Failed to delete' });
                                       }
+                                    }
                                     });
                                   }}
                                   className="admin-btn admin-btn-danger admin-btn-small"
@@ -7226,14 +7226,14 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                 confirmText: 'Delete',
                                 cancelText: 'Cancel',
                                 onConfirm: async () => {
-                                  try {
-                                    await deleteBlacklistItem(item._id);
-                                    setToast({ type: 'success', message: 'Item deleted' });
-                                    fetchBlacklist();
-                                  } catch (error) {
-                                    setToast({ type: 'error', message: 'Failed to delete' });
-                                  }
+                                try {
+                                  await deleteBlacklistItem(item._id);
+                                  setToast({ type: 'success', message: 'Item deleted' });
+                                  fetchBlacklist();
+                                } catch (error) {
+                                  setToast({ type: 'error', message: 'Failed to delete' });
                                 }
+                              }
                               });
                             }}
                             className="admin-btn admin-btn-danger admin-btn-small"
@@ -7370,14 +7370,14 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                       confirmText: 'Downrank',
                                       cancelText: 'Cancel',
                                       onConfirm: async () => {
-                                        try {
-                                          await downrankContent({ contentId: item.contentId, contentType: item.contentType });
-                                          setToast({ type: 'success', message: 'Content downranked' });
-                                          fetchBoostedContent();
-                                        } catch (error) {
-                                          setToast({ type: 'error', message: 'Failed to downrank' });
-                                        }
+                                      try {
+                                        await downrankContent({ contentId: item.contentId, contentType: item.contentType });
+                                        setToast({ type: 'success', message: 'Content downranked' });
+                                        fetchBoostedContent();
+                                      } catch (error) {
+                                        setToast({ type: 'error', message: 'Failed to downrank' });
                                       }
+                                    }
                                     });
                                   }}
                                   className="admin-btn admin-btn-danger admin-btn-small"

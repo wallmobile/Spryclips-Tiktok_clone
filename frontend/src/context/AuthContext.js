@@ -275,10 +275,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (username, email, password) => {
+  const register = async (userDataOrUsername, email, password) => {
     try {
       setAuthenticating(true);
-      const response = await api.post('/api/auth/register', { username, email, password });
+      // Support both object format { username, email, password, verificationCode } and separate params
+      const data = typeof userDataOrUsername === 'object' && userDataOrUsername !== null && !email
+        ? userDataOrUsername
+        : { username: userDataOrUsername, email, password };
+      const response = await api.post('/api/auth/register', data);
       
       // Return full response data including verification flags
       const result = {
@@ -393,7 +397,6 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
 
 
 

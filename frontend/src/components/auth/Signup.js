@@ -183,27 +183,17 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 
     setLoading(true);
     try {
-      // Step 1: Verify the OTP code first (before signup)
+      // Code will be verified automatically during registration
       const email = formData.email.trim();
       const code = emailVerificationCode.trim();
       
-      console.log('🔐 Verifying signup code before registration...');
-      try {
-        await verifySignupCode(email, code);
-        console.log('✅ Code verified successfully!');
-        // Mark email as verified after successful verification
-        setEmailVerified(true);
-      } catch (verifyError) {
-        // Handle verification errors
-        const errorMsg = verifyError?.response?.data?.message || 'Invalid or expired verification code. Please try again.';
-        setError(cleanErrorMessage(errorMsg));
-        setLoading(false);
-        return; // Stop here if verification fails
-      }
-      
-      // Step 2: If code is verified, proceed with registration
-      const result = await register(formData.username.trim(), email, formData.password);
-      console.log('📧 Register result:', result);
+      // Register with verification code - backend will verify and mark email as verified
+      const result = await register({
+        username: formData.username.trim(),
+        email: email,
+        password: formData.password,
+        verificationCode: code
+      });
 
       if (result.success) {
         // Email already verified before signup, so no need for post-signup verification
@@ -220,34 +210,69 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
         }, 900);
       } else if (isMountedRef.current) {
         // Extract field-level errors from backend response
-        // Backend uses express-validator format: { param: 'fieldName', msg: 'error message' }
+        // Backend uses express-validator format: { field: 'fieldName', message: 'error message' }
         const backendErrors = {};
         if (result.details && Array.isArray(result.details)) {
           result.details.forEach((detail) => {
-            if (detail.param) {
+            // Handle both old format (param/msg) and new format (field/message)
+            const fieldName = detail.field || detail.param;
+            const errorMessage = detail.message || detail.msg;
+            
+            if (fieldName) {
               // Map backend field names to frontend field names
               const fieldMap = {
                 'username': 'username',
                 'email': 'email',
-                'password': 'password'
+                'password': 'password',
+                'verificationCode': 'emailVerificationCode'
               };
-              const frontendField = fieldMap[detail.param] || detail.param;
-              backendErrors[frontendField] = cleanErrorMessage(detail.msg || detail.message);
+              const frontendField = fieldMap[fieldName] || fieldName;
+              backendErrors[frontendField] = cleanErrorMessage(errorMessage);
             }
           });
         }
         
         if (Object.keys(backendErrors).length > 0) {
           setErrors(backendErrors);
+          // Show first error as main error message
+          const firstError = Object.values(backendErrors)[0];
+          setError(cleanErrorMessage(firstError));
+        } else {
+          // Set general error message
+          const errorMessage = result.message || 'Registration failed. Please try again.';
+          setError(cleanErrorMessage(errorMessage));
         }
-        
-        // Set general error message
-        const errorMessage = result.message || 'Registration failed. Please try again.';
-        setError(cleanErrorMessage(errorMessage));
       }
     } catch (err) {
       if (isMountedRef.current) {
-        const errorMsg = err?.response?.data?.message || err?.message || 'An unexpected error occurred. Please try again.';
+        // Extract detailed error information
+        const errorData = err?.response?.data;
+        let errorMsg = errorData?.message || err?.message || 'An unexpected error occurred. Please try again.';
+        
+        // If there are field-specific errors, show them
+        if (errorData?.details && Array.isArray(errorData.details)) {
+          const backendErrors = {};
+          errorData.details.forEach((detail) => {
+            const fieldName = detail.field || detail.param;
+            const errorMessage = detail.message || detail.msg;
+            if (fieldName) {
+              const fieldMap = {
+                'username': 'username',
+                'email': 'email',
+                'password': 'password',
+                'verificationCode': 'emailVerificationCode'
+              };
+              const frontendField = fieldMap[fieldName] || fieldName;
+              backendErrors[frontendField] = cleanErrorMessage(errorMessage);
+            }
+          });
+          
+          if (Object.keys(backendErrors).length > 0) {
+            setErrors(backendErrors);
+            errorMsg = Object.values(backendErrors)[0]; // Show first error
+          }
+        }
+        
         setError(cleanErrorMessage(errorMsg));
       }
     } finally {
@@ -274,8 +299,6 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 
   // Handle send verification code (before signup)
   const handleSendVerificationCode = async () => {
-    console.log("Send code button clicked");
-    
     const email = formData.email.trim();
     
     if (!email) {
@@ -290,21 +313,39 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 
     try {
       const response = await sendSignupVerificationCode(email);
-      console.log("OTP API call finished", response);
       
       if (response?.success) {
-        setSuccess('✅ Verification code sent successfully! Please check your email.');
         setError('');
-        // Show code in console if available (for development)
-        if (response?.code) {
-          console.log('📧 Verification Code:', response.code);
-        }
+        // User-friendly success message - code is sent via email only
+        const successMsg = response?.message || '✅ Verification code sent successfully! Please check your email inbox.';
+        setSuccess(successMsg);
+        // Start timer if code was sent
+        setCodeSent(true);
+        setTimer(90); // 90 seconds timer
       } else {
         setError(response?.message || 'Failed to send verification code. Please try again.');
       }
     } catch (error) {
       console.error("Error sending code", error);
-      const errorMsg = error?.response?.data?.message || 'Failed to send verification code. Please try again.';
+      console.error("Full error details:", {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      
+      // Better error messages
+      let errorMsg = 'Failed to send verification code. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error?.message?.includes('Network Error') || error?.code === 'ERR_NETWORK') {
+        errorMsg = 'Network error. Please check if the backend server is running.';
+      } else if (error?.message?.includes('timeout') || error?.code === 'ECONNABORTED') {
+        errorMsg = 'Request timed out. Please check if the backend server is running.';
+      } else if (error?.response?.status === 500) {
+        errorMsg = 'Server error. Please check backend console for details.';
+      }
+      
       setError(cleanErrorMessage(errorMsg));
       setSuccess('');
     } finally {
@@ -558,58 +599,31 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
                   <button
                     type="button"
                     onClick={handleSendVerificationCode}
-                    disabled={sendingCode}
+                    disabled={sendingCode || timer > 0}
                     style={{
                       padding: '10px 16px',
                       fontSize: '12px',
                       whiteSpace: 'nowrap',
                       borderRadius: '4px',
                       border: 'none',
-                      background: sendingCode
+                      background: sendingCode || timer > 0
                         ? '#ccc'
                         : 'linear-gradient(135deg, #FF0050 0%, #FE2C55 50%, #25F4EE 100%)',
-                      color: sendingCode ? '#999' : '#fff',
-                      cursor: sendingCode ? 'not-allowed' : 'pointer',
+                      color: sendingCode || timer > 0 ? '#999' : '#fff',
+                      cursor: sendingCode || timer > 0 ? 'not-allowed' : 'pointer',
                       fontWeight: '500',
                       minWidth: '100px'
                     }}
                   >
-                    {sendingCode ? "Sending..." : "Send code"}
+                    {sendingCode ? "Sending..." : timer > 0 ? `Resend (${timer}s)` : "Send Verification Code"}
                   </button>
-                  {codeSent && !emailVerified && (
-                    <button
-                      type="button"
-                      onClick={handleVerifyEmailCode}
-                      disabled={verifyingEmail || emailVerificationCode.trim().length !== 6}
-                      style={{
-                        padding: '10px 16px',
-                        fontSize: '12px',
-                        whiteSpace: 'nowrap',
-                        borderRadius: '4px',
-                        border: 'none',
-                        background: verifyingEmail || emailVerificationCode.trim().length !== 6
-                          ? '#f0f0f0'
-                          : 'linear-gradient(135deg, #25F4EE 0%, #FE2C55 100%)',
-                        color: verifyingEmail || emailVerificationCode.trim().length !== 6 ? '#999' : '#fff',
-                        cursor: verifyingEmail || emailVerificationCode.trim().length !== 6 ? 'not-allowed' : 'pointer',
-                        fontWeight: '500'
-                      }}
-                    >
-                      {verifyingEmail ? 'Verifying...' : 'Verify'}
-                    </button>
-                  )}
                 </div>
               </div>
-              {codeSent && !emailVerified && (
+              {codeSent && (
                 <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginBottom: 0 }}>
                   {timer > 0 
-                    ? `Enter the code sent to ${formData.email}. Time remaining: ${timer}s` 
+                    ? `Enter the 6-digit code sent to ${formData.email.trim()}. Code will be verified automatically when you click Sign Up. Time remaining: ${timer}s` 
                     : 'Code expired. Please request a new code.'}
-                </p>
-              )}
-              {emailVerified && (
-                <p style={{ fontSize: '12px', color: '#25F4EE', marginTop: '4px', marginBottom: 0, fontWeight: '500' }}>
-                  ✓ Email verified successfully!
                 </p>
               )}
             </div>
@@ -725,4 +739,3 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
 };
 
 export default Signup;
-
