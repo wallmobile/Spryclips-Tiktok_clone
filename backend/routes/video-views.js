@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Video = require('../models/Video');
 const VideoView = require('../models/VideoView');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
-const { sendSuccess } = require('../utils/responseHandler');
+const { sendSuccess } = require('../utils/apiResponse');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
@@ -82,19 +82,33 @@ router.post('/track', optionalAuth, asyncHandler(async (req, res) => {
     throw new AppError('Video ID is required', 400, { code: 'VIDEO_ID_REQUIRED' });
   }
 
+  // Convert to string and trim
+  const videoIdStr = String(videoId).trim();
+  
+  if (!videoIdStr || videoIdStr === '') {
+    console.error('❌ [VideoView] Video ID is empty');
+    throw new AppError('Video ID is required', 400, { code: 'VIDEO_ID_REQUIRED' });
+  }
+
+  // Validate videoId is a valid MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(videoIdStr)) {
+    console.error('❌ [VideoView] Invalid video ID format:', videoIdStr, 'Type:', typeof videoId);
+    throw new AppError(`Invalid video ID format: ${videoIdStr}`, 400, { code: 'INVALID_VIDEO_ID', receivedId: videoIdStr });
+  }
+
   // Validate video exists
-  const video = await Video.findById(videoId);
+  const video = await Video.findById(videoIdStr);
   if (!video) {
-    console.error('❌ [VideoView] Video not found:', videoId);
+    console.error('❌ [VideoView] Video not found:', videoIdStr);
     throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
   }
   
-  console.log('✅ [VideoView] Video found:', videoId);
+  console.log('✅ [VideoView] Video found:', videoIdStr);
 
   // Prevent duplicate views from same user/IP within 24 hours
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const existingView = await VideoView.findOne({
-    video: videoId,
+    video: videoIdStr,
     $or: [
       ...(userId ? [{ user: userId }] : []),
       { ipAddress: userIp }
@@ -122,7 +136,7 @@ router.post('/track', optionalAuth, asyncHandler(async (req, res) => {
 
   // Create new view record
   const videoView = new VideoView({
-    video: videoId,
+    video: videoIdStr,
     user: userId || null,
     ipAddress: userIp,
     userAgent: userAgent,
@@ -132,14 +146,14 @@ router.post('/track', optionalAuth, asyncHandler(async (req, res) => {
 
   await videoView.save();
   console.log('✅ [VideoView] New view record created:', {
-    videoId,
+    videoId: videoIdStr,
     userId: userId || 'anonymous',
     ipAddress: userIp,
     watchTime: watchTime || 0
   });
 
   // Increment video view count (watchTime field doesn't exist in Video model, so only increment views)
-  await Video.findByIdAndUpdate(videoId, { 
+  await Video.findByIdAndUpdate(videoIdStr, { 
     $inc: { views: 1 }
   });
   console.log('✅ [VideoView] Video view count incremented');

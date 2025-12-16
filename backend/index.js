@@ -529,36 +529,55 @@ if (!isTestEnv) {
     initializeSocket(server);
 
     // Cleanup stuck processing videos - run every 10 minutes
-    const Video = require('./models/Video');
-    const cleanupStuckVideos = async () => {
+    // Only setup cleanup if MongoDB is connected
+    const setupCleanupJob = () => {
       try {
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
-        
-        const stuckVideos = await Video.updateMany(
-          {
-            status: 'processing',
-            updatedAt: { $lt: thirtyMinutesAgo }
-          },
-          {
-            $set: {
-              status: 'failed',
-              processingError: 'Video processing timed out after 30 minutes. Please try uploading again or retry processing.'
+        const Video = require('./models/Video');
+        const cleanupStuckVideos = async () => {
+          try {
+            if (mongoose.connection.readyState !== 1) {
+              return; // Skip if MongoDB not connected
             }
-          }
-        );
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+            
+            const stuckVideos = await Video.updateMany(
+              {
+                status: 'processing',
+                updatedAt: { $lt: thirtyMinutesAgo }
+              },
+              {
+                $set: {
+                  status: 'failed',
+                  processingError: 'Video processing timed out after 30 minutes. Please try uploading again or retry processing.'
+                }
+              }
+            );
 
-        if (stuckVideos.modifiedCount > 0) {
-          console.log(`🧹 Cleaned up ${stuckVideos.modifiedCount} stuck processing video(s)`);
-        }
+            if (stuckVideos.modifiedCount > 0) {
+              console.log(`🧹 Cleaned up ${stuckVideos.modifiedCount} stuck processing video(s)`);
+            }
+          } catch (error) {
+            console.error('❌ Error cleaning up stuck videos:', error.message);
+          }
+        };
+
+        // Run cleanup immediately, then every 10 minutes
+        cleanupStuckVideos();
+        setInterval(cleanupStuckVideos, 10 * 60 * 1000); // Every 10 minutes
+        console.log('🧹 Stuck video cleanup job started (runs every 10 minutes)');
       } catch (error) {
-        console.error('❌ Error cleaning up stuck videos:', error.message);
+        console.warn('⚠️ Could not setup cleanup job:', error.message);
       }
     };
 
-    // Run cleanup immediately on startup, then every 10 minutes
-    cleanupStuckVideos();
-    setInterval(cleanupStuckVideos, 10 * 60 * 1000); // Every 10 minutes
-    console.log('🧹 Stuck video cleanup job started (runs every 10 minutes)');
+    // Setup cleanup job when MongoDB connects
+    if (mongoose.connection.readyState === 1) {
+      setupCleanupJob();
+    } else {
+      mongoose.connection.once('connected', () => {
+        setupCleanupJob();
+      });
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     console.error('Stack:', error.stack);

@@ -385,13 +385,17 @@ router.post('/:streamId/viewer', async (req, res) => {
 
 // ==================== SEND LIVE CHAT MESSAGE ====================
 // Rate limiter for chat: limit per user (or IP if anonymous)
+const { ipKeyGenerator } = require('express-rate-limit');
 const chatLimiter = rateLimit({
   windowMs: 10 * 1000, // 10 seconds
   max: 5, // max 5 messages per window
   message: { success: false, message: 'Too many messages. Slow down.' },
   keyGenerator: (req) => {
-    // use user id if available, otherwise IP
-    return (req.user && req.user._id) ? req.user._id.toString() : req.ip;
+    // use user id if available, otherwise use IP key generator for IPv6 compatibility
+    if (req.user && req.user._id) {
+      return req.user._id.toString();
+    }
+    return ipKeyGenerator(req);
   },
   standardHeaders: true,
   legacyHeaders: false,

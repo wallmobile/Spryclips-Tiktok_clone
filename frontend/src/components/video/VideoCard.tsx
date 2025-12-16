@@ -180,7 +180,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
         });
         
         // Track view when video starts playing (only once per video)
-        if (!hasTrackedView && id) {
+        // Only track if ID is a valid MongoDB ObjectId (24 hex characters)
+        const isValidObjectId = id && /^[0-9a-fA-F]{24}$/.test(id.trim());
+        if (!hasTrackedView && isValidObjectId) {
           setWatchStartTime(Date.now());
           trackVideoView(id, 0, 0).then((result) => {
             if (result?.success) {
@@ -188,7 +190,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
               console.log('✅ Video view tracked:', id);
             }
           }).catch((err) => {
-            console.warn('Failed to track video view:', err);
+            // Silently fail - view tracking shouldn't break video playback
+            console.warn('Failed to track video view:', err?.response?.data?.message || err?.message);
           });
         }
       });
@@ -276,9 +279,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
         const completionRate = Math.min(100, (watchTime / duration) * 100);
         
         // Update view tracking with watch time and completion
-        trackVideoView(id, watchTime, completionRate).catch((err) => {
-          console.warn('Failed to update view tracking:', err);
-        });
+        // Only track if ID is a valid MongoDB ObjectId (24 hex characters)
+        const isValidObjectId = id && /^[0-9a-fA-F]{24}$/.test(id.trim());
+        if (isValidObjectId) {
+          trackVideoView(id, watchTime, completionRate).catch((err) => {
+            // Silently fail - view tracking shouldn't break video playback
+            console.warn('Failed to update view tracking:', err?.response?.data?.message || err?.message);
+          });
+        }
       }
     };
 

@@ -6,7 +6,7 @@ const Transaction = require('../models/Transaction');
 const Earning = require('../models/Earning');
 const authMiddleware = require('../middleware/auth');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
-const { sendSuccess } = require('../utils/responseHandler');
+const { sendSuccess } = require('../utils/apiResponse');
 const router = express.Router();
 
 /**

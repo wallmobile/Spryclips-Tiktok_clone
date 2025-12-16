@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
+import ConfirmationModal from '../common/ConfirmationModal';
 import {
   getDashboardStats,
   getAllUsers,
@@ -399,6 +400,17 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
 
   // Toast notifications
   const [toast, setToast] = useState(null);
+
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null,
+    confirmText: 'Confirm',
+    cancelText: 'Cancel'
+  });
 
   // Check if user is admin - redirect if not admin
   useEffect(() => {
@@ -872,72 +884,100 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      const response = await deleteUser(userId);
-      if (response.success) {
-        setToast({ type: 'success', message: 'User deleted successfully' });
-        fetchUsers();
-        if (selectedUser?._id === userId) {
-          setSelectedUser(null);
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          const response = await deleteUser(userId);
+          if (response.success) {
+            setToast({ type: 'success', message: 'User deleted successfully' });
+            fetchUsers();
+            if (selectedUser?._id === userId) {
+              setSelectedUser(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          setToast({ type: 'error', message: 'Failed to delete user' });
         }
       }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      setToast({ type: 'error', message: 'Failed to delete user' });
-    }
+    });
   };
 
   const handleDeleteVideo = async (videoId) => {
-    if (!window.confirm('Are you sure you want to delete this video?')) {
-      return;
-    }
-    try {
-      const response = await deleteVideo(videoId);
-      if (response.success) {
-        setToast({ type: 'success', message: 'Video deleted successfully' });
-        fetchVideos();
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete Video',
+      message: 'Are you sure you want to delete this video? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          const response = await deleteVideo(videoId);
+          if (response.success) {
+            setToast({ type: 'success', message: 'Video deleted successfully' });
+            fetchVideos();
+          }
+        } catch (error) {
+          console.error('Error deleting video:', error);
+          setToast({ type: 'error', message: 'Failed to delete video' });
+        }
       }
-    } catch (error) {
-      console.error('Error deleting video:', error);
-      setToast({ type: 'error', message: 'Failed to delete video' });
-    }
+    });
   };
 
   const handleDeleteStory = async (storyId) => {
-    if (!window.confirm('Are you sure you want to delete this story?')) {
-      return;
-    }
-    try {
-      const response = await deleteStory(storyId);
-      if (response.success) {
-        setToast({ type: 'success', message: 'Story deleted successfully' });
-        fetchStories();
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete Story',
+      message: 'Are you sure you want to delete this story? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          const response = await deleteStory(storyId);
+          if (response.success) {
+            setToast({ type: 'success', message: 'Story deleted successfully' });
+            fetchStories();
+          }
+        } catch (error) {
+          console.error('Error deleting story:', error);
+          setToast({ type: 'error', message: 'Failed to delete story' });
+        }
       }
-    } catch (error) {
-      console.error('Error deleting story:', error);
-      setToast({ type: 'error', message: 'Failed to delete story' });
-    }
+    });
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      const response = await deleteComment(commentId);
-      if (response.success) {
-        setToast({ type: 'success', message: 'Comment deleted successfully' });
-        fetchComments();
-      } else {
-        setToast({ type: 'error', message: response.message || 'Failed to delete comment' });
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete Comment',
+      message: 'Are you sure you want to delete this comment? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          const response = await deleteComment(commentId);
+          if (response.success) {
+            setToast({ type: 'success', message: 'Comment deleted successfully' });
+            fetchComments();
+          } else {
+            setToast({ type: 'error', message: response.message || 'Failed to delete comment' });
+          }
+        } catch (error) {
+          console.error('Error deleting comment:', error);
+          setToast({ type: 'error', message: error.response?.data?.message || 'Failed to delete comment' });
+        }
       }
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      setToast({ type: 'error', message: error.response?.data?.message || 'Failed to delete comment' });
-    }
+    });
   };
 
   const handleEditComment = (comment) => {
@@ -7095,16 +7135,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                   {item.active ? 'Deactivate' : 'Activate'}
                                 </button>
                                 <button
-                                  onClick={async () => {
-                                    if (window.confirm('Delete this blacklist item?')) {
-                                      try {
-                                        await deleteBlacklistItem(item._id);
-                                        setToast({ type: 'success', message: 'Item deleted' });
-                                        fetchBlacklist();
-                                      } catch (error) {
-                                        setToast({ type: 'error', message: 'Failed to delete' });
+                                  onClick={() => {
+                                    setConfirmationModal({
+                                      isOpen: true,
+                                      title: 'Delete Blacklist Item',
+                                      message: 'Are you sure you want to delete this blacklist item? This action cannot be undone.',
+                                      type: 'danger',
+                                      confirmText: 'Delete',
+                                      cancelText: 'Cancel',
+                                      onConfirm: async () => {
+                                        try {
+                                          await deleteBlacklistItem(item._id);
+                                          setToast({ type: 'success', message: 'Item deleted' });
+                                          fetchBlacklist();
+                                        } catch (error) {
+                                          setToast({ type: 'error', message: 'Failed to delete' });
+                                        }
                                       }
-                                    }
+                                    });
                                   }}
                                   className="admin-btn admin-btn-danger admin-btn-small"
                                 >
@@ -7168,16 +7216,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                             {item.active ? 'Deactivate' : 'Activate'}
                           </button>
                           <button
-                            onClick={async () => {
-                              if (window.confirm('Delete this blacklist item?')) {
-                                try {
-                                  await deleteBlacklistItem(item._id);
-                                  setToast({ type: 'success', message: 'Item deleted' });
-                                  fetchBlacklist();
-                                } catch (error) {
-                                  setToast({ type: 'error', message: 'Failed to delete' });
+                            onClick={() => {
+                              setConfirmationModal({
+                                isOpen: true,
+                                title: 'Delete Blacklist Item',
+                                message: 'Are you sure you want to delete this blacklist item? This action cannot be undone.',
+                                type: 'danger',
+                                confirmText: 'Delete',
+                                cancelText: 'Cancel',
+                                onConfirm: async () => {
+                                  try {
+                                    await deleteBlacklistItem(item._id);
+                                    setToast({ type: 'success', message: 'Item deleted' });
+                                    fetchBlacklist();
+                                  } catch (error) {
+                                    setToast({ type: 'error', message: 'Failed to delete' });
+                                  }
                                 }
-                              }
+                              });
                             }}
                             className="admin-btn admin-btn-danger admin-btn-small"
                           >
@@ -7304,16 +7360,24 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                                   {item.active ? 'Deactivate' : 'Activate'}
                                 </button>
                                 <button
-                                  onClick={async () => {
-                                    if (window.confirm('Delete this boosted content?')) {
-                                      try {
-                                        await downrankContent({ contentId: item.contentId, contentType: item.contentType });
-                                        setToast({ type: 'success', message: 'Content downranked' });
-                                        fetchBoostedContent();
-                                      } catch (error) {
-                                        setToast({ type: 'error', message: 'Failed to downrank' });
+                                  onClick={() => {
+                                    setConfirmationModal({
+                                      isOpen: true,
+                                      title: 'Downrank Content',
+                                      message: 'Are you sure you want to downrank this boosted content? This will remove it from boosted status.',
+                                      type: 'warning',
+                                      confirmText: 'Downrank',
+                                      cancelText: 'Cancel',
+                                      onConfirm: async () => {
+                                        try {
+                                          await downrankContent({ contentId: item.contentId, contentType: item.contentType });
+                                          setToast({ type: 'success', message: 'Content downranked' });
+                                          fetchBoostedContent();
+                                        } catch (error) {
+                                          setToast({ type: 'error', message: 'Failed to downrank' });
+                                        }
                                       }
-                                    }
+                                    });
                                   }}
                                   className="admin-btn admin-btn-danger admin-btn-small"
                                 >
@@ -11651,6 +11715,18 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal({ ...confirmationModal, isOpen: false })}
+        onConfirm={confirmationModal.onConfirm || (() => {})}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        type={confirmationModal.type}
+        confirmText={confirmationModal.confirmText}
+        cancelText={confirmationModal.cancelText}
+      />
     </div>
   );
 };

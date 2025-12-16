@@ -616,7 +616,7 @@ router.post('/login',
           user: user._id,
           action: 'login',
           resource: 'auth',
-          details: wasSuspended ? 'Account reactivated and logged in' : 'User logged in successfully',
+          details: wasAdminSuspended ? 'Account reactivated and logged in' : 'User logged in successfully',
           ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
           userAgent: req.get('user-agent') || '',
           status: 'success'
@@ -633,7 +633,7 @@ router.post('/login',
         user.accountActivity = [];
       }
       user.accountActivity.unshift({
-        action: wasSuspended ? 'Account Reactivated' : 'Login',
+        action: wasAdminSuspended ? 'Account Reactivated' : 'Login',
         device: req.get('user-agent') || 'Unknown Device',
         location: 'Unknown Location',
         ip: req.ip,
