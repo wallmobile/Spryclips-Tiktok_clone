@@ -10,7 +10,6 @@ const STEP_SUCCESS = 'success';
 
 const ForgotPasswordModal = ({ onClose }) => {
   const [step, setStep] = useState(STEP_REQUEST);
-  const [requesting, setRequesting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
@@ -25,6 +24,8 @@ const ForgotPasswordModal = ({ onClose }) => {
   const [sendingCode, setSendingCode] = useState(false);
   const [timer, setTimer] = useState(0);
   const [codeSendSuccess, setCodeSendSuccess] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Function to clean error messages and make them user-friendly
   const cleanErrorMessage = (errorMsg) => {
@@ -137,25 +138,6 @@ const ForgotPasswordModal = ({ onClose }) => {
     }
   };
 
-  const handleRequestReset = async (event) => {
-    if (event) {
-      event.preventDefault();
-    }
-    if (!canSubmitRequest) return;
-
-    // This is now just for form submission - actual code sending happens via handleSendVerificationCode
-    // But we can keep this for backward compatibility or remove it
-  };
-
-  const handleVerifyCode = async (event) => {
-    event.preventDefault();
-    if (!canVerifyCode || !codeVerified) return;
-
-    // Code is verified, move to password reset step
-    setStep(STEP_RESET);
-    setError(null);
-    setInfoMessage(null);
-  };
 
   const handleVerifyCodeInput = async () => {
     if (code.trim().length !== 6) {
@@ -369,28 +351,76 @@ const ForgotPasswordModal = ({ onClose }) => {
               </p>
               <div className="forgot-password-field">
                 <label htmlFor="resetPassword">New password</label>
-                <input
-                  id="resetPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="At least 8 characters"
-                  minLength={8}
-                  required
-                  autoFocus
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="resetPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="At least 8 characters"
+                    minLength={8}
+                    required
+                    autoFocus
+                    style={{ paddingRight: '40px', width: '100%' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#666',
+                      padding: '5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <i className={showNewPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'}></i>
+                  </button>
+                </div>
               </div>
               <div className="forgot-password-field">
                 <label htmlFor="resetConfirm">Confirm new password</label>
-                <input
-                  id="resetConfirm"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Re-enter your password"
-                  minLength={8}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="resetConfirm"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Re-enter your password"
+                    minLength={8}
+                    required
+                    style={{ paddingRight: '40px', width: '100%' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#666',
+                      padding: '5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <i className={showConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'}></i>
+                  </button>
+                </div>
               </div>
               {error && (
                 <div className="forgot-password-error">
