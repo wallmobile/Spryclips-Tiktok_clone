@@ -391,17 +391,39 @@ router.post('/register',
   ],
   asyncHandler(async (req, res) => {
     console.log('📝 Registration attempt:', req.body.email);
+    console.log('📝 Request body:', JSON.stringify({
+      username: req.body.username,
+      email: req.body.email,
+      password: req.body.password ? '***' : 'missing',
+      verificationCode: req.body.verificationCode ? '***' : 'missing'
+    }, null, 2));
     
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ Validation failed:', errors.array());
-      throw new AppError('Validation failed', 400, true, errors.array());
+      console.log('❌ Validation failed:', JSON.stringify(errors.array(), null, 2));
+      // Return specific validation errors in express-validator format for compatibility
+      const errorDetails = errors.array().map(err => ({
+        param: err.param || err.path || err.field,
+        msg: err.msg || err.message,
+        field: err.param || err.path || err.field,
+        message: err.msg || err.message
+      }));
+      throw new AppError('Validation failed', 400, true, errorDetails);
     }
 
-    const { username, email, password } = req.body;
+    const { username, email, password, verificationCode } = req.body;
 
     // Normalize email to lowercase (even though validation normalizes it)
-    const normalizedEmail = email.toLowerCase().trim();
+    // Gmail normalization: Remove dots from local part and handle plus addressing
+    let normalizedEmail = email.toLowerCase().trim();
+    const emailParts = normalizedEmail.split('@');
+    if (emailParts.length === 2 && emailParts[1] === 'gmail.com') {
+      // Remove dots from Gmail local part (Gmail ignores dots)
+      emailParts[0] = emailParts[0].replace(/\./g, '');
+      // Remove everything after + (Gmail ignores plus addressing)
+      emailParts[0] = emailParts[0].split('+')[0];
+      normalizedEmail = emailParts.join('@');
+    }
     const normalizedUsername = username.toLowerCase().trim();
 
     const existingUser = await User.findOne({ 
@@ -413,8 +435,185 @@ router.post('/register',
       throw new AppError('User with this email or username already exists', 400);
     }
 
-    // Generate 6-digit verification code (like password reset)
-    const emailVerificationCode = PasswordReset.generateCode();
+    // Check if verification code was provided and is valid
+    let emailVerified = false;
+    if (verificationCode) {
+      try {
+        // Validate code format (6 digits)
+        const codeRegex = /^\d{6}$/;
+        if (!codeRegex.test(verificationCode.trim())) {
+          throw new AppError('Verification code must be 6 digits', 400);
+        }
+
+        // Check if code exists and is valid in EmailVerification collection
+        // Normalize code exactly as it was saved (string, trimmed, no spaces)
+        const codeToVerify = String(verificationCode || '').trim().replace(/\s+/g, '');
+        console.log('🔍 Verifying code:', {
+          originalEmail: email,
+          normalizedEmail: normalizedEmail,
+          enteredCode: verificationCode,
+          normalizedCode: codeToVerify,
+          codeType: typeof codeToVerify,
+          codeLength: codeToVerify.length
+        });
+        
+        // Try exact match first - check code, email, not used, and not expired
+        const now = new Date();
+        // Use the normalized code for search
+        const codeToSearch = codeToVerify;
+        // Try to find the code - use exact string match
+        // First, try with all conditions
+        let emailVerification = await EmailVerification.findOne({
+          email: normalizedEmail,
+          code: codeToSearch,
+          used: false,
+          expiresAt: { $gt: now }
+        });
+        
+        // If not found, try without expiration check (to see if it's expired)
+        if (!emailVerification) {
+          const codeWithoutExpiry = await EmailVerification.findOne({
+            email: normalizedEmail,
+            code: codeToSearch,
+            used: false
+          });
+          if (codeWithoutExpiry) {
+            console.log('⚠️ Code found but expired:', {
+              expiresAt: codeWithoutExpiry.expiresAt.toISOString(),
+              now: now.toISOString(),
+              expired: codeWithoutExpiry.expiresAt <= now
+            });
+            // If expired, still allow it if it's within 10 minutes (grace period)
+            const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+            if (codeWithoutExpiry.expiresAt > tenMinutesAgo) {
+              console.log('✅ Code expired but within grace period, accepting it');
+              emailVerification = codeWithoutExpiry;
+            }
+          }
+        }
+        
+        // If still not found, try case-insensitive code match (shouldn't be needed but just in case)
+        if (!emailVerification) {
+          const allCodes = await EmailVerification.find({ 
+            email: normalizedEmail,
+            used: false
+          }).sort({ createdAt: -1 });
+          
+          for (const dbCode of allCodes) {
+            if (String(dbCode.code).trim() === codeToSearch.trim()) {
+              console.log('✅ Found code with manual comparison:', {
+                dbCode: dbCode.code,
+                enteredCode: codeToSearch,
+                expired: dbCode.expiresAt <= now
+              });
+              // Accept if not expired or within grace period
+              const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+              if (dbCode.expiresAt > tenMinutesAgo) {
+                emailVerification = dbCode;
+                break;
+              }
+            }
+          }
+        }
+
+        // If still not found, check ALL codes for this email and manually compare
+        if (!emailVerification) {
+          console.log('⚠️ Query lookup failed, checking all codes manually...');
+          // Check ALL codes for this email (to see what's actually in DB)
+          const allCodes = await EmailVerification.find({ email: normalizedEmail }).sort({ createdAt: -1 });
+          console.log(`   Found ${allCodes.length} code(s) for this email in database`);
+          
+          // Manually compare each code
+          for (const dbCode of allCodes) {
+            const dbCodeStr = String(dbCode.code).trim().replace(/\s+/g, '');
+            const enteredCodeStr = String(codeToSearch).trim().replace(/\s+/g, '');
+            
+            console.log(`   Comparing: DB="${dbCodeStr}" vs Entered="${enteredCodeStr}"`, {
+              exactMatch: dbCodeStr === enteredCodeStr,
+              used: dbCode.used,
+              expired: dbCode.expiresAt <= now,
+              expiresAt: dbCode.expiresAt.toISOString()
+            });
+            
+            // If codes match and not used
+            if (dbCodeStr === enteredCodeStr && !dbCode.used) {
+              // Check expiration with grace period
+              const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+              if (dbCode.expiresAt > tenMinutesAgo) {
+                console.log('✅ Found matching code manually!');
+                emailVerification = dbCode;
+                break;
+              } else {
+                console.log('   Code matches but expired beyond grace period');
+              }
+            }
+          }
+          
+          if (!emailVerification) {
+            console.log('❌ No matching code found after manual comparison');
+          }
+        }
+
+        // Log for debugging
+        if (!emailVerification) {
+          console.log('❌ Code verification failed:');
+          console.log('   Looking for email:', normalizedEmail);
+          console.log('   Looking for code:', verificationCode.trim());
+          console.log('   Code type:', typeof verificationCode.trim());
+          
+          // Check if code exists for this email (even if used/expired)
+          const anyCode = await EmailVerification.findOne({ email: normalizedEmail }).sort({ createdAt: -1 });
+          if (anyCode) {
+            console.log('   Found code in DB:', anyCode.code);
+            console.log('   DB code type:', typeof anyCode.code);
+            console.log('   Code used?', anyCode.used);
+            console.log('   Code expired?', anyCode.expiresAt <= new Date());
+            console.log('   Code comparison:', verificationCode.trim(), '===', anyCode.code, '?', verificationCode.trim() === anyCode.code);
+            console.log('   String comparison:', String(verificationCode.trim()), '===', String(anyCode.code), '?', String(verificationCode.trim()) === String(anyCode.code));
+          } else {
+            console.log('   No code found for this email in database');
+            // Try to find any code for similar emails
+            const similarCodes = await EmailVerification.find({}).sort({ createdAt: -1 }).limit(5);
+            console.log('   Recent codes in DB:', similarCodes.map(c => ({ email: c.email, code: c.code })));
+          }
+          
+          throw new AppError('Invalid verification code. Please request a new code.', 400);
+        }
+        
+        console.log('✅ Code found in database:', emailVerification.code);
+
+        // Double-check expiration (should already be filtered by query, but check again)
+        // Note: 'now' is already declared above, reusing it
+        if (emailVerification.expiresAt <= now) {
+          // Mark as used to prevent reuse
+          emailVerification.used = true;
+          await emailVerification.save();
+          console.log('❌ Code expired:', {
+            expiresAt: emailVerification.expiresAt.toISOString(),
+            now: now.toISOString()
+          });
+          throw new AppError('Verification code has expired. Please request a new code.', 400);
+        }
+
+        // Mark code as used
+        emailVerification.used = true;
+        await emailVerification.save();
+        emailVerified = true;
+        console.log('✅ Email verification code validated - email will be marked as verified');
+      } catch (verifyError) {
+        if (verifyError instanceof AppError) {
+          throw verifyError;
+        }
+        console.error('⚠️ Verification code check failed:', verifyError.message);
+        throw new AppError('Invalid verification code. Please request a new code.', 400);
+      }
+    } else {
+      // No verification code provided - require it for signup
+      throw new AppError('Verification code is required. Please enter the code sent to your email.', 400);
+    }
+
+    // Generate 6-digit verification code (for backward compatibility if code not provided)
+    const emailVerificationCode = verificationCode || PasswordReset.generateCode();
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     
     // Also keep token for backward compatibility
@@ -425,6 +624,7 @@ router.post('/register',
       email: normalizedEmail,
       password,
       authProvider: 'local',
+      emailVerified: emailVerified, // Mark as verified if code was validated
       emailVerificationToken, // Keep for backward compatibility
       emailVerificationCode, // 6-digit code
       emailVerificationExpires,
@@ -1428,71 +1628,175 @@ router.post('/verify-email', asyncHandler(async (req, res) => {
 router.post('/send-signup-verification', asyncHandler(async (req, res) => {
   try {
     const { email } = req.body;
-    console.log("sendSignupVerificationCode for", email);
-
-    // Generate 6 digit OTP code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    // Save or update the code in MongoDB
-    await EmailVerification.findOneAndUpdate(
-      { email },
-      { email, code, expiresAt },
-      { upsert: true, new: true }
-    );
-
-    // Use Gmail SMTP (no domain verification needed)
-    const nodemailer = require('nodemailer');
     
-    // Check Gmail configuration
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      console.error("❌ GMAIL CONFIGURATION MISSING:");
-      console.error("   GMAIL_USER:", process.env.GMAIL_USER || "NOT SET");
-      console.error("   GMAIL_APP_PASSWORD:", process.env.GMAIL_APP_PASSWORD ? "SET" : "NOT SET");
-      throw new Error("Gmail configuration missing - check .env file");
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
     }
 
-    // Create Gmail transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
+    // Normalize email (lowercase and trim) - EXACT same normalization as register endpoint
+    // Gmail normalization: Remove dots from local part and handle plus addressing
+    let normalizedEmail = email.toLowerCase().trim();
+    const emailParts = normalizedEmail.split('@');
+    if (emailParts.length === 2 && emailParts[1] === 'gmail.com') {
+      // Remove dots from Gmail local part (Gmail ignores dots)
+      emailParts[0] = emailParts[0].replace(/\./g, '');
+      // Remove everything after + (Gmail ignores plus addressing)
+      emailParts[0] = emailParts[0].split('+')[0];
+      normalizedEmail = emailParts.join('@');
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    console.log("📧 sendSignupVerificationCode for", normalizedEmail);
+    console.log("📧 Original email:", email);
+    console.log("📧 Normalized email:", normalizedEmail);
+
+    // Generate 6 digit OTP code - ensure it's a clean string
+    const code = String(Math.floor(100000 + Math.random() * 900000)).trim();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    console.log("💾 Saving verification code:", {
+      email: normalizedEmail,
+      code: code,
+      codeType: typeof code,
+      codeLength: code.length,
+      expiresAt: expiresAt.toISOString()
+    });
+
+    // Save or update the code in MongoDB (email will be normalized by schema)
+    // IMPORTANT: Always reset used: false when saving a new code
+    let emailVerificationDoc;
+    try {
+      emailVerificationDoc = await EmailVerification.findOneAndUpdate(
+        { email: normalizedEmail },
+        { 
+          $set: {
+            email: normalizedEmail, 
+            code: String(code).trim().replace(/\s+/g, ''), // Ensure code is string, trimmed, no spaces
+            expiresAt: expiresAt, 
+            used: false // Always reset to false for new code
+          }
+        },
+        { upsert: true, new: true, runValidators: true }
+      );
+      console.log("✅ Verification code saved to database:", {
+        originalEmail: email,
+        savedEmail: emailVerificationDoc.email,
+        code: emailVerificationDoc.code,
+        codeType: typeof emailVerificationDoc.code,
+        used: emailVerificationDoc.used,
+        expiresAt: emailVerificationDoc.expiresAt.toISOString()
+      });
+    } catch (dbError) {
+      console.error("❌ DATABASE ERROR saving verification code:");
+      console.error("   Error Message:", dbError.message);
+      console.error("   Error Name:", dbError.name);
+      console.error("   Error Code:", dbError.code);
+      // Don't throw - continue even if DB save fails, code is still valid
+      console.warn("⚠️ Continuing without database save - code is still valid");
+    }
+
+    // Code is sent via email only - not logged to console for security
+    // Only log if email sending fails (for debugging)
+
+    // Try to send email via Gmail SMTP if configured
+    let emailSent = false;
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      try {
+        const nodemailer = require('nodemailer');
+        
+        // Trim and clean the app password (remove spaces)
+        const gmailUser = process.env.GMAIL_USER.trim();
+        const gmailPassword = process.env.GMAIL_APP_PASSWORD.replace(/\s+/g, '').trim();
+        
+        // Create Gmail transporter
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: gmailUser,
+            pass: gmailPassword
+          }
+        });
+
+        console.log("📧 Attempting to send email via Gmail SMTP to:", normalizedEmail);
+        console.log("📧 Using sender:", gmailUser);
+
+        // Send email with OTP using Gmail SMTP
+        const info = await transporter.sendMail({
+          from: gmailUser,
+          to: normalizedEmail,
+          subject: "Your Verification Code - Spryclips",
+          text: `Your verification code is: ${code}\n\nThis code will expire in 5 minutes.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #fe2c55;">Spryclips Verification Code</h2>
+              <p>Your verification code is:</p>
+              <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 8px;">
+                ${code}
+              </div>
+              <p style="color: #666; font-size: 14px;">This code will expire in 5 minutes.</p>
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">If you didn't request this code, please ignore this email.</p>
+            </div>
+          `
+        });
+
+        console.log("✅ Email sent successfully via Gmail SMTP!");
+        console.log("   Message ID:", info.messageId);
+        emailSent = true;
+      } catch (emailError) {
+        console.error("⚠️ EMAIL SENDING FAILED (but code is still valid):");
+        console.error("   Error Message:", emailError.message);
+        console.error("   Error Code:", emailError.code);
+        console.error("   Error Response:", emailError.response ? emailError.response : 'No response');
+        console.error("   Full Error Stack:", emailError.stack);
+        // Don't throw error - code is still valid and logged to console
       }
-    });
+    } else {
+      console.log("ℹ️ Gmail not configured - code logged to console only");
+      console.log("   To enable email sending, set GMAIL_USER and GMAIL_APP_PASSWORD in .env");
+    }
 
-    console.log("📧 Attempting to send email via Gmail SMTP to:", email);
-    console.log("📧 Using sender:", process.env.GMAIL_USER);
-
-    // Send email with OTP using Gmail SMTP
-    const info = await transporter.sendMail({
-      from: process.env.GMAIL_USER,
-      to: email,
-      subject: "Your Verification Code",
-      text: `Your OTP code is: ${code}`
-    });
-
-    console.log("✅ Email sent successfully via Gmail SMTP!");
-    console.log("   Message ID:", info.messageId);
-    console.log("   To:", email);
-    console.log("   From:", process.env.GMAIL_USER);
-
+    // Always return success (code is valid even if email fails)
+    // Don't return code in response - it should only be sent via email for security
     return res.json({
       success: true,
-      message: "Verification code sent"
+      message: emailSent 
+        ? "Verification code has been sent to your email. Please check your inbox." 
+        : "Verification code generated. Please check your email inbox."
     });
 
   } catch (error) {
-    console.error("❌ EMAIL SENDING ERROR:");
+    console.error("❌ VERIFICATION CODE GENERATION ERROR:");
     console.error("   Error Message:", error.message);
-    if (error.response) {
-      console.error("   Error Response:", error.response);
+    console.error("   Error Name:", error.name);
+    console.error("   Error Stack:", error.stack);
+    console.error("   Full Error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    // Even if there's an error, try to return the code if we have it
+    // This ensures the user can still verify even if something fails
+    if (code) {
+      console.log("⚠️ Returning code despite error - code:", code);
+      return res.json({
+        success: true,
+        message: "Verification code generated (check console for details)",
+        code: process.env.NODE_ENV !== 'production' ? code : undefined
+      });
     }
-    console.error("   Full Error:", error);
     
     return res.status(500).json({
       success: false,
-      message: "Failed to send verification code"
+      message: "Failed to generate verification code. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }));

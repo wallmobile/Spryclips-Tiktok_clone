@@ -1,0 +1,64 @@
+🔧 Starting application...
+📁 Working directory: C:\Users\Waqas\Desktop\Tiktok_clone\backend
+🌍 NODE_ENV: development
+❌ JWT_SECRET is missing from .env file!
+💡 Please add JWT_SECRET=your-random-secret-string to .env file
+⚠️ JWT_SECRET not configured. Using temporary development secret.
+💡 Add JWT_SECRET to .env file for persistent configuration.
+MONGODB_URI not configured. Using default local instance at mongodb://localhost:27017/tiktok-clone.
+🌐 Allowed CORS origins: [ 'http://localhost:3000', 'http://localhost:3001' ]
+🔒 CORS credentials: true
+📁 Serving uploads from: C:\Users\Waqas\Desktop\Tiktok_clone\backend\uploads
+📁 Uploads directory: C:\Users\Waqas\Desktop\Tiktok_clone\backend\uploads
+🌐 Public URL base: http://localhost:5000/uploads
+ValidationError: Custom keyGenerator appears to use request IP without calling the ipKeyGenerator helper function for IPv6 addresses. This could allow IPv6 users to bypass limits. See https://express-rate-limit.github.io/ERR_ERL_KEY_GEN_IPV6/ for more information.
+    at Object.keyGeneratorIpFallback (C:\Users\Waqas\Desktop\Tiktok_clone\backend\node_modules\express-rate-limit\dist\index.cjs:637:13)
+    at wrappedValidations.<computed> [as keyGeneratorIpFallback] (C:\Users\Waqas\Desktop\Tiktok_clone\backend\node_modules\express-rate-limit\dist\index.cjs:680:22)
+    at parseOptions (C:\Users\Waqas\Desktop\Tiktok_clone\backend\node_modules\express-rate-limit\dist\index.cjs:750:16)
+    at rateLimit (C:\Users\Waqas\Desktop\Tiktok_clone\backend\node_modules\express-rate-limit\dist\index.cjs:831:18)
+    at Object.<anonymous> (C:\Users\Waqas\Desktop\Tiktok_clone\backend\routes\live.js:388:21)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  code: 'ERR_ERL_KEY_GEN_IPV6',
+  help: 'https://express-rate-limit.github.io/ERR_ERL_KEY_GEN_IPV6/'
+}
+❌ Uncaught Exception: Error: Cannot find module '../utils/responseHandler'
+Require stack:
+- C:\Users\Waqas\Desktop\Tiktok_clone\backend\routes\video-views.js
+- C:\Users\Waqas\Desktop\Tiktok_clone\backend\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Waqas\Desktop\Tiktok_clone\backend\routes\video-views.js:6:25)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\Waqas\\Desktop\\Tiktok_clone\\backend\\routes\\video-views.js',
+    'C:\\Users\\Waqas\\Desktop\\Tiktok_clone\\backend\\index.js'
+  ]
+}
+Stack: Error: Cannot find module '../utils/responseHandler'
+Require stack:
+- C:\Users\Waqas\Desktop\Tiktok_clone\backend\routes\video-views.js
+- C:\Users\Waqas\Desktop\Tiktok_clone\backend\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Waqas\Desktop\Tiktok_clone\backend\routes\video-views.js:6:25)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+✅ MongoDB connected: localhost
+🔧 Checking sample users for development...
+^C
