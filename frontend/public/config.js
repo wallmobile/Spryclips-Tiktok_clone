@@ -17,7 +17,7 @@
 //    API_URL: 'http://localhost:5000'
 //
 window.APP_CONFIG = {
-  API_URL: 'http://localhost:5000',  // Local development - Backend server URL
+  API_URL: '',  // Production: Empty string for same domain (Nginx will proxy /api to backend)
   // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'http://localhost:5000/uploads'  // Local development
+  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Production uploads URL
 };
