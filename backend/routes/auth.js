@@ -1281,7 +1281,21 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
     throw new AppError('Invalid email format', 400);
   }
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  // Normalize email (Gmail dot normalization - same as signup)
+  let normalizedEmail = email.toLowerCase().trim();
+  const emailParts = normalizedEmail.split('@');
+  if (emailParts.length === 2 && emailParts[1] === 'gmail.com') {
+    // Remove dots from Gmail local part (Gmail ignores dots)
+    emailParts[0] = emailParts[0].replace(/\./g, '');
+    normalizedEmail = emailParts.join('@');
+  }
+  
+  console.log("📧 Email normalization:", {
+    original: email,
+    normalized: normalizedEmail
+  });
+  
+  const user = await User.findOne({ email: normalizedEmail });
 
   // Always return success to prevent email enumeration
   if (!user) {
@@ -1324,13 +1338,95 @@ router.post('/forgot-password', asyncHandler(async (req, res) => {
   console.log('   For real emails, configure EMAIL_SERVICE in .env');
   console.log('═══════════════════════════════════════════════════════════\n');
 
-  // Send verification code via email
-  const emailTemplate = emailTemplates.passwordResetCode(user.username || 'User', code);
-  const emailResult = await sendEmail(user.email, emailTemplate.subject, emailTemplate.html);
+  // Send verification code via email - Use Gmail SMTP directly (same as signup verification)
+  let emailSent = false;
+  let emailError = null;
+  
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const nodemailer = require('nodemailer');
+      
+      // Trim and clean the app password (remove spaces)
+      const gmailUser = process.env.GMAIL_USER.trim();
+      const gmailPassword = process.env.GMAIL_APP_PASSWORD.replace(/\s+/g, '').trim();
+      
+      // Create Gmail transporter
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPassword
+        }
+      });
 
-  if (!emailResult.success) {
-    console.error('Failed to send password reset email:', emailResult.error);
-    // Don't reveal email sending failure to user (security best practice)
+      // Use the email from request (original) for sending, but ensure it's normalized
+      const emailToSend = email.toLowerCase().trim();
+      console.log("📧 Attempting to send password reset email via Gmail SMTP to:", emailToSend);
+      console.log("📧 Using sender:", gmailUser);
+      console.log("📧 Gmail password configured:", gmailPassword ? "Yes (length: " + gmailPassword.length + ")" : "No");
+
+      // Send email with OTP using Gmail SMTP
+      const emailTemplate = emailTemplates.passwordResetCode(user.username || 'User', code);
+      const info = await transporter.sendMail({
+        from: gmailUser,
+        to: emailToSend, // Use the original email from request (user might have entered with dots)
+        subject: emailTemplate.subject,
+        text: `Your password reset code is: ${code}\n\nThis code will expire in 1 hour.`,
+        html: emailTemplate.html
+      });
+
+      console.log("✅ Password reset email sent successfully via Gmail SMTP!");
+      console.log("   Message ID:", info.messageId);
+      console.log("   To:", emailToSend);
+      emailSent = true;
+    } catch (err) {
+      emailError = err;
+      console.error("❌ EMAIL SENDING FAILED:");
+      console.error("   Error Message:", err.message);
+      console.error("   Error Code:", err.code);
+      console.error("   Error Response:", err.response ? JSON.stringify(err.response, null, 2) : 'No response');
+      if (err.responseCode) {
+        console.error("   Response Code:", err.responseCode);
+      }
+      if (err.command) {
+        console.error("   Command:", err.command);
+      }
+      console.error("   Full Error Stack:", err.stack);
+      // Don't throw error - code is still valid and logged to console
+    }
+  } else {
+    console.warn("⚠️ GMAIL_USER or GMAIL_APP_PASSWORD not configured in .env");
+    console.warn("   GMAIL_USER:", process.env.GMAIL_USER ? "Set" : "NOT SET");
+    console.warn("   GMAIL_APP_PASSWORD:", process.env.GMAIL_APP_PASSWORD ? "Set" : "NOT SET");
+    console.warn("   Falling back to old email service...");
+    
+    // Fallback to old email service
+    try {
+      const emailTemplate = emailTemplates.passwordResetCode(user.username || 'User', code);
+      const emailResult = await sendEmail(user.email, emailTemplate.subject, emailTemplate.html);
+      if (emailResult.success) {
+        emailSent = true;
+        console.log("✅ Email sent via fallback email service");
+      } else {
+        console.error("❌ Fallback email service failed:", emailResult.error);
+      }
+    } catch (err) {
+      emailError = err;
+      console.error('❌ Failed to send password reset email via fallback service:', err.message);
+      console.error("   Error Stack:", err.stack);
+    }
+  }
+
+  // Log final status
+  const finalEmailToLog = email.toLowerCase().trim();
+  if (emailSent) {
+    console.log("✅ EMAIL STATUS: Successfully sent to", finalEmailToLog);
+  } else {
+    console.error("❌ EMAIL STATUS: FAILED to send to", finalEmailToLog);
+    if (emailError) {
+      console.error("   Last error:", emailError.message);
+    }
+    console.error("   ⚠️ Code is still valid and saved in database. Check console logs above for email sending errors.");
   }
 
   res.json({
