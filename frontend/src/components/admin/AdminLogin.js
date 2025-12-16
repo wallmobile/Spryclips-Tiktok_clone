@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ForgotPasswordModal from '../auth/ForgotPasswordModal';
+import { ADMIN_ROUTES } from '../../config/adminRoutes';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
@@ -27,7 +28,7 @@ const AdminLogin = () => {
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
         if (currentUser.role === 'admin') {
           // Redirect to admin panel
-          navigate('/admin');
+          navigate(ADMIN_ROUTES.DASHBOARD);
         } else {
           setError('This is an admin-only login. Regular users should use the main login page.');
           // Logout non-admin users

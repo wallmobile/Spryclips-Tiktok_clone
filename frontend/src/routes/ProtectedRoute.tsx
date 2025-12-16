@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ADMIN_BASE_PATH } from '../config/adminRoutes';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -50,7 +51,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
   // Show brief loading only if no cached user - with very short timeout
   if (loading && !timedOut && !hasCachedUser) {
     // For admin routes, don't show loading - render immediately
-    if (location.pathname.startsWith('/admin')) {
+    if (location.pathname.startsWith(ADMIN_BASE_PATH)) {
       return children; // Render immediately for admin routes
     }
     return (

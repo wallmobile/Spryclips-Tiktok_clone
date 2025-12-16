@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
+import { ADMIN_ROUTES } from '../../config/adminRoutes';
 import {
   getRoles,
   updateRolePermissions,
@@ -53,7 +54,7 @@ const SecuritySettings = ({ onClose }) => {
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
-      navigate('/admin/login');
+      navigate(ADMIN_ROUTES.LOGIN);
     }
     if (user && user.role === 'admin') {
       // Load data based on active tab
@@ -120,7 +121,7 @@ const SecuritySettings = ({ onClose }) => {
     const currentTab = searchParams.get('tab');
     if (!currentTab && !activeTab) {
       setActiveTab('roles');
-      navigate('/admin/security-settings?tab=roles', { replace: true });
+      navigate(`${ADMIN_ROUTES.SECURITY_SETTINGS}?tab=roles`, { replace: true });
     }
   }, [searchParams, activeTab, navigate]);
   

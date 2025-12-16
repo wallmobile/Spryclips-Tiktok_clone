@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { ADMIN_ROUTES, getAdminDashboardRoute } from '../../config/adminRoutes';
 import './AdminSidebar.css';
 
 const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, onClose }) => {
@@ -288,9 +289,9 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
             {menuItems.map((item) => {
               // Check if we're on a separate page route
               const isOnSeparatePage = 
-                (item.id === 'notifications' && location.pathname === '/admin/notifications-control') ||
-                (item.id === 'policy' && location.pathname === '/admin/policy-compliance') ||
-                (item.id === 'security' && location.pathname === '/admin/security-settings');
+                (item.id === 'notifications' && location.pathname === ADMIN_ROUTES.NOTIFICATIONS_CONTROL) ||
+                (item.id === 'policy' && location.pathname === ADMIN_ROUTES.POLICY_COMPLIANCE) ||
+                (item.id === 'security' && location.pathname === ADMIN_ROUTES.SECURITY_SETTINGS);
               
               // Show submenu as active if:
               // 1. activeTab matches this item, OR
@@ -331,9 +332,9 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                           
                           // Check if we're on a separate page route for this item
                           const isOnThisSeparatePage = 
-                            (item.id === 'notifications' && location.pathname === '/admin/notifications-control') ||
-                            (item.id === 'policy' && location.pathname === '/admin/policy-compliance') ||
-                            (item.id === 'security' && location.pathname === '/admin/security-settings');
+                            (item.id === 'notifications' && location.pathname === ADMIN_ROUTES.NOTIFICATIONS_CONTROL) ||
+                            (item.id === 'policy' && location.pathname === ADMIN_ROUTES.POLICY_COMPLIANCE) ||
+                            (item.id === 'security' && location.pathname === ADMIN_ROUTES.SECURITY_SETTINGS);
                           
                           // Check if this item is currently active (submenu is open)
                           // Either activeTab matches OR we're on the separate page
@@ -347,7 +348,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                             }
                             // If on separate page, navigate back to admin panel
                             if (isOnThisSeparatePage) {
-                              navigate('/admin');
+                              navigate(ADMIN_ROUTES.DASHBOARD);
                             }
                           } else {
                             // Open submenu on first click
@@ -357,13 +358,13 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                             }
                             // For separate page routes, also navigate on first click
                             if (item.id === 'notifications') {
-                              navigate('/admin/notifications-control?tab=push-campaigns');
+                              navigate(`${ADMIN_ROUTES.NOTIFICATIONS_CONTROL}?tab=push-campaigns`);
                               if (setActiveSubTab) setActiveSubTab('push-campaigns');
                             } else if (item.id === 'policy') {
-                              navigate('/admin/policy-compliance?tab=age-restrictions');
+                              navigate(`${ADMIN_ROUTES.POLICY_COMPLIANCE}?tab=age-restrictions`);
                               if (setActiveSubTab) setActiveSubTab('age-restrictions');
                             } else if (item.id === 'security') {
-                              navigate('/admin/security-settings?tab=roles');
+                              navigate(`${ADMIN_ROUTES.SECURITY_SETTINGS}?tab=roles`);
                               if (setActiveSubTab) setActiveSubTab('roles');
                             }
                             // Always close sidebar on mobile/tablet when opening submenu
@@ -408,7 +409,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                           
                           try {
                             if (subItem.id === 'age-restrictions' || subItem.id === 'regional-laws' || subItem.id === 'legal-hold' || subItem.id === 'law-enforcement') {
-                              navigate(`/admin/policy-compliance?tab=${subItem.id}`);
+                              navigate(`${ADMIN_ROUTES.POLICY_COMPLIANCE}?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
                               if (isMobile) {
                                 console.log('Closing sidebar on mobile after submenu navigation');
@@ -417,7 +418,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                               return;
                             }
                             if (subItem.id === 'roles' || subItem.id === 'activity-logs' || subItem.id === 'sessions') {
-                              navigate(`/admin/security-settings?tab=${subItem.id}`);
+                              navigate(`${ADMIN_ROUTES.SECURITY_SETTINGS}?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
                               if (isMobile) {
                                 console.log('Closing sidebar on mobile after submenu navigation');
@@ -426,7 +427,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
                               return;
                             }
                             if (subItem.id === 'push-campaigns' || subItem.id === 'warnings') {
-                              navigate(`/admin/notifications-control?tab=${subItem.id}`);
+                              navigate(`${ADMIN_ROUTES.NOTIFICATIONS_CONTROL}?tab=${subItem.id}`);
                               if (setActiveSubTab) setActiveSubTab(subItem.id);
                               if (isMobile) {
                                 console.log('Closing sidebar on mobile after submenu navigation');

@@ -20,6 +20,7 @@ import { getAllVideos } from './api/videos';
 import { videos as sampleVideos } from './data/sampleData';
 import ProtectedRoute from './routes/ProtectedRoute';
 import ErrorToasts from './components/common/ErrorToasts';
+import { ADMIN_ROUTES, ADMIN_BASE_PATH } from './config/adminRoutes';
 
 const ForYouFeed = lazy(() => import('./components/video/ForYouFeed'));
 const Navbar = lazy(() => import('./components/navigation/Navbar'));
@@ -995,33 +996,33 @@ const AppRoutes: React.FC = () => (
     <Route path="/more/privacy-settings" element={
       <ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>
     } />
-    <Route path="/admin/login" element={
+    <Route path={ADMIN_ROUTES.LOGIN} element={
       <Suspense fallback={<LoadingSpinner />}>
         <AdminLogin />
       </Suspense>
     } />
-    <Route path="/admin" element={
+    <Route path={ADMIN_ROUTES.DASHBOARD} element={
       <Suspense fallback={<LoadingSpinner />}>
         <ProtectedRoute>
           <AdminPanel mode="page" onClose={() => window.history.back()} />
         </ProtectedRoute>
       </Suspense>
     } />
-    <Route path="/admin/policy-compliance" element={
+    <Route path={ADMIN_ROUTES.POLICY_COMPLIANCE} element={
       <Suspense fallback={<LoadingSpinner />}>
         <ProtectedRoute>
           <PolicyCompliance onClose={() => window.history.back()} />
         </ProtectedRoute>
       </Suspense>
     } />
-    <Route path="/admin/security-settings" element={
+    <Route path={ADMIN_ROUTES.SECURITY_SETTINGS} element={
       <Suspense fallback={<LoadingSpinner />}>
         <ProtectedRoute>
           <SecuritySettings onClose={() => window.history.back()} />
         </ProtectedRoute>
       </Suspense>
     } />
-    <Route path="/admin/notifications-control" element={
+    <Route path={ADMIN_ROUTES.NOTIFICATIONS_CONTROL} element={
       <Suspense fallback={<LoadingSpinner />}>
         <ProtectedRoute>
           <NotificationsControl onClose={() => window.history.back()} />

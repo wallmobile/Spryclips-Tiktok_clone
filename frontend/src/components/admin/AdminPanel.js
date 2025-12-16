@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
+import { ADMIN_ROUTES } from '../../config/adminRoutes';
 import ConfirmationModal from '../common/ConfirmationModal';
 import {
   getDashboardStats,
@@ -456,7 +457,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
     if (currentUser && currentUser._id) {
       if (currentUser.role !== 'admin') {
         // User exists but is not admin - redirect
-        navigate('/admin/login', { replace: true });
+        navigate(ADMIN_ROUTES.LOGIN, { replace: true });
         return;
       }
       // User is admin, allow access
@@ -470,7 +471,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
         // Double check after timeout - maybe cached user was added
         const finalCheck = getCachedUser();
         if (!finalCheck || !finalCheck._id || finalCheck.role !== 'admin') {
-          navigate('/admin/login', { replace: true });
+          navigate(ADMIN_ROUTES.LOGIN, { replace: true });
         }
       }, 2000); // 2 second timeout
       return () => clearTimeout(timeout);

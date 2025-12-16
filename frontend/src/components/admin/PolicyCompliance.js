@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
+import { ADMIN_ROUTES } from '../../config/adminRoutes';
 import {
   getAgeRestrictions,
   updateAgeRestrictions,
@@ -52,7 +53,7 @@ const PolicyCompliance = ({ onClose }) => {
   // Check if user is admin
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
-      navigate('/admin/login');
+      navigate(ADMIN_ROUTES.LOGIN);
     }
   }, [user, authLoading, navigate]);
 

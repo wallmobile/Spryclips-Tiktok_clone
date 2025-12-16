@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
+import { ADMIN_ROUTES, getAdminDashboardRoute } from '../../config/adminRoutes';
 import {
   getPushCampaigns,
   sendPushCampaign,
@@ -265,21 +266,21 @@ const NotificationsControl = ({ onClose }) => {
             setActiveTab={(tab) => {
               console.log('NotificationsControl: setActiveTab called with:', tab);
               // Handle navigation for main tabs
-              if (tab === 'dashboard') navigate('/admin');
-              else if (tab === 'users') navigate('/admin?tab=users');
-              else if (tab === 'videos') navigate('/admin?tab=videos');
-              else if (tab === 'stories') navigate('/admin?tab=stories');
-              else if (tab === 'comments') navigate('/admin?tab=comments');
-              else if (tab === 'moderation') navigate('/admin?tab=moderation');
-              else if (tab === 'safety') navigate('/admin?tab=safety');
-              else if (tab === 'monetization') navigate('/admin?tab=monetization');
-              else if (tab === 'analytics') navigate('/admin?tab=analytics');
-              else if (tab === 'search') navigate('/admin?tab=search');
-              else if (tab === 'policy') navigate('/admin/policy-compliance?tab=age-restrictions');
-              else if (tab === 'security') navigate('/admin/security-settings?tab=roles');
-              else if (tab === 'system') navigate('/admin?tab=system');
-              else if (tab === 'support') navigate('/admin?tab=support');
-              else if (tab === 'notifications') navigate('/admin/notifications-control?tab=push-campaigns');
+              if (tab === 'dashboard') navigate(ADMIN_ROUTES.DASHBOARD);
+              else if (tab === 'users') navigate(getAdminDashboardRoute('users'));
+              else if (tab === 'videos') navigate(getAdminDashboardRoute('videos'));
+              else if (tab === 'stories') navigate(getAdminDashboardRoute('stories'));
+              else if (tab === 'comments') navigate(getAdminDashboardRoute('comments'));
+              else if (tab === 'moderation') navigate(getAdminDashboardRoute('moderation'));
+              else if (tab === 'safety') navigate(getAdminDashboardRoute('safety'));
+              else if (tab === 'monetization') navigate(getAdminDashboardRoute('monetization'));
+              else if (tab === 'analytics') navigate(getAdminDashboardRoute('analytics'));
+              else if (tab === 'search') navigate(getAdminDashboardRoute('search'));
+              else if (tab === 'policy') navigate(`${ADMIN_ROUTES.POLICY_COMPLIANCE}?tab=age-restrictions`);
+              else if (tab === 'security') navigate(`${ADMIN_ROUTES.SECURITY_SETTINGS}?tab=roles`);
+              else if (tab === 'system') navigate(getAdminDashboardRoute('system'));
+              else if (tab === 'support') navigate(getAdminDashboardRoute('support'));
+              else if (tab === 'notifications') navigate(`${ADMIN_ROUTES.NOTIFICATIONS_CONTROL}?tab=push-campaigns`);
             }}
             activeSubTab={activeTab}
             setActiveSubTab={(subTab) => {
