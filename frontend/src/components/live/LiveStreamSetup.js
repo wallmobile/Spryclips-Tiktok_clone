@@ -64,124 +64,112 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     setIsLoadingCamera(true);
     setCameraError(null);
     setCameraErrorType(null);
-    
+
     try {
-      // Check if browser supports getUserMedia
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Your browser does not support camera access. Please use a modern browser like Chrome, Firefox, or Edge.');
       }
 
-      // Check permissions API if available (not all browsers support this)
+      // Optional: probe permissions API (best-effort)
       if (navigator.permissions && navigator.permissions.query) {
         try {
-          // Note: Some browsers (like Safari) don't support 'camera' permission query
           const cameraPermission = await navigator.permissions.query({ name: 'camera' });
-          const permissionState = cameraPermission.state;
-          console.log('Camera permission state:', permissionState);
-          
-          if (permissionState === 'denied') {
-            // Permission is permanently denied - show instructions immediately
-            setCameraError('Camera permission is permanently denied. Please enable it in browser settings.');
+          console.log('Camera permission state:', cameraPermission.state);
+          if (cameraPermission.state === 'denied') {
+            setCameraError('Camera permission is denied. If you recently changed permissions, click "Start Preview" again.');
             setCameraErrorType('permission');
-            setIsLoadingCamera(false);
-            return; // Exit early, don't try to request camera
           }
-        } catch (permError) {
-          // Permissions API might not be supported or camera permission query not available
-          // This is OK - we'll proceed with getUserMedia which will show its own error
-          console.log('Could not check permissions (this is normal in some browsers):', permError.message || permError);
+        } catch (permErr) {
+          console.log('Permissions API camera query not available:', permErr?.message || permErr);
         }
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', 
-          width: { ideal: 1280, min: 640 }, 
-          height: { ideal: 720, min: 480 } 
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
+        video: { facingMode: 'user', width: { ideal: 1280, min: 640 }, height: { ideal: 720, min: 480 } },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
-      
-      if (videoPreviewRef.current) {
-        videoPreviewRef.current.srcObject = stream;
-        // Ensure video plays
-        try {
-          await videoPreviewRef.current.play();
-          console.log('✅ Video preview playing');
-        } catch (playError) {
-          console.log('Autoplay prevented, user interaction needed:', playError);
-          // Try to play again after a short delay (some browsers need this)
-          setTimeout(async () => {
-            if (videoPreviewRef.current && videoPreviewRef.current.srcObject) {
-              try {
-                await videoPreviewRef.current.play();
-                console.log('✅ Video preview playing after retry');
-              } catch (e) {
-                console.warn('Second play attempt failed:', e);
-              }
-            }
-          }, 100);
-        }
+
+      if (!videoPreviewRef.current) {
+        // Stop stream to avoid leaks
+        stream.getTracks().forEach(t => t.stop());
+        throw new Error('Video preview element not available. Please refresh the page.');
+      }
+
+      videoPreviewRef.current.srcObject = stream;
+      try {
+        await videoPreviewRef.current.play();
         setStreamPreview(stream);
         setIsCameraOn(true);
         setIsMicMuted(false);
         setCameraError(null);
         setCameraErrorType(null);
         console.log('✅ Camera preview started successfully');
-      } else {
-        // If video element is not available, stop the stream to prevent memory leak
-        console.error('❌ Video preview element not available');
-        stream.getTracks().forEach(track => track.stop());
-        throw new Error('Video preview element not available. Please refresh the page.');
+      } catch (playErr) {
+        console.error('Error playing preview:', playErr);
+        // Attempt to classify the error
+        if (playErr && (playErr.name === 'NotAllowedError' || playErr.name === 'SecurityError')) {
+          try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasVideoInput = devices && devices.some(d => d.kind === 'videoinput');
+            if (!hasVideoInput) {
+              setCameraError('No camera devices detected. Please connect a camera or check drivers and device permissions.');
+              setCameraErrorType('no-device');
+            } else {
+              setCameraError('Camera permission denied by the system. Check OS privacy settings, close other apps using the camera, or disable security software that blocks camera access. Try Start Preview again or open the page in an incognito window or another browser.');
+              setCameraErrorType('system');
+            }
+          } catch (enumErr) {
+            console.warn('enumerateDevices failed:', enumErr);
+            setCameraError('Camera permission denied by the system. Check OS privacy settings and try again.');
+            setCameraErrorType('system');
+          }
+        } else if (playErr && playErr.name === 'NotFoundError') {
+          setCameraError('No camera found. Please connect a camera and check device drivers.');
+          setCameraErrorType('no-device');
+        } else if (playErr && playErr.name === 'NotReadableError') {
+          setCameraError('Camera device is in use by another application. Close other apps (Zoom, Teams) and try again.');
+          setCameraErrorType('in-use');
+        } else {
+          setCameraError(`Error accessing camera: ${playErr?.message || playErr?.name || 'unknown error'}`);
+          setCameraErrorType('unknown');
+        }
+        // If playback failed, stop the stream to avoid leaks unless we expect user to fix permissions and retry
+        stream.getTracks().forEach(t => t.stop());
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      
       let errorMessage = 'Unable to access camera.';
       let errorType = 'unknown';
-      
-      // Handle different error types with better detection
-      if (error.name === 'NotAllowedError' || 
-          error.message?.toLowerCase().includes('permission') ||
-          error.message?.toLowerCase().includes('denied')) {
-        errorMessage = 'Camera permission denied. Please allow camera access in your browser settings.';
-        errorType = 'permission';
-      } else if (error.name === 'NotFoundError' || 
-                 error.message?.toLowerCase().includes('no camera') ||
-                 error.message?.toLowerCase().includes('not found') ||
-                 error.message?.toLowerCase().includes('no device')) {
+
+      if (error && (error.name === 'NotAllowedError' || error.name === 'SecurityError' || (error.message || '').toLowerCase().includes('permission') || (error.message || '').toLowerCase().includes('denied'))) {
+        // Check if any video input exists to distinguish system block from no-device
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasVideoInput = devices && devices.some(d => d.kind === 'videoinput');
+          if (!hasVideoInput) {
+            errorMessage = 'No camera found. Please connect a camera and try again.';
+            errorType = 'notFound';
+          } else {
+            errorMessage = 'Camera permission denied. Please check your browser and OS camera settings and try again.';
+            errorType = 'permission';
+          }
+        } catch (enumErr) {
+          errorMessage = 'Camera permission denied. Please check your browser and OS camera settings and try again.';
+          errorType = 'permission';
+        }
+      } else if (error && (error.name === 'NotFoundError' || (error.message || '').toLowerCase().includes('no camera') || (error.message || '').toLowerCase().includes('not found') || (error.message || '').toLowerCase().includes('no device'))) {
         errorMessage = 'No camera found. Please connect a camera and try again.';
         errorType = 'notFound';
-      } else if (error.name === 'NotReadableError' || 
-                 error.message?.toLowerCase().includes('in use') ||
-                 error.message?.toLowerCase().includes('busy') ||
-                 error.message?.toLowerCase().includes('could not start')) {
+      } else if (error && (error.name === 'NotReadableError' || (error.message || '').toLowerCase().includes('in use') || (error.message || '').toLowerCase().includes('busy') || (error.message || '').toLowerCase().includes('could not start'))) {
         errorMessage = 'Camera is being used by another application. Please close other apps using the camera.';
         errorType = 'inUse';
-      } else if (error.name === 'SecurityError' || 
-                 error.message?.toLowerCase().includes('https') ||
-                 error.message?.toLowerCase().includes('secure') ||
-                 error.message?.toLowerCase().includes('ssl')) {
+      } else if (error && (error.name === 'SecurityError' || (error.message || '').toLowerCase().includes('https') || (error.message || '').toLowerCase().includes('secure') || (error.message || '').toLowerCase().includes('ssl'))) {
         errorMessage = 'Camera access requires a secure connection (HTTPS) or localhost.';
         errorType = 'security';
-      } else if (error.message && error.message.length > 0) {
-        // Use the error message if available
+      } else if (error && error.message) {
         errorMessage = error.message;
-        // Try to infer error type from message
-        const msgLower = error.message.toLowerCase();
-        if (msgLower.includes('browser') || msgLower.includes('support') || msgLower.includes('not support')) {
-          errorType = 'browser';
-        } else if (msgLower.includes('element') || msgLower.includes('not available')) {
-          errorType = 'unknown';
-        }
       }
-      
+
       setCameraError(errorMessage);
       setCameraErrorType(errorType);
     } finally {
@@ -311,6 +299,18 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     };
   }, [streamPreview]);
 
+  const copyCameraInstructions = async () => {
+    const text = `How to enable camera access:\n\nChrome/Edge: Click the lock icon in the address bar → Site Settings → Camera → Allow\nFirefox: Click the lock icon → Permissions → Camera → Allow\nSafari: Safari → Settings → Websites → Camera → Allow for this site\nMobile: Go to browser settings → Site Permissions → Camera → Allow`;
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Camera instructions copied to clipboard');
+    } catch (err) {
+      console.warn('Clipboard write failed', err);
+      // fallback: show prompt with text
+      prompt('Copy these instructions:', text);
+    }
+  };
+
   return (
     <div className="live-stream-setup-overlay" onClick={handleClose}>
       <div className="live-stream-setup-modal" onClick={(e) => e.stopPropagation()}>
@@ -344,8 +344,12 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
 
                 {cameraError && !isLoadingCamera && (
                   <div className="preview-error">
-                    <i className="fa-solid fa-video-slash"></i>
-                    <p className="error-message">{cameraError}</p>
+                      <i className="fa-solid fa-video-slash"></i>
+                      {typeof cameraError === 'string' ? (
+                        <p className="error-message">{cameraError}</p>
+                      ) : (
+                        cameraError?.message && <p className="error-message">{cameraError.message}</p>
+                      )}
                     
                     {cameraErrorType === 'permission' && (
                       <div className="permission-instructions">
@@ -413,10 +417,15 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
                       </div>
                     )}
                     
-                    <button className="retry-btn" onClick={startPreview}>
-                      <i className="fa-solid fa-refresh"></i>
-                      Try Again
-                    </button>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                      <button className="retry-btn" onClick={startPreview}>
+                        <i className="fa-solid fa-refresh"></i>
+                        Try Again
+                      </button>
+                      <button className="copy-instructions-btn" onClick={copyCameraInstructions}>
+                        Copy Instructions
+                      </button>
+                    </div>
                   </div>
                 )}
 
