@@ -1,23 +1,46 @@
 // Runtime API Configuration
-// Is file ko edit karke apni backend API URL set karein
-// 
-// PRODUCTION CONFIGURATION:
-// For spryclips.com deployment, set empty string for API_URL
-// Uploads will be served from: https://spryclips.com/uploads
-// 
-// Options:
-// 1. Production (same domain with Nginx proxy):
-//    API_URL: ''  (empty string - Nginx will proxy /api to backend)
+// This file sets `window.APP_CONFIG` automatically so you don't have to
+// edit it for local vs production every time.
 //
-// 2. Backend on different domain:
-//    API_URL: 'https://your-backend-domain.com'  (domain dalen, /api mat dalen)
-//    Example: 'https://api.yoursite.com' ya 'https://backend.yoursite.com'
+// Production detection order (first match wins):
+// 1) Server injects `window.__APP_ENV = 'production'` into the page.
+// 2) If not injected, hostname check: host === 'spryclips.com' or subdomain of it.
 //
-// 3. Local development:
-//    API_URL: 'http://localhost:5000'
-//
-window.APP_CONFIG = {
-  API_URL: '',  // Production: Empty string for same domain (Nginx will proxy /api to backend)
-  // Public uploads base URL - videos/images will be loaded from here
-  UPLOADS_BASE_URL: 'https://spryclips.com/uploads'  // Production uploads URL
-};
+// Behavior:
+// - Production: API_URL = ''  (assumes same-domain proxy like Nginx),
+//   UPLOADS_BASE_URL = 'https://spryclips.com/uploads'
+// - Otherwise (local/dev): API_URL = 'http://localhost:5000',
+//   UPLOADS_BASE_URL = 'http://localhost:5000/uploads'
+
+(function () {
+  var isProd = false;
+
+  try {
+    // 1) Server can inject a global marker for exact control
+    if (typeof window !== 'undefined' && window.__APP_ENV === 'production') {
+      isProd = true;
+    }
+
+    // 2) If not explicitly set, check common Node build env (if available)
+    if (!isProd && typeof process !== 'undefined' && process && process.env && process.env.NODE_ENV === 'production') {
+      isProd = true;
+    }
+
+    // 3) Hostname fallback (detect spryclips domain)
+    if (!isProd && typeof window !== 'undefined' && window.location && window.location.hostname) {
+      var host = window.location.hostname.toLowerCase();
+      if (host === 'spryclips.com' || host.endsWith('.spryclips.com')) {
+        isProd = true;
+      }
+    }
+  } catch (e) {
+    // keep isProd = false on any unexpected error
+  }
+
+  window.APP_CONFIG = {
+    API_URL: isProd ? '' : 'http://localhost:5000',
+    // Public uploads base URL - videos/images will be loaded from here
+    UPLOADS_BASE_URL: isProd ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads'
+  };
+})();
+
