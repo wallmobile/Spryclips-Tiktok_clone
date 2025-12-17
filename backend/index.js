@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
@@ -383,6 +384,37 @@ app.use('/api/admin', require('./routes/admin'));
 
 // 404 handler
 const { AppError, sendErrorResponse, handleMongooseError, handleJWTError } = require('./utils/errorHandler');
+// If running in production and a frontend build exists, serve it and inject
+// a small script that sets `window.__APP_ENV = 'production'` so the
+// frontend runtime config can reliably detect production.
+if (process.env.NODE_ENV === 'production') {
+  try {
+    const frontendBuildPath = process.env.FRONTEND_BUILD_DIR || path.join(__dirname, '../frontend/build');
+    if (fs.existsSync(frontendBuildPath)) {
+      app.use(express.static(frontendBuildPath));
+
+      app.get('*', (req, res, next) => {
+        // Let API and uploads/processed routes go through
+        if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/processed')) {
+          return next();
+        }
+
+        const indexPath = path.join(frontendBuildPath, 'index.html');
+        fs.readFile(indexPath, 'utf8', (err, data) => {
+          if (err) return next();
+          // Inject before closing </head>
+          const injected = data.replace('</head>', "  <script>window.__APP_ENV = 'production';</script></head>");
+          res.send(injected);
+        });
+      });
+    } else {
+      console.warn('⚠️ Frontend build directory not found at', frontendBuildPath);
+    }
+  } catch (err) {
+    console.warn('⚠️ Error setting up frontend static serving:', err.message);
+  }
+}
+
 app.use((req, res, next) => {
   next(new AppError({
     message: 'Route not found',
