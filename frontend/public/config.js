@@ -38,9 +38,26 @@
   }
 
   window.APP_CONFIG = {
-    API_URL: isProd ? '' : 'http://localhost:5000',
+    API_URL: (function () {
+      if (isProd) return '';
+      try {
+        if (typeof window !== 'undefined' && window.location && window.location.origin) {
+          // If dev server runs on :3000, map to :5000 for API
+          return window.location.origin.replace(/:3000$/, ':5000');
+        }
+      } catch (e) {}
+      return '';
+    })(),
     // Public uploads base URL - videos/images will be loaded from here
-    UPLOADS_BASE_URL: isProd ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads'
+    UPLOADS_BASE_URL: (function () {
+      if (isProd) return 'https://spryclips.com/uploads';
+      try {
+        if (typeof window !== 'undefined' && window.location && window.location.origin) {
+          return window.location.origin.replace(/:3000$/, ':5000') + '/uploads';
+        }
+      } catch (e) {}
+      return '/uploads';
+    })()
   };
 })();
 
