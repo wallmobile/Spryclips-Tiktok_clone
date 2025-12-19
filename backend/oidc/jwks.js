@@ -10,7 +10,7 @@ async function getJwks() {
   }
 
   console.log('Generating new JWKS...');
-  const { privateKey, publicKey } = await generateKeyPair('RS256');
+  const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
   const privateJwk = await exportJWK(privateKey);
   const publicJwk = await exportJWK(publicKey);
 
