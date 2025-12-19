@@ -22,6 +22,10 @@ const videoSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  duration: {
+    type: Number,
+    default: 0
+  },
   processedVideos: [{
     quality: { type: String, default: '' },
     url: { type: String, default: '' },
@@ -37,7 +41,7 @@ const videoSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    maxlength: 500,
+    maxlength: 2200,
     default: ''
   },
   hashtags: [{

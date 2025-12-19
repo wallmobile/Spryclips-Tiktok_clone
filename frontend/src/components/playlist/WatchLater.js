@@ -576,7 +576,7 @@ const WatchLater = () => {
                       />
                     ) : (
                       <OptimizedImage
-                        src={video.thumbnail || '/placeholder-thumbnail.jpg'}
+                        src={ensureAbsoluteUrl(video.thumbnail) || '/placeholder-thumbnail.jpg'}
                         alt={video.description || 'Watch later video'}
                         className="watchlater-thumbnail"
                       />

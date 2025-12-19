@@ -16,7 +16,8 @@ router.post('/save', authMiddleware, async (req, res) => {
       speed,
       thumbnail,
       videoUrl,
-      isPrivate
+      isPrivate,
+      duration
     } = req.body;
 
     // Create draft video
@@ -24,6 +25,7 @@ router.post('/save', authMiddleware, async (req, res) => {
       user: req.user._id,
       url: videoUrl || '',
       thumbnail: thumbnail || '',
+      duration: Number(duration) || 0,
       description: description || '',
       hashtags: hashtags ? (Array.isArray(hashtags) ? hashtags : hashtags.split(',').map(tag => tag.trim())) : [],
       isPrivate: isPrivate === true || isPrivate === 'true',

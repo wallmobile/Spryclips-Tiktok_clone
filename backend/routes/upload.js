@@ -241,6 +241,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     hashtags,
     mentions,
     isPrivate,
+    duration: parseNumber(metadata?.duration, 0),
     music: musicData,
     cropSettings,
     filter: filterValue,
@@ -253,7 +254,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     duetDisabled: !allowDuet,
     stitchDisabled: !allowStitch,
     metadataSnapshot: metadata || undefined,
-    status: 'ready' // Set to 'ready' immediately so it appears in feed
+    status: metadata?.status || req.body.status || 'ready' // Allow setting status (e.g., 'draft')
   });
 
   try {
@@ -398,7 +399,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   let statusMessage = 'Video uploaded successfully';
   let responseVideo = {
     id: video._id,
-    status: video.status || 'ready', // Ensure status is 'ready'
+    status: video.status,
     url: video.url,
     thumbnail: thumbnailUrl || video.thumbnail,
     processedVideos: video.processedVideos || []

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { uploadVideo, promoteVideo } from '../../api/videos';
-import { saveDraft, scheduleVideo } from '../../api/drafts';
+import { scheduleVideo } from '../../api/drafts';
 import { searchSounds, getTrendingSounds, searchOnlineMusic } from '../../api/music';
 import { searchMusic } from '../../api/search';
 import './UploadPage.css';
@@ -716,6 +716,10 @@ const UploadPage = ({ onClose }) => {
     formData.append('shareToFacebook', boolToString(metadata.shareTargets.facebook));
     formData.append('shareToTwitter', boolToString(metadata.shareTargets.twitter));
 
+    if (metadata.status) {
+      formData.append('status', metadata.status);
+    }
+
     formData.append('metadata', JSON.stringify(metadata));
 
     return formData;
@@ -909,24 +913,25 @@ const UploadPage = ({ onClose }) => {
     setUploadError(null);
     setUploadSuccess(null);
     setIsUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(0);
 
     try {
       const metadata = buildMetadata();
-      const base64Video = await readFileAsBase64(uploadedVideo);
-      await saveDraft({
-        ...metadata,
-        video: base64Video,
-        preview: videoPreview,
-        savedAt: new Date().toISOString()
+      metadata.status = 'draft';
+      
+      const formData = createUploadFormData(uploadedVideo, metadata);
+      
+      await uploadVideo(formData, (event) => {
+        if (event?.total) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(progress);
+        }
       });
+
       setUploadSuccess('Draft saved successfully! 📝');
     } catch (error) {
       console.error('Draft error:', error);
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Unable to save draft right now.';
+      const message = extractUploadError(error);
       setUploadError(message);
     } finally {
       setIsUploading(false);
