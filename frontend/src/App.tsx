@@ -778,7 +778,11 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, loading, user } = useAuth();
-  const from = ((location.state as { from?: Location })?.from?.pathname) || '/';
+  
+  const queryParams = new URLSearchParams(location.search);
+  const returnTo = queryParams.get('returnTo');
+  const from = returnTo || ((location.state as { from?: Location })?.from?.pathname) || '/';
+  
   const hasRedirectedRef = React.useRef(false);
   const isInitialMountRef = React.useRef(true);
 
@@ -797,6 +801,13 @@ const LoginPage: React.FC = () => {
       const redirectTimer = setTimeout(() => {
         if (!hasRedirectedRef.current && isAuthenticated) {
           hasRedirectedRef.current = true;
+          
+          // If returnTo is a full URL (OIDC interaction), use window.location.href
+          if (returnTo && (returnTo.startsWith('http://') || returnTo.startsWith('https://'))) {
+            window.location.href = returnTo;
+            return;
+          }
+
           // If user came from a specific page (like /admin), redirect there
           if (from && from !== '/login' && from !== '/signup') {
             navigate(from, { replace: true });
@@ -808,9 +819,15 @@ const LoginPage: React.FC = () => {
       
       return () => clearTimeout(redirectTimer);
     }
-  }, [isAuthenticated, loading, from, navigate, user]);
+  }, [isAuthenticated, loading, from, navigate, user, returnTo]);
 
   const handleClose = () => {
+    // If returnTo is a full URL (OIDC interaction), use window.location.href
+    if (returnTo && (returnTo.startsWith('http://') || returnTo.startsWith('https://'))) {
+      window.location.href = returnTo;
+      return;
+    }
+
     // If user was redirected from a specific page (like /admin), redirect there after login
     if (from && from !== '/login' && from !== '/signup') {
       navigate(from, { replace: true });

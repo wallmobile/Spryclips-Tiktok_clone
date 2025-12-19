@@ -522,20 +522,27 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 const { initializeSocket, closeSocket } = require('./socket/socketServer');
+const setupOIDC = require('./oidc');
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
 let server;
 
 if (!isTestEnv) {
-  try {
-    console.log('🚀 Starting server...');
-    server = app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 API: http://localhost:${PORT}/api`);
-      console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
-    });
+  (async () => {
+    try {
+      console.log('🚀 Starting server...');
+      
+      // Initialize OIDC Provider
+      await setupOIDC(app);
+
+      server = app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🌐 API: http://localhost:${PORT}/api`);
+        console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
+        console.log(`🔑 OIDC: https://sprylogin.com/.well-known/openid-configuration`);
+      });
 
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
@@ -618,6 +625,7 @@ if (!isTestEnv) {
       process.exit(1);
     }
   }
+  })();
 } else {
   server = app;
 }
