@@ -57,6 +57,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // Filter to only show videos from spryclips server
   // Exclude videos with external URLs (YouTube, Vimeo, etc.)
   // Allow: spryclips.com, localhost, and relative paths
+  // Also allow: Google sample bucket URLs used by our seeded sample data
   // IMPORTANT: Exclude videos from suspended or banned users
   const videoQuery = {
     status: 'ready',
@@ -66,6 +67,8 @@ router.get('/', asyncHandler(async (req, res) => {
       { url: { $regex: /spryclips\.com/i } },
       // Videos from localhost (development)
       { url: { $regex: /localhost|127\.0\.0\.1/i } },
+      // Seeded sample videos (Google Cloud Storage public bucket)
+      { url: { $regex: /commondatastorage\.googleapis\.com/i } },
       // Relative paths (uploads/, processed/)
       { url: { $regex: /^(uploads|processed)\// } },
       // Videos without http/https (relative paths)
