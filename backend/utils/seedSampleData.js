@@ -8,27 +8,47 @@ const isDevelopment = () =>
 const upsertSampleUser = async (userPayload) => {
   const { username, password, email, profile = {}, ...rest } = userPayload;
 
-  // Delete existing sample user and recreate to ensure password is correct
-  await User.deleteOne({ username }).exec();
-  
-  const user = new User({
-    username,
-    email,
-    password,
-    ...rest,
-    authProvider: 'local',
-    emailVerified: true,
-    accountStatus: 'active',
-    profile: {
-      displayName: profile.displayName || username,
-      avatar: profile.avatar || '',
-      bio: profile.bio || '',
-      followers: profile.followers || 0,
-      following: profile.following || 0,
-      likes: profile.likes || 0,
-      isVerified: true
+  // IMPORTANT: Do not delete & recreate users on every start.
+  // That behavior breaks existing Video.user references (orphaned videos),
+  // which makes the feed return only 1 video.
+  let user = await User.findOne({ username }).exec();
+  const isNewUser = !user;
+  if (!user) {
+    user = new User({ username });
+  }
+
+  user.email = email;
+  // Only set password for brand-new users.
+  // Resetting on every start can violate password-history rules and break seeding.
+  if (isNewUser) {
+    user.password = password;
+  } else {
+    try {
+      const matches = await user.comparePassword(password);
+      if (!matches) {
+        console.warn(
+          `⚠️ Sample user ${username} already exists with a different password; keeping existing password.`
+        );
+      }
+    } catch {
+      // ignore
     }
-  });
+  }
+  Object.assign(user, rest);
+  user.authProvider = 'local';
+  user.emailVerified = true;
+  user.accountStatus = 'active';
+  user.profile = {
+    ...(user.profile || {}),
+    displayName: profile.displayName || username,
+    avatar: profile.avatar || '',
+    bio: profile.bio || '',
+    followers: profile.followers || 0,
+    following: profile.following || 0,
+    likes: user.profile?.likes || 0,
+    isVerified: true,
+  };
+
   await user.save();
   console.log(`✅ Sample user ready: ${email}`);
   return user;
@@ -94,36 +114,57 @@ const seedSampleData = async () => {
     console.info('✅ Sample users ready. You can login with:');
     console.info('   Email: funnycat@example.com | Password: SampleCat1!');
 
-    // Check if working sample videos exist (with external URLs like Google Cloud Storage)
-    const workingSampleVideo = await Video.findOne({ 
-      url: { $regex: /^https:\/\// } 
-    }).exec();
-    
-    if (workingSampleVideo) {
-      console.info('✅ Sample videos already exist with working URLs.');
+    // Repair orphaned seeded videos (caused by older delete-and-recreate behavior)
+    if (process.env.NODE_ENV !== 'production') {
+      const sampleUsers = await User.find({
+        username: { $in: sampleData.map((entry) => entry.user.username) },
+        accountStatus: 'active',
+      })
+        .select('_id username')
+        .lean();
+
+      if (sampleUsers.length > 0) {
+        const adminUser = await User.findOne({ role: 'admin', accountStatus: 'active' })
+          .select('_id username')
+          .lean();
+        const fallbackUser = adminUser || sampleUsers[0];
+
+        const existingUserIds = await User.distinct('_id');
+
+        const orphanedVideos = await Video.find({ user: { $nin: existingUserIds } })
+          .select('_id')
+          .lean();
+
+        if (orphanedVideos.length > 0) {
+          await Video.updateMany(
+            { _id: { $in: orphanedVideos.map((v) => v._id) } },
+            { $set: { user: fallbackUser._id } }
+          ).exec();
+          console.info(
+            `🛠️ Re-linked ${orphanedVideos.length} orphaned videos to user ${fallbackUser.username}.`
+          );
+        }
+      }
+    }
+
+    // Only seed sample videos if there are no videos present.
+    // Never delete existing videos on server start.
+    const totalVideos = await Video.countDocuments().exec();
+    if (totalVideos > 0) {
+      console.info(`✅ Found ${totalVideos} existing videos, skipping sample video creation.`);
       return;
     }
 
-    // Only delete and reseed if no working videos exist
-    if (!workingSampleVideo) {
-      // Delete ALL videos (they have broken local URLs) and seed fresh sample videos
-      const totalVideos = await Video.countDocuments().exec();
-      if (totalVideos > 0) {
-        console.info(`🧹 Removing ${totalVideos} videos with broken/local URLs...`);
-        await Video.deleteMany({}).exec();
+    console.info('🎬 No existing videos found — seeding sample videos for development...');
+    for (let index = 0; index < sampleData.length; index += 1) {
+      const entry = sampleData[index];
+      const user = await User.findOne({ username: entry.user.username }).exec();
+      if (user) {
+        await createSampleVideo(user, entry.video, index);
+        console.info(`   ✅ Created video: ${entry.video.description.substring(0, 30)}...`);
       }
-
-      console.info('🎬 Seeding sample videos for development...');
-      for (let index = 0; index < sampleData.length; index += 1) {
-        const entry = sampleData[index];
-        const user = await User.findOne({ username: entry.user.username }).exec();
-        if (user) {
-          await createSampleVideo(user, entry.video, index);
-          console.info(`   ✅ Created video: ${entry.video.description.substring(0, 30)}...`);
-        }
-      }
-      console.info('✅ Sample videos ready with working external URLs!');
     }
+    console.info('✅ Sample videos ready with working external URLs!');
   } catch (error) {
     console.error('Failed to seed sample data:', error);
   }

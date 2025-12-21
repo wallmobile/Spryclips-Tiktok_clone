@@ -1860,15 +1860,23 @@ router.post('/send-signup-verification', asyncHandler(async (req, res) => {
     } else {
       console.log("ℹ️ Gmail not configured - code logged to console only");
       console.log("   To enable email sending, set GMAIL_USER and GMAIL_APP_PASSWORD in .env");
+      console.log("   📧 VERIFICATION CODE FOR DEVELOPMENT:", code);
+      console.log("   📧 Email:", normalizedEmail);
     }
 
     // Always return success (code is valid even if email fails)
-    // Don't return code in response - it should only be sent via email for security
+    // In development, include the code in response if email isn't configured
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const shouldReturnCode = isDevelopment && !emailSent;
+    
     return res.json({
       success: true,
       message: emailSent 
         ? "Verification code has been sent to your email. Please check your inbox." 
-        : "Verification code generated. Please check your email inbox."
+        : shouldReturnCode
+          ? "Gmail not configured. Verification code is shown below (development only)."
+          : "Verification code generated. Please check your email inbox.",
+      ...(shouldReturnCode && { code: code }) // Include code in development if email not sent
     });
 
   } catch (error) {
