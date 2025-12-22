@@ -5,11 +5,12 @@ const authMiddleware = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 // PUBLIC UPLOADS DIRECTORY - Production configuration
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
-const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : `${PUBLIC_URL}/uploads`);
 
 // Configure multer for document uploads
 const verificationUploadDir = path.join(UPLOADS_DIR, 'verification');

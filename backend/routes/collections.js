@@ -6,6 +6,7 @@ const Collection = require('../models/Collection');
 const Video = require('../models/Video');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -30,7 +31,7 @@ const ensureAbsoluteUrl = (url) => {
     return trimmed;
   }
   // Make relative URL absolute
-  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : `http://localhost:${process.env.PORT || 5000}`);
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
   const normalizedBase = baseUrl.replace(/\/+$/, '');
   const normalizedPath = trimmed.replace(/^\/+/, '');
   return `${normalizedBase}/${normalizedPath}`;

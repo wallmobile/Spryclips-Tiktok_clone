@@ -1,5 +1,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const { PUBLIC_URL } = require('./config');
 
 const options = {
   definition: {
@@ -15,7 +16,7 @@ const options = {
     },
     servers: [
       {
-        url: process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : 'http://localhost:5000'),
+        url: process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL),
         description: 'Development server'
       }
     ],

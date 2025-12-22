@@ -11,6 +11,9 @@ const xssClean = require('xss-clean');
 const hpp = require('hpp');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+// Configuration (centralized)
+const { PORT, PUBLIC_URL } = require('./utils/config');
+
 // Log startup info
 console.log('🔧 Starting application...');
 console.log(`📁 Working directory: ${__dirname}`);
@@ -135,12 +138,19 @@ const buildContentSecurityPolicy = () => {
   if (process.env.NODE_ENV !== 'production') {
     styleSrc.push("'unsafe-inline'");
     scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
-    connectSrc.add('http://localhost:5000');
-    connectSrc.add('ws://localhost:5000');
+    // Allow local dev server and configured public URL
     connectSrc.add('ws://localhost:3000');
     connectSrc.add('http://localhost:3000');
     connectSrc.add('http://localhost:3001');
     connectSrc.add('ws://localhost:3001');
+
+    try {
+      const pubUrl = new URL(PUBLIC_URL);
+      connectSrc.add(PUBLIC_URL);
+      connectSrc.add(`${pubUrl.protocol === 'https:' ? 'wss:' : 'ws:'}//${pubUrl.host}`);
+    } catch (err) {
+      // Ignore malformed PUBLIC_URL
+    }
   } else {
     // In production, allow inline styles for dynamic content
     styleSrc.push("'unsafe-inline'");
@@ -520,7 +530,6 @@ app.use((err, req, res, next) => {
   sendErrorResponse(res, error, req);
 });
 
-const PORT = process.env.PORT || 5000;
 const { initializeSocket, closeSocket } = require('./socket/socketServer');
 const setupOIDC = require('./oidc');
 
@@ -536,11 +545,11 @@ if (!isTestEnv) {
       // Initialize OIDC Provider
       await setupOIDC(app);
 
-      server = app.listen(PORT, () => {
-        console.log(`✅ Server running on port ${PORT}`);
+      server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Backend running on port ${PORT}`);
         console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`🌐 API: http://localhost:${PORT}/api`);
-        console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
+        console.log(`🌐 API: ${PUBLIC_URL}/api`);
+        console.log(`📚 Docs: ${PUBLIC_URL}/api-docs`);
         console.log(`🔑 OIDC: https://sprylogin.com/.well-known/openid-configuration`);
       });
 

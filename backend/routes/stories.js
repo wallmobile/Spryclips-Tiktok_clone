@@ -10,11 +10,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 // PUBLIC UPLOADS DIRECTORY - Production configuration
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
-const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : 'http://localhost:5000/uploads');
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : `${PUBLIC_URL}/uploads`);
 
 // Configure multer for story uploads
 const storiesUploadDir = path.join(UPLOADS_DIR, 'stories');
@@ -911,7 +912,7 @@ router.delete('/:storyId', authMiddleware, async (req, res) => {
         
         // If it's a full URL, extract the path
         if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-          // Extract path from URL like: http://localhost:5000/uploads/stories/filename
+          // Extract path from URL like: <PUBLIC_URL>/uploads/stories/filename (PUBLIC_URL = process.env.PUBLIC_URL or default local host)
           const urlParts = new URL(filePath);
           filePath = urlParts.pathname; // This gives /uploads/stories/filename
         }

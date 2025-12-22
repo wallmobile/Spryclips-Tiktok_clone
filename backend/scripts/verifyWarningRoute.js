@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const WarningMessage = require('../models/WarningMessage');
 require('dotenv').config();
+const { PUBLIC_URL } = require('../utils/config');
 
 const verifyWarningRoute = async () => {
   try {
@@ -34,7 +35,7 @@ const verifyWarningRoute = async () => {
 
     // Test route availability (if server is running)
     const axios = require('axios');
-    const baseURL = 'http://localhost:5000';
+    const baseURL = process.env.API_URL || process.env.BACKEND_URL || PUBLIC_URL;
     
     console.log('🔍 Testing route availability...');
     try {

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const WarningMessage = require('../models/WarningMessage');
 require('dotenv').config();
+const { PUBLIC_URL } = require('../utils/config');
 
 const createTestWarning = async () => {
   try {
@@ -89,7 +90,7 @@ const createTestWarning = async () => {
     console.log(`   3. Go to "Notifications Control → Warning Messages"`);
     console.log(`   4. You should see ${count} warnings`);
     console.log(`\n💡 Or test via API:`);
-    console.log(`   GET http://localhost:5000/api/admin/notifications/warnings`);
+    console.log(`   GET ${process.env.API_URL || process.env.BACKEND_URL || PUBLIC_URL}/api/admin/notifications/warnings`);
 
     await mongoose.disconnect();
     console.log('\n✅ Done!');

@@ -494,6 +494,8 @@ router.get('/:query', async (req, res) => {
       return res.json(cachedResults);
     }
 
+    const { PUBLIC_URL } = require('../utils/config');
+
     const results = {
       videos: [],
       users: [],
@@ -521,7 +523,7 @@ router.get('/:query', async (req, res) => {
       const ensureAbsoluteUrl = (url) => {
         if (!url || typeof url !== 'string') return '';
         if (/^(https?:|data:|blob:)/i.test(url)) return url;
-        const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : `http://localhost:${process.env.PORT || 5000}`);
+        const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
         return `${baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
       };
 
