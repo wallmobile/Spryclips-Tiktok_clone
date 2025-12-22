@@ -543,7 +543,12 @@ if (!isTestEnv) {
       console.log('🚀 Starting server...');
       
       // Initialize OIDC Provider
-      await setupOIDC(app);
+      try {
+        await setupOIDC(app);
+      } catch (err) {
+        console.warn('⚠️ OIDC initialization failed, continuing without OIDC:', err && err.message ? err.message : err);
+        // In production we do not want startup to crash due to OIDC; log and continue
+      }
 
       server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`Backend running on port ${PORT}`);
