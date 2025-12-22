@@ -1,4 +1,3 @@
-const { generateKeyPair, exportJWK } = require('jose');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,6 +9,9 @@ async function getJwks() {
   }
 
   console.log('Generating new JWKS...');
+  // jose is ESM-only; import dynamically to support CommonJS runtime
+  const jose = await import('jose');
+  const { generateKeyPair, exportJWK } = jose;
   const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
   const privateJwk = await exportJWK(privateKey);
   const publicJwk = await exportJWK(publicKey);
