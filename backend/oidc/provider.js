@@ -1,9 +1,11 @@
-const { Provider } = require('oidc-provider');
 const MongoAdapter = require('./adapter');
 const User = require('../models/User');
 const getJwks = require('./jwks');
 
 async function createProvider() {
+  // oidc-provider is an ESM-only package; load it dynamically to support CommonJS runtime
+  const oidcModule = await import('oidc-provider');
+  const Provider = oidcModule.Provider || oidcModule.default || oidcModule;
   const jwks = await getJwks();
   
   const configuration = {
