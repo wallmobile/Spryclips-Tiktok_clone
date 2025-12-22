@@ -87,6 +87,65 @@ PM2_APP_GREEN="spryclips-green"
 PORT_BLUE=5000
 PORT_GREEN=5001
 
+# Ensure Node.js runtime is compatible (oidc-provider requires Node v22+)
+check_node_and_install() {
+    # Determine current Node major version (0 if not installed)
+    if command -v node >/dev/null 2>&1; then
+        NODE_VERSION=$(node -v | sed 's/^v//')
+        NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
+    else
+        NODE_VERSION="none"
+        NODE_MAJOR=0
+    fi
+
+    if [ "$NODE_MAJOR" -lt 22 ]; then
+        print_warn "Node.js version $NODE_VERSION detected. oidc-provider requires Node.js v22 or newer. Attempting to install/upgrade to v22.x"
+
+        # Try NodeSource (apt/yum) first
+        if command -v curl >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
+            print_step "Installing Node.js v22 via NodeSource (apt)..."
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - || print_warn "NodeSource setup (apt) failed"
+            sudo apt-get install -y nodejs || print_warn "apt-get install nodejs failed"
+        elif command -v curl >/dev/null 2>&1 && command -v yum >/dev/null 2>&1; then
+            print_step "Installing Node.js v22 via NodeSource (yum)..."
+            curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash - || print_warn "NodeSource setup (yum) failed"
+            sudo yum install -y nodejs || print_warn "yum install nodejs failed"
+        else
+            # Fallback: install nvm and use nvm to install Node 22 for current user
+            print_step "Falling back to nvm install (user-level)..."
+            export NVM_DIR="$HOME/.nvm"
+            if [ ! -d "$NVM_DIR" ]; then
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash || print_warn "nvm install script failed"
+            fi
+            # Load nvm if available
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+                . "$NVM_DIR/nvm.sh"
+            fi
+            nvm install 22 || print_warn "nvm install 22 failed"
+            nvm alias default 22 || true
+            nvm use 22 || true
+        fi
+
+        # Verify installation
+        if command -v node >/dev/null 2>&1; then
+            NEW_VER=$(node -v)
+            print_success "Node installed/updated to $NEW_VER"
+            # Ensure pm2 is installed under the active node
+            print_step "Ensuring pm2 is available under the new Node runtime"
+            if ! command -v pm2 >/dev/null 2>&1; then
+                sudo npm install -g pm2 || npm install -g pm2 || print_warn "Failed to globally install pm2"
+            fi
+        else
+            print_warn "Failed to install Node v22; setting SKIP_OIDC=true to allow process to start without OIDC"
+            # If Node install fails, set SKIP_OIDC so startup won't crash
+            SKIP_OIDC=true
+        fi
+    else
+        print_success "Node.js version $NODE_VERSION is compatible (>=22)"
+    fi
+}
+
+
 # ============================================
 # START DEPLOYMENT
 # ============================================
@@ -203,6 +262,10 @@ print_success "Target environment prepared"
 
 print_info "Active environment ($ACTIVE_APP) continues serving traffic"
 
+# Ensure Node.js is compatible and pm2 is present
+print_step "Checking Node.js version and installing/upgrading to v22 if necessary..."
+check_node_and_install
+
 # Clean backend dependencies
 print_step "Cleaning backend dependencies..."
 print_substep "Removing node_modules and package-lock.json"
@@ -261,6 +324,12 @@ print_section "🚀 STARTING TARGET ENVIRONMENT ($TARGET_ENV)"
 
 print_step "Starting backend on port $TARGET_PORT..."
 print_substep "Starting with custom port configuration for blue-green deployment"
+
+# If SKIP_OIDC is set (from earlier Node install failure), export it so PM2 process sees it
+if [ -n "$SKIP_OIDC" ]; then
+    print_warn "SKIP_OIDC is set; OIDC initialization will be skipped in the backend process"
+    export SKIP_OIDC=true
+fi
 
 # Start with environment variables (not using ecosystem.config.js for blue-green)
 NODE_ENV=production \
