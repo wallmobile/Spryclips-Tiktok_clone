@@ -2,40 +2,108 @@
 
 A full-featured short video sharing platform built with React (Frontend) and Node.js/Express (Backend), featuring video uploads, live streaming, social interactions, and comprehensive admin panel.
 
-## 🚀 Features
+**For an in-depth technical design, architecture, data model, and deployment guide, see [TECHNICAL.md](TECHNICAL.md).**
 
-### Core Features
-- **Video Feed**: Infinite scroll video feed with auto-play
-- **Video Upload**: Upload and process videos with thumbnail generation
-- **User Authentication**: JWT-based authentication with 2FA support
-- **Social Features**: Follow, Like, Comment, Share, Repost
-- **Live Streaming**: Real-time live streaming with WebRTC support
-- **Stories**: 24-hour disappearing stories
-- **Search**: Search videos, users, hashtags, and music
-- **Watch Later**: Save videos to watch later
-- **Playlists**: Create and manage video playlists
-- **Notifications**: Real-time notifications via WebSocket
+## 🚀 Product overview & Table of Contents
 
-### Creator Tools
-- **Spryclips Studio**: Video editing and management
-- **Creator Analytics**: Detailed analytics dashboard
-- **Monetization**: Creator fund and earnings tracking
-- **Effects Lab**: Video effects and filters
-- **Growth Tools**: Content suggestions and optimization
+- Quick links: [Technical Guide](TECHNICAL.md) • [API Reference (high-level)](#api-highlights)
 
-### Business Features
-- **Business Suite**: Business account management
-- **Ad Manager**: Advertisement management
-- **Product Catalog**: E-commerce integration
-- **Business Messaging**: Customer communication tools
+### Table of Contents
+1. Product overview & functionality
+2. Quick start
+3. API highlights
+4. Environment variables
+5. Development workflows
+6. Docker & production deployment
+7. Testing & CI
+8. Troubleshooting
+9. Contributing & code style
 
-### Admin Panel
-- **Dashboard**: Comprehensive admin dashboard
-- **User Management**: User moderation and management
-- **Content Moderation**: Video and comment moderation
-- **Analytics**: Platform-wide analytics
-- **System Monitoring**: Server health, CDN status, error logs
-- **Support Center**: Ticket management system
+---
+
+### Functionality — Full Product Summary
+- **Video Feed & Discovery**: Infinite, low-latency feed with adaptive preloading and personalized ranking signals. Supports autoplay, video looping, and recommendations hooks.
+- **Uploads & Media Processing**: Resumable uploads, server-side validation, BB (bulletproof) job queue handling. FFmpeg-based transcoding to multiple resolutions, automatic thumbnail/poster generation, and optional S3 storage for production.
+- **Authentication and User Profiles**: JWT-based access and refresh tokens, secure refresh flows, optional 2FA, password resets, email verification, and per-user privacy controls.
+- **Social Interactions**: Likes, comments (with threading), replies, reposts, shares, bookmarks (watch-later), follows, direct messages, and notification center delivered via WebSocket.
+- **Live Streaming**: RTMP ingestion and WebRTC client modes, live chat with moderation, live recording and conversion to VOD, and live metrics.
+- **Creator Tools**: Inline trimming, basic effects, scheduling, analytics dashboards, and monetization features (creator fund, revenue reporting).
+- **Admin Tools & Moderation**: Role-based admin UI, content takedown flows, automated moderation flags, manual review queues, server health, and logging dashboards.
+- **Business & E-commerce**: Business accounts, ad management stub endpoints, product catalogs, and commerce integration hooks.
+
+For detailed system architecture, deployment, data models, and API specs see [TECHNICAL.md](TECHNICAL.md).
+
+---
+
+### Quick start (developer)
+1. Clone repo: `git clone https://github.com/wallmobile/Tiktok_clone.git`
+2. Install: `npm run install:all` (or install in each subfolder)
+3. Create `.env` in `backend/` (see Environment Variables below)
+4. Start dependencies (MongoDB, Redis), then:
+   - Backend: `cd backend && npm run dev`
+   - Frontend: `cd frontend && npm start`
+5. Visit `http://localhost:3000` (frontend) and `http://localhost:5000` (backend by default).
+
+---
+
+### API highlights
+Below are representative examples. For a complete and versioned API reference see the `backend/routes/` files and the `/api-docs` swagger endpoint when running.
+
+- Register
+
+curl -X POST "http://localhost:5000/api/auth/register" -H "Content-Type: application/json" -d '{"username":"test","email":"test@example.com","password":"secret"}'
+
+- Login (returns access + refresh tokens)
+
+curl -X POST "http://localhost:5000/api/auth/login" -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"secret"}'
+
+- Upload video (multipart/form-data)
+
+curl -X POST "http://localhost:5000/api/videos" -H "Authorization: Bearer <ACCESS_TOKEN>" -F "file=@./video.mp4" -F "title=My clip"
+
+- Fetch feed
+
+curl "http://localhost:5000/api/videos?page=1&limit=10"
+
+---
+
+### Environment variables (important)
+Backend `.env` (summary):
+- NODE_ENV (development|production)
+- PORT (default 5000)
+- MONGODB_URI
+- JWT_SECRET
+- JWT_REFRESH_SECRET
+- REDIS_URL (redis://localhost:6379)
+- EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS
+- FRONTEND_URL
+- UPLOADS_DIR, PROCESSED_DIR
+
+Add production variables in CI/CD or a secret manager (do NOT commit `.env` to source control).
+
+---
+
+### Docker & Production
+- A Dockerfile and a sample `docker-compose.yml` can be used to run the stack locally. Replace local storage with a mounted volume or S3 in production.
+- Use a process manager (PM2) or container orchestration (Kubernetes) for robust process management. Nginx is recommended to terminate TLS and proxy to the backend and frontend.
+
+---
+
+### Testing & CI
+- Unit and integration tests live in `backend/tests/` and frontend `src/__tests__`.
+- Run: `cd backend && npm test` and `cd frontend && npm test`.
+- We recommend a CI job that runs tests, lint, and build steps (GitHub Actions or similar).
+
+---
+
+### Troubleshooting (quick)
+- Port conflicts: change `PORT` in `.env`.
+- Mongo connection errors: verify `MONGODB_URI` and that Mongo is running.
+- FFmpeg issues: ensure `ffmpeg` binary is installed and available on PATH.
+
+---
+
+**For the full technical spec, API contract, data models, deployment recipes, and CI examples see [TECHNICAL.md](TECHNICAL.md).**
 
 ## 🛠️ Tech Stack
 
