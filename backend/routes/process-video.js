@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Create uploads and processed directories
 const uploadsDir = path.join(__dirname, '../uploads');
-const processedDir = path.join(__dirname, '../processed');
+const processedDir = '/home/reactmaster/uploads/processed';
 [uploadsDir, processedDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
