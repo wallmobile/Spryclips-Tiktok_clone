@@ -2,7 +2,7 @@ const express = require('express');
 const Video = require('../models/Video');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
-const { PUBLIC_URL } = require('../utils/config');
+const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 const router = express.Router();
 
 // ==================== GET RECOMMENDED VIDEOS ====================
@@ -393,29 +393,6 @@ router.get('/trending', async (req, res) => {
         url: videos[0].url ? 'Yes' : 'No'
       });
     }
-
-    // Helper function to ensure absolute URL
-    const ensureAbsoluteUrl = (url) => {
-      if (!url || typeof url !== 'string') return '';
-      const trimmed = url.trim();
-      // Already absolute
-      if (/^(https?:)?\/\//i.test(trimmed)) {
-        if (/^\/\//.test(trimmed)) {
-          const protocol = process.env.PROTOCOL || 'http:';
-          return `${protocol}${trimmed}`;
-        }
-        return trimmed;
-      }
-      // Data or blob URL
-      if (/^(data:|blob:)/i.test(trimmed)) {
-        return trimmed;
-      }
-      // Make relative URL absolute
-      const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
-      const normalizedBase = baseUrl.replace(/\/+$/, '');
-      const normalizedPath = trimmed.replace(/^\/+/, '');
-      return `${normalizedBase}/${normalizedPath}`;
-    };
 
     // Calculate trending score
     const videosWithTrendingScore = videos.map((video) => {

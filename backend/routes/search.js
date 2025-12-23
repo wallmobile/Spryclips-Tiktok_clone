@@ -5,6 +5,7 @@ const Sound = require('../models/Sound');
 const SearchHistory = require('../models/SearchHistory');
 const authMiddleware = require('../middleware/auth');
 const { cache, cacheKeys } = require('../utils/cache');
+const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 const router = express.Router();
 
 // ==================== HELPER FUNCTIONS ====================
@@ -494,8 +495,6 @@ router.get('/:query', async (req, res) => {
       return res.json(cachedResults);
     }
 
-    const { PUBLIC_URL } = require('../utils/config');
-
     const results = {
       videos: [],
       users: [],
@@ -518,14 +517,6 @@ router.get('/:query', async (req, res) => {
         .limit(limit)
         .select('url thumbnail description hashtags likes comments shares views createdAt user music category')
         .lean();
-
-      // Ensure absolute URLs for videos
-      const ensureAbsoluteUrl = (url) => {
-        if (!url || typeof url !== 'string') return '';
-        if (/^(https?:|data:|blob:)/i.test(url)) return url;
-        const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
-        return `${baseUrl.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
-      };
 
       results.videos = videos.map(video => ({
         ...video,
