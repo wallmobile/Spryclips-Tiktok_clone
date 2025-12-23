@@ -162,9 +162,17 @@ const Sidebar = () => {
           setSelectedLanguage(experience.language);
         }
         if (experience?.theme) {
-          const nextIsDark = experience.theme === 'dark';
-          if (nextIsDark !== darkMode) {
-            setDarkMode(nextIsDark);
+          const backendIsDark = experience.theme === 'dark';
+          // Only update if different - prefer local state on initial load
+          // This prevents backend from overriding user's current preference
+          if (backendIsDark !== darkMode) {
+            // Sync backend with current local state instead of overriding it
+            const currentTheme = darkMode ? 'dark' : 'light';
+            updateExperiencePreferences({ theme: currentTheme }).catch(err => {
+              console.error('Failed to sync theme to backend:', err);
+              // If sync fails, accept backend value
+              setDarkMode(backendIsDark);
+            });
           }
         }
       } catch (error) {
