@@ -541,6 +541,11 @@ router.get('/my-videos', authMiddleware, asyncHandler(async (req, res) => {
     .populate('user', 'username profile')
     .sort({ createdAt: -1 });
 
+  // Prevent caching to ensure fresh data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   res.json({
     success: true,
     count: videos.length,
