@@ -37,12 +37,34 @@ const getMediaBaseUrl = () => {
 };
 
 const ABSOLUTE_MEDIA_PROTOCOL = /^(?:https?:|data:|blob:)/i;
+const LOCAL_HOSTNAME_PATTERN = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\[::1\]|192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1]))$/i;
 
 const ensureAbsoluteMediaUrl = (value) => {
   if (!value || typeof value !== 'string') {
     return value;
   }
   if (ABSOLUTE_MEDIA_PROTOCOL.test(value)) {
+    if (/^https?:\/\//i.test(value)) {
+      try {
+        const parsed = new URL(value);
+        if (LOCAL_HOSTNAME_PATTERN.test(parsed.hostname)) {
+          const base = getMediaBaseUrl();
+          if (base) {
+            try {
+              const baseUrl = new URL(base, isBrowser && window.location?.origin ? window.location.origin : undefined);
+              const path = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+              return `${baseUrl.origin}${path}${parsed.search || ''}${parsed.hash || ''}`;
+            } catch (error) {
+              const normalizedBase = base.replace(/\/+$/, '');
+              const normalizedPath = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+              return `${normalizedBase}${normalizedPath}${parsed.search || ''}${parsed.hash || ''}`;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to normalize media URL', value, error);
+      }
+    }
     return value;
   }
   const base = getMediaBaseUrl();
