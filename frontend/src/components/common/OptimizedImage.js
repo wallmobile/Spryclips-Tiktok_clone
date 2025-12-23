@@ -13,18 +13,35 @@ const OptimizedImage = memo(({
   const imgRef = useRef(null);
 
   const loadImage = useCallback(() => {
+    // Log thumbnail loading attempts for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🖼️ OptimizedImage: Loading image:', { src, alt });
+    }
+    
+    // Check if src is valid
+    if (!src || src.trim() === '') {
+      console.warn('⚠️ OptimizedImage: Empty src provided', { alt });
+      setHasError(true);
+      setImageSrc(placeholder);
+      return;
+    }
+    
     const img = new Image();
     img.onload = () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ OptimizedImage: Image loaded successfully:', src);
+      }
       setImageSrc(src);
       setIsLoaded(true);
       setHasError(false);
     };
-    img.onerror = () => {
+    img.onerror = (error) => {
+      console.error('❌ OptimizedImage: Failed to load image:', { src, alt, error });
       setHasError(true);
       setImageSrc(placeholder);
     };
     img.src = src;
-  }, [placeholder, src]);
+  }, [placeholder, src, alt]);
 
   useEffect(() => {
     if (!lazy) {
@@ -69,7 +86,8 @@ const OptimizedImage = memo(({
       }}
       loading={lazy ? 'lazy' : 'eager'}
       data-has-error={hasError ? 'true' : 'false'}
-      onError={() => {
+      onError={(e) => {
+        console.error('❌ OptimizedImage: Image onError triggered:', { src, alt });
         setHasError(true);
         setImageSrc(placeholder);
       }}

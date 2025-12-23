@@ -79,6 +79,16 @@ const WatchLater = () => {
             console.warn('[Watch Later] Skipping entry with invalid video:', entry);
             return null;
           }
+          
+          // Debug logging for thumbnail
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Watch Later] Video thumbnail data:', {
+              videoId: rawVideo._id || rawVideo.id,
+              thumbnail: rawVideo.thumbnail,
+              hasThumbnail: Boolean(rawVideo.thumbnail)
+            });
+          }
+          
           const fallbackId =
             rawVideo._id ||
             rawVideo.id ||
