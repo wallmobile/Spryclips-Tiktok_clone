@@ -1429,16 +1429,17 @@ const Profile = ({ onClose, username: viewUsername }) => {
           break;
         case 'delete':
             try {
-              // Check if this is a draft
-              const isDraft = drafts.some(d => d.id === videoId);
+              // Check if this is a draft by checking all video lists
+              const draftItem = drafts.find(d => d.id === videoId);
+              const videoItem = videos.find(v => v.id === videoId);
               
-              if (isDraft) {
+              if (draftItem) {
                 // Delete draft
                 await deleteDraft(videoId);
                 const updatedDrafts = drafts.filter(d => d.id !== videoId);
                 setDrafts(updatedDrafts);
                 setToastMessage('Draft deleted successfully!');
-              } else {
+              } else if (videoItem) {
                 // Delete video
                 await deleteVideo(videoId);
                 const updatedVideos = videos.filter(v => v.id !== videoId);
@@ -1451,6 +1452,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 setTimeout(() => {
                   fetchVideos();
                 }, 500);
+              } else {
+                throw new Error('Item not found in videos or drafts');
               }
               
               // Show success toast
