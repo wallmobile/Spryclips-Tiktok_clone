@@ -215,9 +215,9 @@ router.post('/:draftId/publish', authMiddleware, async (req, res) => {
     draft.status = 'ready';
     await draft.save();
 
-    // Add to user's videos
+    // Add to user's videos (avoid duplicates)
     await User.findByIdAndUpdate(req.user._id, {
-      $push: { videos: draft._id }
+      $addToSet: { videos: draft._id }
     });
 
     res.json({

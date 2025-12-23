@@ -265,31 +265,40 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     throw new AppError('Failed to save video to database', 500);
   }
 
-  try {
-    await User.findByIdAndUpdate(req.user._id, {
-      $push: { videos: video._id }
-    });
-    console.log('Video added to user:', req.user._id);
-  } catch (userUpdateError) {
-    console.error('Error updating user:', userUpdateError);
-    // Don't throw - video is saved, just log the error
+  const isReadyForFeed = video.status === 'ready';
+
+  if (isReadyForFeed) {
+    try {
+      await User.findByIdAndUpdate(req.user._id, {
+        $addToSet: { videos: video._id }
+      });
+      console.log('Video added to user:', req.user._id);
+    } catch (userUpdateError) {
+      console.error('Error updating user:', userUpdateError);
+      // Don't throw - video is saved, just log the error
+    }
+  } else {
+    console.log(`Skipping user video association for non-ready status: ${video.status}`);
   }
 
   // Notify followers about new video
-  try {
-    const Notification = require('../models/Notification');
-    const videoUser = await User.findById(req.user._id).select('username followers');
-    
-    console.log(`📹 Video upload notification check:`, {
-      userId: req.user._id.toString(),
-      username: videoUser?.username,
-      followersCount: videoUser?.followers?.length || 0
-    });
-    
-    if (videoUser && videoUser.followers && Array.isArray(videoUser.followers) && videoUser.followers.length > 0) {
-      console.log(`📬 Creating notifications for ${videoUser.followers.length} followers`);
+  const shouldNotifyFollowers = isReadyForFeed && !video.isPrivate;
+
+  if (shouldNotifyFollowers) {
+    try {
+      const Notification = require('../models/Notification');
+      const videoUser = await User.findById(req.user._id).select('username followers');
       
-      const notificationPromises = videoUser.followers.map(async (followerId) => {
+      console.log(`📹 Video upload notification check:`, {
+        userId: req.user._id.toString(),
+        username: videoUser?.username,
+        followersCount: videoUser?.followers?.length || 0
+      });
+      
+      if (videoUser && videoUser.followers && Array.isArray(videoUser.followers) && videoUser.followers.length > 0) {
+        console.log(`📬 Creating notifications for ${videoUser.followers.length} followers`);
+        
+        const notificationPromises = videoUser.followers.map(async (followerId) => {
         try {
           // Handle both ObjectId and populated user
           const followerIdStr = followerId._id ? followerId._id.toString() : followerId.toString();
@@ -348,17 +357,20 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
         }
       });
       
-      await Promise.all(notificationPromises);
-      console.log(`✅ Completed notifying ${videoUser.followers.length} followers about new video`);
-    } else {
-      console.log(`⏭️ No followers to notify (followers: ${videoUser?.followers?.length || 0})`);
+        await Promise.all(notificationPromises);
+        console.log(`✅ Completed notifying ${videoUser.followers.length} followers about new video`);
+      } else {
+        console.log(`⏭️ No followers to notify (followers: ${videoUser?.followers?.length || 0})`);
+      }
+    } catch (notifError) {
+      console.error('❌ Error notifying followers about video:', {
+        error: notifError.message,
+        stack: notifError.stack
+      });
+      // Don't fail video upload if notification fails
     }
-  } catch (notifError) {
-    console.error('❌ Error notifying followers about video:', {
-      error: notifError.message,
-      stack: notifError.stack
-    });
-    // Don't fail video upload if notification fails
+  } else {
+    console.log(`Skipping follower notifications for status=${video.status} private=${video.isPrivate}`);
   }
 
   // Generate a basic thumbnail synchronously for immediate display (first frame)
