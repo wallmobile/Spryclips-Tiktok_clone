@@ -171,6 +171,52 @@ const WatchLater = () => {
         const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
         return `${protocol}${trimmed}`;
       }
+
+      try {
+        const parsed = new URL(trimmed);
+        const hostMatchesLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1]))$/i.test(parsed.hostname);
+
+        if (hostMatchesLocal) {
+          const candidateBases = [];
+
+          if (typeof window !== 'undefined' && window.APP_CONFIG?.UPLOADS_BASE_URL) {
+            candidateBases.push(window.APP_CONFIG.UPLOADS_BASE_URL);
+          }
+
+          const apiUrl = process.env.REACT_APP_API_URL || '';
+          if (apiUrl) {
+            candidateBases.push(apiUrl);
+          }
+
+          if (typeof window !== 'undefined' && window.location?.origin) {
+            candidateBases.push(window.location.origin);
+          }
+
+          const findReplacementOrigin = () => {
+            for (const value of candidateBases) {
+              if (!value || typeof value !== 'string') continue;
+              try {
+                const baseUrl = new URL(value, typeof window !== 'undefined' && window.location?.origin ? window.location.origin : undefined);
+                return baseUrl.origin;
+              } catch (err) {
+                // ignore invalid candidate
+              }
+            }
+            return null;
+          };
+
+          const replacementOrigin = findReplacementOrigin();
+          if (replacementOrigin) {
+            const path = parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+            const search = parsed.search || '';
+            const hash = parsed.hash || '';
+            return `${replacementOrigin}${path}${search}${hash}`;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to normalize absolute URL', trimmed, err);
+      }
+
       return trimmed;
     }
     if (/^(data:|blob:)/i.test(trimmed)) {
