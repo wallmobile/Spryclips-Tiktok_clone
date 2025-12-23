@@ -1989,6 +1989,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
                       <i className="fa-solid fa-triangle-exclamation"></i>
                       <span>Processing failed</span>
                     </>
+                  ) : pinnedVideo.status === 'draft' ? (
+                    <>
+                      <i className="fa-solid fa-file-pen"></i>
+                      <span>Draft saved</span>
+                    </>
                   ) : (
                     <>
                       <i className="fa-solid fa-spinner fa-spin"></i>
@@ -2018,7 +2023,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   <span className={`processing-state ${pinnedVideo.status}`}>
                     {pinnedVideo.status === 'failed'
                       ? sanitizeErrorMessage(pinnedVideo.processingError)
-                      : 'Processing...'}
+                      : pinnedVideo.status === 'draft'
+                        ? 'Draft saved'
+                        : 'Processing...'}
                   </span>
                 )}
               </div>
@@ -2092,6 +2099,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
                                   <i className="fa-solid fa-triangle-exclamation"></i>
                                   <span>Processing failed</span>
                                 </>
+                              ) : video.status === 'draft' ? (
+                                <>
+                                  <i className="fa-solid fa-file-pen"></i>
+                                  <span>Draft saved</span>
+                                </>
                               ) : (
                                 <>
                                   <i className="fa-solid fa-spinner fa-spin"></i>
@@ -2101,9 +2113,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
                             </div>
                           )}
                           <div
-                            className={`video-thumbnail-wrapper ${activeVideoId === video.id ? 'is-playing' : ''} ${video.status !== 'ready' ? 'is-disabled' : ''}`}
+                            className={`video-thumbnail-wrapper ${activeVideoId === video.id ? 'is-playing' : ''} ${video.status !== 'ready' && video.status !== 'draft' ? 'is-disabled' : ''}`}
                             onClick={() => {
-                              if (video.status !== 'ready') return;
+                              if (video.status !== 'ready' && video.status !== 'draft') return;
                               // Open video in full modal with all details
                               setSelectedVideo(video);
                             }}
@@ -2152,6 +2164,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
                             <>
                               <i className="fa-solid fa-triangle-exclamation"></i>
                               <span>Processing failed</span>
+                            </>
+                          ) : video.status === 'draft' ? (
+                            <>
+                              <i className="fa-solid fa-file-pen"></i>
+                              <span>Draft saved</span>
                             </>
                           ) : (
                             <>
@@ -2240,6 +2257,11 @@ const Profile = ({ onClose, username: viewUsername }) => {
                                       <>
                                         <i className="fa-solid fa-triangle-exclamation"></i>
                                         {sanitizeErrorMessage(video.processingError)}
+                                      </>
+                                    ) : video.status === 'draft' ? (
+                                      <>
+                                        <i className="fa-solid fa-file-pen"></i>
+                                        Draft saved
                                       </>
                                     ) : (
                                       <>
@@ -2845,6 +2867,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   let errorMessage = 'This video cannot be loaded.';
                   if (selectedVideo.status === 'processing') {
                     errorMessage = 'Video is still processing. Please wait and try again later.';
+                  } else if (selectedVideo.status === 'draft') {
+                    errorMessage = 'This video is saved as a draft. Publish it to make it visible to others.';
                   } else if (selectedVideo.status === 'failed') {
                     errorMessage = 'Video processing failed. Please try uploading again.';
                   } else if (selectedVideo.processingError) {
