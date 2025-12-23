@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Video = require('../models/Video');
 const Comment = require('../models/Comment');
 const Story = require('../models/Story');
+const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 // LiveStream model (optional - fallback to Video if not available)
 let LiveStream;
 try {
@@ -594,9 +595,24 @@ router.get('/videos', async (req, res) => {
       Video.countDocuments(query)
     ]);
 
+    // Ensure absolute URLs for thumbnails and videos
+    const videosWithAbsoluteUrls = videos.map(video => ({
+      ...video,
+      thumbnail: ensureAbsoluteUrl(video.thumbnail),
+      url: ensureAbsoluteUrl(video.url),
+      processedUrl: video.processedUrl ? ensureAbsoluteUrl(video.processedUrl) : null,
+      user: video.user ? {
+        ...video.user,
+        profile: video.user.profile ? {
+          ...video.user.profile,
+          avatar: ensureAbsoluteUrl(video.user.profile.avatar)
+        } : video.user.profile
+      } : video.user
+    }));
+
     res.json({
       success: true,
-      videos,
+      videos: videosWithAbsoluteUrls,
       pagination: {
         page,
         limit,
