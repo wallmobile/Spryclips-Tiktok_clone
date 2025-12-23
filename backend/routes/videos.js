@@ -10,6 +10,7 @@ const authMiddleware = require('../middleware/auth');
 const { cache, cacheKeys } = require('../utils/cache');
 const { sendSuccess, sendPaginated } = require('../utils/apiResponse');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 // Helper function to create notification
@@ -40,6 +41,29 @@ const ensureObjectId = (id, label, code) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new AppError(`Invalid ${label} ID`, 400, { code });
   }
+};
+
+// Helper function to ensure absolute URL
+const ensureAbsoluteUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  // Already absolute
+  if (/^(https?:)?\/\//i.test(trimmed)) {
+    if (/^\/\//.test(trimmed)) {
+      const protocol = process.env.PROTOCOL || 'http:';
+      return `${protocol}${trimmed}`;
+    }
+    return trimmed;
+  }
+  // Data or blob URL
+  if (/^(data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Make relative URL absolute
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
+  const normalizedBase = baseUrl.replace(/\/+$/, '');
+  const normalizedPath = trimmed.replace(/^\/+/, '');
+  return `${normalizedBase}/${normalizedPath}`;
 };
 
 // Get all videos with pagination and caching
@@ -109,6 +133,15 @@ router.get('/', asyncHandler(async (req, res) => {
     300 // Increased cache time to 5 minutes for better performance
   );
 
+  // Normalize URLs to absolute paths for thumbnails and video URLs
+  const normalizedVideos = videos.map(video => {
+    return {
+      ...video,
+      url: ensureAbsoluteUrl(video.url || ''),
+      thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
+    };
+  });
+
   // Count only videos from active users - use same query pattern
   const activeUsersForCount = await User.find({ accountStatus: 'active' })
     .select('_id')
@@ -121,7 +154,7 @@ router.get('/', asyncHandler(async (req, res) => {
   };
   const total = await Video.countDocuments(countQuery);
 
-  sendPaginated(res, videos, { page, limit, total }, 'Videos retrieved successfully');
+  sendPaginated(res, normalizedVideos, { page, limit, total }, 'Videos retrieved successfully');
 }));
 
 // Get video by ID with caching
@@ -144,13 +177,20 @@ router.get('/:id', asyncHandler(async (req, res) => {
     throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
   }
 
+  // Normalize URLs to absolute paths
+  const normalizedVideo = {
+    ...video,
+    url: ensureAbsoluteUrl(video.url || ''),
+    thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
+  };
+
   // Increment views (async, don't wait)
   Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }).exec();
 
   // Invalidate cache after view increment
   cache.delete(cacheKey);
 
-  sendSuccess(res, video, 'Video retrieved successfully');
+  sendSuccess(res, normalizedVideo, 'Video retrieved successfully');
 }));
 
 // Like/Unlike video
@@ -328,7 +368,7 @@ router.get('/:id/embed', asyncHandler(async (req, res) => {
       video: {
         id: video._id,
         title: (video.description || '').substring(0, 100) || 'Video',
-        thumbnail: video.thumbnail,
+        thumbnail: ensureAbsoluteUrl(video.thumbnail || ''),
         user: video.user?.username
       }
     },
