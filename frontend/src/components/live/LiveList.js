@@ -74,7 +74,7 @@ const LiveList = () => {
         </h1>
         <div className="live-list-categories">
           {categories.map((cat) => (
-              const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000' ;
+              const apiBase = window.APP_CONFIG?.API_URL ?? 'http://localhost:5000';
 
               const resolveUrl = (path) => {
                 if (!path) return '';
@@ -84,7 +84,7 @@ const LiveList = () => {
                   return u.href;
                 } catch (e) {
                   // Not an absolute URL — prefix with API_URL
-                  const prefix = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+                  const prefix = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
                   const p = path.startsWith('/') ? path : `/${path}`;
                   return `${prefix}${p}`;
                 }

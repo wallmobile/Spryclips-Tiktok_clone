@@ -94,9 +94,10 @@ const LIVE = ({ onClose = () => {} }) => {
     
     setLoadingMyStream(true);
     try {
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
+      const apiBase = window.APP_CONFIG?.API_URL ?? 'http://localhost:5000';
       console.log('Fetching active stream for user:', userId);
-      const response = await fetch(`${API_URL}/api/live/user/${userId}?status=live`, {
+      const endpoint = apiBase ? `${apiBase}/api/live/user/${userId}?status=live` : `/api/live/user/${userId}?status=live`;
+      const response = await fetch(endpoint, {
         credentials: 'include'
       });
       const data = await response.json();
@@ -234,8 +235,9 @@ const LIVE = ({ onClose = () => {} }) => {
         return;
       }
 
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_URL}/api/live/${streamId}/end`, {
+      const apiBase = window.APP_CONFIG?.API_URL ?? 'http://localhost:5000';
+      const endpoint = apiBase ? `${apiBase}/api/live/${streamId}/end` : `/api/live/${streamId}/end`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

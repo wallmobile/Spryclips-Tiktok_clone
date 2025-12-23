@@ -52,8 +52,9 @@ const LiveStreamWatch = () => {
         setLoading(true);
         setError(null);
 
-        const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
-        const response = await fetch(`${API_URL}/api/live/room/${roomId}`, {
+        const apiBase = window.APP_CONFIG?.API_URL ?? 'http://localhost:5000';
+        const endpoint = apiBase ? `${apiBase}/api/live/room/${roomId}` : `/api/live/room/${roomId}`;
+        const response = await fetch(endpoint, {
           credentials: 'include'
         });
         const data = await response.json();
