@@ -9,6 +9,7 @@ const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const authMiddleware = require('../middleware/auth');
+const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 const router = express.Router();
 
 // Helper function to create notification
@@ -1471,10 +1472,20 @@ router.get('/:id/videos', async (req, res) => {
 
     console.log(`📹 Found ${videos.length} videos for user ${user.username} (${user._id})`);
     
+    // Normalize URLs to absolute paths for thumbnails and video URLs
+    const normalizedVideos = videos.map(video => {
+      const videoObj = video.toObject ? video.toObject() : video;
+      return {
+        ...videoObj,
+        url: ensureAbsoluteUrl(videoObj.url || ''),
+        thumbnail: ensureAbsoluteUrl(videoObj.thumbnail || '')
+      };
+    });
+    
     res.json({
       success: true,
-      videos: videos,
-      count: videos.length
+      videos: normalizedVideos,
+      count: normalizedVideos.length
     });
   } catch (error) {
     console.error('Error fetching user videos:', error);

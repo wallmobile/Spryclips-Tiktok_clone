@@ -13,6 +13,7 @@ const { processVideo, generateThumbnail } = require('../utils/videoProcessor');
 const { cache, cacheKeys } = require('../utils/cache');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
 const { PUBLIC_URL } = require('../utils/config');
+const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 const router = express.Router();
 
 // PUBLIC UPLOADS DIRECTORY - Production configuration
@@ -413,8 +414,8 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   let responseVideo = {
     id: video._id,
     status: video.status,
-    url: video.url,
-    thumbnail: thumbnailUrl || video.thumbnail,
+    url: ensureAbsoluteUrl(video.url || ''),
+    thumbnail: ensureAbsoluteUrl(thumbnailUrl || video.thumbnail || ''),
     processedVideos: video.processedVideos || []
   };
 
@@ -553,6 +554,16 @@ router.get('/my-videos', authMiddleware, asyncHandler(async (req, res) => {
     .populate('user', 'username profile')
     .sort({ createdAt: -1 });
 
+  // Normalize URLs to absolute paths for thumbnails and video URLs
+  const normalizedVideos = videos.map(video => {
+    const videoObj = video.toObject ? video.toObject() : video;
+    return {
+      ...videoObj,
+      url: ensureAbsoluteUrl(videoObj.url || ''),
+      thumbnail: ensureAbsoluteUrl(videoObj.thumbnail || '')
+    };
+  });
+
   // Prevent caching to ensure fresh data
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
@@ -560,8 +571,8 @@ router.get('/my-videos', authMiddleware, asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    count: videos.length,
-    videos: videos
+    count: normalizedVideos.length,
+    videos: normalizedVideos
   });
 }));
 
@@ -580,9 +591,16 @@ router.get('/my-videos/:id', authMiddleware, asyncHandler(async (req, res) => {
     throw new AppError('Video not found or unauthorized', 404);
   }
 
+  // Normalize URLs to absolute paths
+  const normalizedVideo = {
+    ...(video.toObject ? video.toObject() : video),
+    url: ensureAbsoluteUrl(video.url || ''),
+    thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
+  };
+
   res.json({
     success: true,
-    video: video
+    video: normalizedVideo
   });
 }));
 
