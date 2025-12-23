@@ -453,11 +453,11 @@ const StoryCreator = ({ onClose, onStoryCreated }) => {
         console.log('📢 Dispatching stories:refresh event...');
         window.dispatchEvent(new Event('stories:refresh'));
         
-        // Close after showing success message (2 seconds to allow refresh)
+        // Close after showing success message (1 second to allow refresh, reduced from 2 seconds)
         setTimeout(() => {
           console.log('🔒 Closing story creator after success...');
           onClose();
-        }, 2000);
+        }, 1000);
       } else {
         const errorMsg = response?.message || 'Failed to upload story. Please try again.';
         console.error('❌ Upload failed:', errorMsg);

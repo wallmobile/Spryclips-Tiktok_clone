@@ -16,6 +16,7 @@ import AccountSettings from '../settings/AccountSettings';
 import { getMyVideos, getUserVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
 import { updateProfile, pinVideo, followUser } from '../../api/users';
 import { getUserStories } from '../../api/stories';
+import { getDrafts, deleteDraft } from '../../api/drafts';
 import StoryViewer from '../stories/StoryViewer';
 import api, { API_URL } from '../../config/axios';
 import './Profile.css';
@@ -274,7 +275,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
       
       console.log('🔄 Profile: Stories refresh event received');
       
-      // Debounce: wait 1000ms before refreshing (in case multiple events fire)
+      // Debounce: wait 300ms before refreshing (reduced from 1000ms for faster refresh)
       refreshTimeoutRef.current = setTimeout(async () => {
         if (isRefreshingRef.current) return;
         
@@ -288,7 +289,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
           isRefreshingRef.current = false;
         }
         refreshTimeoutRef.current = null;
-      }, 1000); // Debounce to 1000ms to handle rapid events
+      }, 300); // Reduced debounce to 300ms for immediate refresh after story creation
     };
     
     window.addEventListener('stories:refresh', handleStoryRefresh);
@@ -994,6 +995,16 @@ const Profile = ({ onClose, username: viewUsername }) => {
             Array.isArray(video.processedVideos) && video.processedVideos[0]?.thumbnail
           ].filter((thumb) => typeof thumb === 'string' && thumb.trim().length > 0);
 
+          // Debug logging for thumbnail resolution
+          if (process.env.NODE_ENV === 'development' && possibleThumbnails.length === 0) {
+            console.warn('⚠️ Profile: No thumbnail found for video:', {
+              videoId: video._id,
+              videoThumbnail: video.thumbnail,
+              metadata: video.metadata,
+              processedVideos: video.processedVideos
+            });
+          }
+
           let resolvedThumbnail = '';
           let hasImageThumbnail = false;
           if (possibleThumbnails.length > 0) {
@@ -1003,6 +1014,13 @@ const Profile = ({ onClose, username: viewUsername }) => {
             }) || (possibleThumbnails.length > 0 ? possibleThumbnails[0] : null);
             if (selectedThumb) {
               resolvedThumbnail = ensureAbsoluteUrl(selectedThumb);
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🖼️ Profile: Resolved thumbnail URL:', {
+                  videoId: video._id,
+                  original: selectedThumb,
+                  resolved: resolvedThumbnail
+                });
+              }
             }
             hasImageThumbnail =
               typeof resolvedThumbnail === 'string' &&
@@ -1245,21 +1263,52 @@ const Profile = ({ onClose, username: viewUsername }) => {
       if (activeTab === 'drafts' && user) {
         try {
           setLoadingDrafts(true);
-          // Mock drafts data for now - replace with actual API call
-          const mockDrafts = [
-            {
-              id: 'draft1',
-              thumbnail: 'https://via.placeholder.com/300x400/222831/FFFFFF?text=Draft+1',
-              caption: 'Draft video - work in progress',
-              uploadDate: '1 week ago',
-              visibility: 'private',
-              url: null
-            }
-          ];
-          setDrafts(mockDrafts);
+          // Fetch real drafts from API
+          const response = await getDrafts();
+          console.log('Drafts API response:', response);
+          
+          // Handle different response formats
+          const draftsData = response?.drafts || response?.data?.drafts || response?.data || [];
+          
+          if (!Array.isArray(draftsData)) {
+            console.error('Invalid drafts response format:', response);
+            setDrafts([]);
+            return;
+          }
+          
+          // Format drafts to match expected structure
+          const formattedDrafts = draftsData.map(draft => {
+            const thumbnailUrl = ensureAbsoluteUrl(draft.thumbnail || '');
+            
+            return {
+              id: draft._id || draft.id,
+              thumbnail: thumbnailUrl,
+              caption: draft.description || 'Untitled draft',
+              uploadDate: formatDate(draft.updatedAt || draft.createdAt),
+              visibility: draft.isPrivate ? 'private' : 'public',
+              url: draft.url || '',
+              videoUrl: draft.url || '',
+              status: 'draft',
+              createdAt: draft.createdAt,
+              updatedAt: draft.updatedAt,
+              // Include all original draft data for editing
+              _originalData: draft
+            };
+          });
+          
+          console.log('Formatted drafts:', formattedDrafts);
+          setDrafts(formattedDrafts);
         } catch (error) {
           console.error('Error fetching drafts:', error);
           setDrafts([]);
+          // Show user-friendly error message
+          if (error?.response?.status === 401) {
+            setToastMessage('Please login again to view drafts.');
+          } else {
+            setToastMessage('Failed to load drafts. Please try again.');
+          }
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 3000);
         } finally {
           setLoadingDrafts(false);
         }
@@ -1380,31 +1429,44 @@ const Profile = ({ onClose, username: viewUsername }) => {
           break;
         case 'delete':
             try {
-              await deleteVideo(videoId);
-              const updatedVideos = videos.filter(v => v.id !== videoId);
-              setVideos(updatedVideos);
-              if (pinnedVideo?.id === videoId) {
-                setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+              // Check if this is a draft
+              const isDraft = drafts.some(d => d.id === videoId);
+              
+              if (isDraft) {
+                // Delete draft
+                await deleteDraft(videoId);
+                const updatedDrafts = drafts.filter(d => d.id !== videoId);
+                setDrafts(updatedDrafts);
+                setToastMessage('Draft deleted successfully!');
+              } else {
+                // Delete video
+                await deleteVideo(videoId);
+                const updatedVideos = videos.filter(v => v.id !== videoId);
+                setVideos(updatedVideos);
+                if (pinnedVideo?.id === videoId) {
+                  setPinnedVideo(updatedVideos.find(v => v.isPinned) || null);
+                }
+                setToastMessage('Video deleted successfully!');
+                // Refresh videos list
+                setTimeout(() => {
+                  fetchVideos();
+                }, 500);
               }
-              // Show success toast instead of alert
-              setToastMessage('Video deleted successfully!');
+              
+              // Show success toast
               setShowToast(true);
               setTimeout(() => {
                 setShowToast(false);
               }, 3000);
-              // Refresh videos list
-              setTimeout(() => {
-                fetchVideos();
-              }, 500);
             } catch (error) {
-              console.error('Error deleting video:', error);
+              console.error('Error deleting video/draft:', error);
               // Show user-friendly error message
-              let errorMessage = 'Failed to delete video. Please try again.';
+              let errorMessage = 'Failed to delete. Please try again.';
               
               if (error?.response?.data?.message) {
                 errorMessage = error.response.data.message;
               } else if (error?.response?.status === 404) {
-                errorMessage = 'Video not found. It may have already been deleted.';
+                errorMessage = 'Video or draft not found. It may have already been deleted.';
               } else if (error?.response?.status === 401) {
                 errorMessage = 'Please login again to delete videos.';
               } else if (error?.response?.status === 403) {
@@ -1475,6 +1537,24 @@ const Profile = ({ onClose, username: viewUsername }) => {
             alert('Video download started!');
           } catch {
             alert('Failed to download video');
+          }
+          break;
+        }
+        case 'edit': {
+          // Navigate to upload page with draft data for editing
+          const draftToEdit = drafts.find(d => d.id === videoId);
+          if (draftToEdit) {
+            navigate('/upload', { 
+              state: { 
+                editDraft: true, 
+                draftData: draftToEdit,
+                from: 'profile'
+              } 
+            });
+          } else {
+            setToastMessage('Draft not found. Please try again.');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
           }
           break;
         }
