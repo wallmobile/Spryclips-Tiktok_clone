@@ -238,9 +238,10 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
     setIsStarting(true);
     try {
       // Call backend API to create stream and get unique roomId
-      const API_URL = window.APP_CONFIG?.API_URL || 'http://localhost:5000';
-      
-      const response = await fetch(`${API_URL}/api/live/start`, {
+      const apiBase = window.APP_CONFIG?.API_URL ?? 'http://localhost:5000';
+      const endpoint = apiBase ? `${apiBase}/api/live/start` : '/api/live/start';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
