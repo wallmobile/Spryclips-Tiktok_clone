@@ -122,6 +122,29 @@ const normalizeHashtags = (input) => {
   return [];
 };
 
+// Helper function to ensure absolute URL
+const ensureAbsoluteUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  // Already absolute
+  if (/^(https?:)?\/\//i.test(trimmed)) {
+    if (/^\/\//.test(trimmed)) {
+      const protocol = process.env.PROTOCOL || 'http:';
+      return `${protocol}${trimmed}`;
+    }
+    return trimmed;
+  }
+  // Data or blob URL
+  if (/^(data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Make relative URL absolute
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
+  const normalizedBase = baseUrl.replace(/\/+$/, '');
+  const normalizedPath = trimmed.replace(/^\/+/, '');
+  return `${normalizedBase}/${normalizedPath}`;
+};
+
 // Upload video
 router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHandler(async (req, res) => {
   // Check if account is suspended or banned - block video upload
@@ -413,8 +436,8 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   let responseVideo = {
     id: video._id,
     status: video.status,
-    url: video.url,
-    thumbnail: thumbnailUrl || video.thumbnail,
+    url: ensureAbsoluteUrl(video.url || ''),
+    thumbnail: ensureAbsoluteUrl(thumbnailUrl || video.thumbnail || ''),
     processedVideos: video.processedVideos || []
   };
 
@@ -553,6 +576,16 @@ router.get('/my-videos', authMiddleware, asyncHandler(async (req, res) => {
     .populate('user', 'username profile')
     .sort({ createdAt: -1 });
 
+  // Normalize URLs to absolute paths for thumbnails and video URLs
+  const normalizedVideos = videos.map(video => {
+    const videoObj = video.toObject ? video.toObject() : video;
+    return {
+      ...videoObj,
+      url: ensureAbsoluteUrl(videoObj.url || ''),
+      thumbnail: ensureAbsoluteUrl(videoObj.thumbnail || '')
+    };
+  });
+
   // Prevent caching to ensure fresh data
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
@@ -560,8 +593,8 @@ router.get('/my-videos', authMiddleware, asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    count: videos.length,
-    videos: videos
+    count: normalizedVideos.length,
+    videos: normalizedVideos
   });
 }));
 
@@ -580,9 +613,16 @@ router.get('/my-videos/:id', authMiddleware, asyncHandler(async (req, res) => {
     throw new AppError('Video not found or unauthorized', 404);
   }
 
+  // Normalize URLs to absolute paths
+  const normalizedVideo = {
+    ...(video.toObject ? video.toObject() : video),
+    url: ensureAbsoluteUrl(video.url || ''),
+    thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
+  };
+
   res.json({
     success: true,
-    video: video
+    video: normalizedVideo
   });
 }));
 

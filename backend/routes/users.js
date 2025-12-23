@@ -9,6 +9,7 @@ const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const authMiddleware = require('../middleware/auth');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 // Helper function to create notification
@@ -32,6 +33,29 @@ const createNotification = async (data) => {
     console.error('Error creating notification:', error);
     return null;
   }
+};
+
+// Helper function to ensure absolute URL
+const ensureAbsoluteUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  // Already absolute
+  if (/^(https?:)?\/\//i.test(trimmed)) {
+    if (/^\/\//.test(trimmed)) {
+      const protocol = process.env.PROTOCOL || 'http:';
+      return `${protocol}${trimmed}`;
+    }
+    return trimmed;
+  }
+  // Data or blob URL
+  if (/^(data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Make relative URL absolute
+  const baseUrl = process.env.API_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : PUBLIC_URL);
+  const normalizedBase = baseUrl.replace(/\/+$/, '');
+  const normalizedPath = trimmed.replace(/^\/+/, '');
+  return `${normalizedBase}/${normalizedPath}`;
 };
 
 // ==================== STATIC ROUTES (Must be before /:id route) ====================
@@ -1471,10 +1495,20 @@ router.get('/:id/videos', async (req, res) => {
 
     console.log(`📹 Found ${videos.length} videos for user ${user.username} (${user._id})`);
     
+    // Normalize URLs to absolute paths for thumbnails and video URLs
+    const normalizedVideos = videos.map(video => {
+      const videoObj = video.toObject ? video.toObject() : video;
+      return {
+        ...videoObj,
+        url: ensureAbsoluteUrl(videoObj.url || ''),
+        thumbnail: ensureAbsoluteUrl(videoObj.thumbnail || '')
+      };
+    });
+    
     res.json({
       success: true,
-      videos: videos,
-      count: videos.length
+      videos: normalizedVideos,
+      count: normalizedVideos.length
     });
   } catch (error) {
     console.error('Error fetching user videos:', error);
