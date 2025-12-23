@@ -959,6 +959,15 @@ router.get('/preferences', authMiddleware, (req, res) => {
 router.patch('/preferences', authMiddleware, async (req, res) => {
   try {
     const { language, theme } = req.body;
+    const User = require('../models/User');
+    
+    // Fetch the full user document (not lean) so we can save it
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    
     let changed = false;
 
     if (language) {
@@ -966,8 +975,8 @@ router.patch('/preferences', authMiddleware, async (req, res) => {
       if (!match) {
         return res.status(400).json({ message: 'Unsupported language selection.' });
       }
-      req.user.experience = req.user.experience || {};
-      req.user.experience.language = match.label;
+      user.experience = user.experience || {};
+      user.experience.language = match.label;
       changed = true;
     }
 
@@ -976,18 +985,18 @@ router.patch('/preferences', authMiddleware, async (req, res) => {
       if (!['light', 'dark'].includes(normalized)) {
         return res.status(400).json({ message: 'Theme must be either "light" or "dark".' });
       }
-      req.user.experience = req.user.experience || {};
-      req.user.experience.theme = normalized;
+      user.experience = user.experience || {};
+      user.experience.theme = normalized;
       changed = true;
     }
 
     if (changed) {
-      await req.user.save();
+      await user.save();
     }
 
     res.json({
-      language: req.user.experience?.language || 'English (US)',
-      theme: req.user.experience?.theme || 'light'
+      language: user.experience?.language || 'English (US)',
+      theme: user.experience?.theme || 'light'
     });
   } catch (error) {
     console.error('Failed to update experience preferences:', error);
