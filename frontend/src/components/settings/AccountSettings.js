@@ -291,7 +291,7 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                   onClose();
                   navigate('/more/privacy-settings');
                 } else if (section.id === 'balance') {
-                  onClose();
+                  if (onClose) onClose();
                   navigate('/balance', { state: { from: '/profile' } });
                 } else if (section.id === 'creator') {
                   setShowCreatorTools(true);
