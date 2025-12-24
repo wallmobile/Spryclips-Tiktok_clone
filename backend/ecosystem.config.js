@@ -32,7 +32,11 @@ module.exports = {
       // Production environment
       env_production: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 5000,
+        EMAIL_SERVICE: 'gmail',
+        EMAIL_FROM: 'SpryClips <bipul.kumar3384@gmail.com>',
+        GMAIL_USER: 'bipul.kumar3384@gmail.com',
+        GMAIL_APP_PASSWORD: 'szynffjxrpripdhm'
       },
       
       // Logging
