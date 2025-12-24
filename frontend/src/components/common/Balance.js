@@ -25,16 +25,16 @@ const Balance = ({ onClose }) => {
                          location.state?.from === '/profile' ||
                          (document.referrer && document.referrer.includes('profile'));
       
-      // Only redirect if we have a valid referrer and came from profile
-      // On page refresh, document.referrer is empty - DO NOT REDIRECT, stay on page
-      if (fromProfile && document.referrer && document.referrer.length > 0) {
+      if (fromProfile) {
         // Navigate to profile page to show AccountSettings
         navigate('/profile', { replace: true });
-      } else if (document.referrer && document.referrer.length > 0 && window.history.length > 1) {
-        // Go back in history only if we have valid referrer and history
+      } else if (window.history.length > 1) {
+        // Go back in history
         navigate(-1);
+      } else {
+        // Fallback: navigate to home page
+        navigate('/', { replace: true });
       }
-      // If no referrer (page refresh) - DO NOTHING, stay on current page
     } else if (onClose) {
       onClose(); // Modal close
     }
