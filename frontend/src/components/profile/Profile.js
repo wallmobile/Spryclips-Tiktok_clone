@@ -1400,9 +1400,10 @@ const Profile = ({ onClose, username: viewUsername }) => {
     try {
       switch(action) {
         case 'view': {
-          // Check in uploaded videos first, then liked videos, then drafts
+          // Check in all video arrays
           const videoToView = videos.find(v => v.id === videoId) || 
                              likedVideos.find(v => v.id === videoId) ||
+                             repostedVideos.find(v => v.id === videoId) ||
                              drafts.find(v => v.id === videoId);
           if (videoToView) {
             setSelectedVideo(videoToView);
