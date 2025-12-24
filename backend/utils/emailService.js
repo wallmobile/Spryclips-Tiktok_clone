@@ -69,7 +69,7 @@ initEmailService();
 
 const sendEmail = async (to, subject, html, text = null) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@tiktok-clone.com',
+    from: process.env.EMAIL_FROM || 'SpryClips <noreply@spryclips.com>',  
     to,
     subject,
     html,
@@ -84,7 +84,7 @@ const sendEmail = async (to, subject, html, text = null) => {
 // Email templates
 const emailTemplates = {
   welcome: (username, verificationLink) => ({
-    subject: 'Welcome to TikTok Clone!',
+    subject: 'Welcome to SpryClips!',
     html: `
       <!DOCTYPE html>
       <html>
@@ -100,11 +100,11 @@ const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to TikTok Clone!</h1>
+            <h1>Welcome to SpryClips!</h1>
           </div>
           <div class="content">
             <h2>Hi ${username}!</h2>
-            <p>Thank you for joining TikTok Clone. We're excited to have you on board!</p>
+            <p>Thank you for joining SpryClips. We're excited to have you on board!</p>
             <p>Please verify your email address by clicking the button below:</p>
             <a href="${verificationLink}" class="button">Verify Email</a>
             <p>Or copy and paste this link into your browser:</p>
@@ -186,7 +186,7 @@ const emailTemplates = {
               <strong>Security Notice:</strong> This code will expire in 1 hour. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
             </div>
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
-              For your security, never share this code with anyone. TikTok Clone will never ask for this code.
+              For your security, never share this code with anyone. SpryClips will never ask for this code.
             </p>
           </div>
         </div>
@@ -229,7 +229,7 @@ const emailTemplates = {
   }),
 
   signupVerificationCode: (username, code) => ({
-    subject: 'Welcome to TikTok Clone - Verify Your Email',
+    subject: 'Welcome to SpryClips - Verify Your Email',
     html: `
       <!DOCTYPE html>
       <html>
@@ -247,11 +247,11 @@ const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to TikTok Clone!</h1>
+            <h1>Welcome to SpryClips!</h1>
           </div>
           <div class="content">
             <h2>Hi ${username}!</h2>
-            <p>Thank you for joining TikTok Clone! We're excited to have you on board.</p>
+            <p>Thank you for joining SpryClips! We're excited to have you on board.</p>
             <p>To complete your account setup, please verify your email address using the code below:</p>
             <div class="code-box">
               <div class="code">${code}</div>
@@ -261,7 +261,7 @@ const emailTemplates = {
               <strong>Important:</strong> This code will expire in 5 minutes. If you didn't create an account, please ignore this email.
             </div>
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
-              For your security, never share this code with anyone. TikTok Clone will never ask for this code.
+              For your security, never share this code with anyone. SpryClips will never ask for this code.
             </p>
           </div>
         </div>
