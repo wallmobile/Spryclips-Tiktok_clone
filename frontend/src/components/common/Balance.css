@@ -1815,3 +1815,112 @@ body.dark-mode .withdraw-modal-body::-webkit-scrollbar-thumb:hover,
 body.dark-mode .balance-modal-body::-webkit-scrollbar-thumb:hover {
   background: #64748B;
 }
+/* Toast Notification */
+.balance-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100001;
+  min-width: 320px;
+  max-width: 90vw;
+  animation: slideDown 0.3s ease, fadeOut 0.3s ease 4.7s;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
+
+.balance-toast-success {
+  border-left: 4px solid #00d26a;
+}
+
+.balance-toast-success i:first-child {
+  color: #00d26a;
+  font-size: 20px;
+}
+
+.balance-toast-error {
+  border-left: 4px solid #ff4757;
+}
+
+.balance-toast-error i:first-child {
+  color: #ff4757;
+  font-size: 20px;
+}
+
+.balance-toast span {
+  flex: 1;
+  color: #161823;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.balance-toast-close {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.balance-toast-close:hover {
+  color: #161823;
+}
+
+.balance-toast-close i {
+  font-size: 16px;
+}
+
+/* Payment button states */
+.confirm-payment-btn:disabled,
+.cancel-payment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirm-payment-btn i.fa-spinner {
+  margin-right: 8px;
+}
+
+body.dark-mode .balance-toast {
+  background: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .balance-toast span {
+  color: #f1f5f9;
+}
+
+body.dark-mode .balance-toast-close {
+  color: #94a3b8;
+}
+
+body.dark-mode .balance-toast-close:hover {
+  color: #f1f5f9;
+}

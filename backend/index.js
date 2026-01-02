@@ -558,6 +558,22 @@ if (!isTestEnv) {
         console.log(`🔑 OIDC: https://sprylogin.com/.well-known/openid-configuration`);
       });
 
+        // Increase server timeouts to support large file uploads
+        try {
+          // Set request timeout to 10 minutes (600000 ms)
+          server.setTimeout(10 * 60 * 1000);
+          // Keep-alive and headers timeout slightly above defaults to avoid premature socket closures
+          server.keepAliveTimeout = 65 * 1000;
+          server.headersTimeout = 70 * 1000;
+          console.log('Server timeouts configured:', {
+            requestTimeoutMs: server.timeout || '(not available)',
+            keepAliveTimeoutMs: server.keepAliveTimeout,
+            headersTimeoutMs: server.headersTimeout
+          });
+        } catch (err) {
+          console.warn('Could not configure server timeouts:', err && err.message ? err.message : err);
+        }
+
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         console.error(`❌ Port ${PORT} is already in use. Please use a different port.`);

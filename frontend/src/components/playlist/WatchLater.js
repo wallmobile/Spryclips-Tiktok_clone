@@ -54,6 +54,7 @@ const WatchLater = () => {
     }
 
     setLoadingRemote(true);
+    setErrorMessage(''); // Clear previous errors
     try {
       const response = await fetchWatchLater();
       console.log('[Watch Later] API Response:', response);
@@ -110,7 +111,6 @@ const WatchLater = () => {
       // Only use API data - no store merge to ensure only real saved videos are shown
       // This ensures Watch Later only shows videos the user actually saved to the database
       setWatchLater(normalized);
-      setErrorMessage('');
       setLastSyncedAt(new Date().toISOString());
     } catch (error) {
       console.error('[Watch Later] Failed to sync watch later list', error);
@@ -135,15 +135,17 @@ const WatchLater = () => {
   }, [loadWatchLater]);
 
   // Listen to store changes and refresh when videos are added/removed (only if page is visible)
-  useEffect(() => {
-    if (initialized && isAuthenticated && document.visibilityState === 'visible') {
-      // Reload from API when store changes (but debounce to avoid too many calls)
-      const timeoutId = setTimeout(() => {
-        loadWatchLater();
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [watchLater.length, initialized, isAuthenticated, loadWatchLater]);
+  // DISABLED: This was causing infinite loops and unnecessary API calls
+  // The event listener below handles updates from other components
+  // useEffect(() => {
+  //   if (initialized && isAuthenticated && document.visibilityState === 'visible') {
+  //     // Reload from API when store changes (but debounce to avoid too many calls)
+  //     const timeoutId = setTimeout(() => {
+  //       loadWatchLater();
+  //     }, 1000);
+  //     return () => clearTimeout(timeoutId);
+  //   }
+  // }, [watchLater.length, initialized, isAuthenticated, loadWatchLater]);
 
   // Listen for watch later updates from other components
   useEffect(() => {
@@ -631,11 +633,30 @@ const WatchLater = () => {
                         }}
                       />
                     ) : (
-                      <OptimizedImage
-                        src={ensureAbsoluteUrl(video.thumbnail) || '/placeholder-thumbnail.jpg'}
-                        alt={video.description || 'Watch later video'}
-                        className="watchlater-thumbnail"
-                      />
+                      <>
+                        {video.thumbnail && video.thumbnail.trim() !== '' ? (
+                          <OptimizedImage
+                            src={ensureAbsoluteUrl(video.thumbnail)}
+                            alt={video.description || 'Watch later video'}
+                            className="watchlater-thumbnail"
+                            onError={(e) => {
+                              // If image fails to load, try using video URL as thumbnail
+                              const videoUrl = ensureAbsoluteUrl(video.url || video.videoUrl || '');
+                              if (videoUrl && e.target.src !== videoUrl) {
+                                e.target.src = videoUrl;
+                                e.target.onerror = () => {
+                                  // If video URL also fails, hide the image
+                                  e.target.style.display = 'none';
+                                };
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="watchlater-thumbnail watchlater-thumbnail-placeholder">
+                            <i className="fa-solid fa-video" style={{fontSize: '3rem', color: 'rgba(255,255,255,0.3)'}}></i>
+                          </div>
+                        )}
+                      </>
                     )}
                     <button
                       className="watchlater-remove-btn"

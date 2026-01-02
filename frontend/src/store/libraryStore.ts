@@ -99,13 +99,23 @@ export const toLibraryVideo = (video: Record<string, unknown>, fallbackId: strin
     (userRecord['profile'] as { avatar?: string } | undefined)?.avatar ||
     (video['avatar'] as string | undefined);
 
+  // Get thumbnail with fallbacks
+  let thumbnail = (video['thumbnail'] as string | undefined) || 
+                  (video['thumbnailUrl'] as string | undefined) ||
+                  (video['poster'] as string | undefined);
+  
+  // If no thumbnail, use the video URL as fallback (browsers will show first frame)
+  if (!thumbnail || thumbnail.trim() === '') {
+    thumbnail = (video['videoUrl'] as string | undefined) || (video['url'] as string | undefined);
+  }
+
   return {
     _id:
       (video['_id'] as string | undefined) ||
       (video['id'] as string | undefined) ||
       fallbackId,
     url: (video['videoUrl'] as string | undefined) || (video['url'] as string | undefined),
-    thumbnail: video['thumbnail'] as string | undefined,
+    thumbnail,
     description: video['description'] as string | undefined,
     username,
     profileAvatar: avatar,

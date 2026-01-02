@@ -4,6 +4,10 @@ import './VideoCollections.css';
 
 const VideoCollections = ({ onClose, video }) => {
   const { user } = useAuth();
+  useEffect(() => {
+    console.log('VideoCollections mounted', { video });
+    return () => console.log('VideoCollections unmounted');
+  }, [video]);
   const [activeTab, setActiveTab] = useState('playlists'); // 'playlists', 'series', 'collections', 'watchlater'
   const [playlists, setPlaylists] = useState([]);
   const [series, setSeries] = useState([]);

@@ -12,7 +12,8 @@ import './Sidebar.css';
 
 const LOCAL_LANGUAGE_KEY = 'preferredLanguage';
 const FALLBACK_LANGUAGES = [
-  { id: 'en_us', label: 'English (US)' }
+  { id: 'en_us', label: 'English (US)' },
+  { id: 'en_gb', label: 'English (UK)' }
 ];
 
 const Sidebar = () => {
@@ -35,6 +36,7 @@ const Sidebar = () => {
       { id: 'following', icon: 'fa-user-plus', label: 'Following', path: '/following', auth: true },
       { id: 'live', icon: 'fa-tv', label: 'LIVE', path: '/live' },
       { id: 'upload', icon: 'fa-square-plus', label: 'Upload', path: '/upload', auth: true },
+      { id: 'messages', icon: 'fa-message', label: 'Messages', path: '/messages', auth: true },
       { id: 'profile', icon: 'fa-user', label: 'Profile', path: '/profile', auth: true }
     ],
     []

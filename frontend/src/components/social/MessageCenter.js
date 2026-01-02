@@ -124,6 +124,33 @@ const MessageCenter = ({ onClose, initialUser }) => {
   const [showCallModal, setShowCallModal] = useState(false);
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [incomingCall, setIncomingCall] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiCategory, setEmojiCategory] = useState('smileys');
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState('');
+  const fileInputRef = React.useRef(null);
+
+  // Emoji categories
+  const emojiCategories = {
+    smileys: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
+    animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔'],
+    food: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🌽','🥕','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽️','🥣','🥡','🥢','🧂'],
+    activities: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','🤺','⛹️','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🧩'],
+    travel: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️','🛤️','🛣️'],
+    objects: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🖲️','🕹️','🗜️','💾','💿','📀','📼','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','🎚️','🎛️','🧭','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶','💷','💰','💳','💎','⚖️','🧰','🔧','🔨','⚒️','🛠️','⛏️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸','🧬','🦠','🧫','🧪','🌡️','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🛀','🧼','🪒','🧽','🧴','🛎️','🔑','🗝️','🚪','🪑','🛋️','🛏️','🧸','🖼️','🛍️','🛒','🎁','🎈','🎏','🎀','🎊','🎉'],
+    symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','🚻','🚮','🎦','📶','🈁','🔣'],
+    flags: ['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️']
+  };
+
+  // Filter emojis based on search
+  const getFilteredEmojis = () => {
+    if (!emojiSearchQuery) {
+      return emojiCategories[emojiCategory] || [];
+    }
+    
+    // Search across all categories
+    const allEmojis = Object.values(emojiCategories).flat();
+    return allEmojis;
+  };
   
   const { socket, isConnected } = useSocket();
 
@@ -612,9 +639,56 @@ const MessageCenter = ({ onClose, initialUser }) => {
                 {/* Message Input */}
                 <form className="message-input-form" onSubmit={handleSendMessage}>
                   <div className="message-input-container">
-                    <button type="button" className="attachment-btn">
-                      <i className="fa-solid fa-paperclip"></i>
-                    </button>
+                      <button
+                        type="button"
+                        className="attachment-btn"
+                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                        title="Attach file"
+                      >
+                        <i className="fa-solid fa-paperclip"></i>
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*,audio/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (!file || !activeChat) return;
+                          try {
+                            const reader = new FileReader();
+                            reader.onload = async () => {
+                              const dataUrl = reader.result;
+                              // Send message with media inline (data URL). Backend accepts mediaUrl/mediaType
+                              setIsSending(true);
+                              try {
+                                const payload = {
+                                  content: {
+                                    text: '',
+                                    mediaUrl: dataUrl,
+                                    mediaType: file.type
+                                  },
+                                  messageType: 'media'
+                                };
+                                const resp = await sendMessage(activeChat.id, payload);
+                                // append delivered message
+                                const delivered = convertMessage(resp?.message || resp, user);
+                                setMessages(prev => [...prev, delivered]);
+                                setConversations(prev => prev.map(conv => conv.id === activeChat.id ? { ...conv, lastMessage: delivered } : conv));
+                              } catch (err) {
+                                console.error('Attachment send error:', err);
+                                if (typeof window.showToast === 'function') window.showToast('Failed to send attachment', 'error');
+                              } finally {
+                                setIsSending(false);
+                                e.target.value = '';
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (err) {
+                            console.error('Failed to read file:', err);
+                          }
+                        }}
+                      />
                     <input
                       type="text"
                       placeholder="Type a message..."
@@ -622,9 +696,113 @@ const MessageCenter = ({ onClose, initialUser }) => {
                       onChange={(e) => setMessageText(e.target.value)}
                       className="message-input"
                     />
-                    <button type="button" className="emoji-btn">
-                      <i className="fa-solid fa-face-smile"></i>
-                    </button>
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        className="emoji-btn"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        title="Emoji"
+                      >
+                        <i className="fa-solid fa-face-smile"></i>
+                      </button>
+                      {showEmojiPicker && (
+                        <div className="emoji-picker-popover">
+                          <div className="emoji-search">
+                            <i className="fa-solid fa-magnifying-glass"></i>
+                            <input
+                              type="text"
+                              placeholder="Search emoji"
+                              value={emojiSearchQuery}
+                              onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                              className="emoji-search-input"
+                            />
+                          </div>
+                          
+                          <div className="emoji-categories">
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'smileys' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('smileys'); setEmojiSearchQuery(''); }}
+                              title="Smileys & People"
+                            >
+                              😊
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'animals' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('animals'); setEmojiSearchQuery(''); }}
+                              title="Animals & Nature"
+                            >
+                              🐶
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'food' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('food'); setEmojiSearchQuery(''); }}
+                              title="Food & Drink"
+                            >
+                              🍕
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'activities' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('activities'); setEmojiSearchQuery(''); }}
+                              title="Activities"
+                            >
+                              ⚽
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'travel' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('travel'); setEmojiSearchQuery(''); }}
+                              title="Travel & Places"
+                            >
+                              🚗
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'objects' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('objects'); setEmojiSearchQuery(''); }}
+                              title="Objects"
+                            >
+                              💡
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'symbols' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('symbols'); setEmojiSearchQuery(''); }}
+                              title="Symbols"
+                            >
+                              ❤️
+                            </button>
+                            <button
+                              type="button"
+                              className={`emoji-category-btn ${emojiCategory === 'flags' ? 'active' : ''}`}
+                              onClick={() => { setEmojiCategory('flags'); setEmojiSearchQuery(''); }}
+                              title="Flags"
+                            >
+                              🏁
+                            </button>
+                          </div>
+
+                          <div className="emoji-grid">
+                            {getFilteredEmojis().map((emoji, index) => (
+                              <button
+                                key={`${emoji}-${index}`}
+                                type="button"
+                                className="emoji-picker-item"
+                                onClick={() => {
+                                  setMessageText((t) => (t || '') + emoji);
+                                }}
+                                aria-label={`Insert ${emoji}`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <button type="submit" className="send-btn" disabled={!messageText.trim() || isSending}>
                       {isSending ? (
                         <i className="fa-solid fa-spinner fa-spin"></i>

@@ -5,7 +5,8 @@ const Effect = require('../models/Effect');
 const router = express.Router();
 
 const SUPPORTED_LANGUAGES = [
-  { id: 'en_us', label: 'English (US)' }
+  { id: 'en_us', label: 'English (US)' },
+  { id: 'en_gb', label: 'English (UK)' }
 ];
 
 router.get('/studio', authMiddleware, async (req, res) => {
