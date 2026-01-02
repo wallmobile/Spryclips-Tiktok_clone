@@ -1027,6 +1027,12 @@ const Profile = ({ onClose, username: viewUsername }) => {
               resolvedThumbnail.length > 0 &&
               !/\.((mp4|mov|avi|mkv|webm|mp3|wav|aac)(\?.*)?)$/i.test(resolvedThumbnail);
           }
+          
+          // If no thumbnail found, use video URL as fallback (browsers will show first frame)
+          if (!resolvedThumbnail || resolvedThumbnail.trim() === '') {
+            resolvedThumbnail = finalVideoUrl;
+            hasImageThumbnail = Boolean(finalVideoUrl);
+          }
 
           const rawDuration =
             video.duration ??
@@ -1278,7 +1284,14 @@ const Profile = ({ onClose, username: viewUsername }) => {
           
           // Format drafts to match expected structure
           const formattedDrafts = draftsData.map(draft => {
-            const thumbnailUrl = ensureAbsoluteUrl(draft.thumbnail || '');
+            // Try multiple thumbnail sources with fallbacks
+            const thumbnailUrl = ensureAbsoluteUrl(
+              draft.thumbnail || 
+              draft.thumbnailUrl || 
+              draft.url || 
+              draft.videoUrl || 
+              ''
+            );
             
             return {
               id: draft._id || draft.id,
@@ -1286,8 +1299,8 @@ const Profile = ({ onClose, username: viewUsername }) => {
               caption: draft.description || 'Untitled draft',
               uploadDate: formatDate(draft.updatedAt || draft.createdAt),
               visibility: draft.isPrivate ? 'private' : 'public',
-              url: draft.url || '',
-              videoUrl: draft.url || '',
+              url: draft.url || draft.videoUrl || '',
+              videoUrl: draft.url || draft.videoUrl || '',
               status: 'draft',
               createdAt: draft.createdAt,
               updatedAt: draft.updatedAt,
@@ -2258,6 +2271,16 @@ const Profile = ({ onClose, username: viewUsername }) => {
                           src={video.thumbnail} 
                           alt={video.caption} 
                           className="uploaded-video-thumbnail"
+                          onError={(e) => {
+                            // If thumbnail fails to load, try video URL
+                            if (video.url && e.target.src !== video.url) {
+                              e.target.src = video.url;
+                            } else {
+                              // If both fail, hide the image and show fallback
+                              e.target.style.display = 'none';
+                              e.target.parentElement.classList.add('thumbnail-error');
+                            }
+                          }}
                         />
                       ) : (
                         <div className="thumbnail-fallback">
@@ -2433,9 +2456,22 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   <div key={video.id} className="uploaded-video-card">
                     <div className="video-thumbnail-wrapper" onClick={() => handleVideoAction(video.id, 'view')}>
                       <img 
-                        src={video.thumbnail} 
+                        src={video.thumbnail || video.url} 
                         alt={video.caption} 
                         className="uploaded-video-thumbnail"
+                        onError={(e) => {
+                          // If thumbnail fails to load, try video URL
+                          if (video.url && e.target.src !== video.url) {
+                            e.target.src = video.url;
+                          } else {
+                            // If both fail, show fallback
+                            e.target.style.display = 'none';
+                            const fallback = document.createElement('div');
+                            fallback.className = 'thumbnail-fallback';
+                            fallback.innerHTML = '<i class="fa-solid fa-photo-film"></i><span>No thumbnail</span>';
+                            e.target.parentElement.appendChild(fallback);
+                          }
+                        }}
                       />
                       <div className="play-overlay">
                         <i className="fa-solid fa-play"></i>
@@ -2504,11 +2540,35 @@ const Profile = ({ onClose, username: viewUsername }) => {
                 {drafts.map(draft => (
                   <div key={draft.id} className="uploaded-video-card">
                     <div className="video-thumbnail-wrapper" onClick={() => handleVideoAction(draft.id, 'view')}>
-                      <img 
-                        src={draft.thumbnail} 
-                        alt={draft.caption} 
-                        className="uploaded-video-thumbnail"
-                      />
+                      {draft.thumbnail && draft.thumbnail.trim() !== '' ? (
+                        <img 
+                          src={draft.thumbnail} 
+                          alt={draft.caption} 
+                          className="uploaded-video-thumbnail"
+                          onError={(e) => {
+                            // If thumbnail fails to load, try video URL or show fallback
+                            if (draft.url && e.target.src !== draft.url) {
+                              e.target.src = draft.url;
+                            } else {
+                              // Hide image and show fallback
+                              e.target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'thumbnail-fallback';
+                              fallback.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#1a1a2e;flex-direction:column;';
+                              fallback.innerHTML = '<i class="fa-solid fa-file-video" style="font-size:3rem;color:rgba(255,255,255,0.3);margin-bottom:0.5rem;"></i><span style="color:rgba(255,255,255,0.5);">Draft Video</span>';
+                              const wrapper = e.target.parentElement;
+                              if (wrapper && !wrapper.querySelector('.thumbnail-fallback')) {
+                                wrapper.insertBefore(fallback, wrapper.firstChild);
+                              }
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="thumbnail-fallback" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',height:'100%',background:'#1a1a2e',flexDirection:'column'}}>
+                          <i className="fa-solid fa-file-video" style={{fontSize:'3rem',color:'rgba(255,255,255,0.3)',marginBottom:'0.5rem'}}></i>
+                          <span style={{color:'rgba(255,255,255,0.5)'}}>Draft Video</span>
+                        </div>
+                      )}
                       <div className="visibility-tag">
                         <span className="visibility-private">
                           <i className="fa-solid fa-file"></i> Draft
@@ -2573,9 +2633,22 @@ const Profile = ({ onClose, username: viewUsername }) => {
                     <div key={video.id} className="uploaded-video-card">
                       <div className="video-thumbnail-wrapper" onClick={() => handleVideoAction(video.id, 'view')}>
                         <img
-                          src={video.thumbnail}
+                          src={video.thumbnail || video.url}
                           alt={video.caption}
                           className="uploaded-video-thumbnail"
+                          onError={(e) => {
+                            // If thumbnail fails to load, try video URL
+                            if (video.url && e.target.src !== video.url) {
+                              e.target.src = video.url;
+                            } else {
+                              // If both fail, show fallback
+                              e.target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'thumbnail-fallback';
+                              fallback.innerHTML = '<i class="fa-solid fa-photo-film"></i><span>No thumbnail</span>';
+                              e.target.parentElement.appendChild(fallback);
+                            }
+                          }}
                         />
                         <div className="play-overlay">
                           <i className="fa-solid fa-play"></i>
