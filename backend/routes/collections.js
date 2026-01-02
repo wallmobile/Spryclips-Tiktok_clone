@@ -16,6 +16,7 @@ const toPlainObject = (doc) =>
 
 const populateWatchLaterEntries = async (userDoc) => {
   if (!userDoc) {
+    console.log('[Watch Later] No user document provided');
     return [];
   }
 
@@ -23,17 +24,34 @@ const populateWatchLaterEntries = async (userDoc) => {
   const rawCount = userDoc.watchLater?.length || 0;
   console.log(`[Watch Later] User ${userDoc._id} has ${rawCount} raw entries in watchLater array`);
 
-  await userDoc.populate({
-    path: 'watchLater.video',
-    select: 'thumbnail description url duration createdAt user processedUrl transcoded status isPrivate',
-    populate: { path: 'user', select: 'username profile' }
-  });
+  // Initialize watchLater if it doesn't exist
+  if (!Array.isArray(userDoc.watchLater)) {
+    console.warn(`[Watch Later] watchLater is not an array, initializing...`);
+    userDoc.watchLater = [];
+    return [];
+  }
+
+  try {
+    await userDoc.populate({
+      path: 'watchLater.video',
+      select: 'thumbnail description url duration createdAt user processedUrl transcoded status isPrivate views likes comments shares hashtags',
+      populate: { path: 'user', select: 'username profile' }
+    });
+  } catch (error) {
+    console.error('[Watch Later] Error populating watchLater entries:', error);
+    return [];
+  }
 
   const entries = (userDoc.watchLater || [])
     .map((entry, index) => {
       // Log entries that don't have video populated
       if (!entry?.video) {
         console.warn(`[Watch Later] Entry ${index} has no video (videoId: ${entry?.video})`);
+        return null;
+      }
+      // Check if video is deleted or private
+      if (entry.video && entry.video.isPrivate && entry.video.user?.toString() !== userDoc._id.toString()) {
+        console.warn(`[Watch Later] Entry ${index} video is private and user doesn't own it`);
         return null;
       }
       return entry;
@@ -55,12 +73,27 @@ const populateWatchLaterEntries = async (userDoc) => {
       
       // Ensure absolute URLs for video and thumbnail
       const rawVideoUrl = video?.transcoded?.playbackUrl || video?.processedUrl || video?.url || '';
-      const rawThumbnail = video?.thumbnail || '';
+      const rawThumbnail = video?.thumbnail || video?.thumbnailUrl || '';
       
       if (video) {
         video.url = ensureAbsoluteUrl(rawVideoUrl);
         video.videoUrl = video.url; // Also set videoUrl for compatibility
-        video.thumbnail = ensureAbsoluteUrl(rawThumbnail);
+        
+        // Set thumbnail with fallback
+        if (rawThumbnail) {
+          video.thumbnail = ensureAbsoluteUrl(rawThumbnail);
+        } else {
+          // Generate thumbnail from video URL if no thumbnail exists
+          const videoUrl = video.url;
+          if (videoUrl) {
+            // Try to use video as poster/thumbnail (browsers will show first frame)
+            video.thumbnail = videoUrl;
+          } else {
+            video.thumbnail = '';
+          }
+        }
+        
+        console.log(`[Watch Later] Video ${video._id}: thumbnail="${video.thumbnail}", url="${video.url}"`);
       }
       
       return {
@@ -310,29 +343,61 @@ router.post('/watch-later', authMiddleware, async (req, res) => {
   try {
     const { videoId } = req.body || {};
 
+    console.log(`[Watch Later] POST request to add video: ${videoId} for user: ${req.user._id}`);
+
     if (!videoId || !isValidObjectId(videoId)) {
-      return res.status(400).json({ message: 'Please provide a valid video id.' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide a valid video id.',
+        watchLater: [],
+        count: 0
+      });
     }
 
     const video = await Video.findById(videoId);
     if (!video) {
-      return res.status(404).json({ message: 'Video not found.' });
+      console.error(`[Watch Later] Video not found: ${videoId}`);
+      return res.status(404).json({ 
+        success: false,
+        message: 'Video not found.',
+        watchLater: [],
+        count: 0
+      });
     }
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      console.error(`[Watch Later] User not found: ${req.user._id}`);
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found.',
+        watchLater: [],
+        count: 0
+      });
     }
 
-    const exists =
-      Array.isArray(user.watchLater) &&
-      user.watchLater.some((entry) => entry?.video?.toString() === videoId.toString());
+    // Initialize watchLater array if it doesn't exist
+    if (!Array.isArray(user.watchLater)) {
+      console.log(`[Watch Later] Initializing watchLater array for user ${req.user._id}`);
+      user.watchLater = [];
+    }
+
+    const exists = user.watchLater.some((entry) => entry?.video?.toString() === videoId.toString());
     if (exists) {
-      return res.status(400).json({ message: 'Video is already in your Watch Later list.' });
+      console.log(`[Watch Later] Video ${videoId} already in watch later for user ${req.user._id}`);
+      const watchLater = await populateWatchLaterEntries(user);
+      return res.status(200).json({ 
+        success: true,
+        message: 'Video is already in your Watch Later list.',
+        watchLater: watchLater || [],
+        count: watchLater?.length || 0
+      });
     }
 
     user.watchLater.push({ video: videoId, addedAt: new Date() });
     await user.save();
+
+    console.log(`[Watch Later] Successfully saved video ${videoId} to database`);
 
     const watchLater = await populateWatchLaterEntries(user);
     
@@ -345,32 +410,57 @@ router.post('/watch-later', authMiddleware, async (req, res) => {
       count: watchLater?.length || 0
     });
   } catch (error) {
-    return respondWithServerError(res, error, 'Unable to add video to Watch Later right now.');
+    console.error('[Watch Later] Error adding to watch later:', error);
+    console.error('[Watch Later] Error stack:', error.stack);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to add video to Watch Later right now.',
+      watchLater: [],
+      count: 0,
+      ...(process.env.NODE_ENV !== 'production' && { error: error.message })
+    });
   }
 });
 
 // Get watch later
 router.get('/watch-later', authMiddleware, async (req, res) => {
   try {
+    console.log(`[Watch Later] Fetching watch later for user: ${req.user._id}`);
+    
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      console.error('[Watch Later] User not found:', req.user._id);
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found.',
+        watchLater: [],
+        count: 0
+      });
     }
 
+    console.log(`[Watch Later] User found, raw watchLater count: ${user.watchLater?.length || 0}`);
+    
     const watchLater = await populateWatchLaterEntries(user);
     
     // Log for debugging
-    console.log(`[Watch Later] User ${req.user._id} has ${watchLater.length} videos in watch later`);
+    console.log(`[Watch Later] User ${req.user._id} has ${watchLater.length} populated videos in watch later`);
     
-    // Return in consistent format
+    // Return in consistent format - always include watchLater array
     return res.json({ 
       success: true,
-      watchLater: watchLater || [],
+      watchLater: Array.isArray(watchLater) ? watchLater : [],
       count: watchLater?.length || 0
     });
   } catch (error) {
     console.error('[Watch Later] Error fetching watch later:', error);
-    return respondWithServerError(res, error, 'Unable to load your Watch Later list right now.');
+    console.error('[Watch Later] Error stack:', error.stack);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load your Watch Later list right now.',
+      watchLater: [],
+      count: 0,
+      ...(process.env.NODE_ENV !== 'production' && { error: error.message })
+    });
   }
 });
 

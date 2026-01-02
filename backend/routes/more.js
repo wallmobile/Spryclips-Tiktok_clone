@@ -5,7 +5,42 @@ const Effect = require('../models/Effect');
 const router = express.Router();
 
 const SUPPORTED_LANGUAGES = [
-  { id: 'en_us', label: 'English (US)' }
+  { id: 'en_us', label: 'English (US)' },
+  { id: 'en_gb', label: 'English (UK)' },
+  { id: 'es_es', label: 'Español (España)' },
+  { id: 'es_mx', label: 'Español (México)' },
+  { id: 'fr_fr', label: 'Français (France)' },
+  { id: 'de_de', label: 'Deutsch (Deutschland)' },
+  { id: 'it_it', label: 'Italiano (Italia)' },
+  { id: 'pt_br', label: 'Português (Brasil)' },
+  { id: 'pt_pt', label: 'Português (Portugal)' },
+  { id: 'ru_ru', label: 'Русский (Россия)' },
+  { id: 'ja_jp', label: '日本語 (日本)' },
+  { id: 'ko_kr', label: '한국어 (대한민국)' },
+  { id: 'zh_cn', label: '中文 (简体)' },
+  { id: 'zh_tw', label: '中文 (繁體)' },
+  { id: 'ar_sa', label: 'العربية (السعودية)' },
+  { id: 'hi_in', label: 'हिन्दी (भारत)' },
+  { id: 'id_id', label: 'Bahasa Indonesia' },
+  { id: 'th_th', label: 'ไทย (ประเทศไทย)' },
+  { id: 'vi_vn', label: 'Tiếng Việt (Việt Nam)' },
+  { id: 'tr_tr', label: 'Türkçe (Türkiye)' },
+  { id: 'pl_pl', label: 'Polski (Polska)' },
+  { id: 'nl_nl', label: 'Nederlands (Nederland)' },
+  { id: 'sv_se', label: 'Svenska (Sverige)' },
+  { id: 'da_dk', label: 'Dansk (Danmark)' },
+  { id: 'fi_fi', label: 'Suomi (Suomi)' },
+  { id: 'no_no', label: 'Norsk (Norge)' },
+  { id: 'cs_cz', label: 'Čeština (Česko)' },
+  { id: 'el_gr', label: 'Ελληνικά (Ελλάδα)' },
+  { id: 'he_il', label: 'עברית (ישראל)' },
+  { id: 'hu_hu', label: 'Magyar (Magyarország)' },
+  { id: 'ro_ro', label: 'Română (România)' },
+  { id: 'uk_ua', label: 'Українська (Україна)' },
+  { id: 'ms_my', label: 'Bahasa Melayu (Malaysia)' },
+  { id: 'bn_bd', label: 'বাংলা (বাংলাদেশ)' },
+  { id: 'fa_ir', label: 'فارسی (ایران)' },
+  { id: 'ur_pk', label: 'اردو (پاکستان)' }
 ];
 
 router.get('/studio', authMiddleware, async (req, res) => {
