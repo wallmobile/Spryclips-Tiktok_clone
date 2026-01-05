@@ -414,18 +414,97 @@ router.get('/:id/download', asyncHandler(async (req, res) => {
     throw new AppError('Video file unavailable', 404, true, { code: 'VIDEO_FILE_MISSING' });
   }
 
-  const normalizedPath = video.url.startsWith('/') ? video.url.slice(1) : video.url;
-  const videoPath = path.join(__dirname, '..', normalizedPath);
+  const videoUrl = video.url;
+  const fileName = `video-${video._id}.mp4`;
+  console.log(`Download request for video ${videoId}, URL: ${videoUrl}`);
 
-  if (!fs.existsSync(videoPath)) {
-    throw new AppError('Video file not found', 404, true, { code: 'VIDEO_FILE_NOT_FOUND' });
+  // Check if it's an absolute URL (http:// or https://)
+  if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
+    console.log(`Proxying external URL for download: ${videoUrl}`);
+    
+    try {
+      // Fetch the external video and stream it to the client
+      const https = require('https');
+      const http = require('http');
+      const protocol = videoUrl.startsWith('https://') ? https : http;
+      
+      // Set download headers
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Type', 'video/mp4');
+      
+      // Make request to external URL
+      protocol.get(videoUrl, (externalRes) => {
+        // Forward content length if available
+        if (externalRes.headers['content-length']) {
+          res.setHeader('Content-Length', externalRes.headers['content-length']);
+        }
+        
+        // Pipe the external response to client
+        externalRes.pipe(res);
+        
+        externalRes.on('error', (err) => {
+          console.error('Error streaming external video:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Failed to download video' });
+          }
+        });
+      }).on('error', (err) => {
+        console.error('Error fetching external video:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ success: false, message: 'Failed to fetch video' });
+        }
+      });
+      
+      return;
+    } catch (err) {
+      console.error('Error downloading external video:', err);
+      throw new AppError('Failed to download video from external source', 500);
+    }
   }
 
-  res.download(videoPath, `video-${video._id}.mp4`, (err) => {
-    if (err) {
-      console.error('Download error:', err);
+  // For local files - handle relative paths or /uploads paths
+  let videoPath;
+  if (videoUrl.startsWith('/uploads/')) {
+    videoPath = path.join(__dirname, '..', videoUrl);
+  } else if (videoUrl.startsWith('uploads/')) {
+    videoPath = path.join(__dirname, '..', videoUrl);
+  } else if (videoUrl.startsWith('/processed/')) {
+    videoPath = path.join(__dirname, '..', videoUrl);
+  } else if (videoUrl.startsWith('processed/')) {
+    videoPath = path.join(__dirname, '..', videoUrl);
+  } else {
+    // Try to resolve relative path
+    const normalizedPath = videoUrl.startsWith('/') ? videoUrl.slice(1) : videoUrl;
+    videoPath = path.join(__dirname, '..', normalizedPath);
+  }
+
+  console.log(`Checking for local file at: ${videoPath}`);
+
+  if (!fs.existsSync(videoPath)) {
+    console.error(`Video file not found at path: ${videoPath}`);
+    throw new AppError('Video file not found on server', 404, true, { code: 'VIDEO_FILE_NOT_FOUND' });
+  }
+
+  // Set proper headers for download
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Type', 'video/mp4');
+  
+  // Get file size for Content-Length header
+  const stat = fs.statSync(videoPath);
+  res.setHeader('Content-Length', stat.size);
+
+  console.log(`Streaming video file: ${videoPath}`);
+
+  // Stream the file for better memory efficiency
+  const fileStream = fs.createReadStream(videoPath);
+  fileStream.on('error', (err) => {
+    console.error('Download stream error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Error streaming video file' });
     }
   });
+  
+  fileStream.pipe(res);
 }));
 
 // Retry processing for failed video

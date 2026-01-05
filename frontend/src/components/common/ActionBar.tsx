@@ -794,6 +794,61 @@ const ActionBar: React.FC<ActionBarProps> = ({
           alert('Stitch feature coming soon!');
         }
         break;
+      case 'download':
+        setShowMoreMenu(false);
+        handleDownload();
+        break;
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const downloadUrl = `${apiUrl}/api/videos/${videoId}/download`;
+      
+      console.log('Starting download for video:', videoId);
+      
+      // Fetch the video file as a blob to force download
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the final URL after any redirects
+      const finalUrl = response.url;
+      
+      // If it's an external URL (redirected), download via blob
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `video-${videoId}.mp4`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      console.log('Download started successfully');
+      
+      // Show success notification
+      if (onError) {
+        onError('Download started! Check your Downloads folder.');
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      if (onError) {
+        onError('Failed to download video. Please try again.');
+      } else {
+        alert('Failed to download video. Please try again.');
+      }
     }
   };
 
@@ -1291,6 +1346,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
             <button onClick={() => handleMoreAction('floating-player')} className="more-menu-item">
               <i className="fa-solid fa-window-restore" style={{ fontSize: '18px', width: '20px' }}></i>
               <span>Floating Player</span>
+            </button>
+
+            {/* Download */}
+            <button onClick={() => handleMoreAction('download')} className="more-menu-item">
+              <i className="fa-solid fa-download" style={{ fontSize: '18px', width: '20px' }}></i>
+              <span>Download</span>
             </button>
 
             {/* Report */}
