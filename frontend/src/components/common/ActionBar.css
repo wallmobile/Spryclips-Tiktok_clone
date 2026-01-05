@@ -1,4 +1,70 @@
-﻿.action-bar {
+﻿/* YOUTUBE-STYLE DROPDOWN FOR QUALITY & SPEED */
+.yt-dropdown {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: 120px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  transition: opacity 0.18s, transform 0.18s;
+  margin-left: 0;
+  margin-top: 4px;
+  padding: 6px 0;
+}
+.yt-dropdown.open {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.yt-dropdown-item {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 18px 8px 32px;
+  font-size: 15px;
+  color: #222;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s;
+}
+.yt-dropdown-item.active,
+.yt-dropdown-item:hover {
+  background: #f2f2f2;
+  color: #0a84ff;
+}
+.checkmark {
+  position: absolute;
+  left: 10px;
+  color: #0a84ff;
+  font-size: 15px;
+}
+.dropdown-arrow {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 0.2s;
+}
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+.more-menu-item-wrapper {
+  position: relative;
+}
+@media (max-width: 600px) {
+  .yt-dropdown {
+    left: 0;
+    top: 100%;
+    min-width: 100px;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+}
+.action-bar {
   position: absolute;
   right: 3rem !important; /* Position inside video on right side */
   left: auto !important;
