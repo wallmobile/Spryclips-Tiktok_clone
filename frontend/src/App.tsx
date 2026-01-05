@@ -142,7 +142,11 @@ const normalizeVideoData = (
       } as VideoUser),
     avatar,
     description: (video.description as string) || '',
-    song: (video.song as string) || 'Original Sound',
+    song:
+      (video.song as string) ||
+      ((video as any)?.music?.name as string) ||
+      (((video as any)?.metadata?.music?.name) as string) ||
+      'Original Sound',
     likes: typeof video.likes === 'number' ? video.likes : 0,
     comments: typeof video.comments === 'number' ? video.comments : 0,
     shares: typeof video.shares === 'number' ? video.shares : 0,

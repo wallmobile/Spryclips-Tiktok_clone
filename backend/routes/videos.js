@@ -95,7 +95,8 @@ router.get('/', asyncHandler(async (req, res) => {
       
       const allVideos = await Video.find(queryWithUserFilter)
         .populate('user', 'username profile.avatar profile.displayName accountStatus')
-        .select('url thumbnail description hashtags likes comments shares views createdAt user status isPrivate')
+        // Include music and metadata so frontend can show uploaded music info
+        .select('url thumbnail description hashtags likes comments shares views createdAt user status isPrivate music metadata song')
         .sort({ [sortBy]: sortOrder })
         .limit(limit)
         .skip(skip)

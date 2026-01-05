@@ -198,7 +198,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
       : parseBoolean(req.body.isPrivate, false);
 
   const musicPayload = metadata.music ?? parseJSON(req.body.music, null);
-  const musicData = musicPayload
+  let musicData = musicPayload
     ? {
         name: musicPayload.name || '',
         artist: musicPayload.artist || '',
@@ -206,18 +206,32 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
       }
     : undefined;
 
-  // If a musicFile was uploaded via multipart, attach its public URL
+  // If a musicFile was uploaded via multipart, attach its public URL and ensure
+  // `musicData` is created so `video.music` will be populated in the saved document.
   try {
     if (req.files && req.files.musicFile && req.files.musicFile[0]) {
       const m = req.files.musicFile[0];
       const musicPublicUrl = `${UPLOADS_BASE_URL}/${m.filename}`;
+
       if (musicData) {
         musicData.audioUrl = musicPublicUrl;
       } else {
-        // Create musicData if only file was provided
+        // Build a minimal musicData entry from the uploaded file so the
+        // Video document's `music` field is populated for the feed UI.
+        const originalName = m.originalname || 'Uploaded Music';
+        musicData = {
+          name: originalName,
+          artist: req.user && req.user.username ? req.user.username : '',
+          duration: '',
+          audioUrl: musicPublicUrl
+        };
+        // Also mirror into metadata for backward compatibility
         metadata.music = metadata.music || {};
+        metadata.music.name = metadata.music.name || musicData.name;
+        metadata.music.artist = metadata.music.artist || musicData.artist;
         metadata.music.audioUrl = musicPublicUrl;
       }
+
       console.log('Music file uploaded and available at:', musicPublicUrl);
     }
   } catch (err) {
@@ -304,6 +318,15 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
   } catch (saveError) {
     console.error('Error saving video:', saveError);
     throw new AppError('Failed to save video to database', 500);
+  }
+
+  // Invalidate feed cache so the new video appears immediately in the home feed
+  try {
+    cache.delete(cacheKeys.video(video._id.toString()));
+    cache.delete(cacheKeys.videoList({ page: 1, limit: 20, sortBy: 'createdAt', sortOrder: -1 }));
+    console.log('Invalidated video cache for new upload:', video._id.toString());
+  } catch (cacheErr) {
+    console.warn('Failed to invalidate cache after upload:', cacheErr?.message || cacheErr);
   }
 
   const isReadyForFeed = video.status === 'ready';
