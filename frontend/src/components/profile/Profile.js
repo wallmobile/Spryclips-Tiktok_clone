@@ -2379,12 +2379,12 @@ const Profile = ({ onClose, username: viewUsername }) => {
               >
                 <i className="fa-solid fa-video"></i> Videos
               </button>
-              <button
+              {/* <button
                 className={`tab-btn ${activeTab === 'reposts' ? 'active' : ''}`}
                 onClick={() => setActiveTab('reposts')}
               >
                 <i className="fa-solid fa-share-nodes"></i> Reposts
-              </button>
+              </button> */}
                               <button
                   className={`tab-btn liked-tab-btn ${activeTab === 'liked' ? 'active' : ''}`}
                   onClick={() => setActiveTab('liked')}

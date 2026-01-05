@@ -327,27 +327,21 @@ const ActionBar: React.FC<ActionBarProps> = ({
       shouldSave: boolean,
       previous: { bookmarked: boolean; bookmarks: number }
     ) => {
-      if (
-        interactionMode === 'local' ||
-        !isHexObjectId(videoId)
-      ) {
+      // Always sync with backend if authenticated and videoId is valid
+      if (!isHexObjectId(videoId)) {
         return;
       }
-
       if (!isAuthenticated) {
         return;
       }
-
       try {
         if (shouldSave) {
           await addWatchLaterApi(videoId);
           console.log('[ActionBar] Successfully added video to watch later:', videoId);
-          // Dispatch event to notify Watch Later page
           window.dispatchEvent(new CustomEvent('watchlater:updated', { detail: { action: 'add', videoId } }));
         } else {
           await removeWatchLaterApi(videoId);
           console.log('[ActionBar] Successfully removed video from watch later:', videoId);
-          // Dispatch event to notify Watch Later page
           window.dispatchEvent(new CustomEvent('watchlater:updated', { detail: { action: 'remove', videoId } }));
         }
       } catch (error) {
@@ -357,20 +351,17 @@ const ActionBar: React.FC<ActionBarProps> = ({
             ? 'Failed to save video to Watch Later. Please try again.'
             : 'Failed to remove video from Watch Later. Please try again.'
         );
-
         if (shouldSave) {
           removeFromWatchLater(videoId);
         } else {
           addToWatchLater(libraryVideo);
         }
-
         setState((prev) => ({
           ...prev,
           bookmarked: previous.bookmarked,
           bookmarks: previous.bookmarks,
           pending: { ...prev.pending, bookmark: false },
         }));
-
         if (onSave) {
           onSave(videoId, previous.bookmarked);
         }
@@ -378,7 +369,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
     },
     [
       addToWatchLater,
-      interactionMode,
       isAuthenticated,
       libraryVideo,
       onError,
