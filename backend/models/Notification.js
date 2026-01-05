@@ -82,3 +82,34 @@ notificationSchema.index({ type: 1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);
 
+// Emit real-time socket notification after a notification is saved
+try {
+  const { emitNotification } = require('../socket/socketServer');
+  notificationSchema.post('save', function(doc) {
+    try {
+      if (!emitNotification) return;
+      const payload = {
+        _id: doc._id,
+        type: doc.type,
+        title: doc.title,
+        message: doc.message,
+        relatedUser: doc.relatedUser || null,
+        relatedVideo: doc.relatedVideo || null,
+        relatedComment: doc.relatedComment || null,
+        metadata: doc.metadata || {},
+        createdAt: doc.createdAt
+      };
+      // user may be an ObjectId
+      const userId = doc.user && doc.user.toString ? doc.user.toString() : doc.user;
+      emitNotification(userId, payload);
+    } catch (err) {
+      // Non-fatal - just log
+      console.error('Error emitting socket notification:', err?.message || err);
+    }
+  });
+} catch (e) {
+  // If socket server isn't available during model initialization, skip emitting
+  // This prevents startup crashes in environments where socket server isn't initialized yet
+  console.warn('Socket emit hookup skipped for Notification model:', e?.message || e);
+}
+
