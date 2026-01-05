@@ -36,23 +36,36 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'video-' + uniqueSuffix + path.extname(file.originalname));
+    // Prefix filenames based on fieldname for clarity
+    const prefix = file.fieldname === 'video' ? 'video' : (file.fieldname === 'musicFile' ? 'audio' : (file.fieldname === 'voiceover' ? 'voice' : 'file'));
+    cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv'];
-  const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska'];
-  
-  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-  const isValidExtension = allowedExtensions.includes(ext);
-  const isValidMimeType = allowedMimeTypes.includes(file.mimetype);
+  const allowedVideoExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv'];
+  const allowedVideoMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska'];
+  const allowedAudioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'webm'];
+  const allowedAudioMimeTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-wav', 'audio/webm'];
 
-  if (isValidExtension && isValidMimeType) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Only video files are allowed (mp4, mov, avi, webm, mkv)!'));
+  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+
+  if (file.fieldname === 'video') {
+    const isValidExtension = allowedVideoExtensions.includes(ext);
+    const isValidMimeType = allowedVideoMimeTypes.includes(file.mimetype);
+    if (isValidExtension && isValidMimeType) return cb(null, true);
+    return cb(new Error('Only video files are allowed for the video field (mp4, mov, avi, webm, mkv).'));
   }
+
+  if (file.fieldname === 'musicFile' || file.fieldname === 'voiceover') {
+    const isValidExtension = allowedAudioExtensions.includes(ext);
+    const isValidMimeType = allowedAudioMimeTypes.includes(file.mimetype);
+    if (isValidExtension && isValidMimeType) return cb(null, true);
+    return cb(new Error('Only audio files are allowed for music/voiceover (mp3, wav, ogg, m4a).'));
+  }
+
+  // Reject unexpected fields
+  return cb(new Error('Unexpected file field'));
 };
 
 const upload = multer({
@@ -123,8 +136,12 @@ const normalizeHashtags = (input) => {
   return [];
 };
 
-// Upload video
-router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHandler(async (req, res) => {
+// Upload video (supports optional musicFile and voiceover)
+router.post('/', authMiddleware, uploadLimiter, upload.fields([
+  { name: 'video', maxCount: 1 },
+  { name: 'musicFile', maxCount: 1 },
+  { name: 'voiceover', maxCount: 1 }
+]), asyncHandler(async (req, res) => {
   // Check if account is suspended or banned - block video upload
   if (req.user.accountStatus !== 'active') {
     let errorMessage = 'Your account access has been temporarily restricted. Please contact our support team for assistance.';
@@ -136,9 +153,13 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     throw new AppError(errorMessage, 403);
   }
   
-  if (!req.file) {
+  // Normalize multer output: prefer req.file (single) but support req.files when using fields
+  const uploadedFile = req.file || (req.files && req.files.video && req.files.video[0]);
+  if (!uploadedFile) {
     throw new AppError('No video file uploaded', 400);
   }
+  // For compatibility with existing code using req.file
+  req.file = uploadedFile;
 
   const metadata = parseJSON(req.body.metadata, {});
   const editorSettings = metadata.editor || {};
@@ -184,6 +205,24 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
         duration: musicPayload.duration || ''
       }
     : undefined;
+
+  // If a musicFile was uploaded via multipart, attach its public URL
+  try {
+    if (req.files && req.files.musicFile && req.files.musicFile[0]) {
+      const m = req.files.musicFile[0];
+      const musicPublicUrl = `${UPLOADS_BASE_URL}/${m.filename}`;
+      if (musicData) {
+        musicData.audioUrl = musicPublicUrl;
+      } else {
+        // Create musicData if only file was provided
+        metadata.music = metadata.music || {};
+        metadata.music.audioUrl = musicPublicUrl;
+      }
+      console.log('Music file uploaded and available at:', musicPublicUrl);
+    }
+  } catch (err) {
+    console.warn('Failed to attach music file URL:', err?.message || err);
+  }
 
   const cropPayload = metadata.crop || {};
   const cropStartValue = cropPayload.start ?? cropPayload.startTime ?? parseNumber(req.body.cropStart, 0) ?? 0;
