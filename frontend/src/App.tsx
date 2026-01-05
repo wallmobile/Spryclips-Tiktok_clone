@@ -940,6 +940,30 @@ const MainLayout: React.FC = () => {
     };
   }, [location.pathname]);
 
+  // Pause all videos when navigating away from the page
+  useEffect(() => {
+    const pauseAllVideos = () => {
+      const allVideos = document.querySelectorAll('video');
+      allVideos.forEach((video) => {
+        if (!video.paused) {
+          video.pause();
+          video.muted = true;
+        }
+      });
+      
+      const allAudios = document.querySelectorAll('audio');
+      allAudios.forEach((audio) => {
+        if (!audio.paused) {
+          audio.pause();
+          audio.muted = true;
+        }
+      });
+    };
+
+    // Pause videos when route changes
+    pauseAllVideos();
+  }, [location.pathname]);
+
   return (
     <div className={`app ${isAuthenticated ? 'user-authenticated' : ''}`}>
       <Suspense fallback={<LoadingSpinner />}>
