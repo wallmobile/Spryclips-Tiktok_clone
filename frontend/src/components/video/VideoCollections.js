@@ -1,4 +1,53 @@
+// Modal component for adding video by ID
+const AddVideoModal = ({ open, onClose, onAdd }) => {
+  const [videoId, setVideoId] = React.useState('');
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+      <div style={{ background: '#fff', padding: 24, borderRadius: 8, minWidth: 320 }}>
+        <h3>Add Video to Playlist</h3>
+        <input
+          type="text"
+          placeholder="Enter Video ID"
+          value={videoId}
+          onChange={e => setVideoId(e.target.value)}
+          style={{ width: '100%', marginBottom: 12, padding: 8 }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose}>Cancel</button>
+          <button onClick={() => { onAdd(videoId); setVideoId(''); }}>Add</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+  const [selectedPlaylistId, setSelectedPlaylistId] = React.useState(null);
+  const [showAddVideoModal, setShowAddVideoModal] = React.useState(false);
+// Modal component for adding video by ID
+const AddVideoModal = ({ open, onClose, onAdd }) => {
+  const [videoId, setVideoId] = React.useState('');
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+      <div style={{ background: '#fff', padding: 24, borderRadius: 8, minWidth: 320 }}>
+        <h3>Add Video to Playlist</h3>
+        <input
+          type="text"
+          placeholder="Enter Video ID"
+          value={videoId}
+          onChange={e => setVideoId(e.target.value)}
+          style={{ width: '100%', marginBottom: 12, padding: 8 }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose}>Cancel</button>
+          <button onClick={() => { onAdd(videoId); setVideoId(''); }}>Add</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 import React, { useState, useEffect } from 'react';
+import { addVideoToPlaylist } from '../../api/collections';
 import { useAuth } from '../../context/AuthContext';
 import './VideoCollections.css';
 
@@ -45,80 +94,111 @@ const VideoCollections = ({ onClose, video }) => {
       const updated = [...playlists, newPlaylist];
       setPlaylists(updated);
       localStorage.setItem('userPlaylists', JSON.stringify(updated));
-      setNewPlaylistName('');
-      setShowCreatePlaylist(false);
-      alert('Playlist created successfully!');
-    }
-  };
+          {activeTab === 'playlists' && (
+            <div className="collections-tab-content">
+              <div className="create-new-section">
+                {!showCreatePlaylist ? (
+                  <button
+                    className="create-new-btn"
+                    onClick={() => setShowCreatePlaylist(true)}
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    <span>Create New Playlist</span>
+                  </button>
+                ) : (
+                  <div className="create-form">
+                    <input
+                      type="text"
+                      placeholder="Enter playlist name"
+                      value={newPlaylistName}
+                      onChange={(e) => setNewPlaylistName(e.target.value)}
+                      className="create-input"
+                      autoFocus
+                    />
+                    <div className="create-actions">
+                      <button
+                        className="cancel-create-btn"
+                        onClick={() => {
+                          setShowCreatePlaylist(false);
+                          setNewPlaylistName('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="confirm-create-btn"
+                        onClick={handleCreatePlaylist}
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-  const handleAddToPlaylist = (playlistId) => {
-    if (video) {
-      const updated = playlists.map(pl => 
-        pl.id === playlistId 
-          ? { ...pl, videos: [...pl.videos, video] }
-          : pl
-      );
-      setPlaylists(updated);
-      localStorage.setItem('userPlaylists', JSON.stringify(updated));
-      alert('Video added to playlist!');
-    }
-  };
+              <div className="collections-list">
+                {playlists.length === 0 ? (
+                  <div className="empty-collections">
+                    <i className="fa-solid fa-list"></i>
+                    <p>No playlists yet</p>
+                    <span>Create your first playlist to organize videos</span>
+                  </div>
+                ) : (
+                  playlists.map(playlist => (
+                    <div key={playlist._id || playlist.id} className={`collection-item${selectedPlaylistId === (playlist._id || playlist.id) ? ' selected' : ''}`} onClick={() => setSelectedPlaylistId(playlist._id || playlist.id)}>
+                      <div className="collection-thumbnail">
+                        <img src={playlist.thumbnail} alt={playlist.name} />
+                        <div className="video-count">{playlist.videos.length}</div>
+                      </div>
+                      <div className="collection-info">
+                        <h3>{playlist.name}</h3>
+                        <p>{playlist.videos.length} {playlist.videos.length === 1 ? 'video' : 'videos'}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-  const handleCreateSeries = () => {
-    if (newSeriesName.trim()) {
-      const newSerie = {
-        id: Date.now(),
-        name: newSeriesName.trim(),
-        videos: video ? [video] : [],
-        episodeNumber: video ? 1 : 0,
-        createdAt: new Date().toISOString(),
-        thumbnail: video?.thumbnail || video?.url || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=200'
-      };
-      const updated = [...series, newSerie];
-      setSeries(updated);
-      localStorage.setItem('userSeries', JSON.stringify(updated));
-      setNewSeriesName('');
-      setShowCreateSeries(false);
-      alert('Series created successfully!');
-    }
-  };
-
-  const handleAddToSeries = (seriesId) => {
-    if (video) {
-      const selectedSeries = series.find(s => s.id === seriesId);
-      const updated = series.map(s => 
-        s.id === seriesId 
-          ? { ...s, videos: [...s.videos, video], episodeNumber: s.episodeNumber + 1 }
-          : s
-      );
-      setSeries(updated);
-      localStorage.setItem('userSeries', JSON.stringify(updated));
-      alert(`Video added as Episode ${selectedSeries.episodeNumber + 1}!`);
-    }
-  };
-
-  const handleCreateCollection = () => {
-    if (newCollectionName.trim()) {
-      const newCollection = {
-        id: Date.now(),
-        name: newCollectionName.trim(),
-        videos: video ? [video] : [],
-        createdAt: new Date().toISOString(),
-        thumbnail: video?.thumbnail || video?.url || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=200'
-      };
-      const updated = [...collections, newCollection];
-      setCollections(updated);
-      localStorage.setItem('userCollections', JSON.stringify(updated));
-      setNewCollectionName('');
-      setShowCreateCollection(false);
-      alert('Collection created successfully!');
-    }
-  };
-
-  const handleAddToCollection = (collectionId) => {
-    if (video) {
-      const updated = collections.map(c => 
-        c.id === collectionId 
+              {/* Playlist details pane: show Add Video button always when a playlist is selected */}
+              {selectedPlaylistId && (
+                <div style={{ marginTop: 32, textAlign: 'center' }}>
+                  <button
+                    style={{ padding: '10px 24px', fontSize: 16, borderRadius: 6, background: '#ff2d55', color: '#fff', border: 'none', cursor: 'pointer', marginBottom: 16 }}
+                    onClick={() => setShowAddVideoModal(true)}
+                  >
+                    + Add Video
+                  </button>
+                  <AddVideoModal
+                    open={showAddVideoModal}
+                    onClose={() => setShowAddVideoModal(false)}
+                    onAdd={async (videoId) => {
+                      try {
+                        await addVideoToPlaylist(selectedPlaylistId, videoId);
+                        alert('Video added to playlist!');
+                        setShowAddVideoModal(false);
+                      } catch (err) {
+                        alert('Failed to add video to playlist!');
+                      }
+                    }}
+                  />
+                  {/* Show 'No videos yet' message below the button if playlist is empty */}
+                  {(() => {
+                    const playlist = playlists.find(p => (p._id || p.id) === selectedPlaylistId);
+                    if (playlist && (!playlist.videos || playlist.videos.length === 0)) {
+                      return (
+                        <div style={{ marginTop: 24, color: '#fff', opacity: 0.7 }}>
+                          <i className="fa-solid fa-video-slash" style={{ fontSize: 48, marginBottom: 8 }}></i>
+                          <div>No videos yet</div>
+                          <div style={{ fontSize: 14, marginTop: 4 }}>Add videos to this playlist using the button above.</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
           ? { ...c, videos: [...c.videos, video] }
           : c
       );
@@ -250,7 +330,7 @@ const VideoCollections = ({ onClose, video }) => {
                   </div>
                 ) : (
                   playlists.map(playlist => (
-                    <div key={playlist.id} className="collection-item">
+                    <div key={playlist._id || playlist.id} className="collection-item">
                       <div className="collection-thumbnail">
                         <img src={playlist.thumbnail} alt={playlist.name} />
                         <div className="video-count">{playlist.videos.length}</div>
@@ -261,15 +341,68 @@ const VideoCollections = ({ onClose, video }) => {
                       </div>
                       <button
                         className="add-to-collection-btn"
-                        onClick={() => handleAddToPlaylist(playlist.id)}
+                        onClick={() => setSelectedPlaylistId(playlist._id || playlist.id)}
                       >
                         <i className="fa-solid fa-plus"></i>
-                        Add
+                        Add Video
                       </button>
                     </div>
                   ))
                 )}
+                {/* Single AddVideoModal for selected playlist */}
+                <AddVideoModal
+                  open={!!selectedPlaylistId}
+                  onClose={() => setSelectedPlaylistId(null)}
+                  onAdd={async (videoId) => {
+                    try {
+                      await addVideoToPlaylist(selectedPlaylistId, videoId);
+                      alert('Video added to playlist!');
+                      setSelectedPlaylistId(null);
+                    } catch (err) {
+                      alert('Failed to add video to playlist!');
+                    }
+                  }}
+                />
               </div>
+            // Playlist details with Add Video button/modal
+            function PlaylistDetailsWithAddVideo({ playlist }) {
+              const [showAddVideoModal, setShowAddVideoModal] = React.useState(false);
+              const handleAddVideo = async (videoId) => {
+                try {
+                  await addVideoToPlaylist(playlist._id || playlist.id, videoId);
+                  alert('Video added to playlist!');
+                  setShowAddVideoModal(false);
+                } catch (err) {
+                  alert('Failed to add video to playlist!');
+                }
+              };
+              return (
+                <div className="collection-item">
+                  <div className="collection-thumbnail">
+                    <img src={playlist.thumbnail} alt={playlist.name} />
+                    <div className="video-count">{playlist.videos.length}</div>
+                  </div>
+                  <div className="collection-info">
+                    <h3>{playlist.name}</h3>
+                    <p>{playlist.videos.length} {playlist.videos.length === 1 ? 'video' : 'videos'}</p>
+                  </div>
+                  <button
+                    className="add-to-collection-btn"
+                    onClick={() => setShowAddVideoModal(true)}
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    Add Video
+                  </button>
+                  {showAddVideoModal && (
+                    <AddVideoModal
+                      open={showAddVideoModal}
+                      onClose={() => setShowAddVideoModal(false)}
+                      onAdd={handleAddVideo}
+                    />
+                  )}
+                </div>
+              );
+            }
             </div>
           )}
 
