@@ -95,7 +95,8 @@ router.get('/', asyncHandler(async (req, res) => {
       
       const allVideos = await Video.find(queryWithUserFilter)
         .populate('user', 'username profile.avatar profile.displayName accountStatus')
-        .select('url thumbnail description hashtags likes comments shares views createdAt user status isPrivate')
+        // Include music and metadata so frontend can show uploaded music info
+        .select('url thumbnail description hashtags likes comments shares views createdAt user status isPrivate music metadata song')
         .sort({ [sortBy]: sortOrder })
         .limit(limit)
         .skip(skip)
@@ -118,6 +119,30 @@ router.get('/', asyncHandler(async (req, res) => {
       thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
     };
   });
+
+  // Enrich videos with effect details when available
+  try {
+    const allEffectIds = Array.from(new Set(normalizedVideos.flatMap(v => (v.effects || []).filter(Boolean))));
+    if (allEffectIds.length > 0) {
+      const Effect = require('../models/Effect');
+      const effectDocs = await Effect.find({ _id: { $in: allEffectIds } }).lean();
+      const effectMap = {};
+      effectDocs.forEach(e => { effectMap[e._id.toString()] = e; });
+      normalizedVideos.forEach(v => {
+        if (Array.isArray(v.effects) && v.effects.length > 0) {
+          // attach first effect as `effect` for UI compatibility, and full list as `effectsDetailed`
+          const first = v.effects[0];
+          v.effect = effectMap[first] || null;
+          v.effectsDetailed = v.effects.map(id => effectMap[id] || id);
+        } else {
+          v.effect = null;
+          v.effectsDetailed = [];
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Could not enrich videos with effect details:', err?.message || err);
+  }
 
   // Count only videos from active users - use same query pattern
   const activeUsersForCount = await User.find({ accountStatus: 'active' })
@@ -160,6 +185,24 @@ router.get('/:id', asyncHandler(async (req, res) => {
     url: ensureAbsoluteUrl(video.url || ''),
     thumbnail: ensureAbsoluteUrl(video.thumbnail || '')
   };
+
+  // Attach effect details if video has effect IDs
+  try {
+    const Effect = require('../models/Effect');
+    if (Array.isArray(video.effects) && video.effects.length > 0) {
+      const effectDocs = await Effect.find({ _id: { $in: video.effects } }).lean();
+      const effectMap = {};
+      effectDocs.forEach(e => { effectMap[e._id.toString()] = e; });
+      const first = video.effects[0];
+      normalizedVideo.effect = effectMap[first] || null;
+      normalizedVideo.effectsDetailed = video.effects.map(id => effectMap[id] || id);
+    } else {
+      normalizedVideo.effect = null;
+      normalizedVideo.effectsDetailed = [];
+    }
+  } catch (err) {
+    console.warn('Could not attach effect details to video:', err?.message || err);
+  }
 
   // Increment views (async, don't wait)
   Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }).exec();

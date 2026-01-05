@@ -13,6 +13,9 @@ const MAX_VIDEO_SECONDS = 10 * 60; // 10 minutes
 const boolToString = (value) => (value ? 'true' : 'false');
 
 const UploadPage = ({ onClose }) => {
+  // Debug: set to true to show audio controls for testing playback in dev
+  // Set to false for normal behavior (hide native audio controls)
+  const DEBUG_SHOW_AUDIO_CONTROLS = false;
   const { user } = useAuth();
   const location = useLocation();
   const fileInputRef = useRef(null);
@@ -177,8 +180,8 @@ const UploadPage = ({ onClose }) => {
     if (!videoPlayerRef.current || !videoData.music) {
       // Stop audio if no music selected
       if (musicAudioRef.current) {
-        musicAudioRef.current.pause();
-        musicAudioRef.current.src = '';
+        try { musicAudioRef.current.pause(); } catch(e){}
+        try { musicAudioRef.current.src = ''; } catch(e){}
       }
       return;
     }
@@ -188,38 +191,43 @@ const UploadPage = ({ onClose }) => {
     // If music has audioUrl, set it up
     if (videoData.music.audioUrl && musicAudioRef.current) {
       const audio = musicAudioRef.current;
-      audio.src = videoData.music.audioUrl;
+      console.log('🔗 Attaching music to sync audio:', videoData.music.audioUrl);
+      try { audio.src = videoData.music.audioUrl; } catch(e) { console.warn('set src failed', e); }
+      audio.preload = 'auto';
       audio.volume = 0.7; // Set volume to 70%
-      audio.load();
+      try { audio.load(); } catch(e) { console.warn('audio.load() failed', e); }
 
       const handleVideoPlay = () => {
-        audio.currentTime = video.currentTime;
-        audio.play().catch((err) => {
-          // Autoplay might be blocked - user needs to interact first
-          console.log('Audio autoplay blocked:', err);
+        try { audio.currentTime = video.currentTime; } catch(e) {}
+        audio.play().then(() => {
+          // playing
+        }).catch((err) => {
+          // Try again after a tiny delay (user gesture may allow it)
+          console.warn('Audio play blocked on play event, will retry on next user gesture', err);
         });
       };
 
       const handleVideoPause = () => {
-        audio.pause();
+        try { audio.pause(); } catch(e) {}
       };
 
       const handleVideoTimeUpdate = () => {
-        if (!audio.paused && !video.paused) {
-          // Keep audio in sync with video (within 0.2s tolerance)
-          if (Math.abs(audio.currentTime - video.currentTime) > 0.2) {
-            audio.currentTime = video.currentTime;
+        try {
+          if (!audio.paused && !video.paused) {
+            const diff = Math.abs((audio.currentTime || 0) - (video.currentTime || 0));
+            if (diff > 0.15) {
+              audio.currentTime = video.currentTime;
+            }
           }
-        }
+        } catch (e) {}
       };
 
       const handleVideoSeeked = () => {
-        audio.currentTime = video.currentTime;
+        try { audio.currentTime = video.currentTime; } catch(e) {}
       };
 
       const handleVideoEnded = () => {
-        audio.pause();
-        audio.currentTime = 0;
+        try { audio.pause(); audio.currentTime = 0; } catch(e) {}
       };
 
       video.addEventListener('play', handleVideoPlay);
@@ -227,6 +235,16 @@ const UploadPage = ({ onClose }) => {
       video.addEventListener('timeupdate', handleVideoTimeUpdate);
       video.addEventListener('seeked', handleVideoSeeked);
       video.addEventListener('ended', handleVideoEnded);
+
+      // Also try to prime the audio when user explicitly selects music (if possible)
+      const tryPrime = () => {
+        // attempt a quick play/pause to prime decoding (may be blocked until user gesture)
+        audio.currentTime = 0;
+        audio.play().then(() => {
+          audio.pause();
+        }).catch(() => {});
+      };
+      tryPrime();
 
       return () => {
         video.removeEventListener('play', handleVideoPlay);
@@ -706,6 +724,10 @@ const UploadPage = ({ onClose }) => {
     // Append voiceover file if exists
     if (metadata.voiceoverFile) {
       formData.append('voiceover', metadata.voiceoverFile);
+    }
+    // Append music file if user selected from My Gallery
+    if (metadata.music && metadata.music.file) {
+      formData.append('musicFile', metadata.music.file);
     }
 
     formData.append('ageRestriction', metadata.ageRestriction);
@@ -1294,14 +1316,9 @@ const UploadPage = ({ onClose }) => {
                     poster=""
                   />
                   {/* Hidden audio element for music playback */}
-                  {videoData.music && (
-                    <audio
-                      ref={musicAudioRef}
-                      preload="auto"
-                      style={{ display: 'none' }}
-                      volume={0.7}
-                    />
-                  )}
+                  {/* musicAudioRef element rendered here only for visual grouping originally.
+                      We now render the main music audio element unconditionally at the bottom
+                      so refs are always available. */}
                   {textOverlays.length > 0 && (
                     <div 
                       className="text-overlays-preview"
@@ -1804,12 +1821,23 @@ const UploadPage = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Hidden audio element for music preview */}
+        {/* Main music audio element (used to sync with video) */}
+        <audio
+          ref={musicAudioRef}
+          preload="auto"
+          controls={DEBUG_SHOW_AUDIO_CONTROLS}
+          style={DEBUG_SHOW_AUDIO_CONTROLS ? { width: '100%' } : { position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+          onError={(e) => {
+            console.error('❌ musicAudioRef playback error:', e, 'src=', e?.target?.src);
+          }}
+        />
+
+        {/* Hidden audio element for music preview (play buttons use this) */}
         <audio
           ref={musicPreviewAudioRef}
           preload="auto"
-          style={{ display: 'none' }}
-          crossOrigin="anonymous"
+          controls={DEBUG_SHOW_AUDIO_CONTROLS}
+          style={DEBUG_SHOW_AUDIO_CONTROLS ? { width: '100%' } : { position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
           onEnded={() => {
             console.log('🎵 Music playback ended');
             setPlayingMusicId(null);
@@ -2132,7 +2160,7 @@ const UploadPage = ({ onClose }) => {
                             <span>{music.duration}</span>
                             <button 
                               className="preview-btn"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 
                                 // If same music is playing, stop it
@@ -2159,44 +2187,43 @@ const UploadPage = ({ onClose }) => {
                                       
                                       const audio = musicPreviewAudioRef.current;
                                       
-                                      // Set audio properties
-                                      audio.crossOrigin = 'anonymous';
-                                      audio.volume = 0.8; // Set volume to 80%
+                                      // Reset and prepare audio element
+                                      try { audio.pause(); } catch (e) {}
+                                      audio.currentTime = 0;
+                                      audio.onplaying = null;
+                                      audio.onended = null;
+                                      audio.onerror = null;
+
                                       audio.src = music.audioUrl;
-                                      
-                                      // Add event listeners for better debugging
-                                      const handleCanPlay = () => {
-                                        console.log('✅ Audio can play now');
-                                        audio.play().then(() => {
-                                          console.log('✅ Music playing successfully');
-                                          setPlayingMusicId(music.id);
-                                          setUploadSuccess(`Playing: ${music.name}`);
-                                          setTimeout(() => setUploadSuccess(null), 2000);
-                                        }).catch((err) => {
-                                          console.error('❌ Play error:', err);
-                                          setPlayingMusicId(music.id);
-                                          setUploadSuccess(`Selected: ${music.name} (Preview unavailable)`);
-                                          setTimeout(() => setUploadSuccess(null), 2000);
-                                        });
+                                      console.log('Preview audio src ->', music.audioUrl);
+                                      audio.volume = 0.8;
+
+                                      audio.onplaying = () => {
+                                        console.log('✅ Music playing successfully');
+                                        setPlayingMusicId(music.id);
+                                        setUploadSuccess(`Playing: ${music.name}`);
+                                        setTimeout(() => setUploadSuccess(null), 2000);
                                       };
-                                      
-                                      const handleError = (e) => {
+
+                                      audio.onerror = (e) => {
                                         console.error('❌ Audio error:', e, 'URL:', music.audioUrl);
                                         setPlayingMusicId(music.id);
                                         setUploadSuccess(`Selected: ${music.name} (Preview unavailable)`);
                                         setTimeout(() => setUploadSuccess(null), 2000);
                                       };
-                                      
-                                      // Remove old listeners
-                                      audio.removeEventListener('canplay', handleCanPlay);
-                                      audio.removeEventListener('error', handleError);
-                                      
-                                      // Add new listeners
-                                      audio.addEventListener('canplay', handleCanPlay, { once: true });
-                                      audio.addEventListener('error', handleError, { once: true });
-                                      
-                                      // Load the audio
-                                      audio.load();
+
+                                      // Load and play (user click should allow playback)
+                                      try {
+                                        audio.load();
+                                        console.log('after load readyState ->', audio.readyState);
+                                        await audio.play();
+                                      } catch (err) {
+                                        console.warn('Audio play failed:', err);
+                                        // still mark as selected even if preview couldn't play
+                                        setPlayingMusicId(music.id);
+                                        setUploadSuccess(`Selected: ${music.name} (Preview unavailable)`);
+                                        setTimeout(() => setUploadSuccess(null), 2000);
+                                      }
                                       
                                     } catch (err) {
                                       console.error('❌ Setup error:', err);

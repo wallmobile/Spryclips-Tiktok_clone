@@ -36,23 +36,36 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'video-' + uniqueSuffix + path.extname(file.originalname));
+    // Prefix filenames based on fieldname for clarity
+    const prefix = file.fieldname === 'video' ? 'video' : (file.fieldname === 'musicFile' ? 'audio' : (file.fieldname === 'voiceover' ? 'voice' : 'file'));
+    cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv'];
-  const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska'];
-  
-  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-  const isValidExtension = allowedExtensions.includes(ext);
-  const isValidMimeType = allowedMimeTypes.includes(file.mimetype);
+  const allowedVideoExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv'];
+  const allowedVideoMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska'];
+  const allowedAudioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'webm'];
+  const allowedAudioMimeTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-wav', 'audio/webm'];
 
-  if (isValidExtension && isValidMimeType) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Only video files are allowed (mp4, mov, avi, webm, mkv)!'));
+  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+
+  if (file.fieldname === 'video') {
+    const isValidExtension = allowedVideoExtensions.includes(ext);
+    const isValidMimeType = allowedVideoMimeTypes.includes(file.mimetype);
+    if (isValidExtension && isValidMimeType) return cb(null, true);
+    return cb(new Error('Only video files are allowed for the video field (mp4, mov, avi, webm, mkv).'));
   }
+
+  if (file.fieldname === 'musicFile' || file.fieldname === 'voiceover') {
+    const isValidExtension = allowedAudioExtensions.includes(ext);
+    const isValidMimeType = allowedAudioMimeTypes.includes(file.mimetype);
+    if (isValidExtension && isValidMimeType) return cb(null, true);
+    return cb(new Error('Only audio files are allowed for music/voiceover (mp3, wav, ogg, m4a).'));
+  }
+
+  // Reject unexpected fields
+  return cb(new Error('Unexpected file field'));
 };
 
 const upload = multer({
@@ -123,8 +136,12 @@ const normalizeHashtags = (input) => {
   return [];
 };
 
-// Upload video
-router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHandler(async (req, res) => {
+// Upload video (supports optional musicFile and voiceover)
+router.post('/', authMiddleware, uploadLimiter, upload.fields([
+  { name: 'video', maxCount: 1 },
+  { name: 'musicFile', maxCount: 1 },
+  { name: 'voiceover', maxCount: 1 }
+]), asyncHandler(async (req, res) => {
   // Check if account is suspended or banned - block video upload
   if (req.user.accountStatus !== 'active') {
     let errorMessage = 'Your account access has been temporarily restricted. Please contact our support team for assistance.';
@@ -136,9 +153,13 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
     throw new AppError(errorMessage, 403);
   }
   
-  if (!req.file) {
+  // Normalize multer output: prefer req.file (single) but support req.files when using fields
+  const uploadedFile = req.file || (req.files && req.files.video && req.files.video[0]);
+  if (!uploadedFile) {
     throw new AppError('No video file uploaded', 400);
   }
+  // For compatibility with existing code using req.file
+  req.file = uploadedFile;
 
   const metadata = parseJSON(req.body.metadata, {});
   const editorSettings = metadata.editor || {};
@@ -177,13 +198,45 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
       : parseBoolean(req.body.isPrivate, false);
 
   const musicPayload = metadata.music ?? parseJSON(req.body.music, null);
-  const musicData = musicPayload
+  let musicData = musicPayload
     ? {
         name: musicPayload.name || '',
         artist: musicPayload.artist || '',
         duration: musicPayload.duration || ''
       }
     : undefined;
+
+  // If a musicFile was uploaded via multipart, attach its public URL and ensure
+  // `musicData` is created so `video.music` will be populated in the saved document.
+  try {
+    if (req.files && req.files.musicFile && req.files.musicFile[0]) {
+      const m = req.files.musicFile[0];
+      const musicPublicUrl = `${UPLOADS_BASE_URL}/${m.filename}`;
+
+      if (musicData) {
+        musicData.audioUrl = musicPublicUrl;
+      } else {
+        // Build a minimal musicData entry from the uploaded file so the
+        // Video document's `music` field is populated for the feed UI.
+        const originalName = m.originalname || 'Uploaded Music';
+        musicData = {
+          name: originalName,
+          artist: req.user && req.user.username ? req.user.username : '',
+          duration: '',
+          audioUrl: musicPublicUrl
+        };
+        // Also mirror into metadata for backward compatibility
+        metadata.music = metadata.music || {};
+        metadata.music.name = metadata.music.name || musicData.name;
+        metadata.music.artist = metadata.music.artist || musicData.artist;
+        metadata.music.audioUrl = musicPublicUrl;
+      }
+
+      console.log('Music file uploaded and available at:', musicPublicUrl);
+    }
+  } catch (err) {
+    console.warn('Failed to attach music file URL:', err?.message || err);
+  }
 
   const cropPayload = metadata.crop || {};
   const cropStartValue = cropPayload.start ?? cropPayload.startTime ?? parseNumber(req.body.cropStart, 0) ?? 0;
@@ -265,6 +318,15 @@ router.post('/', authMiddleware, uploadLimiter, upload.single('video'), asyncHan
   } catch (saveError) {
     console.error('Error saving video:', saveError);
     throw new AppError('Failed to save video to database', 500);
+  }
+
+  // Invalidate feed cache so the new video appears immediately in the home feed
+  try {
+    cache.delete(cacheKeys.video(video._id.toString()));
+    cache.delete(cacheKeys.videoList({ page: 1, limit: 20, sortBy: 'createdAt', sortOrder: -1 }));
+    console.log('Invalidated video cache for new upload:', video._id.toString());
+  } catch (cacheErr) {
+    console.warn('Failed to invalidate cache after upload:', cacheErr?.message || cacheErr);
   }
 
   const isReadyForFeed = video.status === 'ready';

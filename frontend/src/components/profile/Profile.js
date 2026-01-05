@@ -399,6 +399,23 @@ const Profile = ({ onClose, username: viewUsername }) => {
     }
   }, [isViewingOtherProfile, viewUsername]); // Remove user dependency to avoid re-runs
 
+  // Initialize `isFollowing` from cached user so UI reflects last known state
+  // immediately on page load/refresh while backend verification completes.
+  useEffect(() => {
+    try {
+      const cachedRaw = localStorage.getItem('user');
+      if (!cachedRaw) return;
+      const cached = JSON.parse(cachedRaw) || {};
+      const targetId = (viewedUser && (viewedUser._id || viewedUser.id)) || viewUsername;
+      if (!targetId) return;
+      const followed = Array.isArray(cached.followedUsers) &&
+        cached.followedUsers.some(id => String(id) === String(targetId));
+      setIsFollowing(Boolean(followed));
+    } catch (err) {
+      // non-fatal
+    }
+  }, [viewedUser, viewUsername]);
+
   // Handle follow/unfollow
   const handleFollow = async (e) => {
     if (e) {
@@ -529,6 +546,41 @@ const Profile = ({ onClose, username: viewUsername }) => {
       
       setIsFollowing(newIsFollowing);
       setIsFollowPending(newIsPending);
+
+      // Immediately update cached user in localStorage so the follow state
+      // persists across full page refreshes even if verify() temporarily fails.
+      try {
+        const cachedRaw = localStorage.getItem('user');
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) || {};
+          const followedUsers = Array.isArray(cached.followedUsers) ? [...cached.followedUsers] : [];
+          const targetId = userId.toString();
+          if (newIsFollowing) {
+            if (!followedUsers.some(id => String(id) === targetId)) {
+              followedUsers.push(targetId);
+            }
+            cached.profile = cached.profile || {};
+            cached.profile.following = (cached.profile.following || 0) + 1;
+          } else {
+            // Remove target from followedUsers
+            const next = followedUsers.filter(id => String(id) !== targetId);
+            cached.profile = cached.profile || {};
+            cached.profile.following = Math.max(0, (cached.profile.following || 0) - 1);
+            // use filtered array
+            followedUsers.length = 0;
+            Array.prototype.push.apply(followedUsers, next);
+            cached.followedUsers = next;
+          }
+          // Ensure followedUsers on cached object is the updated array
+          cached.followedUsers = cached.followedUsers || followedUsers;
+          localStorage.setItem('user', JSON.stringify(cached));
+          if (updateUser) {
+            try { updateUser(cached); } catch (e) { /* non-fatal */ }
+          }
+        }
+      } catch (err) {
+        console.debug('Could not update cached user after follow:', err?.message || err);
+      }
       
       // Update stats immediately - both followers (of viewed user) and following (of current user)
       if (viewedUser.profile) {

@@ -73,6 +73,8 @@ const VideoCard: React.FC<VideoCardProps> = ({
   currentReaction = null,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [musicAudioEl, setMusicAudioEl] = useState<HTMLAudioElement | null>(null);
   const { globalMute, globalVolume, activeId } = useVideoStore();
   const isActive = activeId === id;
   const playPromiseRef = useRef<Promise<void> | null>(null);
@@ -241,6 +243,83 @@ const VideoCard: React.FC<VideoCardProps> = ({
       }
     }
   }, [globalVolume, globalMute, isActive]);
+
+  // Sync uploaded music (if present) with the video element on play/pause/seek
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    const audioEl = musicAudioEl || musicAudioRef.current;
+    if (!videoEl) return;
+
+    const musicUrl = (video as any)?.music?.audioUrl || (video as any)?.metadata?.music?.audioUrl || null;
+    if (!musicUrl || !audioEl) {
+      // Nothing to sync
+      return;
+    }
+
+    // Ensure audio source is set and preloaded
+    try {
+      if (audioEl.src !== musicUrl) {
+        audioEl.src = musicUrl;
+        audioEl.preload = 'auto';
+        audioEl.load();
+      }
+    } catch (e) {
+      console.warn('Failed to set music audio src', e);
+    }
+
+    // Helper to apply volume/mute
+    const applyVolume = () => {
+      if (!audioEl) return;
+      if (globalMute) {
+        audioEl.muted = true;
+        audioEl.volume = 0;
+      } else {
+        audioEl.muted = false;
+        audioEl.volume = globalVolume / 100;
+      }
+    };
+
+    applyVolume();
+
+    const handlePlay = () => {
+      applyVolume();
+      // Try to play audio; browsers require user gesture but video play should satisfy it
+      audioEl.play().catch(() => {});
+    };
+
+    const handlePause = () => {
+      audioEl.pause();
+    };
+
+    const handleTimeUpdate = () => {
+      // Keep audio in sync with video; correct drift larger than 0.25s
+      try {
+        const vTime = videoEl.currentTime || 0;
+        if (Math.abs((audioEl.currentTime || 0) - vTime) > 0.25) {
+          audioEl.currentTime = vTime;
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const handleSeeked = () => {
+      try { audioEl.currentTime = videoEl.currentTime || 0; } catch (e) {}
+    };
+
+    videoEl.addEventListener('play', handlePlay);
+    videoEl.addEventListener('pause', handlePause);
+    videoEl.addEventListener('timeupdate', handleTimeUpdate);
+    videoEl.addEventListener('seeked', handleSeeked);
+
+    // Cleanup
+    return () => {
+      videoEl.removeEventListener('play', handlePlay);
+      videoEl.removeEventListener('pause', handlePause);
+      videoEl.removeEventListener('timeupdate', handleTimeUpdate);
+      videoEl.removeEventListener('seeked', handleSeeked);
+    };
+  }, [video, globalMute, globalVolume, isActive, musicAudioEl]);
 
     // Handle document visibility changes
   useEffect(() => {
@@ -748,6 +827,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
         onCanPlay={() => {
           setVideoError(null);
         }}
+      />
+      {/* Offscreen audio element for uploaded music (synchronized with video) */}
+      <audio
+        ref={(el) => {
+          musicAudioRef.current = el;
+          setMusicAudioEl(el);
+        }}
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
+        preload="none"
       />
       
       {/* Overlay with actions */}
