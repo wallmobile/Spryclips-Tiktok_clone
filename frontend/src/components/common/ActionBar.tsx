@@ -123,6 +123,8 @@ const ActionBar: React.FC<ActionBarProps> = ({
   const moreMenuItemRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const reactButtonRef = useRef<HTMLButtonElement>(null);
+  const qualityWrapperRef = useRef<HTMLDivElement>(null);
+  const speedWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentReaction(currentReactionProp);
@@ -621,19 +623,35 @@ const ActionBar: React.FC<ActionBarProps> = ({
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      console.log('[ActionBar] Document click:', target);
+      // Don't close if clicking inside quality or speed wrappers
+      if (qualityWrapperRef.current && qualityWrapperRef.current.contains(target)) {
+        console.log('[ActionBar] Click inside qualityWrapperRef, not closing menus');
+        return;
+      }
+      if (speedWrapperRef.current && speedWrapperRef.current.contains(target)) {
+        console.log('[ActionBar] Click inside speedWrapperRef, not closing menus');
+        return;
+      }
+      if (shareMenuRef.current && !shareMenuRef.current.contains(target)) {
+        console.log('[ActionBar] Click outside shareMenuRef, closing share menu');
         setShowShareMenu(false);
       }
-      if ((!moreMenuRef.current || !moreMenuRef.current.contains(event.target as Node)) &&
-          (!moreMenuItemRef.current || !moreMenuItemRef.current.contains(event.target as Node)) &&
-          (!moreButtonRef.current || !moreButtonRef.current.contains(event.target as Node))) {
+      if ((!moreMenuRef.current || !moreMenuRef.current.contains(target)) &&
+          (!moreMenuItemRef.current || !moreMenuItemRef.current.contains(target)) &&
+          (!moreButtonRef.current || !moreButtonRef.current.contains(target))) {
+        console.log('[ActionBar] Click outside moreMenu, closing all menus');
         setShowMoreMenu(false);
+        setShowQualityMenu(false);
+        setShowSpeedMenu(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use 'click' instead of 'mousedown' so button handlers run first
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, []);
 
@@ -687,6 +705,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
     const handleMoreAction = (action: string) => {
       switch (action) {
         case 'quality':
+          console.log('[ActionBar] handleMoreAction: quality, toggling quality menu');
           setShowQualityMenu(!showQualityMenu);
           setShowSpeedMenu(false);
           break;
@@ -694,7 +713,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
           const newCaptionsState = !captionsEnabled;
           setCaptionsEnabled(newCaptionsState);
           localStorage.setItem('captionsEnabled', newCaptionsState.toString());
-          
           // Enable/disable captions on all video elements
           const allVideosForCaptions = document.querySelectorAll('video');
           allVideosForCaptions.forEach((videoElement) => {
@@ -703,7 +721,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
               tracks[i].mode = newCaptionsState ? 'showing' : 'hidden';
             }
           });
-
           // Dispatch custom event for immediate update in same tab
           window.dispatchEvent(new CustomEvent('videoSettingsChange', {
             detail: { type: 'captionsEnabled', value: newCaptionsState.toString() }
@@ -713,6 +730,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
           handleFullscreen();
           break;
         case 'speed':
+          console.log('[ActionBar] handleMoreAction: speed, toggling speed menu');
           setShowSpeedMenu(!showSpeedMenu);
           setShowQualityMenu(false);
           break;
@@ -720,13 +738,11 @@ const ActionBar: React.FC<ActionBarProps> = ({
           const newAutoScrollState = !autoScroll;
           setAutoScroll(newAutoScrollState);
           localStorage.setItem('autoScroll', newAutoScrollState.toString());
-          
           // Update loop property on all videos based on auto-scroll setting
           const allVideosForAutoScroll = document.querySelectorAll('video');
           allVideosForAutoScroll.forEach((videoElement) => {
             videoElement.loop = !newAutoScrollState;
           });
-
           // Dispatch custom event for immediate update in same tab
           window.dispatchEvent(new CustomEvent('videoSettingsChange', {
             detail: { type: 'autoScroll', value: newAutoScrollState.toString() }
@@ -1167,25 +1183,42 @@ const ActionBar: React.FC<ActionBarProps> = ({
           {showMoreMenu && (
             <div className="more-menu" ref={moreMenuItemRef} style={moreMenuStyle}>
             {/* Quality */}
-            <div className="more-menu-item-wrapper">
-              <button onClick={() => handleMoreAction('quality')} className="more-menu-item">
+            {/* QUALITY DROPDOWN - YOUTUBE STYLE */}
+            <div className="more-menu-item-wrapper" ref={qualityWrapperRef}>
+              <button
+                className="more-menu-item"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowQualityMenu((prev) => !prev);
+                  setShowSpeedMenu(false);
+                }}
+                aria-expanded={showQualityMenu}
+              >
                 <i className="fa-solid fa-tv" style={{ fontSize: '18px', width: '20px' }}></i>
                 <span>Quality</span>
-                <span className="more-menu-value">{videoQuality}</span>
+                <span className="more-menu-value">
+                  {videoQuality}
+                  <span className={`dropdown-arrow${showQualityMenu ? ' open' : ''}`}>▼</span>
+                </span>
               </button>
-              {showQualityMenu && (
-                <div className="more-menu-submenu">
-                  <button onClick={() => handleQualitySelect('Auto')} className={`more-menu-subitem ${videoQuality === 'Auto' ? 'active' : ''}`}>
-                    Auto
+              <div className={`yt-dropdown${showQualityMenu ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
+                {['Auto', '144p', '240p', '360p', '480p', '720p', '1080p'].map((q) => (
+                  <button
+                    key={q}
+                    className={`yt-dropdown-item${videoQuality === q ? ' active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setVideoQuality(q);
+                      setShowQualityMenu(false);
+                      localStorage.setItem('videoQuality', q);
+                    }}
+                  >
+                    {videoQuality === q && <span className="checkmark">✔</span>}
+                    {q}
                   </button>
-                  <button onClick={() => handleQualitySelect('720p')} className={`more-menu-subitem ${videoQuality === '720p' ? 'active' : ''}`}>
-                    720p
-                  </button>
-                  <button onClick={() => handleQualitySelect('480p')} className={`more-menu-subitem ${videoQuality === '480p' ? 'active' : ''}`}>
-                    480p
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             {/* Captions */}
@@ -1210,34 +1243,43 @@ const ActionBar: React.FC<ActionBarProps> = ({
             </button>
 
             {/* Speed */}
-            <div className="more-menu-item-wrapper">
-              <button onClick={() => handleMoreAction('speed')} className="more-menu-item">
+            {/* SPEED DROPDOWN - YOUTUBE STYLE */}
+            <div className="more-menu-item-wrapper" ref={speedWrapperRef}>
+              <button
+                className="more-menu-item"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowSpeedMenu((prev) => !prev);
+                  setShowQualityMenu(false);
+                }}
+                aria-expanded={showSpeedMenu}
+              >
                 <i className="fa-solid fa-gauge-high" style={{ fontSize: '18px', width: '20px' }}></i>
                 <span>Speed</span>
-                <span className="more-menu-value">{playbackSpeed}x</span>
+                <span className="more-menu-value">
+                  {playbackSpeed === 1.0 ? 'Normal' : `${playbackSpeed}x`}
+                  <span className={`dropdown-arrow${showSpeedMenu ? ' open' : ''}`}>▼</span>
+                </span>
               </button>
-              {showSpeedMenu && (
-                <div className="more-menu-submenu">
-                  <button onClick={() => handleSpeedSelect(0.5)} className={`more-menu-subitem ${playbackSpeed === 0.5 ? 'active' : ''}`}>
-                    0.5x
+              <div className={`yt-dropdown${showSpeedMenu ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
+                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => (
+                  <button
+                    key={s}
+                    className={`yt-dropdown-item${playbackSpeed === s ? ' active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPlaybackSpeed(s);
+                      setShowSpeedMenu(false);
+                      localStorage.setItem('playbackSpeed', s.toString());
+                      document.querySelectorAll('video').forEach((v) => (v.playbackRate = s));
+                    }}
+                  >
+                    {playbackSpeed === s && <span className="checkmark">✔</span>}
+                    {s === 1 ? 'Normal (1x)' : `${s}x`}
                   </button>
-                  <button onClick={() => handleSpeedSelect(0.75)} className={`more-menu-subitem ${playbackSpeed === 0.75 ? 'active' : ''}`}>
-                    0.75x
-                  </button>
-                  <button onClick={() => handleSpeedSelect(1.0)} className={`more-menu-subitem ${playbackSpeed === 1.0 ? 'active' : ''}`}>
-                    1.0x
-                  </button>
-                  <button onClick={() => handleSpeedSelect(1.25)} className={`more-menu-subitem ${playbackSpeed === 1.25 ? 'active' : ''}`}>
-                    1.25x
-                  </button>
-                  <button onClick={() => handleSpeedSelect(1.5)} className={`more-menu-subitem ${playbackSpeed === 1.5 ? 'active' : ''}`}>
-                    1.5x
-                  </button>
-                  <button onClick={() => handleSpeedSelect(2.0)} className={`more-menu-subitem ${playbackSpeed === 2.0 ? 'active' : ''}`}>
-                    2.0x
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             {/* Auto scroll */}
