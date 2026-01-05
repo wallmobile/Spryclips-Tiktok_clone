@@ -20,6 +20,8 @@ import { getDrafts, deleteDraft } from '../../api/drafts';
 import StoryViewer from '../stories/StoryViewer';
 import api, { API_URL } from '../../config/axios';
 import './Profile.css';
+// Reuse MessageCenter emoji styles for consistent emoji picker UI
+import '../social/MessageCenter.css';
 
 const Profile = ({ onClose, username: viewUsername }) => {
   const navigate = useNavigate();
@@ -85,6 +87,36 @@ const Profile = ({ onClose, username: viewUsername }) => {
   const [isFollowPending, setIsFollowPending] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [viewedUser, setViewedUser] = useState(null); // Store the user being viewed
+  
+  // Message composer and emoji picker states
+  const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiCategory, setEmojiCategory] = useState('smileys');
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState('');
+
+  // Emoji categories
+  const emojiCategories = {
+    smileys: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
+    animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔'],
+    food: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🌽','🥕','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽️','🥣','🥡','🥢','🧂'],
+    activities: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','🤺','⛹️','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🧩'],
+    travel: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️','🛤️','🛣️'],
+    objects: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🖲️','🕹️','🗜️','💾','💿','📀','📼','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','🎚️','🎛️','🧭','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶','💷','💰','💳','💎','⚖️','🧰','🔧','🔨','⚒️','🛠️','⛏️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸','🧬','🦠','🧫','🧪','🌡️','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🛀','🧼','🪒','🧽','🧴','🛎️','🔑','🗝️','🚪','🪑','🛋️','🛏️','🧸','🖼️','🛍️','🛒','🎁','🎈','🎏','🎀','🎊','🎉'],
+    symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','🚻','🚮','🎦','📶','🈁','🔣'],
+    flags: ['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️']
+  };
+
+  // Filter emojis based on search
+  const getFilteredEmojis = () => {
+    if (!emojiSearchQuery) {
+      return emojiCategories[emojiCategory] || [];
+    }
+    
+    // Search across all categories
+    const allEmojis = Object.values(emojiCategories).flat();
+    return allEmojis;
+  };
 
   useEffect(() => {
     const sidebar = document.querySelector('.sidebar');
@@ -1906,13 +1938,9 @@ const Profile = ({ onClose, username: viewUsername }) => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Navigate to messages with this user
-                        const targetUsername = viewedUser?.username || viewUsername;
-                        if (targetUsername) {
-                          navigate(`/messages?user=${encodeURIComponent(targetUsername)}`);
-                        } else {
-                          alert('Unable to open messages');
-                        }
+                        // Toggle message composer
+                        setShowMessageComposer(!showMessageComposer);
+                        setShowEmojiPicker(false);
                       }}
                       type="button"
                       style={{
@@ -2064,6 +2092,280 @@ const Profile = ({ onClose, username: viewUsername }) => {
                   <span className="stat-label">Likes</span>
                 </div>
               </div>
+              
+              {/* Message Composer - WhatsApp Style */}
+              {showMessageComposer && isViewingOtherProfile && (
+                <div style={{
+                  marginTop: '20px',
+                  padding: '16px',
+                  background: '#ffffff',
+                  borderRadius: '12px',
+                  border: '1px solid #e0e0e0',
+                  position: 'relative'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: '12px',
+                    position: 'relative'
+                  }}>
+                    {/* Emoji Picker Popover */}
+                    {showEmojiPicker && (
+                      <div className="emoji-picker-popover" style={{
+                        position: 'fixed',
+                        bottom: '80px',
+                        right: '24px',
+                        width: '360px',
+                        maxHeight: '420px',
+                        zIndex: 10050
+                      }}>
+                        {/* Emoji Search Bar */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '12px 16px',
+                          background: '#f5f5f5',
+                          borderBottom: '1px solid #e0e0e0'
+                        }}>
+                          <i className="fa-solid fa-magnifying-glass" style={{ color: '#8e8e8e', fontSize: '14px' }}></i>
+                          <input
+                            type="text"
+                            placeholder="Search emoji"
+                            value={emojiSearchQuery}
+                            onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                            style={{
+                              flex: 1,
+                              border: 'none',
+                              background: 'transparent',
+                              fontSize: '14px',
+                              outline: 'none',
+                              color: '#000'
+                            }}
+                          />
+                        </div>
+
+                        {/* Emoji Category Tabs */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-around',
+                          padding: '8px 0',
+                          background: 'white',
+                          borderBottom: '1px solid #e0e0e0'
+                        }}>
+                          <button
+                            onClick={() => { setEmojiCategory('smileys'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'smileys' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'smileys' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >😊</button>
+                          <button
+                            onClick={() => { setEmojiCategory('animals'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'animals' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'animals' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >🐶</button>
+                          <button
+                            onClick={() => { setEmojiCategory('food'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'food' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'food' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >🍕</button>
+                          <button
+                            onClick={() => { setEmojiCategory('activities'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'activities' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'activities' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >⚽</button>
+                          <button
+                            onClick={() => { setEmojiCategory('travel'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'travel' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'travel' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >🚗</button>
+                          <button
+                            onClick={() => { setEmojiCategory('objects'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'objects' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'objects' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >💡</button>
+                          <button
+                            onClick={() => { setEmojiCategory('symbols'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'symbols' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'symbols' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >❤️</button>
+                          <button
+                            onClick={() => { setEmojiCategory('flags'); setEmojiSearchQuery(''); }}
+                            style={{
+                              background: emojiCategory === 'flags' ? '#e8f5e9' : 'none',
+                              border: 'none',
+                              fontSize: '24px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              opacity: emojiCategory === 'flags' ? 1 : 0.5,
+                              transition: 'all 0.2s ease',
+                              borderRadius: '8px'
+                            }}
+                          >🏁</button>
+                        </div>
+
+                        {/* Emoji Grid */}
+                        <div className="emoji-grid">
+                          {getFilteredEmojis().map((emoji, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setMessageText((t) => (t || '') + emoji);
+                                setShowEmojiPicker(false);
+                              }}
+                              className="emoji-picker-item"
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Emoji Button */}
+                    <button
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '24px',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        color: '#FF0050',
+                        transition: 'transform 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      title="Add emoji"
+                    >
+                      😊
+                    </button>
+
+                    {/* Message Input */}
+                    <textarea
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder={`Message ${viewedUser?.username || viewUsername || 'user'}...`}
+                      style={{
+                        flex: 1,
+                        minHeight: '40px',
+                        maxHeight: '120px',
+                        padding: '10px 12px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '20px',
+                        fontSize: '14px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#FF0050'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                    />
+
+                    {/* Send Button */}
+                    <button
+                      onClick={() => {
+                        if (messageText.trim()) {
+                          // Navigate to messages with this user and pre-fill message
+                          const targetUsername = viewedUser?.username || viewUsername;
+                          if (targetUsername) {
+                            navigate(`/messages?user=${encodeURIComponent(targetUsername)}&message=${encodeURIComponent(messageText)}`);
+                          }
+                          setMessageText('');
+                          setShowMessageComposer(false);
+                        }
+                      }}
+                      disabled={!messageText.trim()}
+                      style={{
+                        background: messageText.trim() ? '#FF0050' : '#e0e0e0',
+                        color: messageText.trim() ? '#ffffff' : '#8e8e8e',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: messageText.trim() ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0
+                      }}
+                      onMouseEnter={(e) => {
+                        if (messageText.trim()) {
+                          e.currentTarget.style.background = '#FE2C55';
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (messageText.trim()) {
+                          e.currentTarget.style.background = '#FF0050';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }
+                      }}
+                      title="Send message"
+                    >
+                      <i className="fa-solid fa-paper-plane"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

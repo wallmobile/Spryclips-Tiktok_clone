@@ -36,6 +36,7 @@ const LiveStreamSetup = ({ onClose, onStartLive }) => {
   const categories = [
     { id: 'entertainment', label: 'Entertainment', icon: '🎭' },
     { id: 'gaming', label: 'Gaming', icon: '🎮' },
+    { id: 'battle', label: 'Battle', icon: '⚔️' },
     { id: 'dance', label: 'Dance', icon: '💃' },
     { id: 'music', label: 'Music', icon: '🎵' },
     { id: 'food', label: 'Food', icon: '🍕' },

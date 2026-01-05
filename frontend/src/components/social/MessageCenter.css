@@ -582,6 +582,39 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* Strong overrides to ensure popover shows as a wide grid (WhatsApp-like) */
+.emoji-picker-popover {
+  box-sizing: border-box;
+  width: 360px !important;
+  min-width: 320px !important;
+  max-width: 90vw !important;
+}
+
+.emoji-picker-popover * {
+  box-sizing: border-box;
+}
+
+.emoji-picker-popover .emoji-grid {
+  display: grid !important;
+  grid-template-columns: repeat(8, 1fr) !important;
+  gap: 6px !important;
+  padding: 12px !important;
+  overflow-y: auto !important;
+  max-height: 280px !important;
+}
+
+.emoji-picker-popover .emoji-search,
+.emoji-picker-popover .emoji-categories {
+  width: 100% !important;
+}
+
+/* Make emoji items consistent */
+.emoji-picker-item {
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 22px !important;
+}
+
 .message-time {
   font-size: 10px;
   opacity: 0.7;

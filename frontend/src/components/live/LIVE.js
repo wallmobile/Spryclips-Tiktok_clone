@@ -64,6 +64,7 @@ const SAMPLE_STREAMS = [
 
 const CATEGORIES = [
   { id: 'all', label: 'All' },
+  { id: 'battle', label: 'Battle' },
   { id: 'dance', label: 'Dance' },
   { id: 'gaming', label: 'Gaming' },
   { id: 'food', label: 'Food' },

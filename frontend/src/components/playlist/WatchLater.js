@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import OptimizedImage from '../common/OptimizedImage';
 import './WatchLater.css';
-import '../profile/Profile.css'; // Import for video modal styles
 import { useLibraryStore, toLibraryVideo } from '../../store/libraryStore';
 import { useAuth } from '../../context/AuthContext';
 import {
