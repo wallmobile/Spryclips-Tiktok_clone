@@ -118,6 +118,25 @@ const transformVideoForClient = (video, source = 'api') => {
     }));
   }
 
+  // Transform music audioUrl to absolute URL
+  if (result.music && result.music.audioUrl) {
+    result.music = {
+      ...result.music,
+      audioUrl: ensureAbsoluteMediaUrl(result.music.audioUrl)
+    };
+  }
+
+  // Also check metadata.music for backward compatibility
+  if (result.metadata && result.metadata.music && result.metadata.music.audioUrl) {
+    result.metadata = {
+      ...result.metadata,
+      music: {
+        ...result.metadata.music,
+        audioUrl: ensureAbsoluteMediaUrl(result.metadata.music.audioUrl)
+      }
+    };
+  }
+
   return result;
 };
 
