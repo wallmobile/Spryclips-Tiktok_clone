@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OptimizedImage from '../common/OptimizedImage';
 import './PlaylistsManager.css';
-import { useLibraryStore, toLibraryVideo } from '../../store/libraryStore';
+import { useLibraryStore, toLibraryVideo, makeLibraryVideoFromFeed } from '../../store/libraryStore';
 import { useAuth } from '../../context/AuthContext';
 import {
   getMyPlaylists,
@@ -10,6 +10,8 @@ import {
   deletePlaylist as deletePlaylistRequest,
   removeVideoFromPlaylist as removeVideoFromPlaylistRequest
 } from '../../api/collections';
+import { addVideoToPlaylist as addVideoToPlaylistRequest } from '../../api/collections';
+import { getVideoById } from '../../api/videos';
 
 const mapBackendPlaylist = (playlist, index = 0) => {
   if (!playlist || typeof playlist !== 'object') {
@@ -57,6 +59,7 @@ const PlaylistsManager = () => {
   const createPlaylistLocal = useLibraryStore((state) => state.createPlaylist);
   const removeFromPlaylistLocal = useLibraryStore((state) => state.removeFromPlaylist);
   const removePlaylistLocal = useLibraryStore((state) => state.removePlaylist);
+    const addToPlaylistLocal = useLibraryStore((state) => state.addToPlaylist);
   const navigate = useNavigate();
 
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
@@ -410,6 +413,76 @@ const PlaylistsManager = () => {
 
   const handleExplore = useCallback(() => navigate('/explore'), [navigate]);
 
+  const [addVideoId, setAddVideoId] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleLocalFileAdd = async (file) => {
+    if (!file || !selectedPlaylist) return;
+    try {
+      const blobUrl = URL.createObjectURL(file);
+      const vid = `local-file-${Date.now()}`;
+      const lib = makeLibraryVideoFromFeed(vid, { src: blobUrl, thumbnail: '', description: file.name, username: 'local' });
+      addToPlaylistLocal(selectedPlaylist._id, lib);
+      setErrorMessage('Added local file to playlist.');
+    } catch (e) {
+      console.error('Failed to add local file', e);
+      setErrorMessage('Could not add the local file.');
+    }
+  };
+
+  const isUrl = (v) => typeof v === 'string' && /^https?:\/\//i.test(v);
+
+  const isHexObjectId = (v) => typeof v === 'string' && /^[0-9a-fA-F]{24}$/.test(v);
+  const fetchAndAddLocal = async (id) => {
+    if (!id || !selectedPlaylist) return;
+    try {
+      const remote = await getVideoById(id);
+      if (remote) {
+        const lib = toLibraryVideo(remote, id);
+        addToPlaylistLocal(selectedPlaylist._id, lib);
+        setErrorMessage('Added locally (with metadata).');
+        return;
+      }
+    } catch (e) {
+      console.warn('Could not fetch video metadata for local add', e?.message || e);
+    }
+    addToPlaylistLocal(selectedPlaylist._id, { _id: id, description: 'Added by ID (local)', username: 'unknown' });
+    setErrorMessage('Added locally.');
+  };
+
+  const handleAddVideoById = async (videoIdToAdd) => {
+    const vid = String(videoIdToAdd || '').trim();
+    if (!vid) return;
+    if (!selectedPlaylist) {
+      setErrorMessage('Please select a playlist first.');
+      return;
+    }
+    try {
+      if (isUrl(vid)) {
+        addToPlaylistLocal(selectedPlaylist._id, { _id: vid, url: vid, description: 'Added by URL (local)', username: 'unknown' });
+        setErrorMessage('Added locally (URL).');
+        return;
+      }
+      if (isAuthenticated) {
+        if (!isHexObjectId(vid)) {
+          // server requires ObjectId — add locally instead (try to fetch metadata)
+          await fetchAndAddLocal(vid);
+          setErrorMessage('Added locally; server requires a valid ObjectId to sync.');
+          return;
+        }
+        await addVideoToPlaylistRequest(selectedPlaylist._id, vid);
+        await syncPlaylists();
+        setErrorMessage('Added to playlist.');
+      } else {
+        await fetchAndAddLocal(vid);
+      }
+    } catch (err) {
+      console.error('Failed to add video to playlist', err);
+      await fetchAndAddLocal(vid);
+      setErrorMessage('Added locally; failed to add to server.');
+    }
+  };
+
   return (
     <div className="playlists-page">
       <div className="playlists-container playlists-container--page">
@@ -631,6 +704,70 @@ const PlaylistsManager = () => {
                     Explore videos
                   </button>
                 </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <div className="playlists-add-by-id-inline" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter video ID or URL to add"
+                      value={addVideoId}
+                      onChange={(e) => setAddVideoId(e.target.value)}
+                      style={{ padding: '8px', minWidth: '280px' }}
+                    />
+                    <button
+                      type="button"
+                      className="playlists-button playlists-button--primary"
+                      onClick={async () => {
+                        const vid = addVideoId.trim();
+                        if (!vid) return;
+                        setAddVideoId('');
+                        await handleAddVideoById(vid);
+                      }}
+                    >
+                      <i className="fa-solid fa-plus"></i>
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      className="playlists-button playlists-button--ghost"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <i className="fa-solid fa-upload"></i>
+                      Add file
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          handleLocalFileAdd(f);
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="playlists-button playlists-button--ghost"
+                      onClick={async () => {
+                        const vid = addVideoId.trim();
+                        if (!vid) return;
+                        setAddVideoId('');
+                        if (isUrl(vid)) {
+                          addToPlaylistLocal(selectedPlaylist._id, { _id: vid, url: vid, description: 'Added by URL (local)', username: 'unknown' });
+                        } else {
+                          await fetchAndAddLocal(vid);
+                        }
+                        setErrorMessage('Added locally.');
+                      }}
+                    >
+                      <i className="fa-solid fa-download"></i>
+                      Add locally
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <>
@@ -639,8 +776,72 @@ const PlaylistsManager = () => {
                     <h2>{selectedPlaylist.name}</h2>
                     <p>{selectedPlaylist.description || 'No description provided.'}</p>
                   </div>
-                  <div className="playlists-main-stat">
-                    {playlistVideos.length} video{playlistVideos.length === 1 ? '' : 's'}
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div className="playlists-add-by-id-inline" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Enter video ID or URL to add"
+                        value={addVideoId}
+                        onChange={(e) => setAddVideoId(e.target.value)}
+                        style={{ padding: '8px', minWidth: '220px' }}
+                      />
+                      <button
+                        type="button"
+                        className="playlists-button playlists-button--primary"
+                        onClick={async () => {
+                          const vid = addVideoId.trim();
+                          if (!vid) return;
+                          setAddVideoId('');
+                          await handleAddVideoById(vid);
+                        }}
+                      >
+                        <i className="fa-solid fa-plus"></i>
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        className="playlists-button playlists-button--ghost"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <i className="fa-solid fa-upload"></i>
+                        Add file
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="video/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            handleLocalFileAdd(f);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="playlists-button playlists-button--ghost"
+                        onClick={async () => {
+                          const vid = addVideoId.trim();
+                          if (!vid) return;
+                          setAddVideoId('');
+                          // always add locally
+                          if (isUrl(vid)) {
+                            addToPlaylistLocal(selectedPlaylist._id, { _id: vid, url: vid, description: 'Added by URL (local)', username: 'unknown' });
+                            setErrorMessage('Added locally.');
+                          } else {
+                            await fetchAndAddLocal(vid);
+                          }
+                        }}
+                      >
+                        <i className="fa-solid fa-download"></i>
+                        Add locally
+                      </button>
+                    </div>
+                    <div className="playlists-main-stat">
+                      {playlistVideos.length} video{playlistVideos.length === 1 ? '' : 's'}
+                    </div>
                   </div>
                 </div>
                 <div className="playlists-grid">

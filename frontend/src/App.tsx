@@ -147,6 +147,9 @@ const normalizeVideoData = (
       ((video as any)?.music?.name as string) ||
       (((video as any)?.metadata?.music?.name) as string) ||
       'Original Sound',
+    // Preserve music object with audioUrl for playback
+    music: video.music as { name?: string; artist?: string; duration?: string; audioUrl?: string } | undefined,
+    metadata: video.metadata as Record<string, unknown> | undefined,
     likes: typeof video.likes === 'number' ? video.likes : 0,
     comments: typeof video.comments === 'number' ? video.comments : 0,
     shares: typeof video.shares === 'number' ? video.shares : 0,

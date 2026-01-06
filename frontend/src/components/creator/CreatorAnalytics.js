@@ -66,6 +66,17 @@ const CreatorAnalytics = ({ onClose }) => {
         getAudienceActivity(),
       ]);
 
+      // Basic validation: ensure server returned success flags where expected
+      if (!overviewRes || (overviewRes.success === false)) {
+        throw new Error('Creator overview data unavailable');
+      }
+      if (!summaryRes || (summaryRes.success === false)) {
+        throw new Error('Creator summary data unavailable');
+      }
+      if (!videosRes || (videosRes.success === false)) {
+        throw new Error('Videos analytics data unavailable');
+      }
+
       setOverview(overviewRes?.overview || null);
       setSummary(summaryRes?.summary || null);
       setVideos(videosRes?.videos || []);
@@ -75,11 +86,15 @@ const CreatorAnalytics = ({ onClose }) => {
       setAudienceDemographics(audienceDemoRes?.demographics || null);
       setAudienceActivity(activityRes?.activity || null);
 
-      const firstVideoId = videosRes?.videos?.[0]?.video?._id || null;
+      const firstVideoId = (videosRes?.videos && videosRes.videos.length > 0 && videosRes.videos[0].video)
+        ? videosRes.videos[0].video._id
+        : null;
       setSelectedVideoId(firstVideoId);
     } catch (err) {
       console.error('Failed to load creator analytics:', err);
-      setError(err?.response?.data?.message || 'Unable to load analytics right now.');
+      // Prefer server message when available
+      const serverMsg = err?.response?.data?.message || err?.message;
+      setError(serverMsg || 'Unable to load analytics right now.');
     } finally {
       setLoading(false);
     }
@@ -122,6 +137,14 @@ const CreatorAnalytics = ({ onClose }) => {
         getVideoEngagement(videoId),
         getVideoDemographics(videoId),
       ]);
+
+      // Validate responses
+      if (!analyticsRes || analyticsRes.success === false) {
+        throw new Error('Video analytics unavailable');
+      }
+      if (!summaryRes || summaryRes.success === false) {
+        throw new Error('Video summary unavailable');
+      }
 
       setVideoDetails({
         loading: false,

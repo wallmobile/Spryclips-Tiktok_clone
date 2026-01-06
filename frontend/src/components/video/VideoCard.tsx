@@ -94,6 +94,33 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Create audio element for music playback when music URL is present
+  useEffect(() => {
+    const musicUrl = (video as any)?.music?.audioUrl || (video as any)?.metadata?.music?.audioUrl || null;
+    
+    if (musicUrl) {
+      // Create audio element if it doesn't exist
+      if (!musicAudioRef.current) {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.loop = true; // Loop with video
+        musicAudioRef.current = audio;
+        setMusicAudioEl(audio);
+        console.log('🎵 Created audio element for music:', musicUrl);
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (musicAudioRef.current) {
+        musicAudioRef.current.pause();
+        musicAudioRef.current.src = '';
+        musicAudioRef.current = null;
+        setMusicAudioEl(null);
+      }
+    };
+  }, [(video as any)?.music?.audioUrl, (video as any)?.metadata?.music?.audioUrl]);
+
   // Apply saved settings on mount and when video changes
   useEffect(() => {
     const video = videoRef.current;
@@ -125,6 +152,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
     const video = videoRef.current;
     if (!video) return;
 
+    // Check if this video has music that should replace original audio
+    const musicUrl = (video as any)?.music?.audioUrl || (video as any)?.metadata?.music?.audioUrl || null;
+    const hasMusic = Boolean(musicUrl);
+
     if (isActive) {
       // CRITICAL: First, pause ALL other videos to prevent audio overlap
       // Get all video elements in the document
@@ -145,8 +176,12 @@ const VideoCard: React.FC<VideoCardProps> = ({
       }
       
       // CRITICAL: Set mute and volume IMMEDIATELY and SYNCHRONOUSLY before playing
-      // Force update the video element's muted property
-      if (globalMute) {
+      // If video has music, ALWAYS mute the video's original audio (music audio element handles sound)
+      if (hasMusic) {
+        // Mute video's original audio - music will play from separate audio element
+        video.muted = true;
+        video.volume = 0;
+      } else if (globalMute) {
         video.muted = true;
         video.volume = 0;
       } else {
@@ -157,7 +192,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
       // Small delay to ensure muted state is applied before play
       requestAnimationFrame(() => {
         // Double-check muted state is correct
-        if (globalMute) {
+        if (hasMusic) {
+          // Keep video muted when music is present
+          video.muted = true;
+          video.volume = 0;
+        } else if (globalMute) {
           video.muted = true;
           video.volume = 0;
         } else {
@@ -168,7 +207,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
         // Race guard: only allow one play() promise at a time
         playPromiseRef.current = video.play().catch((error) => {
           // Autoplay prevented - try muted playback if unmuted failed
-          if (!globalMute && error.name === 'NotAllowedError') {
+          if (!globalMute && !hasMusic && error.name === 'NotAllowedError') {
             // Browser blocked unmuted autoplay - mute and try again
             video.muted = true;
             video.volume = 0;
@@ -219,30 +258,38 @@ const VideoCard: React.FC<VideoCardProps> = ({
         video.volume = 0;
       }
     };
-  }, [isActive, globalMute, globalVolume]);
+  }, [isActive, globalMute, globalVolume, video]);
 
   // Sync volume with store when it changes (VolumeControl updates the store)
   // CRITICAL: This must update IMMEDIATELY when mute state changes
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    
+    // Check if this video has music that should replace original audio
+    const musicUrl = (video as any)?.music?.audioUrl || (video as any)?.metadata?.music?.audioUrl || null;
+    const hasMusic = Boolean(musicUrl);
     
     // ALWAYS sync mute state, even for inactive videos (to prevent sound from inactive videos)
-    if (globalMute) {
-      video.muted = true;
-      video.volume = 0;
+    if (hasMusic) {
+      // When music is present, always keep video muted (music audio element handles sound)
+      videoEl.muted = true;
+      videoEl.volume = 0;
+    } else if (globalMute) {
+      videoEl.muted = true;
+      videoEl.volume = 0;
     } else {
-      // Only unmute if video is active
+      // Only unmute if video is active and no music
       if (isActive) {
-        video.muted = false;
-        video.volume = globalVolume / 100;
+        videoEl.muted = false;
+        videoEl.volume = globalVolume / 100;
       } else {
         // Keep inactive videos muted
-        video.muted = true;
-        video.volume = 0;
+        videoEl.muted = true;
+        videoEl.volume = 0;
       }
     }
-  }, [globalVolume, globalMute, isActive]);
+  }, [globalVolume, globalMute, isActive, video]);
 
   // Sync uploaded music (if present) with the video element on play/pause/seek
   useEffect(() => {
@@ -262,6 +309,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
         audioEl.src = musicUrl;
         audioEl.preload = 'auto';
         audioEl.load();
+        console.log('🎵 Music audio source set:', musicUrl);
       }
     } catch (e) {
       console.warn('Failed to set music audio src', e);
@@ -281,10 +329,19 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
     applyVolume();
 
+    // If video is not active, pause the audio
+    if (!isActive) {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+      return;
+    }
+
     const handlePlay = () => {
       applyVolume();
       // Try to play audio; browsers require user gesture but video play should satisfy it
-      audioEl.play().catch(() => {});
+      audioEl.play().catch((e) => {
+        console.warn('Music audio play failed:', e);
+      });
     };
 
     const handlePause = () => {
@@ -307,10 +364,24 @@ const VideoCard: React.FC<VideoCardProps> = ({
       try { audioEl.currentTime = videoEl.currentTime || 0; } catch (e) {}
     };
 
+    const handleEnded = () => {
+      // Loop the audio when video loops
+      audioEl.currentTime = 0;
+      if (!videoEl.paused) {
+        audioEl.play().catch(() => {});
+      }
+    };
+
     videoEl.addEventListener('play', handlePlay);
     videoEl.addEventListener('pause', handlePause);
     videoEl.addEventListener('timeupdate', handleTimeUpdate);
     videoEl.addEventListener('seeked', handleSeeked);
+    videoEl.addEventListener('ended', handleEnded);
+
+    // If video is already playing, start the music
+    if (!videoEl.paused && isActive) {
+      handlePlay();
+    }
 
     // Cleanup
     return () => {
@@ -318,6 +389,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
       videoEl.removeEventListener('pause', handlePause);
       videoEl.removeEventListener('timeupdate', handleTimeUpdate);
       videoEl.removeEventListener('seeked', handleSeeked);
+      videoEl.removeEventListener('ended', handleEnded);
+      // Pause audio on cleanup
+      audioEl.pause();
     };
   }, [video, globalMute, globalVolume, isActive, musicAudioEl]);
 

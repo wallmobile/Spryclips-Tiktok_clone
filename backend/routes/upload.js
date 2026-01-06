@@ -202,7 +202,8 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
     ? {
         name: musicPayload.name || '',
         artist: musicPayload.artist || '',
-        duration: musicPayload.duration || ''
+        duration: musicPayload.duration || '',
+        audioUrl: musicPayload.audioUrl || '' // Preserve audioUrl from music library selection
       }
     : undefined;
 

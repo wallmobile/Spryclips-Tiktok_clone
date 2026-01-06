@@ -25,13 +25,27 @@ const DuetComponent = ({ video, onClose, onComplete }) => {
 
   const startRecording = async () => {
     try {
+      // Play the original video when recording starts
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play();
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode: 'user', width: 1280, height: 720 },
         audio: true
       });
 
+      // Show the camera preview
+      if (recordedVideoRef.current) {
+        recordedVideoRef.current.srcObject = stream;
+        recordedVideoRef.current.play();
+      }
+
       chunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp8,opus'
+      });
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -54,11 +68,21 @@ const DuetComponent = ({ video, onClose, onComplete }) => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         setRecordedVideo(url);
+        
+        // Stop camera preview
         stream.getTracks().forEach(track => track.stop());
+        if (recordedVideoRef.current) {
+          recordedVideoRef.current.srcObject = null;
+        }
+
+        // Pause original video
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
       };
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
+      alert('Unable to access camera. Please allow camera and microphone permissions in your browser settings.');
     }
   };
 
@@ -78,18 +102,52 @@ const DuetComponent = ({ video, onClose, onComplete }) => {
 
     setIsProcessing(true);
     try {
-      // Here you would upload both videos and merge them on the backend
-      // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Convert recorded video blob URL to actual blob
+      const response = await fetch(recordedVideo);
+      const blob = await response.blob();
+
+      // Create FormData to upload
+      const formData = new FormData();
+      formData.append('video', blob, 'duet-video.webm');
+      formData.append('metadata', JSON.stringify({
+        videoType: 'duet',
+        originalVideoId: video?._id || video?.id,
+        layout: layout,
+        description: `Duet with @${video?.username || 'user'}`,
+        caption: `Duet with @${video?.username || 'user'} ✨`
+      }));
+
+      // Upload the duet video
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const uploadResponse = await fetch(`${apiUrl}/api/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await uploadResponse.json();
+      console.log('Duet uploaded:', result);
 
       if (onComplete) {
         onComplete({
           originalVideo: video,
           duetVideo: recordedVideo,
           layout: layout,
-          userId: user?.id
+          userId: user?.id,
+          uploadedVideo: result
         });
       }
+
+      alert('Duet created successfully! 🎉');
+      
+      // Dispatch event to refresh feed
+      window.dispatchEvent(new CustomEvent('videoUploaded', { 
+        detail: result 
+      }));
 
       onClose();
     } catch (error) {
@@ -167,30 +225,47 @@ const DuetComponent = ({ video, onClose, onComplete }) => {
                     className="preview-video"
                   />
                   <div className="video-label">Your Video</div>
+                  <button 
+                    className="re-record-btn"
+                    onClick={() => {
+                      setRecordedVideo(null);
+                      setRecordingDuration(0);
+                    }}
+                  >
+                    <i className="fa-solid fa-redo"></i>
+                    Re-record
+                  </button>
+                </div>
+              ) : isRecording ? (
+                <div className="recording-live-preview">
+                  <video
+                    ref={recordedVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="preview-video mirror"
+                  />
+                  <div className="recording-indicator">
+                    <span className="recording-dot"></span>
+                    <span>{formatTime(recordingDuration)}</span>
+                  </div>
+                  <button className="stop-recording-btn" onClick={stopRecording}>
+                    <i className="fa-solid fa-stop"></i>
+                    Stop Recording
+                  </button>
                 </div>
               ) : (
                 <div className="recording-placeholder">
-                  {isRecording ? (
-                    <>
-                      <div className="recording-indicator">
-                        <span className="recording-dot"></span>
-                        <span>{formatTime(recordingDuration)}</span>
-                      </div>
-                      <button className="stop-recording-btn" onClick={stopRecording}>
-                        <i className="fa-solid fa-stop"></i>
-                        Stop Recording
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-video"></i>
-                      <p>Tap to record your duet</p>
-                      <button className="start-recording-btn" onClick={startRecording}>
-                        <i className="fa-solid fa-circle"></i>
-                        Start Recording
-                      </button>
-                    </>
-                  )}
+                  <i className="fa-solid fa-video"></i>
+                  <p>Record your duet</p>
+                  <div className="duet-instructions">
+                    <p><i className="fa-solid fa-info-circle"></i> The original video will play while you record</p>
+                    <p><i className="fa-solid fa-camera"></i> Make sure your camera and microphone are enabled</p>
+                  </div>
+                  <button className="start-recording-btn" onClick={startRecording}>
+                    <i className="fa-solid fa-circle"></i>
+                    Start Recording
+                  </button>
                 </div>
               )}
             </div>

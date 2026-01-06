@@ -85,7 +85,8 @@ const videoSchema = new mongoose.Schema({
   music: {
     name: { type: String, default: '' },
     artist: { type: String, default: '' },
-    duration: { type: String, default: '' }
+    duration: { type: String, default: '' },
+    audioUrl: { type: String, default: '' }
   },
   cropSettings: {
     startTime: { type: Number, default: 0 },

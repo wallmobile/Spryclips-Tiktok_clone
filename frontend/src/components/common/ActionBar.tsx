@@ -10,6 +10,7 @@ import {
   removeFromWatchLater as removeWatchLaterApi
 } from '../../api/collections';
 import { useAuth } from '../../context/AuthContext';
+import VideoCollectionsModal from '../video/VideoCollectionsModal';
 
 interface ReactionOption {
   id: string;
@@ -115,6 +116,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
 
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showReactPicker, setShowReactPicker] = useState(false);
   const [currentReaction, setCurrentReaction] = useState<ReactionOption | null>(currentReactionProp);
   const [moreMenuStyle, setMoreMenuStyle] = useState<React.CSSProperties>({});
@@ -798,6 +800,10 @@ const ActionBar: React.FC<ActionBarProps> = ({
         setShowMoreMenu(false);
         handleDownload();
         break;
+      case 'add-to-playlist':
+        setShowMoreMenu(false);
+        setShowCollectionsModal(true);
+        break;
     }
   };
 
@@ -939,7 +945,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
     });
   }, []);
 
-  return (
+  return (<>
     <div className="action-bar">
       {/* Profile Picture */}
       <div className="action-bar-item profile-item">
@@ -1349,6 +1355,13 @@ const ActionBar: React.FC<ActionBarProps> = ({
             </button>
 
             {/* Download */}
+            {/* Add to Playlist */}
+            <button onClick={() => handleMoreAction('add-to-playlist')} className="more-menu-item">
+              <i className="fa-solid fa-plus" style={{ fontSize: '18px', width: '20px' }}></i>
+              <span>Add to playlist</span>
+            </button>
+
+            {/* Download */}
             <button onClick={() => handleMoreAction('download')} className="more-menu-item">
               <i className="fa-solid fa-download" style={{ fontSize: '18px', width: '20px' }}></i>
               <span>Download</span>
@@ -1364,7 +1377,10 @@ const ActionBar: React.FC<ActionBarProps> = ({
       </div>
 
     </div>
-  );
+      {showCollectionsModal && (
+        <VideoCollectionsModal onClose={() => setShowCollectionsModal(false)} video={video} />
+      )}
+    </>);
 };
 
 export default ActionBar;
