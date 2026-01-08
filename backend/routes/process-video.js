@@ -6,11 +6,14 @@ const { exec } = require('child_process');
 const Video = require('../models/Video');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const { PUBLIC_URL } = require('../utils/config');
 const router = express.Router();
 
 // Create uploads and processed directories
 const uploadsDir = path.join(__dirname, '../uploads');
 const processedDir = '/home/reactmaster/uploads/processed';
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : `${PUBLIC_URL}/uploads`);
+const PROCESSED_BASE_URL = process.env.PROCESSED_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/processed' : `${PUBLIC_URL}/processed`);
 [uploadsDir, processedDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -100,8 +103,8 @@ router.post('/apply-filters', authMiddleware, upload.single('video'), async (req
       // Save video to database
       Video.create({
         user: req.user._id,
-        url: `/processed/${outputFilename}`,
-        thumbnail: `/uploads/${req.file.filename}`,
+        url: `${PROCESSED_BASE_URL}/${outputFilename}`,
+        thumbnail: `${UPLOADS_BASE_URL}/${req.file.filename}`,
         description: req.body.description || '',
         hashtags: req.body.hashtags ? req.body.hashtags.split(',').map(tag => tag.trim()) : [],
         isPrivate: req.body.isPrivate === 'true',
