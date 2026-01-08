@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { PUBLIC_URL } = require('../utils/config');
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ const router = express.Router();
 // CONFIG
 // ===============================
 const UPLOADS_DIR = '/home/reactmaster/uploads';
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com/uploads' : `${PUBLIC_URL}/uploads`);
 
 // Ensure uploads dir exists
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -77,7 +79,7 @@ router.post(
         message: 'Video uploaded successfully',
         file: {
           filename: req.file.filename,
-          path: `/uploads/${req.file.filename}`
+          path: `${UPLOADS_BASE_URL}/${req.file.filename}`
         }
       });
     } catch (err) {
