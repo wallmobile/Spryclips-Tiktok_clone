@@ -321,8 +321,154 @@ ensure_nginx_log_permissions() {
     print_success "Nginx log files and permissions configured (owner: $NGINX_USER)"
 }
 
+# ============================================
+# NGINX SAFEGUARDS
+# - Ensure /etc/nginx/sites-available/default is enabled (symlinked) if present
+# - Ensure only ONE enabled site has the `default_server` flag on port 80
+# - If `spryclips.com` contains `default_server`, remove only the token (backup first)
+# - Do NOT delete files; make backups; test with `nginx -t` before any reload
+# - Log clear actions and warnings. Idempotent and safe to run multiple times.
+# ============================================
+ensure_nginx_default_fallback_and_unique_default_server() {
+    print_section "🔒 NGINX DEFAULT SITE & default_server SAFEGUARDS"
+
+    DEFAULT_SA="/etc/nginx/sites-available/default"
+    DEFAULT_SE="/etc/nginx/sites-enabled/default"
+    SPRY_SA="/etc/nginx/sites-available/spryclips.com"
+    SPRY_SE="/etc/nginx/sites-enabled/spryclips.com"
+
+    print_step "Checking for presence of $DEFAULT_SA..."
+    if [ -f "$DEFAULT_SA" ]; then
+        print_success "Found default site: $DEFAULT_SA"
+
+        if [ ! -e "$DEFAULT_SE" ]; then
+            print_step "Default site is not enabled. Creating symlink: $DEFAULT_SE → $DEFAULT_SA"
+            if sudo ln -s "$DEFAULT_SA" "$DEFAULT_SE" 2>/dev/null; then
+                print_success "Symlink created: $DEFAULT_SE → $DEFAULT_SA"
+                TMP_OUT=$(mktemp)
+                if sudo nginx -t > "$TMP_OUT" 2>&1; then
+                    print_success "nginx -t passed after enabling default site"
+                else
+                    print_warn "nginx -t failed after enabling default site. Symlink $DEFAULT_SE was created but nginx -t failed. Leaving symlink in place for manual inspection. Output:"
+                    sed 's/^/    /' "$TMP_OUT" | sed -n '1,40p'
+                    print_warn "Please inspect $DEFAULT_SA and $DEFAULT_SE and fix the issue manually. To remove the symlink once you have determined it's safe to do so, run: sudo rm -f $DEFAULT_SE"
+                fi
+                rm -f "$TMP_OUT"
+            else
+                print_warn "Failed to create symlink $DEFAULT_SE (permission or already exists). You may need to enable the default site manually."
+            fi
+        else
+            print_info "Default site already enabled at $DEFAULT_SE"
+        fi
+    else
+        print_warn "Default site file $DEFAULT_SA not found. The fallback site cannot be enabled automatically."
+    fi
+
+    # If spryclips.com exists, remove only the 'default_server' token (idempotent; make backup)
+    if [ -e "$SPRY_SE" ] || [ -e "$SPRY_SA" ]; then
+        if [ -e "$SPRY_SE" ]; then
+            SPRY_ACTUAL=$(readlink -f "$SPRY_SE")
+        else
+            SPRY_ACTUAL="$SPRY_SA"
+        fi
+
+        print_step "Inspecting $SPRY_ACTUAL for 'default_server' token..."
+        # use -w to match whole word 'default_server' (more portable than \b)
+        if sudo grep -qw 'default_server' "$SPRY_ACTUAL" 2>/dev/null; then
+            print_warn "Found 'default_server' in $SPRY_ACTUAL. Attempting to remove only the token (no other edits)."
+
+            BACKUP="${SPRY_ACTUAL}.bak.$(date +%Y%m%d_%H%M%S)"
+            if sudo cp "$SPRY_ACTUAL" "$BACKUP"; then
+                # Remove only the token on listen lines for port 80; keep other listen directives intact
+                if sudo sed -E -i '/listen[[:space:]]+80/ s/\<default_server\>//g' "$SPRY_ACTUAL" && \
+                   sudo sed -E -i '/listen[[:space:]]+\[::\]:80/ s/\<default_server\>//g' "$SPRY_ACTUAL"; then
+                    # tidy whitespace around semicolons
+                    sudo sed -E -i 's/[[:space:]]+;/;/g' "$SPRY_ACTUAL" || true
+                    sudo sed -E -i 's/  +/ /g' "$SPRY_ACTUAL" || true
+
+                    TMP_OUT=$(mktemp)
+                    if sudo nginx -t > "$TMP_OUT" 2>&1; then
+                        print_success "Removed 'default_server' from $SPRY_ACTUAL and nginx -t passed"
+                    else
+                        print_warn "nginx -t failed after editing $SPRY_ACTUAL. Restoring backup $BACKUP. nginx output:"
+                        sed 's/^/    /' "$TMP_OUT" | sed -n '1,40p'
+                        sudo cp "$BACKUP" "$SPRY_ACTUAL" || print_warn "Failed to restore backup $BACKUP"
+                    fi
+                    rm -f "$TMP_OUT"
+                else
+                    print_warn "Failed to edit $SPRY_ACTUAL to remove 'default_server'. Restoring backup."
+                    sudo cp "$BACKUP" "$SPRY_ACTUAL" || print_warn "Failed to restore backup $BACKUP"
+                fi
+            else
+                print_warn "Failed to create backup of $SPRY_ACTUAL. Aborting automatic removal of 'default_server'."
+            fi
+        else
+            print_info "No 'default_server' token found in $SPRY_ACTUAL; nothing to change."
+        fi
+    else
+        print_info "spryclips.com not found in sites-available or sites-enabled; skipping spryclips.com edits"
+    fi
+
+    # Report on how many enabled sites declare default_server
+    # Count only enabled sites that declare 'default_server' on port 80 (exactly where fallback matters)
+    DS_FILES=""
+    for f in /etc/nginx/sites-enabled/*; do
+        [ -f "$f" ] || continue
+        # Get lines that contain both listen and default_server (use sudo in case of perms)
+        lines=$(sudo grep -E 'listen[^;]*default_server' "$f" 2>/dev/null || true)
+        if [ -n "$lines" ]; then
+            # If any of those lines mention port 80 explicitly, count the file
+            if echo "$lines" | grep -E -q '(\[::\]:80|[^0-9]80[^0-9]|80\s*;)' 2>/dev/null; then
+                DS_FILES="${DS_FILES}\n$f"
+            fi
+        fi
+    done
+    DS_FILES=$(echo -e "$DS_FILES" | sed '/^\s*$/d' || true)
+    DS_COUNT=$(echo "$DS_FILES" | sed '/^\s*$/d' | wc -l)
+
+    if [ "$DS_COUNT" -eq 0 ]; then
+        print_warn "No enabled site declares 'default_server'. The default fallback is not defined. The script attempted to enable $DEFAULT_SA earlier if present."
+
+        # Try to add default_server to simple listen lines in default if it's enabled and safe
+        if [ -f "$DEFAULT_SA" ] && [ -e "$DEFAULT_SE" ]; then
+            if sudo grep -qE '^\s*listen\s+80\s*;' "$DEFAULT_SA" || sudo grep -qE '^\s*listen\s+\[::\]:80\s*;' "$DEFAULT_SA"; then
+                print_step "Adding 'default_server' to simple listen lines in $DEFAULT_SA so it becomes the fallback"
+                BACKUP="${DEFAULT_SA}.bak.$(date +%Y%m%d_%H%M%S)"
+                if sudo cp "$DEFAULT_SA" "$BACKUP"; then
+                    sudo sed -E -i 's/^\s*listen\s+80\s*;/listen 80 default_server;/' "$DEFAULT_SA" || true
+                    sudo sed -E -i 's/^\s*listen\s+\[::\]:80\s*;/listen [::]:80 default_server;/' "$DEFAULT_SA" || true
+
+                    TMP_OUT=$(mktemp)
+                    if sudo nginx -t > "$TMP_OUT" 2>&1; then
+                        print_success "Added 'default_server' to $DEFAULT_SA and nginx -t passed"
+                    else
+                        print_warn "nginx -t failed after adding 'default_server' to $DEFAULT_SA. Restoring backup and aborting. nginx output:"
+                        sed 's/^/    /' "$TMP_OUT" | sed -n '1,40p'
+                        sudo cp "$BACKUP" "$DEFAULT_SA" || print_warn "Failed to restore backup $BACKUP"
+                    fi
+                    rm -f "$TMP_OUT"
+                else
+                    print_warn "Failed to backup $DEFAULT_SA; skipping automatic addition of 'default_server'"
+                fi
+            else
+                print_warn "$DEFAULT_SA does not contain simple 'listen 80;' or 'listen [::]:80;' lines; auto-adding 'default_server' is unsafe and was skipped. Please inspect and add manually if desired."
+            fi
+        fi
+    elif [ "$DS_COUNT" -gt 1 ]; then
+        print_warn "Multiple enabled site files contain 'default_server':"
+        echo "$DS_FILES" | sed 's/^/    /'
+        print_warn "The script only auto-removed 'default_server' from spryclips.com (if present). Please inspect the files above and remove extra 'default_server' tokens manually to ensure only one fallback exists."
+    else
+        print_success "Exactly one enabled site declares 'default_server' — desired state."
+    fi
+}
+
 # Write nginx config (uses ACTIVE_PORT variable)
 write_nginx_config() {
+    # Before overwriting any site file, ensure the default fallback is enabled and avoid default_server conflicts
+    print_step "Checking and ensuring there are no conflicting 'default_server' directives before updating nginx config..."
+    ensure_nginx_default_fallback_and_unique_default_server || print_warn "Nginx safeguard checks encountered warnings - proceed with caution"
+
     NGINX_BACKUP="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
     print_step "Backing up current nginx config (if present)"
     sudo cp $NGINX_CONFIG $NGINX_BACKUP 2>/dev/null || print_warn "No existing nginx config to backup"
