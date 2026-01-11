@@ -17,6 +17,10 @@
 
 set -e  # Exit on any error
 
+# Set umask to 002 for proper file permissions (files: 664, dirs: 775)
+# This ensures group-writable files needed for www-data nginx access
+umask 002
+
 # ============================================
 # COLOR DEFINITIONS FOR TERMINAL OUTPUT
 # ============================================
@@ -308,6 +312,8 @@ print_success "Ownership configured"
 print_step "Setting permissions (775 for dirs, 664 for files)..."
 print_substep "Configuring directory permissions..."
 sudo find /home/reactmaster/uploads -type d -exec chmod 775 {} \; || print_warn "Failed to set directory permissions"
+print_substep "Setting setgid on directories (g+s) to preserve group ownership..."
+sudo find /home/reactmaster/uploads -type d -exec chmod g+s {} \; || print_warn "Failed to set setgid"
 print_substep "Configuring file permissions..."
 sudo find /home/reactmaster/uploads -type f -exec chmod 664 {} \; || print_warn "Failed to set file permissions"
 print_success "Permissions configured successfully"
@@ -317,6 +323,8 @@ print_info "Permissions summary:"
 print_substep "Owner (reactmaster): Read, Write, Execute"
 print_substep "Group (www-data): Read, Write, Execute (for nginx)"
 print_substep "Others: Read, Execute"
+print_info "Verification: New uploaded files will be created as -rw-rw-r-- (664) with group www-data"
+print_info "             due to umask 002 in PM2 process and setgid on directories"
 echo ""
 
 # Start backend with PM2 on target environment
@@ -332,6 +340,7 @@ if [ -n "$SKIP_OIDC" ]; then
 fi
 
 # Start with environment variables (not using ecosystem.config.js for blue-green)
+# Note: --umask 002 ensures new files are created with group-writable permissions (664)
 NODE_ENV=production \
 PORT=$TARGET_PORT \
 MONGODB_URI="mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority" \
@@ -344,7 +353,7 @@ EMAIL_SERVICE="gmail" \
 EMAIL_FROM="SpryClips <bipul.kumar3384@gmail.com>" \
 GMAIL_USER="bipul.kumar3384@gmail.com" \
 GMAIL_APP_PASSWORD="szynffjxrpripdhm" \
-pm2 start index.js --name $TARGET_APP --max-memory-restart 1G --update-env || print_error "PM2 start failed"
+pm2 start index.js --name $TARGET_APP --umask 002 --max-memory-restart 1G --update-env || print_error "PM2 start failed"
 
 print_success "Target environment started successfully on port $TARGET_PORT"
 
