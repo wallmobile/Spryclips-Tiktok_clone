@@ -523,17 +523,42 @@ server {
         deny all;
     }
 
-    # React SPA - catch all
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Static file caching
-    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\$ {
-        try_files \$uri =404;
-        access_log off;
+    # Processed videos (thumbnails, etc.) - MUST come before /uploads/ and /
+    location /processed/ {
+        alias /home/reactmaster/uploads/processed/;
+        
+        # Security headers
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        
+        # Cache control
         expires 30d;
-        add_header Cache-Control "public, max-age=2592000, immutable";
+        add_header Cache-Control "public, immutable";
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        
+        # Handle OPTIONS requests for CORS preflight
+        if (\$request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        
+        # Allow all file types
+        types {
+            image/jpeg jpg jpeg;
+            image/png png;
+            image/gif gif;
+            video/mp4 mp4;
+            video/webm webm;
+        }
+        
+        access_log off;
     }
 
     # Uploads directory - serve uploaded files
@@ -579,18 +604,17 @@ server {
         }
     }
 
-    # Processed videos (thumbnails, etc.)
-    location /processed/ {
-        alias /home/reactmaster/uploads/processed/;
-        
-        # Cache control
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-        
-        # CORS headers
-        add_header Access-Control-Allow-Origin "*" always;
-        
+    # React SPA - catch all (MUST come last)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # Static file caching
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\$ {
+        try_files \$uri =404;
         access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
     }
 
     # API proxy - preserve /api path
