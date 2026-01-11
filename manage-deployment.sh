@@ -57,6 +57,15 @@ print_warn() {
     echo -e "${YELLOW}  ⚠${NC} $1"
 }
 
+# Short step/substep helpers (used by deployment scripts)
+print_step() { echo -e "${GREEN}  ▶${NC} $1"; }
+print_substep() { echo -e "${CYAN}    ➤${NC} $1"; }
+
+# Ensure print_step exists (fallback to print_info if not)
+if ! declare -F print_step >/dev/null 2>&1; then
+    print_step() { print_info "$1"; }
+fi
+
 # Get current deployment status
 get_status() {
     echo ""
@@ -649,11 +658,11 @@ ensure_nginx_log_permissions() {
         NGINX_USER="root"
     fi
 
-    print_step "Creating /var/log/nginx and spryclips log files if needed"
+    print_info "Creating /var/log/nginx and spryclips log files if needed"
     sudo mkdir -p /var/log/nginx || print_warn "Failed to create /var/log/nginx"
     sudo touch /var/log/nginx/spryclips.access.log /var/log/nginx/spryclips.error.log 2>/dev/null || true
 
-    print_step "Setting ownership to $NGINX_USER and permissions to 664 for spryclips logs"
+    print_info "Setting ownership to $NGINX_USER and permissions to 664 for spryclips logs"
     sudo chown $NGINX_USER:$NGINX_USER /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chown spryclips log files"
     sudo chmod 664 /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chmod spryclips log files"
     sudo chmod 755 /var/log/nginx 2>/dev/null || print_warn "Failed to chmod /var/log/nginx"
@@ -666,7 +675,7 @@ repair_nginx_config() {
     NGINX_CONFIG="/etc/nginx/sites-available/default"
     BACKUP_FILE="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
 
-    print_step "Backing up current nginx config (if present)"
+    print_info "Backing up current nginx config (if present)"
     sudo cp $NGINX_CONFIG $BACKUP_FILE 2>/dev/null || print_warn "No existing nginx config to backup"
     print_success "Backup created: $BACKUP_FILE"
 
@@ -683,7 +692,7 @@ repair_nginx_config() {
         print_warn "State file not found; defaulting to port $ACTIVE_PORT"
     fi
 
-    print_step "Writing recommended nginx configuration (proxying /api to port $ACTIVE_PORT)"
+    print_info "Writing recommended nginx configuration (proxying /api to port $ACTIVE_PORT)"
     sudo tee $NGINX_CONFIG > /dev/null <<EOF
 server {
     listen 80 default_server;
@@ -777,14 +786,14 @@ EOF
     # Ensure log files and permissions
     ensure_nginx_log_permissions
 
-    print_step "Testing nginx syntax..."
+    print_info "Testing nginx syntax..."
     if sudo nginx -t; then
         print_success "Nginx configuration syntax is valid"
     else
         print_error "Nginx config test failed. Restored backup at $BACKUP_FILE?"
     fi
 
-    print_step "Reloading nginx (graceful reload)..."
+    print_info "Reloading nginx (graceful reload)..."
     sudo systemctl reload nginx && print_success "Nginx reloaded successfully" || print_error "Nginx reload failed"
 }
 
