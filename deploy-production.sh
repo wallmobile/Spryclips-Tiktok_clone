@@ -270,25 +270,209 @@ print_info "Active environment ($ACTIVE_APP) continues serving traffic"
 print_step "Checking Node.js version and installing/upgrading to v22 if necessary..."
 check_node_and_install
 
-# Clean backend dependencies
-print_step "Cleaning backend dependencies..."
-print_substep "Removing node_modules and package-lock.json"
-# IMPORTANT: Only clean node_modules and package-lock.json, NOT uploads directory
-rm -rf node_modules package-lock.json
+# ============================================
+# NGINX HELPERS & CLI OPTIONS
+# ============================================
 
-print_substep "Clearing npm cache"
-npm cache clean --force 2>/dev/null || true
-print_success "Backend cleaned successfully"
+# Parse simple CLI flags
+NGINX_ONLY=false
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --nginx-only)
+            NGINX_ONLY=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--nginx-only]"
+            exit 0
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
 
-echo ""
-print_info "🎥 Uploads directory at /home/reactmaster/uploads will be preserved"
-print_info "   All video files and user content will remain intact"
-echo ""
+# Detect nginx user on this system
+detect_nginx_user() {
+    if id -u www-data >/dev/null 2>&1; then
+        NGINX_USER="www-data"
+    elif id -u nginx >/dev/null 2>&1; then
+        NGINX_USER="nginx"
+    elif id -u _www >/dev/null 2>&1; then
+        NGINX_USER="_www"
+    else
+        NGINX_USER="root"
+    fi
+}
 
-# Install backend dependencies
-print_step "Installing backend dependencies (production mode)..."
-npm install --production || print_error "Backend npm install failed"
-print_success "Backend dependencies installed"
+# Ensure nginx log files exist and are writable by the nginx runtime user
+ensure_nginx_log_permissions() {
+    detect_nginx_user
+
+    print_step "Ensuring /var/log/nginx exists and spryclips log files are present"
+    sudo mkdir -p /var/log/nginx || print_warn "Failed to create /var/log/nginx"
+    sudo touch /var/log/nginx/spryclips.access.log /var/log/nginx/spryclips.error.log 2>/dev/null || true
+
+    print_step "Setting ownership to $NGINX_USER and permissions to 664 for spryclips logs"
+    sudo chown $NGINX_USER:$NGINX_USER /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chown spryclips log files"
+    sudo chmod 664 /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chmod spryclips log files"
+    sudo chmod 755 /var/log/nginx 2>/dev/null || print_warn "Failed to chmod /var/log/nginx"
+
+    print_success "Nginx log files and permissions configured (owner: $NGINX_USER)"
+}
+
+# Write nginx config (uses ACTIVE_PORT variable)
+write_nginx_config() {
+    NGINX_BACKUP="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
+    print_step "Backing up current nginx config (if present)"
+    sudo cp $NGINX_CONFIG $NGINX_BACKUP 2>/dev/null || print_warn "No existing nginx config to backup"
+    print_success "Backup created: $NGINX_BACKUP"
+
+    print_step "Writing nginx configuration (pointing to active backend on port $ACTIVE_PORT)..."
+    sudo tee $NGINX_CONFIG > /dev/null <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/spryclips;
+    index index.html;
+
+    access_log /var/log/nginx/spryclips.access.log;
+    error_log /var/log/nginx/spryclips.error.log warn;
+
+    # ACME challenge for Let's Encrypt
+    location /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        allow all;
+    }
+
+    # Deny access to hidden files
+    location ~ /\\. {
+        deny all;
+    }
+
+    # Processed videos (thumbnails, etc.) - MUST come before /uploads/ and /
+    location /processed/ {
+        alias /home/reactmaster/uploads/processed/;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        if (\$request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        access_log off;
+    }
+
+    # Uploads directory - serve uploaded files
+    location /uploads/ {
+        alias /home/reactmaster/uploads/;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        if (\$request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        access_log off;
+    }
+
+    # React SPA - catch all (MUST come last)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # Static file caching
+    location ~* \\\.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\\$ {
+        try_files \$uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    # API proxy - preserve /api path
+    location /api/ {
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        client_max_body_size 500M;
+        proxy_buffering off;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 90s;
+        proxy_send_timeout 90s;
+    }
+
+    # WebSocket / Socket.IO
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400;
+        proxy_buffering off;
+    }
+}
+EOF
+
+    sudo chown root:root $NGINX_CONFIG || print_warn "Failed to set ownership on nginx config"
+    sudo chmod 644 $NGINX_CONFIG || print_warn "Failed to set permissions on nginx config"
+
+    # Ensure log files & perms are correct
+    ensure_nginx_log_permissions
+
+    print_step "Testing nginx configuration syntax..."
+    sudo nginx -t || print_error "Nginx config test failed"
+    print_success "Nginx configuration syntax is valid"
+
+    print_step "Reloading nginx (graceful reload)..."
+    sudo systemctl reload nginx || print_error "Nginx reload failed"
+    print_success "Nginx reloaded successfully"
+}
+
+# If invoked in nginx-only mode, apply config and exit early
+if [ "$NGINX_ONLY" = true ]; then
+    print_section "🔧 NGINX-ONLY MODE"
+    if [ -f "$STATE_FILE" ]; then
+        ACTIVE_ENV=$(cat "$STATE_FILE")
+    else
+        ACTIVE_ENV="blue"
+        print_warn "State file not found; defaulting to blue"
+    fi
+
+    if [ "$ACTIVE_ENV" == "blue" ]; then
+        ACTIVE_PORT=$PORT_BLUE
+    else
+        ACTIVE_PORT=$PORT_GREEN
+    fi
+
+    ensure_nginx_log_permissions
+    write_nginx_config
+
+    print_success "Nginx configuration applied (nginx-only)"
+    exit 0
+fi
 
 # ============================================
 # UPLOADS DIRECTORY SETUP
@@ -492,197 +676,9 @@ fi
 # ============================================
 print_section "🔧 CONFIGURING NGINX WEB SERVER"
 
-# Backup existing config
-print_step "Creating backup of current nginx configuration..."
-BACKUP_FILE="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
-sudo cp $NGINX_CONFIG $BACKUP_FILE || true
-print_success "Backup created: $BACKUP_FILE"
-
-# Write new config with active backend port
-print_step "Writing nginx configuration (pointing to $ACTIVE_ENV on port $ACTIVE_PORT)..."
-sudo tee $NGINX_CONFIG > /dev/null <<EOF
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    # server_name spryclips.com www.spryclips.com spryclip.com www.spryclip.com;
-
-    root /var/www/spryclips;
-    index index.html;
-
-    access_log /var/log/nginx/spryclips.access.log;
-    error_log /var/log/nginx/spryclips.error.log warn;
-
-    # ACME challenge for Let's Encrypt
-    location /.well-known/acme-challenge/ {
-        root /var/www/letsencrypt;
-        allow all;
-    }
-
-    # Deny access to hidden files
-    location ~ /\. {
-        deny all;
-    }
-
-    # Processed videos (thumbnails, etc.) - MUST come before /uploads/ and /
-    location /processed/ {
-        alias /home/reactmaster/uploads/processed/;
-        
-        # Security headers
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        
-        # Cache control
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-        
-        # CORS headers
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
-        
-        # Handle OPTIONS requests for CORS preflight
-        if (\$request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin "*";
-            add_header Access-Control-Allow-Methods "GET, OPTIONS";
-            add_header Content-Length 0;
-            add_header Content-Type text/plain;
-            return 204;
-        }
-        
-        # Allow all file types
-        types {
-            image/jpeg jpg jpeg;
-            image/png png;
-            image/gif gif;
-            video/mp4 mp4;
-            video/webm webm;
-        }
-        
-        access_log off;
-    }
-
-    # Uploads directory - serve uploaded files
-    location /uploads/ {
-        alias /home/reactmaster/uploads/;
-        
-        # Security headers
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        
-        # Cache control for static files
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-        
-        # Enable CORS for video/image loading
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
-        
-        # Handle OPTIONS requests for CORS preflight
-        if (\$request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin "*";
-            add_header Access-Control-Allow-Methods "GET, OPTIONS";
-            add_header Content-Length 0;
-            add_header Content-Type text/plain;
-            return 204;
-        }
-        
-        # Disable access log for uploads (optional, for performance)
-        access_log off;
-        
-        # Allow all file types
-        types {
-            video/mp4 mp4;
-            video/webm webm;
-            video/quicktime mov;
-            video/x-msvideo avi;
-            video/x-matroska mkv;
-            image/jpeg jpg jpeg;
-            image/png png;
-            image/gif gif;
-            application/pdf pdf;
-        }
-    }
-
-    # React SPA - catch all (MUST come last)
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Static file caching
-    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\$ {
-        try_files \$uri =404;
-        access_log off;
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000, immutable";
-    }
-
-    # API proxy - preserve /api path
-    location /api/ {
-        proxy_pass http://127.0.0.1:$ACTIVE_PORT;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        client_max_body_size 500M;
-        proxy_buffering off;
-        proxy_connect_timeout 60s;
-        proxy_read_timeout 90s;
-        proxy_send_timeout 90s;
-    }
-
-    # WebSocket / Socket.IO
-    location /socket.io/ {
-        proxy_pass http://127.0.0.1:$ACTIVE_PORT/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_read_timeout 86400;
-        proxy_buffering off;
-    }
-}
-EOF
-
-print_success "Nginx configuration written successfully"
-
-# Verify nginx config
-print_step "Verifying nginx configuration..."
-CONFIG_LINES=$(sudo wc -l $NGINX_CONFIG | awk '{print $1}')
-print_substep "Configuration file: $CONFIG_LINES lines"
-
-print_substep "Checking web root directive..."
-if sudo grep -q "root /var/www" $NGINX_CONFIG; then
-    print_success "Web root directive found"
-else
-    print_warn "Web root directive not found!"
-fi
-
-print_substep "Checking API proxy configuration..."
-if sudo grep -q "location /api/" $NGINX_CONFIG; then
-    print_success "API proxy configuration found"
-else
-    print_warn "API location block not found!"
-fi
-
-# Test nginx syntax
-print_step "Testing nginx configuration syntax..."
-sudo nginx -t || print_error "Nginx config test failed"
-print_success "Nginx configuration syntax is valid"
-
-# Restart nginx
-print_step "Restarting nginx service..."
-sudo systemctl restart nginx || print_error "Nginx restart failed"
-print_success "Nginx restarted successfully"
-
-print_step "Waiting for nginx to fully start..."
-sleep 2
-print_success "Nginx is ready"
+# Ensure log files and permissions then write config & reload
+ensure_nginx_log_permissions
+write_nginx_config
 
 # ============================================
 # SERVICE STATUS CHECK

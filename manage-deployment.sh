@@ -115,10 +115,11 @@ show_menu() {
     print_option "6" "🛑 Stop Environment"
     print_option "7" "▶️  Start Environment"
     print_option "8" "🔍 Health Check"
-    print_option "9" "📖 View Documentation"
+    print_option "9" "🔧 Nginx Management"
+    print_option "10" "📖 View Documentation"
     print_option "0" "❌ Exit"
     echo ""
-    echo -ne "${BOLD}Enter your choice [0-9]: ${NC}"
+    echo -ne "${BOLD}Enter your choice [0-10]: ${NC}"
 }
 
 # Option 1: Deploy
@@ -510,7 +511,106 @@ health_check() {
     read -p "Press Enter to return to menu..."
 }
 
-# Option 9: Documentation
+# Option 9: Nginx Management submenu
+nginx_management() {
+    clear
+    echo -e "${BLUE}${BOLD}"
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║          NGINX MANAGEMENT                                   ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+
+    print_option "1" "Check Nginx Service Status"
+    print_option "2" "Test Nginx Configuration (nginx -t)"
+    print_option "3" "Apply Nginx Configuration (from deploy script)"
+    print_option "4" "Create/Fix Nginx Log Files & Permissions"
+    print_option "5" "Repair / Recreate Default Nginx Config"
+    print_option "6" "Restart Nginx"
+    print_option "7" "Tail Spryclips Nginx Logs"
+    print_option "8" "Back to Main Menu"
+    echo ""
+    echo -ne "${BOLD}Enter your choice [1-8]: ${NC}"
+    read nginx_choice
+
+    case $nginx_choice in
+        1)
+            echo ""
+            print_info "Checking Nginx service status..."
+            if sudo systemctl is-active --quiet nginx; then
+                print_success "Nginx is running"
+            else
+                print_warn "Nginx is not running"
+            fi
+            echo ""
+            echo -e "${BOLD}Full status:${NC}"
+            echo ""
+            sudo systemctl status nginx --no-pager -l | head -n 20 || true
+            ;;
+        2)
+            echo ""
+            print_info "Testing nginx configuration syntax..."
+            if sudo nginx -t; then
+                print_success "Nginx configuration syntax OK"
+            else
+                print_error "Nginx configuration syntax test failed"
+            fi
+            ;;
+        3)
+            echo ""
+            print_warn "This will run ./deploy-production.sh --nginx-only to write the nginx config and restart nginx"
+            echo ""
+            read -p "Proceed? [y/N]: " proceed
+            if [[ "$proceed" =~ ^[Yy]$ ]]; then
+                cd ~/Tiktok_clone || { print_error "Project directory not found"; return; }
+                print_step "Running deploy-production.sh --nginx-only"
+                ./deploy-production.sh --nginx-only || print_error "deploy-production.sh --nginx-only failed"
+                # Ensure log perms after deploy script runs
+                ensure_nginx_log_permissions
+                print_success "Nginx configuration applied via deploy script"
+            else
+                print_info "Operation cancelled"
+            fi
+            ;;
+        4)
+            echo ""
+            print_info "Ensuring nginx log files and permissions..."
+            ensure_nginx_log_permissions
+            ;;
+        5)
+            echo ""
+            print_warn "This will backup existing nginx config and write a recommended default config"
+            read -p "Proceed? [y/N]: " proceed
+            if [[ "$proceed" =~ ^[Yy]$ ]]; then
+                repair_nginx_config
+            else
+                print_info "Operation cancelled"
+            fi
+            ;;
+        6)
+            echo ""
+            print_info "Restarting nginx service..."
+            sudo systemctl restart nginx && print_success "Nginx restarted successfully" || print_error "Failed to restart nginx"
+            ;;
+        7)
+            echo ""
+            print_info "Tailing last 200 lines of SpryClips nginx error log..."
+            sudo tail -n 200 /var/log/nginx/spryclips.error.log || print_warn "Log file not found"
+            ;;
+        8)
+            return
+            ;;
+        *)
+            print_error "Invalid choice"
+            ;;
+    esac
+
+    echo ""
+    read -p "Press Enter to return to Nginx menu..."
+    nginx_management
+}
+
+# Option 10: Documentation
 view_documentation() {
     clear
     echo -e "${BLUE}${BOLD}"
@@ -538,12 +638,162 @@ view_documentation() {
     read -p "Press Enter to return to menu..."
 }
 
+# Helper: Ensure nginx log files exist and have proper ownership/permissions
+ensure_nginx_log_permissions() {
+    # Determine nginx runtime user
+    if id -u www-data >/dev/null 2>&1; then
+        NGINX_USER="www-data"
+    elif id -u nginx >/dev/null 2>&1; then
+        NGINX_USER="nginx"
+    else
+        NGINX_USER="root"
+    fi
+
+    print_step "Creating /var/log/nginx and spryclips log files if needed"
+    sudo mkdir -p /var/log/nginx || print_warn "Failed to create /var/log/nginx"
+    sudo touch /var/log/nginx/spryclips.access.log /var/log/nginx/spryclips.error.log 2>/dev/null || true
+
+    print_step "Setting ownership to $NGINX_USER and permissions to 664 for spryclips logs"
+    sudo chown $NGINX_USER:$NGINX_USER /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chown spryclips log files"
+    sudo chmod 664 /var/log/nginx/spryclips.* 2>/dev/null || print_warn "Failed to chmod spryclips log files"
+    sudo chmod 755 /var/log/nginx 2>/dev/null || print_warn "Failed to chmod /var/log/nginx"
+
+    print_success "Nginx log files and permissions configured (owner: $NGINX_USER)"
+}
+
+# Helper: Backup and write a recommended nginx config (compatible with deploy script)
+repair_nginx_config() {
+    NGINX_CONFIG="/etc/nginx/sites-available/default"
+    BACKUP_FILE="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
+
+    print_step "Backing up current nginx config (if present)"
+    sudo cp $NGINX_CONFIG $BACKUP_FILE 2>/dev/null || print_warn "No existing nginx config to backup"
+    print_success "Backup created: $BACKUP_FILE"
+
+    # Determine active port from state file
+    if [ -f "$STATE_FILE" ]; then
+        ACTIVE_ENV=$(cat "$STATE_FILE")
+        if [ "$ACTIVE_ENV" == "blue" ]; then
+            ACTIVE_PORT=$PORT_BLUE
+        else
+            ACTIVE_PORT=$PORT_GREEN
+        fi
+    else
+        ACTIVE_PORT=$PORT_BLUE
+        print_warn "State file not found; defaulting to port $ACTIVE_PORT"
+    fi
+
+    print_step "Writing recommended nginx configuration (proxying /api to port $ACTIVE_PORT)"
+    sudo tee $NGINX_CONFIG > /dev/null <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/spryclips;
+    index index.html;
+
+    access_log /var/log/nginx/spryclips.access.log;
+    error_log /var/log/nginx/spryclips.error.log warn;
+
+    location /processed/ {
+        alias /home/reactmaster/uploads/processed/;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        if (\$request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        access_log off;
+    }
+
+    location /uploads/ {
+        alias /home/reactmaster/uploads/;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        if (\$request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        access_log off;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location ~* \\\.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot|json|map)\\$ {
+        try_files \$uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        client_max_body_size 500M;
+        proxy_buffering off;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:$ACTIVE_PORT/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400;
+        proxy_buffering off;
+    }
+}
+EOF
+
+    sudo chown root:root $NGINX_CONFIG || print_warn "Failed to set ownership on nginx config"
+    sudo chmod 644 $NGINX_CONFIG || print_warn "Failed to set permissions on nginx config"
+
+    # Ensure log files and permissions
+    ensure_nginx_log_permissions
+
+    print_step "Testing nginx syntax..."
+    if sudo nginx -t; then
+        print_success "Nginx configuration syntax is valid"
+    else
+        print_error "Nginx config test failed. Restored backup at $BACKUP_FILE?"
+    fi
+
+    print_step "Reloading nginx (graceful reload)..."
+    sudo systemctl reload nginx && print_success "Nginx reloaded successfully" || print_error "Nginx reload failed"
+}
+
 # Main loop
 main() {
     while true; do
         show_menu
         read choice
-        
+
         case $choice in
             1)
                 deploy_new_version
@@ -570,6 +820,9 @@ main() {
                 health_check
                 ;;
             9)
+                nginx_management
+                ;;
+            10)
                 view_documentation
                 ;;
             0)
