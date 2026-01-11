@@ -14,6 +14,10 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Configuration (centralized)
 const { PORT, PUBLIC_URL } = require('./utils/config');
 
+// Set umask to 002 for proper file permissions (files: 664, dirs: 775)
+// This ensures uploaded files are group-writable for nginx (www-data) access
+process.umask(0o002);
+
 // Log startup info
 console.log('🔧 Starting application...');
 console.log(`📁 Working directory: ${__dirname}`);

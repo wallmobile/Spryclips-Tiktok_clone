@@ -340,7 +340,7 @@ if [ -n "$SKIP_OIDC" ]; then
 fi
 
 # Start with environment variables (not using ecosystem.config.js for blue-green)
-# Note: --umask 002 ensures new files are created with group-writable permissions (664)
+# Note: umask 002 set at script start ensures files are created with group-writable permissions (664)
 NODE_ENV=production \
 PORT=$TARGET_PORT \
 MONGODB_URI="mongodb+srv://admin:tR0hD8ODPxICuafh@ac-xotupu2.q6qrciv.mongodb.net/spryclips?retryWrites=true&w=majority" \
@@ -353,7 +353,7 @@ EMAIL_SERVICE="gmail" \
 EMAIL_FROM="SpryClips <bipul.kumar3384@gmail.com>" \
 GMAIL_USER="bipul.kumar3384@gmail.com" \
 GMAIL_APP_PASSWORD="szynffjxrpripdhm" \
-pm2 start index.js --name $TARGET_APP --umask 002 --max-memory-restart 1G --update-env || print_error "PM2 start failed"
+pm2 start index.js --name $TARGET_APP --max-memory-restart 1G --update-env || print_error "PM2 start failed"
 
 print_success "Target environment started successfully on port $TARGET_PORT"
 
