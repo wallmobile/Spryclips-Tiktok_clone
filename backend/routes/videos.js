@@ -414,9 +414,24 @@ router.get('/:id/download', asyncHandler(async (req, res) => {
     throw new AppError('Video file unavailable', 404, true, { code: 'VIDEO_FILE_MISSING' });
   }
 
+  // Explicitly set CORS headers for download endpoint
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://spryclips.com',
+    'https://www.spryclips.com'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+
   const videoUrl = video.url;
   const fileName = `video-${video._id}.mp4`;
-  console.log(`Download request for video ${videoId}, URL: ${videoUrl}`);
+  console.log(`Download request for video ${videoId}, URL: ${videoUrl}, Origin: ${origin}`);
 
   // Check if it's an absolute URL (http:// or https://)
   if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
