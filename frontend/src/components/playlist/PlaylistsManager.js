@@ -418,15 +418,72 @@ const PlaylistsManager = () => {
 
   const handleLocalFileAdd = async (file) => {
     if (!file || !selectedPlaylist) return;
+    
+    // If not authenticated, use blob URL (temporary - will be lost on refresh)
+    if (!isAuthenticated) {
+      try {
+        const blobUrl = URL.createObjectURL(file);
+        const vid = `local-file-${Date.now()}`;
+        const lib = makeLibraryVideoFromFeed(vid, { src: blobUrl, thumbnail: '', description: file.name, username: 'local' });
+        addToPlaylistLocal(selectedPlaylist._id, lib);
+        setErrorMessage('Added local file temporarily (login to save permanently).');
+      } catch (e) {
+        console.error('Failed to add local file', e);
+        setErrorMessage('Could not add the local file.');
+      }
+      return;
+    }
+
+    // If authenticated, upload to backend for permanent storage
     try {
-      const blobUrl = URL.createObjectURL(file);
-      const vid = `local-file-${Date.now()}`;
-      const lib = makeLibraryVideoFromFeed(vid, { src: blobUrl, thumbnail: '', description: file.name, username: 'local' });
-      addToPlaylistLocal(selectedPlaylist._id, lib);
-      setErrorMessage('Added local file to playlist.');
+      setErrorMessage('Uploading file...');
+      
+      // Create FormData to upload the video
+      const formData = new FormData();
+      formData.append('video', file);
+      
+      // Add minimal metadata
+      const metadata = {
+        caption: file.name,
+        privacy: 'private', // Keep playlist videos private by default
+        status: 'ready'
+      };
+      formData.append('metadata', JSON.stringify(metadata));
+
+      // Upload video to backend
+      const apiUrl = window.APP_CONFIG?.API_URL || '';
+      const uploadEndpoint = apiUrl ? `${apiUrl}/api/upload` : '/api/upload';
+      
+      const response = await fetch(uploadEndpoint, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Upload response:', result); // Debug log
+      
+      // Backend returns: { success: true, message: '...', video: { id: '...', status: '...', url: '...', thumbnail: '...' } }
+      const uploadedVideoId = result.video?.id || result.video?._id || result.id || result._id;
+
+      if (!uploadedVideoId) {
+        console.error('No video ID in response:', result);
+        throw new Error('No video ID returned from upload');
+      }
+
+      console.log('Video uploaded successfully with ID:', uploadedVideoId);
+
+      // Add the uploaded video to the playlist
+      await addVideoToPlaylistRequest(selectedPlaylist._id, uploadedVideoId);
+      await syncPlaylists();
+      setErrorMessage('File uploaded and added to playlist successfully!');
     } catch (e) {
-      console.error('Failed to add local file', e);
-      setErrorMessage('Could not add the local file.');
+      console.error('Failed to upload and add local file', e);
+      setErrorMessage(`Upload failed: ${e.message || 'Unknown error'}. File not added to playlist.`);
     }
   };
 

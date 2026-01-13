@@ -256,7 +256,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
         id: 'language',
         label: 'Language',
         icon: 'fa-globe',
-        action: 'language'
+        action: 'none'
       },
       {
         id: 'dark_mode',
@@ -291,11 +291,11 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
       case 'submenu-route':
         setActiveSubmenu((prev) => (prev === item.id ? null : item.id));
         break;
-      case 'language':
-        setActiveSubmenu((prev) => (prev === 'language' ? null : 'language'));
-        break;
       case 'toggle-theme':
         handleThemeToggle();
+        break;
+      case 'none':
+        // Do nothing - static display only
         break;
       default:
         break;
@@ -362,7 +362,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
           const isLanguageItem = item.id === 'language';
           const isThemeItem = item.id === 'dark_mode';
           const secondaryLabel = isLanguageItem
-            ? selectedLanguage
+            ? 'English (US)'
             : isThemeItem
             ? darkMode ? 'ON' : 'OFF'
             : null;
@@ -378,7 +378,7 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
                 <div className="more-menu-right">
                   {item.badge && <span className="more-badge"></span>}
                   {secondaryLabel && <span className="more-menu-secondary">{secondaryLabel}</span>}
-                  {(item.action === 'submenu-route' || item.action === 'language') && (
+                  {(item.action === 'submenu-route') && (
                     <i className="fa-solid fa-chevron-right"></i>
                   )}
                   {item.action === 'toggle-theme' && (
@@ -398,24 +398,6 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
                     >
                       <div className="more-menu-left">
                         <span>{subItem.label}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {activeSubmenu === 'language' && isLanguageItem && (
-                <div className="more-submenu">
-                  {languageSubmenu.map((lang) => (
-                    <button
-                      key={lang.id}
-                      className="more-submenu-item"
-                      onClick={() => handleLanguageSelect(lang)}
-                      type="button"
-                    >
-                      <div className="more-menu-left">
-                        {lang.icon && <i className={`fa-solid ${lang.icon}`}></i>}
-                        <span>{lang.label}</span>
                       </div>
                     </button>
                   ))}
