@@ -218,7 +218,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
   const [loadingMonetizationStats, setLoadingMonetizationStats] = useState(false);
   const [creators, setCreators] = useState([]);
   const [creatorsPagination, setCreatorsPagination] = useState({ page: 1, limit: 20, total: 0 });
-  const [creatorsStatus, setCreatorsStatus] = useState('approved');
+  const [creatorsStatus, setCreatorsStatus] = useState('all');
   const [creatorsSearch, setCreatorsSearch] = useState('');
   const [loadingCreators, setLoadingCreators] = useState(false);
   const [adRevenue, setAdRevenue] = useState([]);
@@ -5386,6 +5386,7 @@ const AdminPanel = ({ onClose, mode = 'modal' }) => {
                   }}
                   className="admin-filter-select"
                 >
+                  <option value="all">All</option>
                   <option value="approved">Approved</option>
                   <option value="pending">Pending</option>
                   <option value="rejected">Rejected</option>

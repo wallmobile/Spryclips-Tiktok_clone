@@ -63,9 +63,9 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
       subItems: [
         { id: 'videos', label: 'Videos' },
         { id: 'comments', label: 'Comments' },
-        { id: 'ai-flags', label: 'AI Flags' },
+        // { id: 'ai-flags', label: 'AI Flags' },
         { id: 'live-streams', label: 'Live Streams' },
-        { id: 'copyright', label: 'Copyright' }
+        // { id: 'copyright', label: 'Copyright' }
       ]
     },
     {
@@ -81,20 +81,20 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         { id: 'takeover', label: 'Takeover Alerts' }
       ]
     },
-    {
-      id: 'monetization',
-      icon: 'fa-dollar-sign',
-      label: 'Monetization',
-      subItems: [
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'creators', label: 'Creators' },
-        { id: 'ad-revenue', label: 'Ad Revenue' },
-        { id: 'gifts-coins', label: 'Gifts & Coins' },
-        { id: 'withdrawals', label: 'Withdrawals' },
-        { id: 'tax-documents', label: 'Tax Documents' },
-        { id: 'brand-deals', label: 'Brand Deals' }
-      ]
-    },
+    // {
+    //   id: 'monetization',
+    //   icon: 'fa-dollar-sign',
+    //   label: 'Monetization',
+    //   subItems: [
+    //     { id: 'dashboard', label: 'Dashboard' },
+    //     { id: 'creators', label: 'Creators' },
+    //     { id: 'ad-revenue', label: 'Ad Revenue' },
+    //     { id: 'gifts-coins', label: 'Gifts & Coins' },
+    //     { id: 'withdrawals', label: 'Withdrawals' },
+    //     { id: 'tax-documents', label: 'Tax Documents' },
+    //     { id: 'brand-deals', label: 'Brand Deals' }
+    //   ]
+    // },
     {
       id: 'analytics',
       icon: 'fa-chart-bar',
