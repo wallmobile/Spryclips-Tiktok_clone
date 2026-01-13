@@ -145,9 +145,28 @@ const VideoPlayer = ({
       setShowMoreOptions(false);
       return;
     }
+    
+    // Get proper download URL - fix localhost issue in production
+    let downloadUrl = safeVideo.url;
+    
+    // If URL contains localhost and we're in production, fix it
+    if (downloadUrl.includes('localhost')) {
+      // Get current base URL from APP_CONFIG
+      const baseUrl = (typeof window !== 'undefined' && window.APP_CONFIG?.UPLOADS_BASE_URL) 
+        ? window.APP_CONFIG.UPLOADS_BASE_URL.replace(/\/uploads$/, '')
+        : window.location.origin;
+      
+      // Extract path after domain (e.g., /uploads/video.mp4 or /processed/video.mp4)
+      const pathMatch = downloadUrl.match(/\/(uploads|processed)\/.+$/);
+      if (pathMatch) {
+        downloadUrl = baseUrl + pathMatch[0];
+      }
+    }
+    
     const link = document.createElement('a');
-    link.href = safeVideo.url;
+    link.href = downloadUrl;
     link.download = `tiktok_video_${safeVideo.id}.mp4`;
+    link.setAttribute('target', '_blank');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
