@@ -82,27 +82,31 @@ const EnhancedShare = ({ video, profile, type = 'video', onClose }) => {
     setDownloadProgress(0);
 
     try {
-      const response = await fetch(video.url);
-      const blob = await response.blob();
+      // Use backend download API endpoint instead of direct video URL
+      const apiUrl = (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) || '';
+      const downloadUrl = `${apiUrl}/api/videos/${video.id}/download`;
+
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'video/mp4'
+        }
+      });
       
-      // Simulate progress
-      const reader = blob.stream().getReader();
-      const contentLength = blob.size;
-      let receivedLength = 0;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        receivedLength += value.length;
-        setDownloadProgress((receivedLength / contentLength) * 100);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const blob = await response.blob();
+      setDownloadProgress(100);
 
-      // Create download link with watermark
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `tiktok-video-${video.id}.mp4`;
+      link.setAttribute('target', '_blank');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
