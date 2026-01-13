@@ -68,13 +68,14 @@ const Sidebar = () => {
         action: 'route',
         path: '/more/studio'
       },
-      {
-        id: 'create_effects',
-        label: 'Create Spryclips effects',
-        icon: 'fa-wand-magic-sparkles',
-        action: 'route',
-        path: '/more/effects'
-      },
+      // Hidden: Create Spryclips effects
+      // {
+      //   id: 'create_effects',
+      //   label: 'Create Spryclips effects',
+      //   icon: 'fa-wand-magic-sparkles',
+      //   action: 'route',
+      //   path: '/more/effects'
+      // },
       {
         id: 'growth_tools',
         label: 'Growth tools',
@@ -90,8 +91,8 @@ const Sidebar = () => {
         id: 'language',
         label: 'Language',
         icon: 'fa-globe',
-        action: 'language',
-        value: selectedLanguage
+        action: 'none',
+        value: 'English (US)'
       },
       {
         id: 'dark_mode',
@@ -238,11 +239,11 @@ const Sidebar = () => {
       case 'submenu':
         setActiveSubmenu(activeSubmenu === item.id ? null : item.id);
         break;
-      case 'language':
-        setActiveSubmenu(activeSubmenu === 'language' ? null : 'language');
-        break;
       case 'toggle-theme':
         handleThemeToggle();
+        break;
+      case 'none':
+        // Do nothing - static display only
         break;
       default:
         break;
@@ -394,7 +395,7 @@ const Sidebar = () => {
                       </div>
                     </div>
                   )}
-                  {(item.action === 'submenu' || isLanguageItem) && (
+                  {(item.action === 'submenu') && (
                     <i className={`fa-solid fa-chevron-${isActive ? 'up' : 'down'} sidebar-chevron`}></i>
                   )}
                 </div>
@@ -414,21 +415,7 @@ const Sidebar = () => {
                   </div>
                 )}
 
-                {/* Submenu for Language */}
-                {isActive && isLanguageItem && (
-                  <div className="sidebar-submenu">
-                    {languageSubmenu.map((lang) => (
-                      <div
-                        key={lang.id}
-                        className="sidebar-submenu-item"
-                        onClick={() => handleLanguageSelect(lang)}
-                      >
-                        {lang.icon && <i className={`fa-solid ${lang.icon}`}></i>}
-                        <span>{lang.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Language submenu removed - now static display only */}
               </div>
             );
           })}

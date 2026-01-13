@@ -233,13 +233,14 @@ const More = ({ onClose = () => {}, mode = 'overlay' }) => {
         action: 'route',
         path: '/more/studio'
       },
-      {
-        id: 'create_effects',
-        label: 'Create Spryclips effects',
-        icon: 'fa-wand-magic-sparkles',
-        action: 'route',
-        path: '/more/effects'
-      },
+      // Hidden: Create Spryclips effects
+      // {
+      //   id: 'create_effects',
+      //   label: 'Create Spryclips effects',
+      //   icon: 'fa-wand-magic-sparkles',
+      //   action: 'route',
+      //   path: '/more/effects'
+      // },
       {
         id: 'growth_tools',
         label: 'Growth tools',
