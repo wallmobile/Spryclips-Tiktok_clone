@@ -6,6 +6,89 @@ const Comment = require('../models/Comment');
 const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 
+// ==================== GET TOP PERFORMING VIDEOS ====================
+// IMPORTANT: This must come BEFORE /videos/:videoId to avoid route conflicts
+router.get('/videos/top', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'views'; // views, likes, engagement
+
+    // Get user's videos
+    const videos = await Video.find({ user: userId, status: 'ready' })
+      .select('url thumbnail description createdAt')
+      .lean();
+
+    if (!videos || videos.length === 0) {
+      return res.json({
+        success: true,
+        topVideos: []
+      });
+    }
+
+    const videoIds = videos.map(v => v._id);
+    
+    // Get analytics for these videos
+    const allAnalytics = await Analytics.find({ video: { $in: videoIds } }).lean();
+
+    const analyticsMap = {};
+    allAnalytics.forEach(analytics => {
+      analyticsMap[analytics.video.toString()] = analytics;
+    });
+
+    // Combine video info with analytics
+    const topVideos = videos.map(video => {
+      const analytics = analyticsMap[video._id.toString()] || {};
+      const views = analytics.totalViews || 0;
+      const likes = analytics.totalLikes || 0;
+      const comments = analytics.totalComments || 0;
+      const shares = analytics.totalShares || 0;
+      
+      const engagementRate = views > 0
+        ? ((likes + comments + shares) / views) * 100
+        : 0;
+
+      return {
+        video: {
+          _id: video._id,
+          url: video.url,
+          thumbnail: video.thumbnail,
+          description: video.description,
+          createdAt: video.createdAt
+        },
+        metrics: {
+          views: views,
+          likes: likes,
+          comments: comments,
+          shares: shares,
+          engagementRate: parseFloat(engagementRate.toFixed(2))
+        }
+      };
+    });
+
+    // Sort by requested metric
+    topVideos.sort((a, b) => {
+      if (sortBy === 'engagement') {
+        return b.metrics.engagementRate - a.metrics.engagementRate;
+      }
+      return (b.metrics[sortBy] || 0) - (a.metrics[sortBy] || 0);
+    });
+
+    // Return top N videos
+    res.json({
+      success: true,
+      topVideos: topVideos.slice(0, limit)
+    });
+  } catch (error) {
+    console.error('Error fetching top videos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch top videos',
+      error: error.message
+    });
+  }
+});
+
 // ==================== GET VIDEO ANALYTICS ====================
 router.get('/videos/:videoId', authMiddleware, async (req, res) => {
   try {
@@ -381,64 +464,6 @@ router.get('/videos', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch videos analytics',
-      error: error.message
-    });
-  }
-});
-
-// ==================== GET TOP PERFORMING VIDEOS ====================
-router.get('/videos/top', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const limit = parseInt(req.query.limit) || 10;
-    const sortBy = req.query.sortBy || 'views'; // views, likes, engagement
-
-    const videos = await Video.find({ user: userId })
-      .sort({ [sortBy]: -1 })
-      .limit(limit)
-      .select('url thumbnail description views likes comments shares createdAt');
-
-    const videoIds = videos.map(v => v._id);
-    const allAnalytics = await Analytics.find({ video: { $in: videoIds } });
-
-    const analyticsMap = {};
-    allAnalytics.forEach(analytics => {
-      analyticsMap[analytics.video.toString()] = analytics;
-    });
-
-    const topVideos = videos.map(video => {
-      const analytics = analyticsMap[video._id.toString()] || {};
-      const engagementRate = video.views > 0
-        ? ((video.likes + video.comments + video.shares) / video.views) * 100
-        : 0;
-
-      return {
-        video: {
-          _id: video._id,
-          url: video.url,
-          thumbnail: video.thumbnail,
-          description: video.description,
-          createdAt: video.createdAt
-        },
-        metrics: {
-          views: analytics.views || video.views || 0,
-          likes: analytics.likes || video.likes || 0,
-          comments: analytics.comments || video.comments || 0,
-          shares: analytics.shares || video.shares || 0,
-          engagementRate: parseFloat(engagementRate.toFixed(2))
-        }
-      };
-    });
-
-    res.json({
-      success: true,
-      topVideos: topVideos
-    });
-  } catch (error) {
-    console.error('Error fetching top videos:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch top videos',
       error: error.message
     });
   }
