@@ -583,7 +583,8 @@ const MessageCenter = ({ onClose, initialUser }) => {
                     </div>
                   </div>
                   <div className="chat-actions">
-                    <button 
+                    {/* Call buttons hidden - uncomment to enable */}
+                    {/* <button 
                       className="chat-action-btn"
                       onClick={() => {
                         setCallType('audio');
@@ -602,7 +603,7 @@ const MessageCenter = ({ onClose, initialUser }) => {
                       title="Video call"
                     >
                       <i className="fa-solid fa-video"></i>
-                    </button>
+                    </button> */}
                     <button className="chat-action-btn">
                       <i className="fa-solid fa-ellipsis-vertical"></i>
                     </button>
