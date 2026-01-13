@@ -287,6 +287,12 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
     speed: Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1
   };
 
+  // Determine video status - only allow 'draft' or 'scheduled' explicitly, otherwise default to 'ready'
+  const requestedStatus = metadata?.status || req.body.status;
+  const videoStatus = (requestedStatus === 'draft' || requestedStatus === 'scheduled') 
+    ? requestedStatus 
+    : 'ready';
+
   // Generate public URL for the uploaded video
   const videoPublicUrl = `${UPLOADS_BASE_URL}/${req.file.filename}`;
 
@@ -310,7 +316,7 @@ router.post('/', authMiddleware, uploadLimiter, upload.fields([
     duetDisabled: !allowDuet,
     stitchDisabled: !allowStitch,
     metadataSnapshot: metadata || undefined,
-    status: metadata?.status || req.body.status || 'ready' // Allow setting status (e.g., 'draft')
+    status: videoStatus
   });
 
   try {
