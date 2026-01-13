@@ -1818,10 +1818,16 @@ router.get('/monetization/dashboard', async (req, res) => {
 // Get approved creators list
 router.get('/monetization/creators', async (req, res) => {
   try {
-    const { status = 'approved', page = 1, limit = 20, search = '' } = req.query;
+    const { status = 'all', page = 1, limit = 20, search = '' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const query = { creatorStatus: status };
+    const query = {};
+    
+    // Filter by creator status if not 'all'
+    if (status !== 'all') {
+      query.creatorStatus = status;
+    }
+    
     if (search) {
       query.$or = [
         { username: { $regex: search, $options: 'i' } },
