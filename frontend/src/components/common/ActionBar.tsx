@@ -809,13 +809,21 @@ const ActionBar: React.FC<ActionBarProps> = ({
 
   const handleDownload = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      // Use runtime config for production compatibility
+      const apiUrl = (window as any).APP_CONFIG?.API_URL || process.env.REACT_APP_API_URL || '';
       const downloadUrl = `${apiUrl}/api/videos/${videoId}/download`;
       
       console.log('Starting download for video:', videoId);
+      console.log('Download URL:', downloadUrl);
       
       // Fetch the video file as a blob to force download
-      const response = await fetch(downloadUrl);
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Accept': 'video/mp4,video/*'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
