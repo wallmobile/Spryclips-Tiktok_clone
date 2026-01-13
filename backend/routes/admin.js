@@ -1827,6 +1827,7 @@ router.get('/monetization/creators', async (req, res) => {
     if (status !== 'all') {
       query.creatorStatus = status;
     }
+    // For 'all', show all users regardless of creatorStatus
     
     if (search) {
       query.$or = [
@@ -1837,8 +1838,8 @@ router.get('/monetization/creators', async (req, res) => {
 
     const [creators, total] = await Promise.all([
       User.find(query)
-        .select('username email profile.avatar profile.displayName creatorStatus creatorEarnings createdAt')
-        .sort({ 'creatorEarnings.totalEarned': -1 })
+        .select('username email profile.avatar profile.displayName creatorStatus creatorEarnings createdAt videos')
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),

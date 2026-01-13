@@ -68,19 +68,19 @@ const AdminSidebar = ({ activeTab, setActiveTab, activeSubTab, setActiveSubTab, 
         // { id: 'copyright', label: 'Copyright' }
       ]
     },
-    {
-      id: 'safety',
-      icon: 'fa-shield',
-      label: 'Reports & Safety',
-      subItems: [
-        { id: 'reports', label: 'Abuse Reports' },
-        { id: 'high-risk', label: 'High Risk' },
-        { id: 'spam', label: 'Spam Alerts' },
-        { id: 'child-safety', label: 'Child Safety' },
-        { id: 'bot-detection', label: 'Bot Detection' },
-        { id: 'takeover', label: 'Takeover Alerts' }
-      ]
-    },
+    // {
+    //   id: 'safety',
+    //   icon: 'fa-shield',
+    //   label: 'Reports & Safety',
+    //   subItems: [
+    //     { id: 'reports', label: 'Abuse Reports' },
+    //     { id: 'high-risk', label: 'High Risk' },
+    //     { id: 'spam', label: 'Spam Alerts' },
+    //     { id: 'child-safety', label: 'Child Safety' },
+    //     { id: 'bot-detection', label: 'Bot Detection' },
+    //     { id: 'takeover', label: 'Takeover Alerts' }
+    //   ]
+    // },
     // {
     //   id: 'monetization',
     //   icon: 'fa-dollar-sign',
