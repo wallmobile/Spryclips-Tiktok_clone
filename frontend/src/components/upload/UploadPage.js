@@ -1681,7 +1681,8 @@ const UploadPage = ({ onClose }) => {
                       <div className="toggle-slider"></div>
                     </div>
                   </div>
-                  <div className="setting-item">
+                  {/* Duet toggle hidden - uncomment to enable */}
+                  {/* <div className="setting-item">
                     <span>Duet</span>
                     <div 
                       className={`toggle-switch ${videoData.allowDuet ? 'active' : ''}`}
@@ -1695,7 +1696,7 @@ const UploadPage = ({ onClose }) => {
                     >
                       <div className="toggle-slider"></div>
                     </div>
-                  </div>
+                  </div> */}
                   <div className="setting-item">
                     <span>Stitch</span>
                     <div 
