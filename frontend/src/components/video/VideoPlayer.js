@@ -139,37 +139,31 @@ const VideoPlayer = ({
     }
   };
 
-  const handleDownload = () => {
-    if (!safeVideo.url) {
-      console.warn('Download requested for video without a valid source', safeVideo.id);
+  const handleDownload = async () => {
+    if (!safeVideo.id) {
+      console.warn('Download requested for video without ID');
       setShowMoreOptions(false);
       return;
     }
     
-    // Get proper download URL - fix localhost issue in production
-    let downloadUrl = safeVideo.url;
-    
-    // If URL contains localhost and we're in production, fix it
-    if (downloadUrl.includes('localhost')) {
-      // Get current base URL from APP_CONFIG
-      const baseUrl = (typeof window !== 'undefined' && window.APP_CONFIG?.UPLOADS_BASE_URL) 
-        ? window.APP_CONFIG.UPLOADS_BASE_URL.replace(/\/uploads$/, '')
-        : window.location.origin;
+    try {
+      // Use backend download API endpoint for proper CORS and authentication
+      const apiUrl = (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) || '';
+      const downloadUrl = `${apiUrl}/api/videos/${safeVideo.id}/download`;
       
-      // Extract path after domain (e.g., /uploads/video.mp4 or /processed/video.mp4)
-      const pathMatch = downloadUrl.match(/\/(uploads|processed)\/.+$/);
-      if (pathMatch) {
-        downloadUrl = baseUrl + pathMatch[0];
-      }
+      // Create hidden link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `video-${safeVideo.id}.mp4`;
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download video. Please try again.');
     }
     
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `tiktok_video_${safeVideo.id}.mp4`;
-    link.setAttribute('target', '_blank');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     setShowMoreOptions(false);
   };
 
