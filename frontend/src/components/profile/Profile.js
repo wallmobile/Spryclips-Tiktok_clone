@@ -1710,13 +1710,19 @@ const Profile = ({ onClose, username: viewUsername }) => {
       
       // Privacy filter
       const isVideoPrivate = video.isPrivate === true || video.visibility === 'private';
+      
+      // IMPORTANT: When viewing someone else's profile, never show private videos
+      if (isViewingOtherProfile && isVideoPrivate) {
+        return false;
+      }
+      
       let matchesPrivacy = true;
       if (privacyFilter === 'public') {
         matchesPrivacy = !isVideoPrivate;
       } else if (privacyFilter === 'private') {
         matchesPrivacy = isVideoPrivate;
       }
-      // 'all' shows everything
+      // 'all' shows everything (but only if isMyProfile or not private)
       
       // Debug logging
       if (privacyFilter !== 'all') {
@@ -2567,14 +2573,17 @@ const Profile = ({ onClose, username: viewUsername }) => {
                     <i className="fa-solid fa-globe"></i>
                     Public
                   </button>
-                  <button
-                    type="button"
-                    className={`privacy-filter-btn ${privacyFilter === 'private' ? 'active' : ''}`}
-                    onClick={() => setPrivacyFilter('private')}
-                  >
-                    <i className="fa-solid fa-lock"></i>
-                    Private
-                </button>
+                  {/* Only show Private filter when viewing own profile */}
+                  {isMyProfile && (
+                    <button
+                      type="button"
+                      className={`privacy-filter-btn ${privacyFilter === 'private' ? 'active' : ''}`}
+                      onClick={() => setPrivacyFilter('private')}
+                    >
+                      <i className="fa-solid fa-lock"></i>
+                      Private
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -12,6 +12,18 @@ const authMiddleware = require('../middleware/auth');
 const { ensureAbsoluteUrl } = require('../utils/urlHelpers');
 const router = express.Router();
 
+// Helper to optionally extract userId from Authorization header or cookie
+const extractUserIdFromRequest = (req) => {
+  try {
+    const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+    if (!token || !process.env.JWT_SECRET) return null;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.userId || decoded.user || null;
+  } catch (err) {
+    return null;
+  }
+};
+
 // Helper function to create notification
 const createNotification = async (data) => {
   try {
@@ -556,6 +568,18 @@ router.get('/:id', async (req, res) => {
     const userObject = user.toObject();
     userObject.isFollowing = isFollowing;
     userObject.isPending = isPending;
+
+    // If videos were populated, hide private videos for non-owners
+    try {
+      const requesterId = extractUserIdFromRequest(req);
+      if (!requesterId || requesterId.toString() !== user._id.toString()) {
+        if (Array.isArray(userObject.videos)) {
+          userObject.videos = userObject.videos.filter(v => !v.isPrivate);
+        }
+      }
+    } catch (e) {
+      // ignore errors here and proceed
+    }
 
     res.json({ user: userObject, isFollowing, isPending });
   } catch (error) {
@@ -1461,11 +1485,19 @@ router.get('/:id/videos', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    // Find videos for this user - include all statuses except deleted
-    const videos = await Video.find({ 
-      user: user._id,
-      status: { $ne: 'deleted' } // Exclude deleted videos
-    })
+    // Determine requester identity (if any) so we can hide private videos from others
+    const requesterId = extractUserIdFromRequest(req);
+
+    // Build base query - include all statuses except deleted
+    const baseQuery = { user: user._id, status: { $ne: 'deleted' } };
+
+    // If requester is not the profile owner, exclude private videos
+    if (!requesterId || requesterId.toString() !== user._id.toString()) {
+      baseQuery.isPrivate = false;
+    }
+
+    // Find videos for this user
+    const videos = await Video.find(baseQuery)
       .populate('user', 'username profile displayName')
       .sort({ isPinned: -1, createdAt: -1 })
       .select('url thumbnail description hashtags likes comments shares views createdAt user music category transcoded status isPrivate isPinned duration processedVideos');
