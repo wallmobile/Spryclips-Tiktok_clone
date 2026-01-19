@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Comment = require('../models/Comment');
 const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
 const { cache, cacheKeys } = require('../utils/cache');
 const { sendSuccess, sendPaginated } = require('../utils/apiResponse');
 const { asyncHandler, AppError } = require('../utils/errorHandler');
@@ -43,6 +44,18 @@ const ensureObjectId = (id, label, code) => {
   }
 };
 
+// Helper to optionally extract userId from Authorization header or cookie
+const extractUserIdFromRequest = (req) => {
+  try {
+    const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+    if (!token || !process.env.JWT_SECRET) return null;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.userId || decoded.user || null;
+  } catch (err) {
+    return null;
+  }
+};
+
 // Get all videos with pagination and caching
 router.get('/', asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -50,32 +63,36 @@ router.get('/', asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
   const sortBy = req.query.sort || 'createdAt';
   const sortOrder = req.query.order === 'asc' ? 1 : -1;
-
   const cacheKey = cacheKeys.videoList({ page, limit, sortBy, sortOrder });
+
+  // Optionally include requesting user's private videos if they are authenticated
+  const currentUserId = extractUserIdFromRequest(req);
 
   // Cache will auto-expire after TTL - no need to manually invalidate
 
-  // Filter to only show videos from spryclips server
-  // Exclude videos with external URLs (YouTube, Vimeo, etc.)
-  // Allow: spryclips.com, localhost, and relative paths
-  // Also allow: Google sample bucket URLs used by our seeded sample data
-  // IMPORTANT: Exclude videos from suspended or banned users
-  const videoQuery = {
-    status: 'ready',
-    isPrivate: false,
-    $or: [
-      // Videos from spryclips.com
-      { url: { $regex: /spryclips\.com/i } },
-      // Videos from localhost (development)
-      { url: { $regex: /localhost|127\.0\.0\.1/i } },
-      // Seeded sample videos (Google Cloud Storage public bucket)
-      { url: { $regex: /commondatastorage\.googleapis\.com/i } },
-      // Relative paths (uploads/, processed/)
-      { url: { $regex: /^(uploads|processed)\// } },
-      // Videos without http/https (relative paths)
-      { url: { $not: { $regex: /^https?:\/\//i } } }
-    ]
-  };
+  // URL allow-list for videos hosted on our servers or seeded sample data
+  const baseUrlOr = [
+    { url: { $regex: /spryclips\.com/i } },
+    { url: { $regex: /localhost|127\.0\.0\.1/i } },
+    { url: { $regex: /commondatastorage\.googleapis\.com/i } },
+    { url: { $regex: /^(uploads|processed)\// } },
+    { url: { $not: { $regex: /^https?:\/\//i } } }
+  ];
+
+  // Build a query that normally excludes private videos, but allows the requesting
+  // user to see their own private videos when they are authenticated.
+  const filters = [
+    { status: 'ready' },
+    { $or: baseUrlOr }
+  ];
+
+  if (currentUserId) {
+    filters.push({ $or: [{ isPrivate: false }, { user: mongoose.Types.ObjectId(currentUserId) }] });
+  } else {
+    filters.push({ isPrivate: false });
+  }
+
+  const videoQuery = { $and: filters };
   
   // Exclude videos from suspended or banned users
   // We'll filter this in the populate or after query
@@ -86,13 +103,20 @@ router.get('/', asyncHandler(async (req, res) => {
       // Get active user IDs first
       const activeUsers = await User.find({ accountStatus: 'active' }).select('_id').lean();
       const activeUserIds = activeUsers.map(u => u._id);
-      
-      // Add user filter to exclude suspended/banned users
-      const queryWithUserFilter = {
-        ...videoQuery,
-        user: { $in: activeUserIds }
-      };
-      
+
+      // Ensure the requesting user can see their own videos even if not listed as 'active'
+      if (currentUserId) {
+        try {
+          const selfId = mongoose.Types.ObjectId(currentUserId);
+          if (!activeUserIds.find(id => id.toString() === selfId.toString())) activeUserIds.push(selfId);
+        } catch (e) {
+          // ignore invalid id
+        }
+      }
+
+      // Merge user filter with the constructed videoQuery ($and array)
+      const queryWithUserFilter = { $and: [ ...videoQuery.$and, { user: { $in: activeUserIds } } ] };
+
       const allVideos = await Video.find(queryWithUserFilter)
         .populate('user', 'username profile.avatar profile.displayName accountStatus')
         // Include music and metadata so frontend can show uploaded music info
@@ -150,10 +174,16 @@ router.get('/', asyncHandler(async (req, res) => {
     .lean()
     .limit(10000); // Safety limit
   const activeUserIdsForCount = activeUsersForCount.map(u => u._id);
-  const countQuery = {
-    ...videoQuery,
-    user: { $in: activeUserIdsForCount }
-  };
+  if (currentUserId) {
+    try {
+      const selfId = mongoose.Types.ObjectId(currentUserId);
+      if (!activeUserIdsForCount.find(id => id.toString() === selfId.toString())) activeUserIdsForCount.push(selfId);
+    } catch (e) {
+      // ignore invalid id
+    }
+  }
+
+  const countQuery = { $and: [ ...videoQuery.$and, { user: { $in: activeUserIdsForCount } } ] };
   const total = await Video.countDocuments(countQuery);
 
   sendPaginated(res, normalizedVideos, { page, limit, total }, 'Videos retrieved successfully');
@@ -177,6 +207,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   if (!video) {
     throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
+  }
+
+  // If video is private, only allow owner to retrieve it
+  if (video.isPrivate) {
+    const requesterId = extractUserIdFromRequest(req);
+    if (!requesterId || video.user.toString() !== requesterId.toString()) {
+      throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
+    }
   }
 
   // Normalize URLs to absolute paths
@@ -226,6 +264,11 @@ router.post(
       throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
     }
 
+    // Prevent liking someone else's private video
+    if (video.isPrivate && video.user && video.user._id.toString() !== req.user._id.toString()) {
+      throw new AppError('Video not found', 404, { code: 'VIDEO_NOT_FOUND' });
+    }
+
     const userId = req.user._id.toString();
     const isLiked = video.likedBy.some((id) => id.toString() === userId);
 
@@ -260,6 +303,18 @@ router.post(
 router.get('/:id/comments', asyncHandler(async (req, res) => {
   const videoId = req.params.id;
   ensureObjectId(videoId, 'video', 'VIDEO_INVALID_ID');
+
+  // Ensure private videos are not exposed to other users
+  const videoDoc = await Video.findById(videoId).select('isPrivate user');
+  if (!videoDoc) {
+    throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
+  }
+  if (videoDoc.isPrivate) {
+    const requesterId = extractUserIdFromRequest(req);
+    if (!requesterId || videoDoc.user.toString() !== requesterId.toString()) {
+      throw new AppError('Comments not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
+    }
+  }
 
   const cacheKey = cacheKeys.comments(videoId);
 
@@ -357,6 +412,11 @@ router.post('/:id/share', asyncHandler(async (req, res) => {
     throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
   }
 
+  // Do not allow sharing private videos
+  if (video.isPrivate) {
+    throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
+  }
+
   video.shares = Math.max(0, (video.shares ?? 0) + 1);
   await video.save();
 
@@ -374,6 +434,14 @@ router.get('/:id/embed', asyncHandler(async (req, res) => {
 
   if (!video) {
     throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
+  }
+
+  // Only owner can generate embed for private videos
+  if (video.isPrivate) {
+    const requesterId = extractUserIdFromRequest(req);
+    if (!requesterId || video.user.toString() !== requesterId.toString()) {
+      throw new AppError('Video not found', 404, true, { code: 'VIDEO_NOT_FOUND' });
+    }
   }
 
   const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : 'http://localhost:3000');
