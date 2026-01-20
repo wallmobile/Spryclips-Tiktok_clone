@@ -594,8 +594,9 @@ const VideoCollectionsModal = ({ onClose, video }) => {
 
           <div className="actions-column">
             <div className="actions">
-              <p style={{color: '#aaa', fontSize: '14px', margin: '0 0 12px 0', textAlign: 'center'}}>
-                👆 Click on a playlist above to save video
+              <p style={{color: '#86EFAC', fontSize: '13px', margin: '0', textAlign: 'center', lineHeight: '1.5', fontWeight: 500}}>
+                <i className="fa-solid fa-hand-pointer" style={{marginRight: 6}}></i>
+                Click a playlist to save video
               </p>
               <button onClick={(e) => {
                 console.log('Close button clicked');
