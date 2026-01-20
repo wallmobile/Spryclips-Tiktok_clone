@@ -803,6 +803,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
         break;
       case 'add-to-playlist':
         setShowMoreMenu(false);
+        console.log('[ActionBar] Opening collections modal with video:', video);
+        console.log('[ActionBar] Video ID:', videoId);
+        console.log('[ActionBar] Video object keys:', video ? Object.keys(video) : 'no video');
         setShowCollectionsModal(true);
         break;
     }

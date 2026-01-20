@@ -87,7 +87,7 @@ router.get('/', asyncHandler(async (req, res) => {
   ];
 
   if (currentUserId) {
-    filters.push({ $or: [{ isPrivate: false }, { user: mongoose.Types.ObjectId(currentUserId) }] });
+    filters.push({ $or: [{ isPrivate: false }, { user: new mongoose.Types.ObjectId(currentUserId) }] });
   } else {
     filters.push({ isPrivate: false });
   }
@@ -107,7 +107,7 @@ router.get('/', asyncHandler(async (req, res) => {
       // Ensure the requesting user can see their own videos even if not listed as 'active'
       if (currentUserId) {
         try {
-          const selfId = mongoose.Types.ObjectId(currentUserId);
+          const selfId = new mongoose.Types.ObjectId(currentUserId);
           if (!activeUserIds.find(id => id.toString() === selfId.toString())) activeUserIds.push(selfId);
         } catch (e) {
           // ignore invalid id
@@ -176,7 +176,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const activeUserIdsForCount = activeUsersForCount.map(u => u._id);
   if (currentUserId) {
     try {
-      const selfId = mongoose.Types.ObjectId(currentUserId);
+      const selfId = new mongoose.Types.ObjectId(currentUserId);
       if (!activeUserIdsForCount.find(id => id.toString() === selfId.toString())) activeUserIdsForCount.push(selfId);
     } catch (e) {
       // ignore invalid id

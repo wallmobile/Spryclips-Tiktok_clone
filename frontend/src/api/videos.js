@@ -368,6 +368,14 @@ export const promoteVideo = async (id) => {
 
 // Get all public videos (feed)
 export const getAllVideos = async () => {
+  // Don't use skipVideoRequests permanently - allow retries
+  if (skipVideoRequests && hasWarnedFeed) {
+    // After first failure, still try API occasionally (every 5th call)
+    if (Math.random() > 0.8) {
+      skipVideoRequests = false; // Reset to retry
+    }
+  }
+  
   if (skipVideoRequests) {
     return getSampleVideos();
   }
@@ -375,6 +383,9 @@ export const getAllVideos = async () => {
     const response = await api.get('/api/videos');
     const list = extractArray(response.data);
     if (list.length > 0) {
+      // Success! Reset flags
+      skipVideoRequests = false;
+      hasWarnedFeed = false;
       return normalizeVideos(list, 'api');
     }
     if (!hasWarnedFeed) {

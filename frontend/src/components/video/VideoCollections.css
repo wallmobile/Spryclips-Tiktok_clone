@@ -9,8 +9,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 999999;
   padding: 20px;
+  pointer-events: auto;
 }
 
 .video-collections-modal {
@@ -23,6 +24,9 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  position: relative;
+  z-index: 1000000;
 }
 
 .collections-header {
@@ -47,6 +51,7 @@
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s;
+  pointer-events: auto;
 }
 
 .collections-close:hover {
@@ -485,6 +490,7 @@
   padding: 20px;
   overflow-y: auto;
   max-height: calc(90vh - 80px);
+  pointer-events: auto;
 }
 
 .playlists-column {
@@ -510,6 +516,8 @@
   font-size: 14px;
   outline: none;
   transition: all 0.2s;
+  pointer-events: auto;
+  cursor: text;
 }
 
 .create-row input:focus {
@@ -534,6 +542,7 @@
   padding: 10px 20px;
   border-radius: 10px;
   cursor: pointer;
+  pointer-events: auto;
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -590,6 +599,7 @@
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
+  pointer-events: auto;
 }
 
 .playlist-item:hover {
@@ -656,6 +666,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  pointer-events: auto;
 }
 
 .actions-column button:hover:not(:disabled) {
@@ -770,7 +781,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10001;
+  z-index: 1000001;
+  pointer-events: auto;
 }
 
 .vc-modal {
@@ -778,6 +790,8 @@
   border-radius: 16px;
   padding: 24px;
   width: 90%;
+  pointer-events: auto;
+  position: relative;
   max-width: 400px;
 }
 

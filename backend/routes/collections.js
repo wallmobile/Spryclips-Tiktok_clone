@@ -121,10 +121,21 @@ const respondWithServerError = (res, error, fallbackMessage) => {
 router.post('/playlists', authMiddleware, async (req, res) => {
   try {
     const { name, description, isPublic } = req.body;
+    
+    // Validate name is provided
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Playlist name is required' });
+    }
+    
+    // Validate name length
+    if (name.trim().length > 100) {
+      return res.status(400).json({ message: 'Playlist name must be 100 characters or less' });
+    }
+    
     const playlist = new Playlist({
       user: req.user._id,
-      name,
-      description: description || '',
+      name: name.trim(),
+      description: description?.trim() || '',
       isPublic: isPublic !== false
     });
     await playlist.save();
@@ -133,8 +144,10 @@ router.post('/playlists', authMiddleware, async (req, res) => {
       $push: { playlists: playlist._id }
     });
 
+    console.log('Playlist created successfully:', playlist._id);
     res.status(201).json(playlist);
   } catch (error) {
+    console.error('Error creating playlist:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -186,10 +199,36 @@ router.get('/playlists/:id', async (req, res) => {
 router.post('/playlists/:id/videos', authMiddleware, async (req, res) => {
   try {
     const { videoId } = req.body;
+    
+    // Validate videoId is provided
+    if (!videoId) {
+      return res.status(400).json({ message: 'Video ID is required' });
+    }
+    
+    // Validate videoId is a valid ObjectId
+    if (!isValidObjectId(videoId)) {
+      return res.status(400).json({ message: 'Invalid video ID format' });
+    }
+    
+    // Check if video exists
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+    
+    // Check if video is accessible (not private or user owns it)
+    if (video.isPrivate && video.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Cannot add private video to playlist' });
+    }
+    
     const playlist = await Playlist.findById(req.params.id);
     
-    if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ message: 'Playlist not found or unauthorized' });
+    if (!playlist) {
+      return res.status(404).json({ message: 'Playlist not found' });
+    }
+    
+    if (playlist.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized to modify this playlist' });
     }
     
     const existingIndex = playlist.videos.findIndex(v => v.video.toString() === videoId);
@@ -203,8 +242,19 @@ router.post('/playlists/:id/videos', authMiddleware, async (req, res) => {
     });
     await playlist.save();
     
+    // Populate the playlist before sending response
+    await playlist.populate({
+      path: 'videos.video',
+      select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+      populate: {
+        path: 'user',
+        select: 'username profile'
+      }
+    });
+    
     res.json(playlist);
   } catch (error) {
+    console.error('Error adding video to playlist:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -212,17 +262,45 @@ router.post('/playlists/:id/videos', authMiddleware, async (req, res) => {
 // Remove video from playlist
 router.delete('/playlists/:id/videos/:videoId', authMiddleware, async (req, res) => {
   try {
-    const playlist = await Playlist.findById(req.params.id);
+    const { videoId } = req.params;
     
-    if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ message: 'Playlist not found or unauthorized' });
+    // Validate videoId is a valid ObjectId
+    if (!isValidObjectId(videoId)) {
+      return res.status(400).json({ message: 'Invalid video ID format' });
     }
     
-    playlist.videos = playlist.videos.filter(v => v.video.toString() !== req.params.videoId);
+    const playlist = await Playlist.findById(req.params.id);
+    
+    if (!playlist) {
+      return res.status(404).json({ message: 'Playlist not found' });
+    }
+    
+    if (playlist.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized to modify this playlist' });
+    }
+    
+    const originalLength = playlist.videos.length;
+    playlist.videos = playlist.videos.filter(v => v.video.toString() !== videoId);
+    
+    if (playlist.videos.length === originalLength) {
+      return res.status(404).json({ message: 'Video not found in playlist' });
+    }
+    
     await playlist.save();
+    
+    // Populate the playlist before sending response
+    await playlist.populate({
+      path: 'videos.video',
+      select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+      populate: {
+        path: 'user',
+        select: 'username profile'
+      }
+    });
     
     res.json(playlist);
   } catch (error) {
+    console.error('Error removing video from playlist:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -231,19 +309,46 @@ router.delete('/playlists/:id/videos/:videoId', authMiddleware, async (req, res)
 router.put('/playlists/:id', authMiddleware, async (req, res) => {
   try {
     const { name, description, isPublic } = req.body;
-    const playlist = await Playlist.findById(req.params.id);
     
-    if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ message: 'Playlist not found or unauthorized' });
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid playlist ID format' });
     }
     
-    if (name !== undefined) playlist.name = name;
-    if (description !== undefined) playlist.description = description;
-    if (isPublic !== undefined) playlist.isPublic = isPublic;
+    const playlist = await Playlist.findById(req.params.id);
+    
+    if (!playlist) {
+      return res.status(404).json({ message: 'Playlist not found' });
+    }
+    
+    if (playlist.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized to modify this playlist' });
+    }
+    
+    if (name !== undefined) {
+      if (!name.trim()) {
+        return res.status(400).json({ message: 'Playlist name cannot be empty' });
+      }
+      if (name.trim().length > 100) {
+        return res.status(400).json({ message: 'Playlist name must be 100 characters or less' });
+      }
+      playlist.name = name.trim();
+    }
+    
+    if (description !== undefined) {
+      playlist.description = description?.trim() || '';
+    }
+    
+    if (isPublic !== undefined) {
+      playlist.isPublic = isPublic;
+    }
     
     await playlist.save();
+    
+    console.log('Playlist updated successfully:', playlist._id);
     res.json(playlist);
   } catch (error) {
+    console.error('Error updating playlist:', error);
     res.status(500).json({ message: error.message });
   }
 });
