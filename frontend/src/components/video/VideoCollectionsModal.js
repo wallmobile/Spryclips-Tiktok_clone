@@ -78,7 +78,8 @@ const mapBackendPlaylist = (playlist, index = 0) => {
 
 const VideoCollectionsModal = ({ onClose, video }) => {
   const { isAuthenticated } = useAuth();
-  const playlists = useLibraryStore((state) => state.playlists);
+  // Subscribe directly to the store for real-time updates
+  const playlistsFromStore = useLibraryStore((state) => state.playlists);
   const setPlaylists = useLibraryStore((state) => state.setPlaylists);
   const createPlaylistLocal = useLibraryStore((state) => state.createPlaylist);
   const addToPlaylistLocal = useLibraryStore((state) => state.addToPlaylist);
@@ -91,47 +92,21 @@ const VideoCollectionsModal = ({ onClose, video }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Debug: Log video object when modal opens
+  // Use store playlists directly instead of local state
+  const playlists = playlistsFromStore;
+
+  // Debug: Log video object structure
   useEffect(() => {
-    console.log('========================================');
-    console.log('[VideoCollectionsModal] Modal opened with video:', video);
-    console.log('[VideoCollectionsModal] Video source:', video?.__source || 'unknown');
-    console.log('[VideoCollectionsModal] Video ID attempts:', {
-      '_id': video?._id,
-      'id': video?.id,
-      'videoId': video?.videoId,
-      'video._id': video?.video?._id,
-      'video.id': video?.video?.id,
-    });
-    console.log('[VideoCollectionsModal] Video keys:', video ? Object.keys(video) : 'no video');
-    
-    // Check if this is sample data
-    if (video && (video.__source === 'sample' || (video._id && !/^[a-f\d]{24}$/i.test(String(video._id))))) {
-      console.warn('[VideoCollectionsModal] ⚠️ This appears to be sample/demo video - may not be addable to playlist');
+    console.log('VideoCollectionsModal opened with video:', video);
+    console.log('Video keys:', video ? Object.keys(video) : 'no video');
+    if (video) {
+      console.log('Video._id:', video._id);
+      console.log('Video.id:', video.id);
+      console.log('Video.videoId:', video.videoId);
     }
-    console.log('========================================');
   }, [video]);
 
-  // Ensure local store is initialized (hydrates from localStorage)
-  useEffect(() => {
-    try {
-      if (!initialized && typeof hydrate === 'function') {
-        hydrate();
-      }
-    } catch (err) {
-      console.warn('[VideoCollectionsModal] hydrate failed', err);
-    }
-  }, [hydrate, initialized]);
-
-  // Auto-select first playlist when playlists load to enable actions
-  useEffect(() => {
-    if (!selectedId && Array.isArray(playlists) && playlists.length > 0) {
-      setSelectedId(playlists[0]._id);
-      console.log('[VideoCollectionsModal] Auto-selected first playlist', playlists[0]._id);
-    }
-  }, [playlists, selectedId]);
-
-  // Sync playlists from backend if authenticated
+  // Sync playlists from backend if authenticated (merge with local)
   useEffect(() => {
     const syncPlaylists = async () => {
       if (!isAuthenticated) return;
@@ -139,12 +114,31 @@ const VideoCollectionsModal = ({ onClose, video }) => {
       setLoading(true);
       try {
         const response = await getMyPlaylists();
-        const normalized = Array.isArray(response)
+        const backendPlaylists = Array.isArray(response)
           ? response
               .map((playlist, index) => mapBackendPlaylist(playlist, index))
               .filter(Boolean)
           : [];
-        setPlaylists(normalized);
+        
+        // Merge: Keep local demo videos
+        const currentPlaylists = playlistsFromStore;
+        const mergedPlaylists = backendPlaylists.map(bp => {
+          const localPlaylist = currentPlaylists.find(lp => lp._id === bp._id);
+          if (localPlaylist) {
+            const localOnlyVideos = (localPlaylist.videos || []).filter(lv => {
+              const lvId = lv.video?._id;
+              const isDemoVideo = !/^[0-9a-fA-F]{24}$/.test(lvId);
+              const notInBackend = !(bp.videos || []).some(bv => bv.video?._id === lvId);
+              return isDemoVideo && notInBackend;
+            });
+            if (localOnlyVideos.length > 0) {
+              return { ...bp, videos: [...(bp.videos || []), ...localOnlyVideos] };
+            }
+          }
+          return bp;
+        });
+        
+        setPlaylists(mergedPlaylists);
       } catch (err) {
         console.error('Failed to sync playlists', err);
         setError('Failed to load playlists');
@@ -154,9 +148,10 @@ const VideoCollectionsModal = ({ onClose, video }) => {
     };
     
     syncPlaylists();
-  }, [isAuthenticated, setPlaylists]);
+  }, [isAuthenticated, setPlaylists, playlistsFromStore]);
 
   const handleCreate = async () => {
+    console.log('Create button clicked', { newName });
     const name = newName.trim();
     if (!name) {
       setError('Please enter a playlist name');
@@ -180,7 +175,7 @@ const VideoCollectionsModal = ({ onClose, video }) => {
           description: '',
           isPublic: true 
         });
-        console.log('[VideoCollectionsModal] Playlist created:', newPlaylist._id);
+        console.log('Playlist created on backend:', newPlaylist);
         
         // Sync playlists from backend
         const response = await getMyPlaylists();
@@ -197,6 +192,7 @@ const VideoCollectionsModal = ({ onClose, video }) => {
         // Create locally
         console.log('[VideoCollectionsModal] Creating playlist locally:', name);
         const newPlaylist = createPlaylistLocal({ name, description: '', isPublic: true });
+        console.log('Playlist created locally:', newPlaylist);
         setSelectedId(newPlaylist._id);
         setError('Playlist created successfully');
       }
@@ -222,8 +218,14 @@ const VideoCollectionsModal = ({ onClose, video }) => {
   };
 
   const handleAddVideo = async (videoId) => {
+    console.log('Add video by ID clicked:', { videoId, selectedId });
     if (!selectedId) {
       setError('Please select a playlist first');
+      return;
+    }
+    
+    if (!videoId || !videoId.trim()) {
+      setError('Please enter a valid video ID');
       return;
     }
     
@@ -238,8 +240,9 @@ const VideoCollectionsModal = ({ onClose, video }) => {
     try {
       if (isAuthenticated) {
         // Add to backend
-        console.log('[VideoCollectionsModal] Adding video by ID to backend:', { playlistId: selectedId, videoId });
-        await apiAddVideoToPlaylist(selectedId, videoId.trim());
+        console.log('Adding video by ID to backend:', { playlistId: selectedId, videoId });
+        const result = await apiAddVideoToPlaylist(selectedId, videoId);
+        console.log('Video added successfully:', result);
         
         // Sync playlists from backend
         const response = await getMyPlaylists();
@@ -257,94 +260,73 @@ const VideoCollectionsModal = ({ onClose, video }) => {
           username: 'unknown'
         });
         addToPlaylistLocal(selectedId, videoToAdd);
-        console.log('[VideoCollectionsModal] Video added locally by ID');
+        console.log('Video added locally');
       }
       
       setShowAddModal(false);
-      setError('Video added to playlist successfully');
+      setError('Video added to playlist successfully!');
       
       // Clear success message after delay
-      setTimeout(() => setError(''), 2000);
+      setTimeout(() => {
+        setError('');
+      }, 3000);
     } catch (err) {
       console.error('apiAddVideoToPlaylist failed', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      // Extract error message from response
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to add video to playlist';
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to add video to playlist';
       setError(errorMsg);
+      setShowAddModal(false);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddCurrentVideo = async () => {
-    console.log('[VideoCollectionsModal] handleAddCurrentVideo called', { selectedId, video, isAuthenticated });
-    
+    console.log('Add current video clicked', { selectedId, video });
     if (!selectedId) {
       console.error('[VideoCollectionsModal] No playlist selected');
       setError('Please select a playlist first');
       return;
     }
     
-    // Try multiple ways to extract video ID
-    let vid = video?._id || 
-              video?.id || 
-              video?.videoId || 
-              video?.video?._id ||
-              video?.video?.id ||
-              null;
+    // Try multiple ways to extract video ID - check nested video object too
+    let vid = video?._id || video?.id || video?.videoId;
     
-    // Convert to string if it's an object
-    if (vid && typeof vid === 'object' && vid.toString) {
-      vid = vid.toString();
+    // If video is a wrapper object with nested video data, try that
+    if (!vid && video?.video) {
+      vid = video.video._id || video.video.id || video.video.videoId;
     }
     
-    console.log('[VideoCollectionsModal] Extracted video ID:', vid, 'from video:', video);
-    console.log('[VideoCollectionsModal] Video structure:', {
-      _id: video?._id,
-      id: video?.id,
-      videoId: video?.videoId,
-      'video._id': video?.video?._id,
-      'video.id': video?.video?.id
+    console.log('Extracted video ID:', vid);
+    console.log('Video object structure:', {
+      hasDirectId: !!video?._id || !!video?.id,
+      hasNestedVideo: !!video?.video,
+      nestedVideoId: video?.video?._id || video?.video?.id,
+      allKeys: video ? Object.keys(video) : []
     });
     
     if (!vid) {
-      console.error('[VideoCollectionsModal] No video ID found in video object');
-      setError('No video ID available to add');
+      setError('No video id available. Check console for debug info.');
+      console.error('Failed to extract video ID. Full video object:', video);
       return;
     }
+
+    // Convert to string to check format
+    const vidStr = String(vid);
     
-    // Ensure vid is a string
-    vid = String(vid);
+    // Check if it's a valid ObjectId format (24 hex characters)
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(vidStr);
     
-    // Validate that vid is a valid MongoDB ObjectId (24 hex characters)
-    const isValidObjectId = /^[a-f\d]{24}$/i.test(vid);
-    if (!isValidObjectId) {
-      console.error('[VideoCollectionsModal] Invalid video ID format:', vid, 'Type:', typeof vid);
-      console.error('[VideoCollectionsModal] This video cannot be added to playlist. It may be a sample video.');
-      setError(`This video is not available to add to playlists. Please try another video.`);
-      
-      // Auto-close modal after showing error
-      setTimeout(() => {
-        onClose();
-      }, 2500);
-      return;
-    }
+    // Check if this is sample/demo data
+    const isSourceSample = video?.__source === 'sample' || video?.video?.__source === 'sample';
     
-    console.log('[VideoCollectionsModal] Starting add operation with valid ID:', vid);
     setLoading(true);
-    setError('');
     
     try {
-      if (isAuthenticated) {
-        // Add to backend
-        console.log('[VideoCollectionsModal] Authenticated - calling backend API with:', { playlistId: selectedId, videoId: vid });
-        const addResult = await apiAddVideoToPlaylist(selectedId, vid);
-        console.log('[VideoCollectionsModal] API add result:', addResult);
+      if (isAuthenticated && isValidObjectId) {
+        // Add to backend (only if we have valid ObjectId)
+        console.log('Adding video to backend playlist:', { playlistId: selectedId, videoId: vidStr });
+        const result = await apiAddVideoToPlaylist(selectedId, vidStr);
+        console.log('Video added to backend playlist successfully:', result);
         
         // Sync playlists from backend
         console.log('[VideoCollectionsModal] Syncing playlists from backend');
@@ -355,45 +337,50 @@ const VideoCollectionsModal = ({ onClose, video }) => {
               .filter(Boolean)
           : [];
         setPlaylists(normalized);
-        console.log('[VideoCollectionsModal] Playlists synced, count:', normalized.length);
+        console.log('Playlists synced from backend, new count:', normalized.length);
+        
+        setError('✓ Video successfully added to your playlist!');
       } else {
-        // Add locally
-        console.log('[VideoCollectionsModal] Not authenticated - adding locally');
-        const videoToAdd = makeLibraryVideoFromFeed(vid, {
-          src: video?.url || video?.videoUrl,
-          thumbnail: video?.thumbnail,
-          description: video?.description,
-          username: video?.username || video?.user?.username,
-          avatar: video?.profileAvatar || video?.user?.profile?.avatar
+        // Add locally (works with any ID format - demo videos or when not authenticated)
+        const videoToAdd = makeLibraryVideoFromFeed(vidStr, {
+          src: video?.url || video?.videoUrl || video?.video?.url || video?.video?.videoUrl,
+          thumbnail: video?.thumbnail || video?.video?.thumbnail,
+          description: video?.description || video?.caption || video?.video?.description,
+          username: video?.username || video?.user?.username || video?.creator?.username || video?.video?.user?.username,
+          avatar: video?.profileAvatar || video?.user?.profile?.avatar || video?.user?.avatar || video?.video?.user?.profile?.avatar
         });
-        console.log('[VideoCollectionsModal] Video to add:', videoToAdd);
+        
+        console.log('Adding video to local playlist:', { playlistId: selectedId, videoId: vidStr, videoToAdd });
         addToPlaylistLocal(selectedId, videoToAdd);
-        console.log('[VideoCollectionsModal] Added to local playlist');
+        
+        // The store will automatically update and trigger re-render
+        console.log('Video added to local playlist successfully');
+        
+        // Verify the video was added
+        setTimeout(() => {
+          const updatedPlaylists = useLibraryStore.getState().playlists;
+          const updatedPlaylist = updatedPlaylists.find(p => p._id === selectedId);
+          console.log('✅ Updated playlist:', updatedPlaylist);
+          console.log('✅ Video count in playlist:', updatedPlaylist?.videos?.length || 0);
+        }, 100);
+        
+        if (isAuthenticated && !isValidObjectId) {
+          setError('✓ Demo video saved to local playlist! (Will not sync online)');
+        } else {
+          setError('✓ Video successfully added to your playlist!');
+        }
       }
       
-      console.log('[VideoCollectionsModal] Video added successfully!');
-      setError('Video added to playlist successfully! 🎉');
-      
-      // Close modal after showing success message (increased time to allow user to see "View Playlist" button)
+      // Don't close modal immediately - let user see the video was added
+      // Close after 2 seconds to show success message
       setTimeout(() => {
         console.log('[VideoCollectionsModal] Auto-closing modal after success');
         onClose();
-        
-        // Dispatch event to notify other components
-        window.dispatchEvent(new CustomEvent('videoAddedToPlaylist', { 
-          detail: { playlistId: selectedId, videoId: vid } 
-        }));
-      }, 3000); // Increased from 1500 to 3000ms
+      }, 2000);
     } catch (err) {
-      console.error('[VideoCollectionsModal] Failed to add video:', err);
-      console.error('[VideoCollectionsModal] Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      // Extract error message from response
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to add video to playlist';
+      console.error('apiAddVideoToPlaylist failed', err);
+      console.error('Error response:', err?.response);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to add video to playlist';
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -401,17 +388,20 @@ const VideoCollectionsModal = ({ onClose, video }) => {
   };
 
   return (
-    <div className="video-collections-overlay" onClick={onClose}>
-      <div className="video-collections-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="video-collections-overlay" onClick={(e) => {
+      console.log('Overlay clicked');
+      onClose();
+    }}>
+      <div className="video-collections-modal" onClick={(e) => {
+        console.log('Modal clicked, stopping propagation');
+        e.stopPropagation();
+      }}>
         <div className="collections-header">
-          <button 
-            className="collections-close" 
-            onClick={(e) => {
-              console.log('[VideoCollectionsModal] Close button clicked');
-              e.stopPropagation();
-              onClose();
-            }}
-          >
+          <button className="collections-close" onClick={(e) => {
+            console.log('Close button clicked');
+            e.stopPropagation();
+            onClose();
+          }}>
             ✕
           </button>
           <h2>Save to Playlist</h2>
@@ -419,7 +409,7 @@ const VideoCollectionsModal = ({ onClose, video }) => {
 
         <div className="collections-body">
           {error && (
-            <div className={`collections-message ${error.includes('success') ? 'success' : 'error'}`}>
+            <div className={`collections-message ${error.includes('✓') || error.includes('success') ? 'success' : 'error'}`}>
               {error}
               {error.includes('success') && selectedId && (
                 <button 
@@ -457,15 +447,24 @@ const VideoCollectionsModal = ({ onClose, video }) => {
               <input
                 placeholder="New playlist name"
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(e) => {
+                  console.log('Input changed:', e.target.value);
+                  setNewName(e.target.value);
+                }}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
+                    console.log('Enter key pressed');
                     handleCreate();
                   }
                 }}
                 disabled={loading}
               />
-              <button onClick={handleCreate} disabled={loading || !newName.trim()}>
+              <button onClick={(e) => {
+                console.log('Create button onClick fired');
+                e.preventDefault();
+                e.stopPropagation();
+                handleCreate();
+              }} disabled={loading || !newName.trim()}>
                 Create
               </button>
             </div>
@@ -476,62 +475,134 @@ const VideoCollectionsModal = ({ onClose, video }) => {
                   {loading ? 'Loading playlists...' : 'No playlists yet. Create one above!'}
                 </div>
               ) : (
-                playlists.map((p) => (
-                  <div
-                    key={p._id}
-                    className={`playlist-item${selectedId === p._id ? ' selected' : ''}`}
-                    onClick={() => setSelectedId(p._id)}
-                  >
-                    <img 
-                      src={p.videos?.[0]?.video?.thumbnail || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%232D2D3A'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>Empty</text></svg>"} 
-                      alt="thumb" 
-                      onError={(e) => {
-                        const t = e.target;
-                        if (!t.dataset.fallbackApplied) {
-                          t.dataset.fallbackApplied = '1';
-                          t.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%232D2D3A'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>No Thumbnail</text></svg>";
+                playlists.map((p) => {
+                  // Check if current video is already in this playlist
+                  const videoId = video?._id || video?.id || video?.videoId || video?.video?._id || video?.video?.id;
+                  const isVideoInPlaylist = p.videos?.some(entry => 
+                    entry.video?._id === videoId || entry.video?._id === String(videoId)
+                  );
+                  
+                  return (
+                    <div
+                      key={p._id}
+                      className={`playlist-item${selectedId === p._id ? ' selected' : ''}${isVideoInPlaylist ? ' has-video' : ''}`}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        console.log('🔥 PLAYLIST CLICKED!', {
+                          playlistId: p._id,
+                          playlistName: p.name,
+                          allPlaylistIds: playlists.map(pl => pl._id)
+                        });
+                        
+                        // Instagram style: Click on playlist = Add video to it
+                        if (isVideoInPlaylist) {
+                          setError('Video already in this playlist!');
+                          return;
+                        }
+                        
+                        setSelectedId(p._id);
+                        setLoading(true);
+                        
+                        // Extract video ID
+                        let vid = video?._id || video?.id || video?.videoId;
+                        if (!vid && video?.video) {
+                          vid = video.video._id || video.video.id || video.video.videoId;
+                        }
+                        
+                        if (!vid) {
+                          setError('No video to add');
+                          setLoading(false);
+                          return;
+                        }
+                        
+                        const vidStr = String(vid);
+                        const isValidVideoId = /^[0-9a-fA-F]{24}$/.test(vidStr);
+                        const isBackendPlaylist = /^[0-9a-fA-F]{24}$/.test(p._id);
+                        
+                        console.log('🎬 Adding video to playlist:', {
+                          playlistId: p._id,
+                          playlistName: p.name,
+                          videoId: vidStr,
+                          isValidVideoId,
+                          isBackendPlaylist,
+                          isAuthenticated
+                        });
+                        
+                        try {
+                          // Create video object for local storage
+                          const videoToAdd = makeLibraryVideoFromFeed(vidStr, {
+                            src: video?.url || video?.videoUrl || video?.video?.url || video?.video?.videoUrl,
+                            thumbnail: video?.thumbnail || video?.video?.thumbnail,
+                            description: video?.description || video?.caption || video?.video?.description,
+                            username: video?.username || video?.user?.username || video?.video?.user?.username,
+                            avatar: video?.profileAvatar || video?.user?.profile?.avatar || video?.video?.user?.profile?.avatar
+                          });
+                          
+                          if (isAuthenticated && isBackendPlaylist && isValidVideoId) {
+                            // Both playlist and video are from backend - use API
+                            console.log('🎬 Adding to backend API...');
+                            await apiAddVideoToPlaylist(p._id, vidStr);
+                            // Sync from backend
+                            const response = await getMyPlaylists();
+                            const normalized = Array.isArray(response)
+                              ? response.map((playlist, index) => mapBackendPlaylist(playlist, index)).filter(Boolean)
+                              : [];
+                            setPlaylists(normalized);
+                          } else {
+                            // Demo video or local playlist - add to local store only
+                            console.log('🎬 Adding to local store...');
+                            console.log('🎬 Video object:', videoToAdd);
+                            addToPlaylistLocal(p._id, videoToAdd);
+                          }
+                          
+                          setError('✓ Video saved to "' + p.name + '"!');
+                          
+                          // Close after 1.5 seconds
+                          setTimeout(() => onClose(), 1500);
+                        } catch (err) {
+                          console.error('Failed to add video:', err);
+                          setError(err?.response?.data?.message || 'Failed to add video');
+                        } finally {
+                          setLoading(false);
                         }
                       }}
-                    />
-                    <div className="meta">
-                      <div className="name">{p.name}</div>
-                      <div className="count">{(p.videos || []).length} video{p.videos?.length === 1 ? '' : 's'}</div>
+                    >
+                      {isVideoInPlaylist && (
+                        <div className="playlist-check">
+                          <i className="fa-solid fa-check"></i>
+                        </div>
+                      )}
+                      <div className="playlist-thumb-placeholder" style={{width: 60, height: 60, background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        {p.videos?.[0]?.video?.thumbnail ? (
+                          <img src={p.videos[0].video.thumbnail} alt="thumb" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8}} />
+                        ) : (
+                          <i className="fa-solid fa-photo-film" style={{color: '#666', fontSize: 20}}></i>
+                        )}
+                      </div>
+                      <div className="meta">
+                        <div className="name">{p.name}</div>
+                        <div className="count">{(p.videos || []).length} video{p.videos?.length === 1 ? '' : 's'}</div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
           <div className="actions-column">
             <div className="actions">
-              <button 
-                onClick={(e) => {
-                  console.log('[VideoCollectionsModal] Add current video clicked', {
-                    selectedId,
-                    hasVideo: !!video,
-                    videoId: video?._id || video?.id || video?.videoId,
-                    loading,
-                    disabled: !selectedId || !video || loading
-                  });
-                  e.stopPropagation();
-                  handleAddCurrentVideo();
-                }} 
-                disabled={!selectedId || !video || loading}
-              >
-                <i className="fa-solid fa-plus"></i> Add current video
-              </button>
-              <button onClick={() => setShowAddModal(true)} disabled={!selectedId || loading}>
-                <i className="fa-solid fa-hashtag"></i> Add by video ID
-              </button>
-              <button 
-                onClick={(e) => {
-                  console.log('[VideoCollectionsModal] Close action button clicked');
-                  e.stopPropagation();
-                  onClose();
-                }} 
-                className="cancel"
-              >
+              <p style={{color: '#aaa', fontSize: '14px', margin: '0 0 12px 0', textAlign: 'center'}}>
+                👆 Click on a playlist above to save video
+              </p>
+              <button onClick={(e) => {
+                console.log('Close button clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }} className="cancel">
                 <i className="fa-solid fa-xmark"></i> Close
               </button>
             </div>
@@ -548,17 +619,13 @@ const VideoCollectionsModal = ({ onClose, video }) => {
                       <div className="preview-videos">
                         {(p.videos || []).slice(0, 6).map((entry, idx) => (
                           <div key={entry.video?._id || idx} className="preview-video">
-                            <img 
-                              src={entry.video?.thumbnail || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%231E1E2E'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>No Thumb</text></svg>"} 
-                              alt="v" 
-                              onError={(e) => {
-                                const t = e.target;
-                                if (!t.dataset.fallbackApplied) {
-                                  t.dataset.fallbackApplied = '1';
-                                  t.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%231E1E2E'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>Error</text></svg>";
-                                }
-                              }}
-                            />
+                            <div style={{width: '100%', height: '100%', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                              {entry.video?.thumbnail ? (
+                                <img src={entry.video.thumbnail} alt="v" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                              ) : (
+                                <i className="fa-solid fa-video" style={{color: '#555', fontSize: 12}}></i>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {(p.videos || []).length > 6 && (

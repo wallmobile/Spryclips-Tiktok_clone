@@ -241,14 +241,20 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     writeStorage({ watchLater, playlists: nextPlaylists });
   },
   addToPlaylist: (playlistId, video) => {
+    console.log('📁 addToPlaylist called:', { playlistId, video });
     const { playlists, watchLater } = get();
+    console.log('📁 Current playlists:', playlists);
+    
     const nextPlaylists = playlists.map((playlist) => {
       if (playlist._id !== playlistId) {
+        console.log('📁 Skipping playlist:', playlist._id);
         return playlist;
       }
       if (playlist.videos.some((entry) => entry.video._id === video._id)) {
+        console.log('📁 Video already exists in playlist');
         return playlist;
       }
+      console.log('📁 Adding video to playlist:', playlist.name);
       return {
         ...playlist,
         videos: [
@@ -258,8 +264,10 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         updatedAt: new Date().toISOString(),
       };
     });
+    console.log('📁 Updated playlists:', nextPlaylists);
     set({ playlists: nextPlaylists });
     writeStorage({ watchLater, playlists: nextPlaylists });
+    console.log('📁 Storage written!');
   },
   removeFromPlaylist: (playlistId, videoId) => {
     const { playlists, watchLater } = get();

@@ -11,7 +11,7 @@
   justify-content: center;
   z-index: 999999;
   padding: 20px;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .video-collections-modal {
@@ -24,9 +24,9 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  pointer-events: auto;
+  pointer-events: auto !important;
   position: relative;
-  z-index: 1000000;
+  z-index: 10001;
 }
 
 .collections-header {
@@ -51,7 +51,8 @@
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s;
-  pointer-events: auto;
+  pointer-events: auto !important;
+  z-index: 1;
 }
 
 .collections-close:hover {
@@ -484,6 +485,14 @@
 
 /* ==================== PLAYLIST MODAL STYLES ==================== */
 
+/* Ensure all interactive elements in modal are clickable */
+.video-collections-modal *,
+.video-collections-modal button,
+.video-collections-modal input,
+.video-collections-modal .playlist-item {
+  pointer-events: auto !important;
+}
+
 .collections-body {
   display: flex;
   gap: 20px;
@@ -516,8 +525,7 @@
   font-size: 14px;
   outline: none;
   transition: all 0.2s;
-  pointer-events: auto;
-  cursor: text;
+  pointer-events: auto !important;
 }
 
 .create-row input:focus {
@@ -545,6 +553,8 @@
   pointer-events: auto;
   transition: all 0.2s;
   white-space: nowrap;
+  pointer-events: auto !important;
+  z-index: 1;
 }
 
 .create-row button:hover:not(:disabled) {
@@ -599,16 +609,42 @@
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .playlist-item:hover {
   background: #3D3D4A;
 }
 
+.playlist-item {
+  position: relative;
+}
+
 .playlist-item.selected {
   border-color: #FF0050;
   background: rgba(255, 0, 80, 0.1);
+}
+
+.playlist-item.has-video {
+  background: rgba(0, 200, 83, 0.1);
+  border-color: #00c853;
+}
+
+.playlist-check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  background: #00c853;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  z-index: 10;
+  pointer-events: none;
 }
 
 .playlist-item img {
@@ -666,7 +702,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  pointer-events: auto;
+  pointer-events: auto !important;
+  z-index: 1;
 }
 
 .actions-column button:hover:not(:disabled) {
