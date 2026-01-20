@@ -131,6 +131,24 @@ const PlaylistsManager = () => {
     }
   }, [isAuthenticated, syncPlaylists]);
 
+  // Listen for video added to playlist event from other pages
+  useEffect(() => {
+    const handleVideoAddedToPlaylist = (event) => {
+      console.log('[PlaylistsManager] Video added to playlist event received:', event.detail);
+      if (isAuthenticated) {
+        // Refresh playlists to show newly added video
+        syncPlaylists();
+        setErrorMessage('✅ Video added to playlist! Refreshing...');
+        setTimeout(() => setErrorMessage(''), 3000);
+      }
+    };
+    
+    window.addEventListener('videoAddedToPlaylist', handleVideoAddedToPlaylist);
+    return () => {
+      window.removeEventListener('videoAddedToPlaylist', handleVideoAddedToPlaylist);
+    };
+  }, [isAuthenticated, syncPlaylists]);
+
   useEffect(() => {
     if (!initialized) {
       return;
