@@ -1259,6 +1259,82 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
   }
 });
 
+// Get user's followers list
+router.get('/:id/followers', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    
+    const user = await User.findById(userId)
+      .populate('followers', 'username profile.avatar profile.displayName profile.isVerified')
+      .lean();
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    const followers = (user.followers || []).map(follower => ({
+      _id: follower._id,
+      id: follower._id,
+      username: follower.username,
+      displayName: follower.profile?.displayName || follower.username,
+      avatar: follower.profile?.avatar || '',
+      isVerified: follower.profile?.isVerified || false
+    }));
+    
+    res.json({ 
+      success: true, 
+      followers,
+      count: followers.length
+    });
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Get user's following list
+router.get('/:id/following', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    
+    const user = await User.findById(userId)
+      .populate('followedUsers', 'username profile.avatar profile.displayName profile.isVerified')
+      .lean();
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    const following = (user.followedUsers || []).map(followedUser => ({
+      _id: followedUser._id,
+      id: followedUser._id,
+      username: followedUser.username,
+      displayName: followedUser.profile?.displayName || followedUser.username,
+      avatar: followedUser.profile?.avatar || '',
+      isVerified: followedUser.profile?.isVerified || false
+    }));
+    
+    res.json({ 
+      success: true, 
+      following,
+      count: following.length
+    });
+  } catch (error) {
+    console.error('Error fetching following:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Block/Unblock user
 router.post('/:id/block', authMiddleware, async (req, res) => {
   try {
