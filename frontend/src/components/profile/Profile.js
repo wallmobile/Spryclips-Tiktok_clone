@@ -26,8 +26,22 @@ import '../social/MessageCenter.css';
 const Profile = ({ onClose, username: viewUsername }) => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+  
+  // DEBUG: Log profile props
+  console.log('🔍 PROFILE COMPONENT RENDER:', {
+    viewUsername,
+    currentUserUsername: user?.username,
+    currentUserId: user?._id
+  });
+  
   // If viewUsername is provided, we're viewing another user's profile
   const isViewingOtherProfile = viewUsername && viewUsername !== user?.username;
+  
+  console.log('🔍 Profile viewing state:', {
+    isViewingOtherProfile,
+    viewUsername,
+    currentUser: user?.username
+  });
   const [activeTab, setActiveTab] = useState('videos');
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null); // Store actual file for upload
@@ -178,15 +192,39 @@ const Profile = ({ onClose, username: viewUsername }) => {
 
   // Initialize stats from user profile on load
   useEffect(() => {
-    if (!isViewingOtherProfile && user?.profile) {
-      setStats(prev => ({
-        ...prev,
-        followers: user.profile.followers || 0,
-        following: user.profile.following || 0,
-        likes: user.profile.likes || prev.likes || 0
-      }));
+    if (isViewingOtherProfile) {
+      // For other user's profile - use viewedUser data
+      if (viewedUser?.profile) {
+        console.log('📊 Initializing stats for viewed user:', viewedUser.username);
+        setStats(prev => ({
+          ...prev,
+          followers: viewedUser.profile.followers || 0,
+          following: viewedUser.profile.following || 0,
+          likes: viewedUser.profile.likes || prev.likes || 0
+        }));
+      } else {
+        // Reset to 0 while loading
+        console.log('📊 Resetting stats while loading viewed user...');
+        setStats(prev => ({
+          ...prev,
+          followers: 0,
+          following: 0,
+          likes: 0
+        }));
+      }
+    } else {
+      // For own profile - use current user data
+      if (user?.profile) {
+        console.log('📊 Initializing stats for own profile');
+        setStats(prev => ({
+          ...prev,
+          followers: user.profile.followers || 0,
+          following: user.profile.following || 0,
+          likes: user.profile.likes || prev.likes || 0
+        }));
+      }
     }
-  }, [user?.profile, isViewingOtherProfile]);
+  }, [user?.profile, viewedUser?.profile, isViewingOtherProfile]);
 
   useEffect(() => {
     // Early return if no user and not viewing other profile
@@ -210,9 +248,28 @@ const Profile = ({ onClose, username: viewUsername }) => {
             targetUserId = userData._id;
             setViewedUser(userData);
             
-            // Set follow status from backend response
-            setIsFollowing(isFollowingUser);
-            setIsFollowPending(isPendingUser);
+            // IMPORTANT: Only set follow status if we haven't just done a follow action
+            // This prevents overriding the user's follow/unfollow action
+            if (!justFollowedRef.current) {
+              // Check localStorage for more reliable follow status
+              let cachedIsFollowing = false;
+              try {
+                const cachedRaw = localStorage.getItem('user');
+                if (cachedRaw) {
+                  const cached = JSON.parse(cachedRaw) || {};
+                  if (Array.isArray(cached.followedUsers)) {
+                    cachedIsFollowing = cached.followedUsers.some(id => String(id) === String(userData._id));
+                  }
+                }
+              } catch (e) { /* ignore */ }
+              
+              const finalIsFollowing = cachedIsFollowing || isFollowingUser;
+              console.log('📊 fetchStories: Setting follow status:', { isFollowingUser, cachedIsFollowing, finalIsFollowing });
+              setIsFollowing(finalIsFollowing);
+              setIsFollowPending(isPendingUser);
+            } else {
+              console.log('⏭️ fetchStories: Skipping follow status update - just followed/unfollowed');
+            }
             
             // Also update stats from userData
             if (userData.profile) {
@@ -225,8 +282,24 @@ const Profile = ({ onClose, username: viewUsername }) => {
           } else if (response.data?._id) {
             targetUserId = response.data._id;
             setViewedUser(response.data);
-            setIsFollowing(response.data?.isFollowing || false);
-            setIsFollowPending(response.data?.isPending || false);
+            
+            // IMPORTANT: Only set follow status if we haven't just done a follow action
+            if (!justFollowedRef.current) {
+              let cachedIsFollowing = false;
+              try {
+                const cachedRaw = localStorage.getItem('user');
+                if (cachedRaw) {
+                  const cached = JSON.parse(cachedRaw) || {};
+                  if (Array.isArray(cached.followedUsers)) {
+                    cachedIsFollowing = cached.followedUsers.some(id => String(id) === String(response.data._id));
+                  }
+                }
+              } catch (e) { /* ignore */ }
+              
+              const finalIsFollowing = cachedIsFollowing || (response.data?.isFollowing || false);
+              setIsFollowing(finalIsFollowing);
+              setIsFollowPending(response.data?.isPending || false);
+            }
             
             // Update stats from response.data
             if (response.data.profile) {
@@ -376,19 +449,37 @@ const Profile = ({ onClose, username: viewUsername }) => {
         // Refetch user profile to get latest follow status from backend
         const response = await api.get(`/api/users/${viewUsername}`);
         const userData = response.data?.user || response.data;
-        const isFollowingUser = response.data?.isFollowing === true; // Strict check
-        const isPendingUser = response.data?.isPending === true; // Strict check
+        const isFollowingFromBackend = response.data?.isFollowing === true;
+        const isPendingUser = response.data?.isPending === true;
         
-        console.log('✅ checkFollowStatus response:', {
-          isFollowingUser,
-          isPendingUser,
-          responseIsFollowing: response.data?.isFollowing,
-          responseIsPending: response.data?.isPending
+        // Check localStorage for cached follow status (more reliable than backend check)
+        let cachedIsFollowing = false;
+        try {
+          const cachedRaw = localStorage.getItem('user');
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw) || {};
+            const targetId = userData?._id || userData?.id;
+            if (targetId && Array.isArray(cached.followedUsers)) {
+              cachedIsFollowing = cached.followedUsers.some(id => String(id) === String(targetId));
+            }
+          }
+        } catch (e) {
+          // ignore localStorage errors
+        }
+        
+        // Use cached value if backend disagrees (backend check can fail due to auth timing)
+        const finalIsFollowing = cachedIsFollowing || isFollowingFromBackend;
+        
+        console.log('✅ checkFollowStatus result:', {
+          isFollowingFromBackend,
+          cachedIsFollowing,
+          finalIsFollowing,
+          isPendingUser
         });
         
         if (userData) {
           setViewedUser(userData);
-          setIsFollowing(isFollowingUser);
+          setIsFollowing(finalIsFollowing);
           setIsFollowPending(isPendingUser);
           
           // Update stats
@@ -414,6 +505,12 @@ const Profile = ({ onClose, username: viewUsername }) => {
   // Initialize `isFollowing` from cached user so UI reflects last known state
   // immediately on page load/refresh while backend verification completes.
   useEffect(() => {
+    // IMPORTANT: Don't override if user just performed follow/unfollow action
+    if (justFollowedRef.current) {
+      console.log('⏭️ localStorage init: Skipping - just followed/unfollowed');
+      return;
+    }
+    
     try {
       const cachedRaw = localStorage.getItem('user');
       if (!cachedRaw) return;
@@ -422,316 +519,101 @@ const Profile = ({ onClose, username: viewUsername }) => {
       if (!targetId) return;
       const followed = Array.isArray(cached.followedUsers) &&
         cached.followedUsers.some(id => String(id) === String(targetId));
+      console.log('📊 localStorage init: Setting isFollowing from cache:', followed, 'for target:', targetId);
       setIsFollowing(Boolean(followed));
     } catch (err) {
       // non-fatal
     }
   }, [viewedUser, viewUsername]);
 
-  // Handle follow/unfollow
+  // Handle follow/unfollow - SIMPLIFIED VERSION
   const handleFollow = async (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
-    // Use viewUsername as fallback if viewedUser is temporarily null during refresh
-    let userId = null;
-    
-    // First priority: Use viewedUser if available
-    if (viewedUser) {
-      userId = viewedUser._id || viewedUser.id;
-      console.log('✅ Using viewedUser ID:', userId);
-    } 
-    // Second priority: Fetch user by viewUsername if viewedUser is null
-    else if (viewUsername) {
-      console.log('⚠️ viewedUser is null, fetching user data for:', viewUsername);
-      try {
-        const response = await api.get(`/api/users/${viewUsername}`);
-        const userData = response.data?.user || response.data;
-        if (userData?._id || userData?.id) {
-          setViewedUser(userData);
-          userId = userData._id || userData.id;
-          console.log('✅ Fetched user ID from username:', userId);
-        } else {
-          console.error('❌ User data found but no ID:', userData);
-        }
-      } catch (error) {
-        console.error('❌ Error fetching user data:', error);
-        // Don't return yet - will try to use username as fallback
-      }
-    }
-    
-    // Third priority: If still no userId, try using viewUsername directly (if it's an ObjectId)
-    if (!userId && viewUsername) {
-      const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-      if (objectIdPattern.test(viewUsername)) {
-        userId = viewUsername;
-        console.log('✅ Using viewUsername as ObjectId:', userId);
-      }
-    }
-    
-    // Validate userId
+    // Get user ID
+    const userId = viewedUser?._id || viewedUser?.id;
     if (!userId) {
-      console.error('❌ No user ID found:', { viewedUser, viewUsername, isViewingOtherProfile });
-      // Better error message
-      const errorMsg = viewUsername 
-        ? `Unable to find user "${viewUsername}". Please check the username and try again.`
-        : 'User information not available. Please refresh the page.';
-      alert(errorMsg);
-      return;
-    }
-    
-    // Convert userId to string and validate ObjectId format
-    userId = String(userId).trim();
-    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-    if (!objectIdPattern.test(userId)) {
-      console.error('❌ Invalid user ID format:', userId);
-      // Try one more time to fetch by username
-      if (viewUsername && !objectIdPattern.test(viewUsername)) {
-        try {
-          console.log('🔄 Final attempt: Fetching user by username:', viewUsername);
-          const response = await api.get(`/api/users/${viewUsername}`);
-          const userData = response.data?.user || response.data;
-          if (userData?._id || userData?.id) {
-            setViewedUser(userData);
-            userId = String(userData._id || userData.id).trim();
-            console.log('✅ Successfully fetched user ID:', userId);
-          } else {
-            throw new Error('User data not found in response');
-          }
-        } catch (error) {
-          console.error('❌ Final fetch failed:', error);
-          alert(`Unable to find user "${viewUsername}". Please check the username and try again.`);
-          return;
-        }
-      } else {
-        alert('Invalid user ID format. Please refresh the page.');
-        return;
-      }
-    }
-    
-    console.log('✅ Final userId for follow/unfollow:', userId);
-
-    if (followLoading) {
-      console.log('⏳ Already processing follow/unfollow...');
+      console.error('❌ No user ID found');
+      alert('User information not available. Please refresh the page.');
       return;
     }
 
-    const previousIsFollowing = isFollowing;
+    if (followLoading) return;
+
+    // Store previous state for rollback on error
+    const wasFollowing = isFollowing;
 
     try {
       setFollowLoading(true);
       
+      // Optimistic UI update - immediately toggle the button
+      setIsFollowing(!wasFollowing);
+      
       console.log('🔘 Follow button clicked:', {
-        userId: userId.toString(),
-        userIdType: typeof userId,
-        previousIsFollowing,
-        viewedUsername: viewedUser.username,
-        viewedUserId: viewedUser._id
+        userId,
+        wasFollowing,
+        willBe: !wasFollowing
       });
       
-      // Call API - handle both follow and unfollow
-      // Backend uses same POST endpoint for both follow and unfollow
-      let response;
-      console.log(previousIsFollowing ? '🔄 Unfollowing user:' : '🔄 Following user:', userId);
-      // Use same POST endpoint - backend handles follow/unfollow based on current state
-        response = await followUser(userId.toString());
+      // Call API
+      const response = await followUser(userId.toString());
       
       console.log('✅ API Response:', response);
-      console.log('📊 Response data:', JSON.stringify(response, null, 2));
       
-      // Update state based on response
+      // Use API response to confirm state
       const newIsFollowing = response?.isFollowing === true;
-      const newIsPending = response?.isPending === true;
-      
-      console.log('🔄 Updating state:', {
-        newIsFollowing,
-        newIsPending,
-        previousIsFollowing,
-        responseIsFollowing: response?.isFollowing,
-        responseIsPending: response?.isPending
-      });
-      
-      // Mark that we just did a follow action to prevent useEffect from overriding
-      justFollowedRef.current = true;
-      
       setIsFollowing(newIsFollowing);
-      setIsFollowPending(newIsPending);
+      setIsFollowPending(response?.isPending === true);
+      
+      // Block other useEffects from overriding for 10 seconds
+      justFollowedRef.current = true;
+      setTimeout(() => {
+        justFollowedRef.current = false;
+      }, 10000);
 
-      // Immediately update cached user in localStorage so the follow state
-      // persists across full page refreshes even if verify() temporarily fails.
+      // Update localStorage
       try {
         const cachedRaw = localStorage.getItem('user');
         if (cachedRaw) {
           const cached = JSON.parse(cachedRaw) || {};
-          const followedUsers = Array.isArray(cached.followedUsers) ? [...cached.followedUsers] : [];
-          const targetId = userId.toString();
+          let followedUsers = Array.isArray(cached.followedUsers) ? [...cached.followedUsers] : [];
+          
           if (newIsFollowing) {
-            if (!followedUsers.some(id => String(id) === targetId)) {
-              followedUsers.push(targetId);
+            if (!followedUsers.includes(userId.toString())) {
+              followedUsers.push(userId.toString());
             }
-            cached.profile = cached.profile || {};
-            cached.profile.following = (cached.profile.following || 0) + 1;
           } else {
-            // Remove target from followedUsers
-            const next = followedUsers.filter(id => String(id) !== targetId);
-            cached.profile = cached.profile || {};
-            cached.profile.following = Math.max(0, (cached.profile.following || 0) - 1);
-            // use filtered array
-            followedUsers.length = 0;
-            Array.prototype.push.apply(followedUsers, next);
-            cached.followedUsers = next;
+            followedUsers = followedUsers.filter(id => id !== userId.toString());
           }
-          // Ensure followedUsers on cached object is the updated array
-          cached.followedUsers = cached.followedUsers || followedUsers;
+          
+          cached.followedUsers = followedUsers;
           localStorage.setItem('user', JSON.stringify(cached));
-          if (updateUser) {
-            try { updateUser(cached); } catch (e) { /* non-fatal */ }
-          }
         }
       } catch (err) {
-        console.debug('Could not update cached user after follow:', err?.message || err);
+        console.debug('localStorage update failed:', err);
       }
       
-      // Update stats immediately - both followers (of viewed user) and following (of current user)
-      if (viewedUser.profile) {
-        setStats(prev => ({
-          ...prev,
-          followers: newIsFollowing 
-            ? (prev.followers + 1) 
-            : Math.max(0, prev.followers - 1)
-        }));
-      }
+      // Update follower count
+      setStats(prev => ({
+        ...prev,
+        followers: newIsFollowing 
+          ? (prev.followers + 1) 
+          : Math.max(0, prev.followers - 1)
+      }));
       
-      // Update current user's own following count (if viewing own profile)
-      if (!isViewingOtherProfile && user) {
-        setStats(prev => ({
-          ...prev,
-          following: newIsFollowing 
-            ? (prev.following + 1) 
-            : Math.max(0, prev.following - 1)
-        }));
-      }
-      
-      // Update current user context immediately - this will trigger Following page refresh
-      if (user && updateUser) {
-        try {
-          console.log('🔄 Fetching updated user context...');
-          const verifyResponse = await api.get('/api/auth/verify');
-          const updatedUser = verifyResponse.data?.user;
-          if (updatedUser) {
-            console.log('✅ Updating user context:', {
-              oldFollowingCount: user.followedUsers?.length || 0,
-              newFollowingCount: updatedUser.followedUsers?.length || 0,
-              oldProfileFollowing: user.profile?.following || 0,
-              newProfileFollowing: updatedUser.profile?.following || 0
-            });
-            updateUser(updatedUser);
-            
-            // Update banner from backend if viewing own profile
-            if (!isViewingOtherProfile && updatedUser?.profile?.banner) {
-              setBannerImage(updatedUser.profile.banner);
-            }
-            
-            // Update own profile stats if viewing own profile
-            if (!isViewingOtherProfile) {
-              setStats(prev => ({
-                ...prev,
-                following: updatedUser.profile?.following || prev.following
-              }));
-            }
-            console.log('✅ Updated user context with latest following list');
-          }
-        } catch (verifyError) {
-          console.error('Error updating user context:', verifyError);
-        }
-      }
-      
-      // Dispatch event to refresh Following page
-      console.log('📢 Dispatching follow:refresh event');
+      // Dispatch refresh event
       window.dispatchEvent(new Event('follow:refresh'));
       
-      // Dispatch multiple times with delays to ensure Following page updates
-      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 300);
-      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 600);
-      setTimeout(() => window.dispatchEvent(new Event('follow:refresh')), 1000);
-      
-      // Refresh profile after a delay to ensure backend has saved
-      setTimeout(async () => {
-        try {
-          console.log('🔄 Refreshing profile after follow/unfollow...');
-          const profileResponse = await api.get(`/api/users/${viewUsername || userId}`);
-          const userData = profileResponse.data?.user || profileResponse.data;
-          const verifiedIsFollowing = profileResponse.data?.isFollowing === true;
-          
-          console.log('✅ Verified status:', verifiedIsFollowing);
-          
-          // Only update viewedUser if we have valid data - don't clear it on error
-          if (userData && userData._id) {
-            setViewedUser(userData);
-            setIsFollowing(verifiedIsFollowing);
-            
-            // Update stats from backend (actual count)
-            if (userData.profile) {
-              setStats(prev => ({
-                ...prev,
-                followers: userData.profile.followers || prev.followers
-              }));
-            }
-          } else {
-            console.warn('⚠️ Profile refresh returned invalid data, keeping existing viewedUser');
-            // Don't clear viewedUser - keep existing state
-          }
-          
-          // Dispatch one more refresh event after backend confirms
-          window.dispatchEvent(new Event('follow:refresh'));
-        } catch (refreshError) {
-          console.error('Error refreshing:', refreshError);
-          // Don't clear viewedUser on error - keep existing state
-          console.log('⚠️ Keeping existing viewedUser state after refresh error');
-        } finally {
-          // Re-enable useEffect checks after 3 seconds
-          setTimeout(() => {
-            justFollowedRef.current = false;
-            console.log('✅ Re-enabled checkFollowStatus useEffect');
-          }, 3000);
-        }
-      }, 800);
-      
     } catch (error) {
-      console.error('❌ Follow/Unfollow Error:', error);
-      console.error('Error full details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      });
-      
-      // Revert state to previous
-      setIsFollowing(previousIsFollowing);
-      setIsFollowPending(false);
-      
-      // Show user-friendly error message
-      let errorMessage = 'Failed to follow user. ';
-      if (error.response?.status === 404) {
-        errorMessage = 'User not found. Please refresh the page.';
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Please sign in to follow users.';
-      } else if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += 'We could not find what you were looking for.';
-      }
-      
-      // Show error but keep button visible
-      alert(errorMessage);
+      console.error('❌ Follow Error:', error);
+      // Revert to previous state on error
+      setIsFollowing(wasFollowing);
+      alert('Failed to ' + (wasFollowing ? 'unfollow' : 'follow') + ' user. Please try again.');
     } finally {
-      // Always re-enable button after error or success
       setFollowLoading(false);
-      // Ensure button stays visible - don't hide it
     }
   };
 
