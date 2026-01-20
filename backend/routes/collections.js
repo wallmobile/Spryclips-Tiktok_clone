@@ -143,7 +143,14 @@ router.post('/playlists', authMiddleware, async (req, res) => {
 router.get('/playlists/my', authMiddleware, async (req, res) => {
   try {
     const playlists = await Playlist.find({ user: req.user._id })
-      .populate('videos.video', 'thumbnail description url')
+      .populate({
+        path: 'videos.video',
+        select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+        populate: {
+          path: 'user',
+          select: 'username profile'
+        }
+      })
       .sort({ createdAt: -1 });
     res.json(playlists);
   } catch (error) {
@@ -156,7 +163,14 @@ router.get('/playlists/:id', async (req, res) => {
   try {
     const playlist = await Playlist.findById(req.params.id)
       .populate('user', 'username profile')
-      .populate('videos.video');
+      .populate({
+        path: 'videos.video',
+        select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+        populate: {
+          path: 'user',
+          select: 'username profile'
+        }
+      });
     
     if (!playlist || (!playlist.isPublic && playlist.user._id.toString() !== req.user?._id?.toString())) {
       return res.status(404).json({ message: 'Playlist not found' });
@@ -213,6 +227,49 @@ router.delete('/playlists/:id/videos/:videoId', authMiddleware, async (req, res)
   }
 });
 
+// Update playlist
+router.put('/playlists/:id', authMiddleware, async (req, res) => {
+  try {
+    const { name, description, isPublic } = req.body;
+    const playlist = await Playlist.findById(req.params.id);
+    
+    if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Playlist not found or unauthorized' });
+    }
+    
+    if (name !== undefined) playlist.name = name;
+    if (description !== undefined) playlist.description = description;
+    if (isPublic !== undefined) playlist.isPublic = isPublic;
+    
+    await playlist.save();
+    res.json(playlist);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete playlist
+router.delete('/playlists/:id', authMiddleware, async (req, res) => {
+  try {
+    const playlist = await Playlist.findById(req.params.id);
+    
+    if (!playlist || playlist.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Playlist not found or unauthorized' });
+    }
+    
+    await Playlist.findByIdAndDelete(req.params.id);
+    
+    // Remove from user's playlists array
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { playlists: req.params.id }
+    });
+    
+    res.json({ message: 'Playlist deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ========== VIDEO SERIES ==========
 
 // Create video series
@@ -241,7 +298,14 @@ router.post('/series', authMiddleware, async (req, res) => {
 router.get('/series/my', authMiddleware, async (req, res) => {
   try {
     const series = await VideoSeries.find({ user: req.user._id })
-      .populate('videos.video', 'thumbnail description url')
+      .populate({
+        path: 'videos.video',
+        select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+        populate: {
+          path: 'user',
+          select: 'username profile'
+        }
+      })
       .sort({ createdAt: -1 });
     res.json(series);
   } catch (error) {
@@ -301,7 +365,14 @@ router.post('/collections', authMiddleware, async (req, res) => {
 router.get('/collections/my', authMiddleware, async (req, res) => {
   try {
     const collections = await Collection.find({ user: req.user._id })
-      .populate('videos.video', 'thumbnail description url')
+      .populate({
+        path: 'videos.video',
+        select: 'thumbnail description url duration views likes comments shares processedUrl transcoded status isPrivate user',
+        populate: {
+          path: 'user',
+          select: 'username profile'
+        }
+      })
       .sort({ createdAt: -1 });
     res.json(collections);
   } catch (error) {
