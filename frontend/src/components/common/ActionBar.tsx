@@ -616,24 +616,25 @@ const ActionBar: React.FC<ActionBarProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      console.log('[ActionBar] Document click:', target);
+      
+      // If the playlist modal is open, ignore ActionBar document clicks
+      if (document.querySelector('.video-collections-overlay')) {
+        return;
+      }
+      
       // Don't close if clicking inside quality or speed wrappers
       if (qualityWrapperRef.current && qualityWrapperRef.current.contains(target)) {
-        console.log('[ActionBar] Click inside qualityWrapperRef, not closing menus');
         return;
       }
       if (speedWrapperRef.current && speedWrapperRef.current.contains(target)) {
-        console.log('[ActionBar] Click inside speedWrapperRef, not closing menus');
         return;
       }
       if (shareMenuRef.current && !shareMenuRef.current.contains(target)) {
-        console.log('[ActionBar] Click outside shareMenuRef, closing share menu');
         setShowShareMenu(false);
       }
       if ((!moreMenuRef.current || !moreMenuRef.current.contains(target)) &&
           (!moreMenuItemRef.current || !moreMenuItemRef.current.contains(target)) &&
           (!moreButtonRef.current || !moreButtonRef.current.contains(target))) {
-        console.log('[ActionBar] Click outside moreMenu, closing all menus');
         setShowMoreMenu(false);
         setShowQualityMenu(false);
         setShowSpeedMenu(false);
