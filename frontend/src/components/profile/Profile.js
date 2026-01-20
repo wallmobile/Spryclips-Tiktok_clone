@@ -1435,25 +1435,32 @@ const Profile = ({ onClose, username: viewUsername }) => {
           // Determine which user ID to use (viewing profile or own)
           const targetUserId = isViewingOtherProfile ? viewedUser?._id : user?._id;
           
-          console.log('🔍 Fetching followers for user:', {
+          console.log('🔍 FOLLOWERS MODAL OPENED - Fetching followers for user:', {
             targetUserId,
             isViewingOtherProfile,
             viewedUser: viewedUser?._id,
-            currentUser: user?._id
+            currentUser: user?._id,
+            userId: user?.id
           });
           
           if (!targetUserId) {
-            console.warn('No user ID available for fetching followers');
+            console.warn('❌ No user ID available for fetching followers');
             return;
           }
           
+          console.log('📡 Calling API: GET /api/users/' + targetUserId + '/followers');
           const response = await getUserFollowers(targetUserId);
           console.log('✅ Followers API response:', response);
           const followers = response.followers || [];
-          console.log('👥 Followers list:', followers);
+          console.log('👥 Followers list (' + followers.length + ' users):', followers);
           setFollowersList(followers);
+          
+          // Also update stats from response
+          if (response.count !== undefined) {
+            setStats(prev => ({ ...prev, followers: response.count }));
+          }
         } catch (error) {
-          console.error('Error fetching followers:', error);
+          console.error('❌ Error fetching followers:', error);
           setFollowersList([]);
         }
       }
@@ -1470,25 +1477,32 @@ const Profile = ({ onClose, username: viewUsername }) => {
           // Determine which user ID to use (viewing profile or own)
           const targetUserId = isViewingOtherProfile ? viewedUser?._id : user?._id;
           
-          console.log('🔍 Fetching following for user:', {
+          console.log('🔍 FOLLOWING MODAL OPENED - Fetching following for user:', {
             targetUserId,
             isViewingOtherProfile,
             viewedUser: viewedUser?._id,
-            currentUser: user?._id
+            currentUser: user?._id,
+            userId: user?.id
           });
           
           if (!targetUserId) {
-            console.warn('No user ID available for fetching following');
+            console.warn('❌ No user ID available for fetching following');
             return;
           }
           
+          console.log('📡 Calling API: GET /api/users/' + targetUserId + '/following');
           const response = await getUserFollowing(targetUserId);
           console.log('✅ Following API response:', response);
           const following = response.following || [];
-          console.log('👥 Following list:', following);
+          console.log('👥 Following list (' + following.length + ' users):', following);
           setFollowingList(following);
+          
+          // Also update stats from response
+          if (response.count !== undefined) {
+            setStats(prev => ({ ...prev, following: response.count }));
+          }
         } catch (error) {
-          console.error('Error fetching following:', error);
+          console.error('❌ Error fetching following:', error);
           setFollowingList([]);
         }
       }
@@ -3604,7 +3618,26 @@ const Profile = ({ onClose, username: viewUsername }) => {
                         <h4>{follower.displayName || follower.name || follower.username}</h4>
                         <p>@{follower.username}</p>
                       </div>
-                      <button className="follow-action-btn">
+                      <button 
+                        className="follow-action-btn"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const followerUserId = follower._id || follower.id;
+                            await followUser(followerUserId);
+                            // Refresh both lists after follow action
+                            const followersResponse = await getUserFollowers(isViewingOtherProfile ? viewedUser?._id : user?._id);
+                            setFollowersList(followersResponse.followers || []);
+                            // Update stats
+                            if (user?._id) {
+                              const meResponse = await getUserFollowing(user._id);
+                              setStats(prev => ({ ...prev, following: meResponse.count || 0 }));
+                            }
+                          } catch (error) {
+                            console.error('Error following user:', error);
+                          }
+                        }}
+                      >
                         <i className="fa-solid fa-user-plus"></i>
                         Follow
                       </button>
@@ -3648,7 +3681,23 @@ const Profile = ({ onClose, username: viewUsername }) => {
                         <h4>{following.displayName || following.name || following.username}</h4>
                         <p>@{following.username}</p>
                       </div>
-                      <button className="unfollow-action-btn">
+                      <button 
+                        className="unfollow-action-btn"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const followingUserId = following._id || following.id;
+                            await followUser(followingUserId); // Same API handles both follow/unfollow
+                            // Refresh following list after unfollow action
+                            const followingResponse = await getUserFollowing(isViewingOtherProfile ? viewedUser?._id : user?._id);
+                            setFollowingList(followingResponse.following || []);
+                            // Update stats
+                            setStats(prev => ({ ...prev, following: followingResponse.count || 0 }));
+                          } catch (error) {
+                            console.error('Error unfollowing user:', error);
+                          }
+                        }}
+                      >
                         <i className="fa-solid fa-user-minus"></i>
                         Unfollow
                       </button>
