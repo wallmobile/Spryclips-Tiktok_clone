@@ -82,12 +82,33 @@ const VideoCollectionsModal = ({ onClose, video }) => {
   const setPlaylists = useLibraryStore((state) => state.setPlaylists);
   const createPlaylistLocal = useLibraryStore((state) => state.createPlaylist);
   const addToPlaylistLocal = useLibraryStore((state) => state.addToPlaylist);
-  
+  const hydrate = useLibraryStore((state) => state.hydrate);
+  const initialized = useLibraryStore((state) => state.initialized);
+
   const [selectedId, setSelectedId] = useState(null);
   const [newName, setNewName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Ensure local store is initialized (hydrates from localStorage)
+  useEffect(() => {
+    try {
+      if (!initialized && typeof hydrate === 'function') {
+        hydrate();
+      }
+    } catch (err) {
+      console.warn('[VideoCollectionsModal] hydrate failed', err);
+    }
+  }, [hydrate, initialized]);
+
+  // Auto-select first playlist when playlists load to enable actions
+  useEffect(() => {
+    if (!selectedId && Array.isArray(playlists) && playlists.length > 0) {
+      setSelectedId(playlists[0]._id);
+      console.log('[VideoCollectionsModal] Auto-selected first playlist', playlists[0]._id);
+    }
+  }, [playlists, selectedId]);
 
   // Sync playlists from backend if authenticated
   useEffect(() => {
@@ -197,26 +218,36 @@ const VideoCollectionsModal = ({ onClose, video }) => {
   };
 
   const handleAddCurrentVideo = async () => {
+    console.log('[VideoCollectionsModal] handleAddCurrentVideo called', { selectedId, video, isAuthenticated });
+    
     if (!selectedId) {
+      console.error('[VideoCollectionsModal] No playlist selected');
       setError('Please select a playlist first');
       return;
     }
     
     const vid = video?._id || video?.id || video?.videoId || null;
+    console.log('[VideoCollectionsModal] Extracted video ID:', vid, 'from video:', video);
+    
     if (!vid) {
+      console.error('[VideoCollectionsModal] No video ID found');
       setError('No video id available to add');
       return;
     }
     
+    console.log('[VideoCollectionsModal] Starting add operation...');
     setLoading(true);
     setError('');
     
     try {
       if (isAuthenticated) {
         // Add to backend
-        await apiAddVideoToPlaylist(selectedId, vid);
+        console.log('[VideoCollectionsModal] Authenticated - calling backend API');
+        const addResult = await apiAddVideoToPlaylist(selectedId, vid);
+        console.log('[VideoCollectionsModal] API add result:', addResult);
         
         // Sync playlists from backend
+        console.log('[VideoCollectionsModal] Syncing playlists from backend');
         const response = await getMyPlaylists();
         const normalized = Array.isArray(response)
           ? response
@@ -226,6 +257,7 @@ const VideoCollectionsModal = ({ onClose, video }) => {
         setPlaylists(normalized);
       } else {
         // Add locally
+        console.log('[VideoCollectionsModal] Not authenticated - adding locally');
         const videoToAdd = makeLibraryVideoFromFeed(vid, {
           src: video?.url || video?.videoUrl,
           thumbnail: video?.thumbnail,
@@ -233,17 +265,21 @@ const VideoCollectionsModal = ({ onClose, video }) => {
           username: video?.username || video?.user?.username,
           avatar: video?.profileAvatar || video?.user?.profile?.avatar
         });
+        console.log('[VideoCollectionsModal] Video to add:', videoToAdd);
         addToPlaylistLocal(selectedId, videoToAdd);
+        console.log('[VideoCollectionsModal] Added to local playlist');
       }
       
+      console.log('[VideoCollectionsModal] Video added successfully!');
       setError('Video added to playlist successfully');
       
       // Close modal after short delay to show success message
       setTimeout(() => {
+        console.log('[VideoCollectionsModal] Closing modal after success');
         onClose();
       }, 1000);
     } catch (err) {
-      console.error('apiAddVideoToPlaylist failed', err);
+      console.error('[VideoCollectionsModal] Failed to add video:', err);
       setError('Failed to add video to playlist');
     } finally {
       setLoading(false);
@@ -254,7 +290,14 @@ const VideoCollectionsModal = ({ onClose, video }) => {
     <div className="video-collections-overlay" onClick={onClose}>
       <div className="video-collections-modal" onClick={(e) => e.stopPropagation()}>
         <div className="collections-header">
-          <button className="collections-close" onClick={onClose}>
+          <button 
+            className="collections-close" 
+            onClick={(e) => {
+              console.log('[VideoCollectionsModal] Close button clicked');
+              e.stopPropagation();
+              onClose();
+            }}
+          >
             ✕
           </button>
           <h2>Save to Playlist</h2>
@@ -304,10 +347,14 @@ const VideoCollectionsModal = ({ onClose, video }) => {
                     onClick={() => setSelectedId(p._id)}
                   >
                     <img 
-                      src={p.videos?.[0]?.video?.thumbnail || 'https://via.placeholder.com/120x68?text=Empty'} 
+                      src={p.videos?.[0]?.video?.thumbnail || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%232D2D3A'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>Empty</text></svg>"} 
                       alt="thumb" 
                       onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/120x68?text=No+Thumbnail';
+                        const t = e.target;
+                        if (!t.dataset.fallbackApplied) {
+                          t.dataset.fallbackApplied = '1';
+                          t.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%232D2D3A'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>No Thumbnail</text></svg>";
+                        }
                       }}
                     />
                     <div className="meta">
@@ -322,13 +369,33 @@ const VideoCollectionsModal = ({ onClose, video }) => {
 
           <div className="actions-column">
             <div className="actions">
-              <button onClick={handleAddCurrentVideo} disabled={!selectedId || !video || loading}>
+              <button 
+                onClick={(e) => {
+                  console.log('[VideoCollectionsModal] Add current video clicked', {
+                    selectedId,
+                    hasVideo: !!video,
+                    videoId: video?._id || video?.id || video?.videoId,
+                    loading,
+                    disabled: !selectedId || !video || loading
+                  });
+                  e.stopPropagation();
+                  handleAddCurrentVideo();
+                }} 
+                disabled={!selectedId || !video || loading}
+              >
                 <i className="fa-solid fa-plus"></i> Add current video
               </button>
               <button onClick={() => setShowAddModal(true)} disabled={!selectedId || loading}>
                 <i className="fa-solid fa-hashtag"></i> Add by video ID
               </button>
-              <button onClick={onClose} className="cancel">
+              <button 
+                onClick={(e) => {
+                  console.log('[VideoCollectionsModal] Close action button clicked');
+                  e.stopPropagation();
+                  onClose();
+                }} 
+                className="cancel"
+              >
                 <i className="fa-solid fa-xmark"></i> Close
               </button>
             </div>
@@ -346,10 +413,14 @@ const VideoCollectionsModal = ({ onClose, video }) => {
                         {(p.videos || []).slice(0, 6).map((entry, idx) => (
                           <div key={entry.video?._id || idx} className="preview-video">
                             <img 
-                              src={entry.video?.thumbnail || 'https://via.placeholder.com/120x68?text=No+Thumb'} 
+                              src={entry.video?.thumbnail || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%231E1E2E'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>No Thumb</text></svg>"} 
                               alt="v" 
                               onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/120x68?text=Error';
+                                const t = e.target;
+                                if (!t.dataset.fallbackApplied) {
+                                  t.dataset.fallbackApplied = '1';
+                                  t.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='68'><rect width='100%25' height='100%25' fill='%231E1E2E'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%236B6B7F' font-size='12'>Error</text></svg>";
+                                }
                               }}
                             />
                           </div>
