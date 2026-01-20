@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AccountSettings from '../settings/AccountSettings';
 import { getMyVideos, getUserVideos, deleteVideo, promoteVideo, getVideoAnalytics, downloadVideo, retryVideoProcessing } from '../../api/videos';
-import { updateProfile, pinVideo, followUser } from '../../api/users';
+import { updateProfile, pinVideo, followUser, getUserFollowers, getUserFollowing } from '../../api/users';
 import { getUserStories } from '../../api/stories';
 import { getDrafts, deleteDraft } from '../../api/drafts';
 import StoryViewer from '../stories/StoryViewer';
@@ -175,6 +175,18 @@ const Profile = ({ onClose, username: viewUsername }) => {
       setIsPrivate(accountType === 'private');
     }
   }, [user?.privacy, isViewingOtherProfile]);
+
+  // Initialize stats from user profile on load
+  useEffect(() => {
+    if (!isViewingOtherProfile && user?.profile) {
+      setStats(prev => ({
+        ...prev,
+        followers: user.profile.followers || 0,
+        following: user.profile.following || 0,
+        likes: user.profile.likes || prev.likes || 0
+      }));
+    }
+  }, [user?.profile, isViewingOtherProfile]);
 
   useEffect(() => {
     // Early return if no user and not viewing other profile
@@ -1418,15 +1430,28 @@ const Profile = ({ onClose, username: viewUsername }) => {
   // Fetch followers list
   useEffect(() => {
     const fetchFollowers = async () => {
-      if (showFollowers && user) {
+      if (showFollowers) {
         try {
-          // Mock followers data - replace with actual API call
-          const mockFollowers = [
-            { id: 'f1', username: 'follower1', avatar: 'https://ui-avatars.com/api/?name=follower1&background=E50914&color=fff', name: 'Follower One' },
-            { id: 'f2', username: 'follower2', avatar: 'https://ui-avatars.com/api/?name=follower2&background=C50812&color=fff', name: 'Follower Two' },
-            { id: 'f3', username: 'follower3', avatar: 'https://ui-avatars.com/api/?name=follower3&background=222831&color=fff', name: 'Follower Three' }
-          ];
-          setFollowersList(mockFollowers);
+          // Determine which user ID to use (viewing profile or own)
+          const targetUserId = isViewingOtherProfile ? viewedUser?._id : user?._id;
+          
+          console.log('🔍 Fetching followers for user:', {
+            targetUserId,
+            isViewingOtherProfile,
+            viewedUser: viewedUser?._id,
+            currentUser: user?._id
+          });
+          
+          if (!targetUserId) {
+            console.warn('No user ID available for fetching followers');
+            return;
+          }
+          
+          const response = await getUserFollowers(targetUserId);
+          console.log('✅ Followers API response:', response);
+          const followers = response.followers || [];
+          console.log('👥 Followers list:', followers);
+          setFollowersList(followers);
         } catch (error) {
           console.error('Error fetching followers:', error);
           setFollowersList([]);
@@ -1435,19 +1460,33 @@ const Profile = ({ onClose, username: viewUsername }) => {
     };
 
     fetchFollowers();
-  }, [showFollowers, user]);
+  }, [showFollowers, user, viewedUser, isViewingOtherProfile]);
 
   // Fetch following list
   useEffect(() => {
     const fetchFollowing = async () => {
-      if (showFollowing && user) {
+      if (showFollowing) {
         try {
-          // Mock following data - replace with actual API call
-          const mockFollowing = [
-            { id: 'fo1', username: 'following1', avatar: 'https://ui-avatars.com/api/?name=following1&background=E50914&color=fff', name: 'Following One' },
-            { id: 'fo2', username: 'following2', avatar: 'https://ui-avatars.com/api/?name=following2&background=C50812&color=fff', name: 'Following Two' }
-          ];
-          setFollowingList(mockFollowing);
+          // Determine which user ID to use (viewing profile or own)
+          const targetUserId = isViewingOtherProfile ? viewedUser?._id : user?._id;
+          
+          console.log('🔍 Fetching following for user:', {
+            targetUserId,
+            isViewingOtherProfile,
+            viewedUser: viewedUser?._id,
+            currentUser: user?._id
+          });
+          
+          if (!targetUserId) {
+            console.warn('No user ID available for fetching following');
+            return;
+          }
+          
+          const response = await getUserFollowing(targetUserId);
+          console.log('✅ Following API response:', response);
+          const following = response.following || [];
+          console.log('👥 Following list:', following);
+          setFollowingList(following);
         } catch (error) {
           console.error('Error fetching following:', error);
           setFollowingList([]);
@@ -1456,7 +1495,7 @@ const Profile = ({ onClose, username: viewUsername }) => {
     };
 
     fetchFollowing();
-  }, [showFollowing, user]);
+  }, [showFollowing, user, viewedUser, isViewingOtherProfile]);
 
   // Helper function to format date
   const formatDate = (dateString) => {
@@ -3554,12 +3593,15 @@ const Profile = ({ onClose, username: viewUsername }) => {
               {followersList.length > 0 ? (
                 <div className="followers-list">
                   {followersList.map(follower => (
-                    <div key={follower.id} className="follower-item">
+                    <div key={follower._id || follower.id} className="follower-item">
                       <div className="follower-avatar">
-                        <img src={follower.avatar} alt={follower.username} />
+                        <img 
+                          src={follower.avatar || `https://ui-avatars.com/api/?name=${follower.username}&background=E50914&color=fff`} 
+                          alt={follower.username} 
+                        />
                       </div>
                       <div className="follower-info">
-                        <h4>{follower.name}</h4>
+                        <h4>{follower.displayName || follower.name || follower.username}</h4>
                         <p>@{follower.username}</p>
                       </div>
                       <button className="follow-action-btn">
@@ -3595,12 +3637,15 @@ const Profile = ({ onClose, username: viewUsername }) => {
               {followingList.length > 0 ? (
                 <div className="followers-list">
                   {followingList.map(following => (
-                    <div key={following.id} className="follower-item">
+                    <div key={following._id || following.id} className="follower-item">
                       <div className="follower-avatar">
-                        <img src={following.avatar} alt={following.username} />
+                        <img 
+                          src={following.avatar || `https://ui-avatars.com/api/?name=${following.username}&background=E50914&color=fff`} 
+                          alt={following.username} 
+                        />
                       </div>
                       <div className="follower-info">
-                        <h4>{following.name}</h4>
+                        <h4>{following.displayName || following.name || following.username}</h4>
                         <p>@{following.username}</p>
                       </div>
                       <button className="unfollow-action-btn">

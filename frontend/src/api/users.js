@@ -66,6 +66,28 @@ export const followUser = async (userId) => {
   }
 };
 
+// Get user's followers list
+export const getUserFollowers = async (userId) => {
+  try {
+    const response = await api.get(`/api/users/${userId}/followers`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    throw error;
+  }
+};
+
+// Get user's following list
+export const getUserFollowing = async (userId) => {
+  try {
+    const response = await api.get(`/api/users/${userId}/following`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching following:', error);
+    throw error;
+  }
+};
+
 const usersApi = {
   updateProfile,
   blockUser,
@@ -73,7 +95,9 @@ const usersApi = {
   pinVideo,
   getFollowRequests,
   handleFollowRequest,
-  followUser
+  followUser,
+  getUserFollowers,
+  getUserFollowing
 };
 
 export default usersApi;
