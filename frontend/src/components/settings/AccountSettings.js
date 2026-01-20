@@ -315,16 +315,19 @@ const AccountSettings = ({ onClose, onOpenEditProfile, inline, avatarPreview, di
                 } else if (section.id === 'story') {
                   setShowStoryCreator(true);
                 } else if (section.id === 'share') {
-                  // Handle share functionality
+                  // Handle share functionality - FIXED: Generate specific profile URL with username
+                  const profileUrl = `${window.location.origin}/user/${user?.username}`;
+                  console.log('🔗 Sharing profile URL:', profileUrl);
+                  
                   if (navigator.share) {
                     navigator.share({
                       title: `${user?.username}'s TikTok Profile`,
                       text: `Check out ${user?.username}'s profile on TikTok!`,
-                      url: window.location.href
+                      url: profileUrl
                     });
                   } else {
                     // Fallback for browsers that don't support Web Share API
-                    navigator.clipboard.writeText(window.location.href);
+                    navigator.clipboard.writeText(profileUrl);
                     alert('Profile link copied to clipboard!');
                   }
                 }
