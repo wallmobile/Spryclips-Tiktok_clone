@@ -340,7 +340,11 @@ const HomeFeed: React.FC = () => {
         comments: video.comments || 0,
         shares: video.shares || 0,
         views: video.views || 0,
-        video
+        video: {
+          ...video,
+          _id: id, // Ensure _id is set on the video object
+          id: id   // Ensure id is also set
+        }
       };
     });
   }, [videos]);
@@ -485,7 +489,11 @@ const HomeFeed: React.FC = () => {
         comments: video.comments || 0,
         shares: video.shares || 0,
         views: video.views || 0,
-        video
+        video: {
+          ...video,
+          _id: id, // Ensure _id is set on the video object
+          id: id   // Ensure id is also set
+        }
       };
     });
   }, [videos, searchTerm, featuredVideos]);
