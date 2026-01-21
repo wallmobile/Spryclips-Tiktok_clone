@@ -620,6 +620,66 @@
   opacity: 0.7;
 }
 
+.message-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.message-status {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+}
+
+.message-status i {
+  font-size: 11px;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  padding: 12px 16px !important;
+  background: #F9FAFB !important;
+  border: 1px solid #E0F2FE !important;
+  border-radius: 18px !important;
+  border-bottom-left-radius: 6px !important;
+}
+
+.typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94A3B8;
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
 /* Message Input */
 .message-input-form {
   padding: 16px; /* Reduced from 20px */

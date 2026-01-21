@@ -127,6 +127,8 @@ const MessageCenter = ({ onClose, initialUser }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiCategory, setEmojiCategory] = useState('smileys');
   const [emojiSearchQuery, setEmojiSearchQuery] = useState('');
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const typingTimeoutRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
 
   // Emoji categories
@@ -153,6 +155,128 @@ const MessageCenter = ({ onClose, initialUser }) => {
   };
   
   const { socket, isConnected } = useSocket();
+
+  // ==================== SOCKET LISTENERS FOR REAL-TIME MESSAGING ====================
+  useEffect(() => {
+    if (!socket || !isConnected || !user) return;
+
+    // Listen for new messages
+    const handleNewMessage = (data) => {
+      const { conversationId, message } = data;
+      console.log('[MessageCenter] New message received:', data);
+      
+      // If this is the active conversation, add message immediately
+      if (activeChat && activeChat.id === conversationId) {
+        const convertedMessage = convertMessage(message, user);
+        setMessages((prev) => {
+          // Avoid duplicates - check both id and _id
+          const exists = prev.some(m => 
+            m.id === convertedMessage.id || 
+            m.id === message._id || 
+            m.id === message.id ||
+            (m.optimistic && m.text === convertedMessage.text && 
+             Math.abs(m.id - Date.now()) < 5000) // Optimistic message within 5 seconds
+          );
+          if (exists) {
+            // Update existing message (replace optimistic with real)
+            return prev.map(m => 
+              (m.optimistic && m.text === convertedMessage.text && 
+               Math.abs(m.id - Date.now()) < 5000) 
+                ? convertedMessage 
+                : m
+            );
+          }
+          return [...prev, convertedMessage];
+        });
+        
+        // Mark as read immediately if conversation is open and not from current user
+        if (message._id && message.sender?._id !== user._id && message.sender?.id !== user.id) {
+          markMessageAsRead(message._id).catch(err => 
+            console.error('Failed to mark message as read:', err)
+          );
+        }
+      }
+      
+      // Update conversation list with new message
+      setConversations((prev) => {
+        const convertedMessage = convertMessage(message, user);
+        const isFromCurrentUser = message.sender?._id === user._id || message.sender?.id === user.id;
+        
+        return prev.map((conv) => {
+          if (conv.id === conversationId) {
+            return {
+              ...conv,
+              lastMessage: convertedMessage,
+              unreadCount: (activeChat?.id === conversationId || isFromCurrentUser) ? 0 : (conv.unreadCount || 0) + 1
+            };
+          }
+          return conv;
+        });
+      });
+    };
+
+    // Listen for read receipts (double tick)
+    const handleMessageRead = (data) => {
+      const { messageId, conversationId, readAt } = data;
+      console.log('[MessageCenter] Message read receipt:', data);
+      
+      // Update message read status in current conversation
+      if (activeChat && activeChat.id === conversationId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, isRead: true, readAt } : msg
+          )
+        );
+      }
+    };
+
+    // Listen for typing indicators
+    const handleTyping = (data) => {
+      const { conversationId, userId, username, isTyping } = data;
+      
+      // Only show typing if it's not from current user and is active chat
+      if (activeChat && activeChat.id === conversationId && userId !== user._id) {
+        setIsOtherUserTyping(isTyping);
+        
+        // Auto-hide typing indicator after 3 seconds
+        if (isTyping) {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsOtherUserTyping(false);
+          }, 3000);
+        }
+      }
+    };
+
+    socket.on('message:new', handleNewMessage);
+    socket.on('message:received', handleNewMessage);
+    socket.on('message:sent', handleNewMessage); // Listen for sent confirmation
+    socket.on('message:read', handleMessageRead);
+    socket.on('message:typing', handleTyping);
+
+    return () => {
+      socket.off('message:new', handleNewMessage);
+      socket.off('message:received', handleNewMessage);
+      socket.off('message:sent', handleNewMessage);
+      socket.off('message:read', handleMessageRead);
+      socket.off('message:typing', handleTyping);
+    };
+  }, [socket, isConnected, user, activeChat]);
+
+  // Join conversation room when active chat changes
+  useEffect(() => {
+    if (!socket || !isConnected || !activeChat) return;
+
+    console.log('[MessageCenter] Joining conversation:', activeChat.id);
+    socket.emit('join:conversation', activeChat.id);
+
+    return () => {
+      console.log('[MessageCenter] Leaving conversation:', activeChat.id);
+      socket.emit('leave:conversation', activeChat.id);
+    };
+  }, [socket, isConnected, activeChat]);
 
   // Search users for new message
   const handleUserSearch = useCallback(async (query) => {
@@ -327,12 +451,20 @@ const MessageCenter = ({ onClose, initialUser }) => {
     setSendError(null);
     setIsSending(true);
 
+    // Stop typing indicator
+    if (socket && isConnected && activeChat) {
+      socket.emit('message:typing', {
+        conversationId: activeChat.id,
+        isTyping: false
+      });
+    }
+
     const optimisticMessage = {
       id: Date.now(),
       sender: 'me',
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isRead: true,
+      isRead: false, // Changed to false - will be updated by socket
       optimistic: true
     };
 
@@ -452,11 +584,11 @@ const MessageCenter = ({ onClose, initialUser }) => {
             .map((messageId) => markMessageAsRead(messageId))
         );
       }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-        setConversationError('Unable to load messages for this conversation. Please try again.');
-        setMessages([]);
-      } finally {
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setConversationError('Unable to load messages for this conversation. Please try again.');
+      setMessages([]);
+    } finally {
       setMessagesLoading(false);
     }
   };
@@ -623,17 +755,45 @@ const MessageCenter = ({ onClose, initialUser }) => {
                       <p>No messages in this conversation yet.</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`message ${message.sender === 'me' ? 'sent' : 'received'}`}
-                      >
-                        <div className="message-content">
-                          <p>{message.text}</p>
-                          <span className="message-time">{message.time}</span>
+                    <>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`message ${message.sender === 'me' ? 'sent' : 'received'}`}
+                        >
+                          <div className="message-content">
+                            <p>{message.text}</p>
+                            <div className="message-footer">
+                              <span className="message-time">{message.time}</span>
+                              {message.sender === 'me' && (
+                                <span className="message-status">
+                                  {message.isRead ? (
+                                    // Double tick for read
+                                    <i className="fa-solid fa-check-double" style={{ color: '#00a884' }} title="Read"></i>
+                                  ) : (
+                                    // Single tick for delivered
+                                    <i className="fa-solid fa-check" style={{ color: '#667781' }} title="Delivered"></i>
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      
+                      {/* Typing Indicator */}
+                      {isOtherUserTyping && (
+                        <div className="message received">
+                          <div className="message-content typing-indicator">
+                            <div className="typing-dots">
+                              <span></span>
+                              <span></span>
+                              <span></span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -694,7 +854,26 @@ const MessageCenter = ({ onClose, initialUser }) => {
                       type="text"
                       placeholder="Type a message..."
                       value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
+                      onChange={(e) => {
+                        setMessageText(e.target.value);
+                        
+                        // Emit typing indicator
+                        if (socket && isConnected && activeChat) {
+                          socket.emit('message:typing', {
+                            conversationId: activeChat.id,
+                            isTyping: e.target.value.length > 0
+                          });
+                        }
+                      }}
+                      onBlur={() => {
+                        // Stop typing indicator when input loses focus
+                        if (socket && isConnected && activeChat) {
+                          socket.emit('message:typing', {
+                            conversationId: activeChat.id,
+                            isTyping: false
+                          });
+                        }
+                      }}
                       className="message-input"
                     />
                     <div style={{ position: 'relative' }}>
