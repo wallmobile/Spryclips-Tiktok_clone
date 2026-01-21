@@ -276,10 +276,17 @@ router.post('/conversations/:conversationId/messages', authMiddleware, async (re
     // Emit socket event for real-time message delivery
     const io = getIO();
     if (io) {
-      console.log(`[Socket] Emitting message to conversation:${conversationId} and user:${receiver.toString()}`);
+      const roomName = `conversation:${conversationId}`;
+      const userRoom = `user:${receiver.toString()}`;
+      
+      console.log(`[Socket] 📤 EMITTING MESSAGE:`);
+      console.log(`  - To room: ${roomName}`);
+      console.log(`  - To user: ${userRoom}`);
+      console.log(`  - Message ID: ${populatedMessage._id}`);
+      console.log(`  - Connected sockets in room:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
       
       // Send to conversation room
-      io.to(`conversation:${conversationId}`).emit('message:new', {
+      io.to(roomName).emit('message:new', {
         conversationId,
         message: populatedMessage
       });

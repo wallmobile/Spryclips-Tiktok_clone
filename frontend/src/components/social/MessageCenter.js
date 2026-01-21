@@ -158,12 +158,24 @@ const MessageCenter = ({ onClose, initialUser }) => {
 
   // ==================== SOCKET LISTENERS FOR REAL-TIME MESSAGING ====================
   useEffect(() => {
-    if (!socket || !isConnected || !user) return;
+    if (!socket || !isConnected || !user) {
+      console.log('[MessageCenter] Socket not ready:', { socket: !!socket, isConnected, user: !!user });
+      return;
+    }
+
+    console.log('[MessageCenter] Setting up socket listeners, socket ID:', socket.id);
 
     // Listen for new messages
     const handleNewMessage = (data) => {
       const { conversationId, message } = data;
-      console.log('[MessageCenter] New message received:', data);
+      console.log('[MessageCenter] ✉️ NEW MESSAGE RECEIVED:', {
+        conversationId,
+        messageId: message?._id || message?.id,
+        messageText: message?.content?.text || message?.text,
+        sender: message?.sender?.username || message?.sender,
+        activeChat: activeChat?.id,
+        matches: activeChat?.id === conversationId
+      });
       
       // If this is the active conversation, add message immediately
       if (activeChat && activeChat.id === conversationId) {
@@ -267,14 +279,28 @@ const MessageCenter = ({ onClose, initialUser }) => {
 
   // Join conversation room when active chat changes
   useEffect(() => {
-    if (!socket || !isConnected || !activeChat) return;
+    if (!socket || !isConnected || !activeChat) {
+      console.log('[MessageCenter] Cannot join room:', { socket: !!socket, isConnected, activeChat: !!activeChat });
+      return;
+    }
 
-    console.log('[MessageCenter] Joining conversation:', activeChat.id);
+    console.log('[MessageCenter] 🚪 JOINING conversation room:', activeChat.id);
     socket.emit('join:conversation', activeChat.id);
+    
+    // Verify socket is listening
+    console.log('[MessageCenter] Socket listeners active:', socket.listeners('message:new').length);
+    
+    // Listen for join confirmation
+    const handleJoinConfirmation = (data) => {
+      console.log('[MessageCenter] ✅ JOINED room:', data);
+    };
+    
+    socket.on('conversation:joined', handleJoinConfirmation);
 
     return () => {
-      console.log('[MessageCenter] Leaving conversation:', activeChat.id);
+      console.log('[MessageCenter] 🚪 LEAVING conversation:', activeChat.id);
       socket.emit('leave:conversation', activeChat.id);
+      socket.off('conversation:joined', handleJoinConfirmation);
     };
   }, [socket, isConnected, activeChat]);
 

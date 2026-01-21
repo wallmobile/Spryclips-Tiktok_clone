@@ -19,13 +19,25 @@ let io;
 const initializeSocket = (server) => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-    : [process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : 'http://localhost:3000')];
+    : [
+        process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://spryclips.com' : 'http://localhost:3000'),
+        'https://spryclips.com',
+        'http://localhost:3000',
+        'http://localhost:5000'
+      ];
+
+  console.log('[Socket] Initializing with allowed origins:', allowedOrigins);
 
   io = socketIO(server, {
     cors: {
       origin: allowedOrigins,
-      credentials: true
-    }
+      credentials: true,
+      methods: ['GET', 'POST']
+    },
+    transports: ['polling', 'websocket'],
+    allowEIO3: true,
+    pingTimeout: 60000,
+    pingInterval: 25000
   });
 
   // Authentication middleware for socket
@@ -85,8 +97,16 @@ const initializeSocket = (server) => {
 
     // Handle message room join
     socket.on('join:conversation', (conversationId) => {
-      console.log(`User ${socket.userId} joined conversation:${conversationId}`);
-      socket.join(`conversation:${conversationId}`);
+      const roomName = `conversation:${conversationId}`;
+      console.log(`[Socket] 🚪 User ${socket.userId} (${socket.id}) joining ${roomName}`);
+      socket.join(roomName);
+      
+      // Confirm room joined
+      const room = io.sockets.adapter.rooms.get(roomName);
+      console.log(`[Socket] ✅ Room ${roomName} now has ${room?.size || 0} members`);
+      
+      // Send confirmation to client
+      socket.emit('conversation:joined', { conversationId, roomName });
     });
 
     // Handle message room leave
