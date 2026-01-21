@@ -75,7 +75,15 @@ const useSocket = () => {
           auth: {
             token
           },
-          transports: ['websocket', 'polling']
+          transports: ['polling', 'websocket'], // Try polling first, then websocket
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          reconnectionAttempts: 5,
+          timeout: 20000,
+          autoConnect: true,
+          forceNew: false,
+          path: '/socket.io/'
         });
 
         const socket = socketRef.current;
@@ -96,7 +104,15 @@ const useSocket = () => {
 
         socket.on('connect_error', (error) => {
           console.error('Socket connection error:', error);
+          console.error('Error details:', {
+            message: error.message,
+            description: error.description,
+            type: error.type
+          });
           setIsConnected(false);
+          
+          // Log transport info
+          console.log('Current transport:', socket.io?.engine?.transport?.name);
         });
       } catch (error) {
         console.error('Failed to establish socket connection:', error);
