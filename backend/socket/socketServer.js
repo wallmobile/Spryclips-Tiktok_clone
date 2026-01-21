@@ -70,17 +70,45 @@ const initializeSocket = (server) => {
   io.on('connection', (socket) => {
     console.log(`User connected: ${socket.userId} (socket id ${socket.id})`);
 
-    // Join user's personal room
-    socket.join(`user:${socket.userId}`);
+    // Join user's personal room (only if authenticated)
+    if (socket.userId) {
+      socket.join(`user:${socket.userId}`);
+      console.log(`User ${socket.userId} joined personal room`);
+    }
 
     // Handle notification subscription
     socket.on('subscribe:notifications', () => {
-      socket.join(`notifications:${socket.userId}`);
+      if (socket.userId) {
+        socket.join(`notifications:${socket.userId}`);
+      }
     });
 
     // Handle message room join
     socket.on('join:conversation', (conversationId) => {
+      console.log(`User ${socket.userId} joined conversation:${conversationId}`);
       socket.join(`conversation:${conversationId}`);
+    });
+
+    // Handle message room leave
+    socket.on('leave:conversation', (conversationId) => {
+      console.log(`User ${socket.userId} left conversation:${conversationId}`);
+      socket.leave(`conversation:${conversationId}`);
+    });
+
+    // ==================== MESSAGE HANDLERS ====================
+    
+    // Handle typing indicator
+    socket.on('message:typing', (data) => {
+      const { conversationId, isTyping } = data;
+      if (!socket.userId || !conversationId) return;
+      
+      // Broadcast typing status to other participants in the conversation
+      socket.to(`conversation:${conversationId}`).emit('message:typing', {
+        conversationId,
+        userId: socket.userId,
+        username: socket.user?.username || 'User',
+        isTyping
+      });
     });
 
     // Handle live stream join (legacy - kept for backward compatibility)

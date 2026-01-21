@@ -4,6 +4,7 @@ const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const { getIO } = require('../socket/socketServer');
 const router = express.Router();
 
 // ==================== GET ALL CONVERSATIONS ====================
@@ -272,6 +273,30 @@ router.post('/conversations/:conversationId/messages', authMiddleware, async (re
       .populate('replyTo', 'content.text sender')
       .lean();
 
+    // Emit socket event for real-time message delivery
+    const io = getIO();
+    if (io) {
+      console.log(`[Socket] Emitting message to conversation:${conversationId} and user:${receiver.toString()}`);
+      
+      // Send to conversation room
+      io.to(`conversation:${conversationId}`).emit('message:new', {
+        conversationId,
+        message: populatedMessage
+      });
+      
+      // Send to receiver's personal room
+      io.to(`user:${receiver.toString()}`).emit('message:received', {
+        conversationId,
+        message: populatedMessage
+      });
+      
+      // Also send to sender for confirmation
+      io.to(`user:${req.user._id.toString()}`).emit('message:sent', {
+        conversationId,
+        message: populatedMessage
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: populatedMessage
@@ -318,6 +343,26 @@ router.put('/messages/:messageId/read', authMiddleware, async (req, res) => {
       }
       conversation.unreadCounts.set(req.user._id.toString(), 0);
       await conversation.save();
+    }
+
+    // Emit socket event for read receipt
+    const io = getIO();
+    if (io) {
+      // Send to sender to show read status (double tick)
+      io.to(`user:${message.sender.toString()}`).emit('message:read', {
+        messageId: message._id,
+        conversationId: message.conversation,
+        readAt: message.readAt,
+        readBy: req.user._id
+      });
+      
+      // Also emit to conversation room
+      io.to(`conversation:${message.conversation}`).emit('message:read', {
+        messageId: message._id,
+        conversationId: message.conversation,
+        readAt: message.readAt,
+        readBy: req.user._id
+      });
     }
 
     res.json({
