@@ -129,6 +129,8 @@ const MessageCenter = ({ onClose, initialUser }) => {
   const [emojiSearchQuery, setEmojiSearchQuery] = useState('');
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const typingTimeoutRef = React.useRef(null);
+  const pollIntervalRef = React.useRef(null);
+  const lastMessageIdRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
 
   // Emoji categories
@@ -303,6 +305,76 @@ const MessageCenter = ({ onClose, initialUser }) => {
       socket.off('conversation:joined', handleJoinConfirmation);
     };
   }, [socket, isConnected, activeChat]);
+
+  // Fallback polling mechanism - check for new messages every 3 seconds
+  useEffect(() => {
+    if (!activeChat || !user) return;
+
+    console.log('[MessageCenter] 🔄 Starting fallback polling for:', activeChat.id);
+    
+    const pollMessages = async () => {
+      try {
+        const response = await getMessages(activeChat.id, { limit: 10, skip: 0 });
+        const latestMessages = response?.messages || [];
+        
+        if (latestMessages.length > 0) {
+          const latestMessage = latestMessages[latestMessages.length - 1];
+          const latestId = latestMessage._id || latestMessage.id;
+          
+          // Check if this is a new message
+          if (lastMessageIdRef.current && lastMessageIdRef.current !== latestId) {
+            console.log('[MessageCenter] 📨 New message detected via polling:', latestMessage);
+            
+            const convertedMessage = convertMessage(latestMessage, user);
+            setMessages((prev) => {
+              const exists = prev.some(m => m.id === convertedMessage.id);
+              if (!exists) {
+                // Play notification sound (optional)
+                try {
+                  new Audio('/notification.mp3').play().catch(() => {});
+                } catch (e) {}
+                
+                // Mark as read if from other user
+                if (latestMessage.sender?._id !== user._id && latestMessage.sender?.id !== user.id) {
+                  markMessageAsRead(latestId).catch(err => 
+                    console.error('Failed to mark as read:', err)
+                  );
+                }
+                return [...prev, convertedMessage];
+              }
+              return prev;
+            });
+            
+            // Update conversation list
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.id === activeChat.id
+                  ? { ...conv, lastMessage: convertedMessage, unreadCount: 0 }
+                  : conv
+              )
+            );
+          }
+          
+          lastMessageIdRef.current = latestId;
+        }
+      } catch (error) {
+        console.error('[MessageCenter] Polling error:', error);
+      }
+    };
+
+    // Initial poll
+    pollMessages();
+    
+    // Poll every 3 seconds
+    pollIntervalRef.current = setInterval(pollMessages, 3000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        console.log('[MessageCenter] 🛑 Stopped polling');
+      }
+    };
+  }, [activeChat, user]);
 
   // Search users for new message
   const handleUserSearch = useCallback(async (query) => {
