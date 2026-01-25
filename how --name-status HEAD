@@ -1,0 +1,29 @@
+[33mcommit 58dae7a43c6a0eb26c533da5f2e5c970b93d50eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mAdmin-Testing[m[33m, [m[1;31morigin/Admin-Testing[m[33m)[m
+Author: Ali Raza <mr.aliraza161.9l@gmail.com>
+Date:   Tue Dec 9 23:38:46 2025 +0500
+
+    feat: UI improvements and bug fixes - Volume control styling, Watch Later fixes, Search modal implementation, Sidebar improvements
+
+ backend/routes/collections.js                     |  48 [32m++++[m[31m-[m
+ backend/routes/more.js                            |  95 [32m++++[m[31m-----[m
+ backend/routes/videos.js                          |  22 [32m++[m[31m-[m
+ backend/utils/rateLimiter.js                      |   7 [32m+[m[31m-[m
+ frontend/public/config.js                         |   4 [32m+[m[31m-[m
+ frontend/src/App.tsx                              |   7 [32m+[m
+ frontend/src/components/admin/AdminPanel.js       |   2 [32m+[m
+ frontend/src/components/common/ActionBar.tsx      |   8 [32m+[m[31m-[m
+ frontend/src/components/common/More.css           | 146 [32m+++++++++[m[31m-----[m
+ frontend/src/components/common/More.js            |  45 [32m++[m[31m---[m
+ frontend/src/components/common/MorePages.css      | 226 [32m++++++++++++++++++[m[31m----[m
+ frontend/src/components/common/VolumeControl.css  |  82 [32m++++[m[31m----[m
+ frontend/src/components/creator/GrowthToolsHub.js | 114 [32m+++++++[m[31m----[m
+ frontend/src/components/live/GoLive.js            |  76 [32m++++++[m[31m--[m
+ frontend/src/components/live/LIVE.js              |   4 [32m+[m[31m-[m
+ frontend/src/components/navigation/Sidebar.css    | 117 [32m++++++[m[31m-----[m
+ frontend/src/components/navigation/Sidebar.js     |  29 [32m+++[m
+ frontend/src/components/playlist/WatchLater.js    |  48 [32m++++[m[31m-[m
+ start-all.bat                                     |  27 [32m+++[m
+ start-backend.bat                                 |  31 [32m+++[m
+ start-server.ps1                                  |  29 [32m+++[m
+ "ting\357\200\242 -i -10"                         |  30 [32m+++[m
+ 22 files changed, 867 insertions(+), 330 deletions(-)
