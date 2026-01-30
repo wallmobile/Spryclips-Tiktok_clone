@@ -288,8 +288,29 @@ const connectDB = async () => {
     });
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
+    
+    // Provide helpful error messages based on error type
+    if (error.message.includes('ECONNREFUSED') || error.message.includes('querySrv')) {
+      console.error('');
+      console.error('💡 MongoDB Atlas Connection Issue:');
+      console.error('   1. Check IP Whitelist: Go to MongoDB Atlas → Network Access → Add your IP');
+      console.error('   2. Check Cluster Status: Ensure cluster is running (not paused)');
+      console.error('   3. Verify Connection String: Check username, password, and database name');
+      console.error('   4. Test Connection: Run "node scripts/test-mongo-connection.js"');
+      console.error('');
+      console.error('   For local development, use: mongodb://localhost:27017/tiktok-clone');
+      console.error('   See docs/TROUBLESHOOTING.md for detailed help');
+    } else if (error.message.includes('authentication failed')) {
+      console.error('');
+      console.error('💡 Authentication Failed:');
+      console.error('   Check your username and password in MONGODB_URI');
+      console.error('   Verify database user exists in MongoDB Atlas → Database Access');
+    }
+    
+    console.warn('');
     console.warn('⚠️ Server will continue without database. Some features may not work.');
     console.warn('💡 Make sure MongoDB is running or set SKIP_DB_CONNECT=true in .env');
+    
     // Don't exit in development - let server start anyway
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);

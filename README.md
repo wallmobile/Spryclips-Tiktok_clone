@@ -1,154 +1,84 @@
-# Spryclips - Full Stack Application
+# SpryClips
 
-A full-featured short video sharing platform built with React (Frontend) and Node.js/Express (Backend), featuring video uploads, live streaming, social interactions, and comprehensive admin panel.
+A full-featured short video sharing platform built with React and Node.js, inspired by TikTok. This project demonstrates modern web development practices with a professional architecture, real-time features, and comprehensive functionality.
 
-**For an in-depth technical design, architecture, data model, and deployment guide, see [TECHNICAL.md](TECHNICAL.md).**
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
+![License](https://img.shields.io/badge/license-Private-red.svg)
 
-## 🚀 Product overview & Table of Contents
+## 🎯 Features
 
-- Quick links: [Technical Guide](TECHNICAL.md) • [API Reference (high-level)](#api-highlights)
+### Core Features
+- **Video Feed & Discovery**: Infinite scroll feed with personalized recommendations
+- **Video Upload & Processing**: Resumable uploads with FFmpeg transcoding
+- **User Authentication**: JWT-based auth with refresh tokens and 2FA support
+- **Social Interactions**: Likes, comments, shares, follows, and direct messaging
+- **Live Streaming**: RTMP ingestion with WebRTC support and live chat
+- **Real-time Notifications**: WebSocket-based notification system
 
-### Table of Contents
-1. Product overview & functionality
-2. Quick start
-3. API highlights
-4. Environment variables
-5. Development workflows
-6. Docker & production deployment
-7. Testing & CI
-8. Troubleshooting
-9. Contributing & code style
-
----
-
-### Functionality — Full Product Summary
-- **Video Feed & Discovery**: Infinite, low-latency feed with adaptive preloading and personalized ranking signals. Supports autoplay, video looping, and recommendations hooks.
-- **Uploads & Media Processing**: Resumable uploads, server-side validation, BB (bulletproof) job queue handling. FFmpeg-based transcoding to multiple resolutions, automatic thumbnail/poster generation, and optional S3 storage for production.
-- **Authentication and User Profiles**: JWT-based access and refresh tokens, secure refresh flows, optional 2FA, password resets, email verification, and per-user privacy controls.
-- **Social Interactions**: Likes, comments (with threading), replies, reposts, shares, bookmarks (watch-later), follows, direct messages, and notification center delivered via WebSocket.
-- **Live Streaming**: RTMP ingestion and WebRTC client modes, live chat with moderation, live recording and conversion to VOD, and live metrics.
-- **Creator Tools**: Inline trimming, basic effects, scheduling, analytics dashboards, and monetization features (creator fund, revenue reporting).
-- **Admin Tools & Moderation**: Role-based admin UI, content takedown flows, automated moderation flags, manual review queues, server health, and logging dashboards.
-- **Business & E-commerce**: Business accounts, ad management stub endpoints, product catalogs, and commerce integration hooks.
-
-For detailed system architecture, deployment, data models, and API specs see [TECHNICAL.md](TECHNICAL.md).
-
----
-
-### Quick start (developer)
-1. Clone repo: `git clone https://github.com/wallmobile/Tiktok_clone.git`
-2. Install: `npm run install:all` (or install in each subfolder)
-3. Create `.env` in `backend/` (see Environment Variables below)
-4. Start dependencies (MongoDB, Redis), then:
-   - Backend: `cd backend && npm run dev`
-   - Frontend: `cd frontend && npm start`
-5. Visit `http://localhost:3000` (frontend) and `http://localhost:5000` (backend by default).
-
----
-
-### API highlights
-Below are representative examples. For a complete and versioned API reference see the `backend/routes/` files and the `/api-docs` swagger endpoint when running.
-
-- Register
-
-curl -X POST "http://localhost:5000/api/auth/register" -H "Content-Type: application/json" -d '{"username":"test","email":"test@example.com","password":"secret"}'
-
-- Login (returns access + refresh tokens)
-
-curl -X POST "http://localhost:5000/api/auth/login" -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"secret"}'
-
-- Upload video (multipart/form-data)
-
-curl -X POST "http://localhost:5000/api/videos" -H "Authorization: Bearer <ACCESS_TOKEN>" -F "file=@./video.mp4" -F "title=My clip"
-
-- Fetch feed
-
-curl "http://localhost:5000/api/videos?page=1&limit=10"
-
----
-
-### Environment variables (important)
-Backend `.env` (summary):
-- NODE_ENV (development|production)
-- PORT (default 5000)
-- MONGODB_URI
-- JWT_SECRET
-- JWT_REFRESH_SECRET
-- REDIS_URL (redis://localhost:6379)
-- EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS
-- FRONTEND_URL
-- UPLOADS_DIR, PROCESSED_DIR
-
-Add production variables in CI/CD or a secret manager (do NOT commit `.env` to source control).
-
----
-
-### Docker & Production
-- A Dockerfile and a sample `docker-compose.yml` can be used to run the stack locally. Replace local storage with a mounted volume or S3 in production.
-- Use a process manager (PM2) or container orchestration (Kubernetes) for robust process management. Nginx is recommended to terminate TLS and proxy to the backend and frontend.
-
----
-
-### Testing & CI
-- Unit and integration tests live in `backend/tests/` and frontend `src/__tests__`.
-- Run: `cd backend && npm test` and `cd frontend && npm test`.
-- We recommend a CI job that runs tests, lint, and build steps (GitHub Actions or similar).
-
----
-
-### Troubleshooting (quick)
-- Port conflicts: change `PORT` in `.env`.
-- Mongo connection errors: verify `MONGODB_URI` and that Mongo is running.
-- FFmpeg issues: ensure `ffmpeg` binary is installed and available on PATH.
-
----
-
-**For the full technical spec, API contract, data models, deployment recipes, and CI examples see [TECHNICAL.md](TECHNICAL.md).**
+### Advanced Features
+- **Creator Tools**: Analytics dashboard, monetization, and content management
+- **Admin Panel**: Comprehensive admin interface with moderation tools
+- **Content Moderation**: Automated and manual content review
+- **Business Features**: Business accounts, ad management, and e-commerce integration
+- **Search & Discovery**: Advanced search with hashtags and trending content
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18.2.0**: UI library
-- **TypeScript**: Type safety
-- **React Router**: Navigation
-- **Axios**: HTTP client
-- **Socket.io Client**: Real-time communication
-- **Zustand**: State management
-- **Lucide React**: Icons
+- **React 18.2.0** - UI library
+- **TypeScript** - Type safety
+- **React Router** - Navigation
+- **Zustand** - State management
+- **Axios** - HTTP client
+- **Socket.io Client** - Real-time communication
+- **Lucide React** - Icons
 
 ### Backend
-- **Node.js**: Runtime environment
-- **Express.js**: Web framework
-- **MongoDB**: Database (Mongoose ODM)
-- **Socket.io**: WebSocket server
-- **JWT**: Authentication
-- **Multer**: File uploads
-- **FFmpeg**: Video processing
-- **Redis**: Caching
-- **Bull**: Job queue
-- **Nodemailer/Resend**: Email service
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database (Mongoose ODM)
+- **Socket.io** - WebSocket server
+- **JWT** - Authentication
+- **FFmpeg** - Video processing
+- **Redis** - Caching & job queues
+- **Bull** - Job queue management
+- **Multer** - File uploads
+
+### DevOps
+- **Docker** - Containerization
+- **GitHub Actions** - CI/CD
+- **Nginx** - Reverse proxy
 
 ## 📋 Prerequisites
 
-- Node.js (v16 or higher)
-- MongoDB (v5 or higher)
-- Redis (optional, for caching)
-- FFmpeg (for video processing)
+Before you begin, ensure you have the following installed:
 
-## 🔧 Installation
+- **Node.js** (v18 or higher)
+- **npm** (v9 or higher)
+- **MongoDB** (v7.0 or higher) - Local or MongoDB Atlas
+- **Redis** (optional, for caching and queues)
+- **FFmpeg** (for video processing)
 
-### 1. Clone the repository
+## 🚀 Quick Start
+
+### 1. Clone the Repository
+
 ```bash
-git clone https://github.com/wallmobile/Tiktok_clone.git
+git clone <repository-url>
 cd Tiktok_clone
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
+
 ```bash
 # Install all dependencies (root, frontend, and backend)
 npm run install:all
+```
 
-# Or install separately:
+Or install separately:
+```bash
 npm install
 cd frontend && npm install
 cd ../backend && npm install
@@ -156,111 +86,137 @@ cd ../backend && npm install
 
 ### 3. Environment Configuration
 
-#### Backend (.env)
-Create a `.env` file in the `backend` directory:
+#### Backend Configuration
+
+Create a `.env` file in the project root:
+
 ```env
+# Application
 NODE_ENV=development
 PORT=5000
+FRONTEND_URL=http://localhost:3000
+PUBLIC_URL=http://localhost:5000
+
+# Database
 MONGODB_URI=mongodb://localhost:27017/tiktok-clone
-JWT_SECRET=your-secret-key-here
-JWT_REFRESH_SECRET=your-refresh-secret-key-here
+# OR for MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/tiktok-clone
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-this
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-this
+
+# Redis (Optional)
 REDIS_URL=redis://localhost:6379
+REDIS_ENABLED=true
+
+# Email (Optional)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-email-password
-FRONTEND_URL=http://localhost:3000
-UPLOADS_DIR=./uploads
-PROCESSED_DIR=./processed
+RESEND_API_KEY=your-resend-api-key
+
+# File Storage
+UPLOADS_DIR=./backend/uploads
+PROCESSED_DIR=./backend/processed
+MAX_FILE_SIZE=500000000
 ```
 
-#### Frontend (config.js)
-Edit `frontend/public/config.js`:
+#### Frontend Configuration
+
+Create `frontend/public/config.js`:
+
 ```javascript
 window.APP_CONFIG = {
-  API_URL: 'http://localhost:5000',  // Backend URL
+  API_URL: 'http://localhost:5000',
   UPLOADS_BASE_URL: 'http://localhost:5000/uploads'
 };
 ```
 
-## 🚀 Running the Application
+### 4. Start Development Servers
 
-### Development Mode
+#### Option 1: Run Both Servers Together
 
-#### Option 1: Run both servers together
 ```bash
 npm run dev
 ```
 
-#### Option 2: Run separately
+#### Option 2: Run Separately
 
 **Backend:**
 ```bash
-cd backend
-npm start
-# or for development with auto-reload:
-npm run dev
+npm run start:backend
+# or
+cd backend && npm run dev
 ```
 
 **Frontend:**
 ```bash
-cd frontend
-npm start
+npm run start:frontend
+# or
+cd frontend && npm start
 ```
 
-#### Option 3: Use batch scripts (Windows)
-```bash
-# Start backend only
-start-backend.bat
+### 5. Access the Application
 
-# Start both (if available)
-start-all.bat
-```
-
-### Production Build
-
-```bash
-# Build frontend
-npm run build:frontend
-
-# The build folder will be created in frontend/build
-```
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+- **API Documentation**: http://localhost:5000/api-docs
 
 ## 📁 Project Structure
 
 ```
 Tiktok_clone/
-├── backend/                 # Backend API server
+├── backend/                 # Backend API Server
 │   ├── config/             # Configuration files
+│   ├── constants/          # Application constants
+│   ├── controllers/        # Request handlers
+│   ├── services/           # Business logic
 │   ├── models/             # MongoDB models
 │   ├── routes/             # API routes
 │   ├── middleware/         # Express middleware
+│   ├── validators/         # Input validation
 │   ├── utils/              # Utility functions
 │   ├── jobs/               # Background jobs
 │   ├── socket/             # WebSocket handlers
-│   ├── uploads/            # Uploaded files
-│   └── index.js            # Entry point
+│   ├── scripts/            # Utility scripts
+│   └── tests/              # Test files
 │
-├── frontend/               # React frontend
-│   ├── public/             # Static files
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── api/            # API calls
-│   │   ├── context/        # React contexts
-│   │   ├── routes/         # Route components
-│   │   └── utils/          # Utility functions
-│   └── package.json
+├── frontend/               # React Frontend
+│   ├── public/             # Static assets
+│   └── src/
+│       ├── api/            # API client
+│       ├── components/     # React components
+│       ├── context/        # React contexts
+│       ├── hooks/          # Custom hooks
+│       ├── store/          # State management
+│       ├── routes/          # Route components
+│       ├── utils/          # Utility functions
+│       └── types/          # TypeScript types
 │
-└── README.md
+├── docker/                 # Docker configuration
+├── docs/                   # Documentation
+├── scripts/                # Deployment scripts
+└── .github/                # CI/CD workflows
 ```
 
-## 🔐 Authentication
+For detailed structure, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 
-The application uses JWT-based authentication:
-- Access tokens (short-lived)
-- Refresh tokens (long-lived)
-- Optional 2FA support
-- Session management
+## 🏗️ Architecture
+
+The project follows a **layered architecture** pattern:
+
+```
+Routes → Controllers → Services → Models
+```
+
+- **Routes**: Define endpoints and apply middleware
+- **Controllers**: Handle HTTP requests/responses
+- **Services**: Contain business logic
+- **Models**: Data persistence
+
+For detailed architecture information, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## 📡 API Endpoints
 
@@ -268,13 +224,14 @@ The application uses JWT-based authentication:
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh` - Refresh token
+- `POST /api/auth/refresh` - Refresh access token
 - `GET /api/auth/verify` - Verify token
 
 ### Videos
-- `GET /api/videos` - Get all videos
+- `GET /api/videos` - Get video feed (paginated)
 - `POST /api/videos` - Upload video
 - `GET /api/videos/:id` - Get video details
+- `PUT /api/videos/:id` - Update video
 - `DELETE /api/videos/:id` - Delete video
 
 ### Users
@@ -283,79 +240,106 @@ The application uses JWT-based authentication:
 - `POST /api/users/:id/follow` - Follow user
 - `DELETE /api/users/:id/follow` - Unfollow user
 
+### Comments
+- `GET /api/comments/:videoId` - Get video comments
+- `POST /api/comments` - Create comment
+- `PUT /api/comments/:id` - Update comment
+- `DELETE /api/comments/:id` - Delete comment
+
 ### Live Streaming
 - `GET /api/live/streams` - Get active streams
 - `POST /api/live/start` - Start live stream
 - `POST /api/live/end` - End live stream
 
-For complete API documentation, check the Swagger UI at `/api-docs` when the backend is running.
-
-## 🎨 Configuration
-
-### Production Deployment
-
-For production, update `frontend/public/config.js`:
-```javascript
-window.APP_CONFIG = {
-  API_URL: '',  // Empty for Nginx proxy
-  UPLOADS_BASE_URL: 'https://yourdomain.com/uploads'
-};
-```
-
-### Nginx Configuration
-
-A sample Nginx configuration is provided in `nginx.conf` for production deployment.
+For complete API documentation, visit `/api-docs` when the backend is running.
 
 ## 🧪 Testing
 
+### Backend Tests
+
 ```bash
-# Backend tests
 cd backend
 npm test
+```
 
-# Frontend tests
+### Frontend Tests
+
+```bash
 cd frontend
 npm test
 ```
 
-## 🐛 Troubleshooting
+### Run All Tests
 
-### Common Issues
+```bash
+npm test
+```
 
-1. **Port already in use**
-   - Backend: Change `PORT` in `.env`
-   - Frontend: Set `PORT=3001` in environment
+## 🐳 Docker
 
-2. **MongoDB connection error**
-   - Ensure MongoDB is running
-   - Check `MONGODB_URI` in `.env`
+### Using Docker Compose
 
-3. **Video processing fails**
-   - Ensure FFmpeg is installed
-   - Check file permissions for uploads directory
+```bash
+cd docker
+docker-compose up
+```
 
-4. **Build errors**
-   - Clear `node_modules` and reinstall
-   - Check Node.js version compatibility
+This will start:
+- MongoDB
+- Redis
+- Backend API
+- Frontend
+- Nginx (optional)
 
-## 📝 Scripts
+### Build Individual Containers
 
-### Root Level
-- `npm run install:all` - Install all dependencies
-- `npm run start:frontend` - Start frontend
-- `npm run start:backend` - Start backend
-- `npm run dev` - Run both in development
-- `npm run build:frontend` - Build frontend for production
+```bash
+# Backend
+docker build -f docker/Dockerfile.backend -t tiktok-clone-backend .
 
-### Backend
-- `npm start` - Start server
-- `npm run dev` - Start with nodemon (auto-reload)
-- `npm test` - Run tests
+# Frontend
+docker build -f docker/Dockerfile.frontend -t tiktok-clone-frontend .
+```
 
-### Frontend
-- `npm start` - Start development server
-- `npm run build` - Build for production
-- `npm test` - Run tests
+## 🚢 Deployment
+
+### Production Build
+
+```bash
+# Build frontend
+npm run build:frontend
+
+# The build folder will be in frontend/build
+```
+
+### Environment Variables for Production
+
+Update `.env` with production values:
+- Set `NODE_ENV=production`
+- Use production MongoDB URI
+- Configure production email service
+- Set secure JWT secrets
+- Configure CDN URLs
+
+For detailed deployment instructions, see [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md).
+
+## 📚 Documentation
+
+- [Project Structure](./PROJECT_STRUCTURE.md) - Detailed project structure
+- [Architecture Guide](./docs/ARCHITECTURE.md) - Architecture and design patterns
+- [Development Guide](./docs/DEVELOPMENT.md) - Development workflows
+- [Quick Reference](./docs/QUICK_REFERENCE.md) - Quick commands and patterns
+
+## 🛡️ Security
+
+- JWT-based authentication with refresh tokens
+- Password hashing with bcrypt
+- Input validation and sanitization
+- CORS configuration
+- Rate limiting
+- Helmet.js for security headers
+- XSS protection
+- MongoDB injection prevention
 
 ## 🤝 Contributing
 
@@ -364,6 +348,55 @@ npm test
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+### Code Style
+
+- Follow existing code patterns
+- Use ESLint and Prettier
+- Write tests for new features
+- Update documentation
+
+## 📝 Scripts
+
+### Root Level
+- `npm run install:all` - Install all dependencies
+- `npm run dev` - Run both servers in development
+- `npm run start:backend` - Start backend server
+- `npm run start:frontend` - Start frontend server
+- `npm run build:frontend` - Build frontend for production
+- `npm run lint` - Lint code
+- `npm run format` - Format code with Prettier
+
+### Backend
+- `npm start` - Start production server
+- `npm run dev` - Start with nodemon (auto-reload)
+- `npm test` - Run tests
+
+### Frontend
+- `npm start` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Port already in use**
+   - Change `PORT` in `.env` file
+   - Or kill the process using the port
+
+2. **MongoDB connection error**
+   - Ensure MongoDB is running
+   - Check `MONGODB_URI` in `.env`
+   - Verify MongoDB Atlas IP whitelist (if using Atlas)
+
+3. **Video processing fails**
+   - Ensure FFmpeg is installed
+   - Check file permissions for uploads directory
+
+4. **Build errors**
+   - Clear `node_modules` and reinstall
+   - Check Node.js version compatibility
 
 ## 📄 License
 
@@ -381,9 +414,4 @@ This project is private and proprietary.
 
 ## 📞 Support
 
-For support, email support@yourdomain.com or create an issue in the repository.
-
----
-
-**Note**: This is a clone project for educational purposes. Make sure to comply with all applicable laws and regulations when deploying.
-
+For support, create an issue in the repository or contact the development team.

@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getSearchSuggestions, getTrendingSearches, getSearchHistory } from '../../api/search';
 import Login from '../auth/Login';
 import Signup from '../auth/Signup';
 import Profile from '../profile/Profile';
@@ -11,10 +12,16 @@ import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const [activeOverlay, setActiveOverlay] = useState(null); // login, signup, profile, upload, balance, getApp
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
   const handleLogout = () => {
     try {
@@ -28,6 +35,105 @@ const Navbar = () => {
 
   const toggleOverlay = (overlay) => {
     setActiveOverlay((prev) => (prev === overlay ? null : overlay));
+  };
+
+  // Load trending searches and history on mount
+  useEffect(() => {
+    loadTrending();
+    if (isAuthenticated) {
+      loadSearchHistory();
+    }
+  }, [isAuthenticated]);
+
+  // Fetch suggestions as user types
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      const debounceTimer = setTimeout(() => {
+        fetchSuggestions();
+      }, 300);
+      return () => clearTimeout(debounceTimer);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target) && 
+          searchInputRef.current && !searchInputRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const loadTrending = async () => {
+    try {
+      const data = await getTrendingSearches(10);
+      setTrending(data.trending?.searches?.slice(0, 5) || []);
+    } catch (error) {
+      console.error('Error loading trending:', error);
+    }
+  };
+
+  const loadSearchHistory = async () => {
+    try {
+      const data = await getSearchHistory();
+      setSearchHistory(data.history?.slice(0, 5) || []);
+    } catch (error) {
+      console.error('Error loading search history:', error);
+    }
+  };
+
+  const fetchSuggestions = async () => {
+    try {
+      const data = await getSearchSuggestions(searchQuery);
+      setSuggestions(data.suggestions || []);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    }
+  };
+
+  const handleSearchFocus = () => {
+    // Navigate to search page when clicking/focusing search bar
+    if (location.pathname !== '/search') {
+      navigate('/search');
+    }
+    setShowSuggestions(true);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value.trim().length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    const query = suggestion.value || suggestion.query || suggestion;
+    setSearchQuery(query);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
+    setShowSuggestions(false);
+  };
+
+  const handleTrendingClick = (trend) => {
+    const query = trend.query || trend;
+    setSearchQuery(query);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
+    setShowSuggestions(false);
   };
 
   return (

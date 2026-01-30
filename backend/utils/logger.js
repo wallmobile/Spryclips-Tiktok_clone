@@ -1,40 +1,119 @@
 /**
- * Structured logging utility
- * In production, this would integrate with Winston or similar
+ * Centralized Logging Utility
+ * Provides structured logging with different log levels
  */
 
+const fs = require('fs');
+const path = require('path');
+
+// Ensure logs directory exists
+const logsDir = path.join(__dirname, '../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
 const logLevels = {
-  ERROR: 'error',
-  WARN: 'warn',
-  INFO: 'info',
-  DEBUG: 'debug'
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3,
 };
 
-const log = (level, message, meta = {}) => {
+const currentLogLevel = logLevels[process.env.LOG_LEVEL?.toUpperCase()] ?? logLevels.INFO;
+
+/**
+ * Format log message with timestamp and level
+ */
+const formatLogMessage = (level, message, metadata = {}) => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
     level,
     message,
-    ...meta
+    ...metadata,
   };
-
-  // In production, send to logging service
-  // For now, use console with structured format
-  const logMethod = level === 'error' ? console.error :
-                   level === 'warn' ? console.warn :
-                   level === 'info' ? console.info :
-                   console.log;
-
-  logMethod(JSON.stringify(logEntry));
+  return JSON.stringify(logEntry);
 };
 
-const logger = {
-  error: (message, meta) => log(logLevels.ERROR, message, meta),
-  warn: (message, meta) => log(logLevels.WARN, message, meta),
-  info: (message, meta) => log(logLevels.INFO, message, meta),
-  debug: (message, meta) => log(logLevels.DEBUG, message, meta)
+/**
+ * Write log to file
+ */
+const writeToFile = (level, message, metadata) => {
+  const logFile = path.join(logsDir, 'app.log');
+  const formatted = formatLogMessage(level, message, metadata);
+  
+  try {
+    fs.appendFileSync(logFile, `${formatted}\n`, { encoding: 'utf8' });
+  } catch (error) {
+    console.error('Failed to write to log file:', error);
+  }
 };
 
-module.exports = logger;
+/**
+ * Logger class
+ */
+class Logger {
+  error(message, metadata = {}) {
+    if (currentLogLevel >= logLevels.ERROR) {
+      const formatted = formatLogMessage('ERROR', message, metadata);
+      console.error(formatted);
+      writeToFile('ERROR', message, metadata);
+    }
+  }
 
+  warn(message, metadata = {}) {
+    if (currentLogLevel >= logLevels.WARN) {
+      const formatted = formatLogMessage('WARN', message, metadata);
+      console.warn(formatted);
+      writeToFile('WARN', message, metadata);
+    }
+  }
+
+  info(message, metadata = {}) {
+    if (currentLogLevel >= logLevels.INFO) {
+      const formatted = formatLogMessage('INFO', message, metadata);
+      console.log(formatted);
+      writeToFile('INFO', message, metadata);
+    }
+  }
+
+  debug(message, metadata = {}) {
+    if (currentLogLevel >= logLevels.DEBUG) {
+      const formatted = formatLogMessage('DEBUG', message, metadata);
+      console.debug(formatted);
+      writeToFile('DEBUG', message, metadata);
+    }
+  }
+
+  /**
+   * Log HTTP request
+   */
+  request(req, res, responseTime) {
+    this.info('HTTP Request', {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      responseTime: `${responseTime}ms`,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.id,
+    });
+  }
+
+  /**
+   * Log error with stack trace
+   */
+  errorWithStack(message, error, metadata = {}) {
+    this.error(message, {
+      ...metadata,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      },
+    });
+  }
+}
+
+// Export singleton instance
+module.exports = new Logger();
